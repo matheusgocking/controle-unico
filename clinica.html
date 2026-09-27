@@ -834,7 +834,7 @@ function inicial(){
 
 var dados = carregar();
 salvar(); /* grava a agenda inicial já na primeira abertura */
-var semana = isoSegunda(new Date());
+var semana = inicioSemana(new Date());
 var mesRef = new Date();
 var menuAberto = null;
 
@@ -935,6 +935,7 @@ function recado(texto){
 
 /* ---------------- datas ---------------- */
 function isoSegunda(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); var dow = (x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x; }
+function inicioSemana(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate()-x.getDay()); return x; }
 function somaDias(d,n){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate()+n); return x; }
 function chaveData(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function mesmoDia(a,b){ return chaveData(a)===chaveData(b); }
@@ -1029,7 +1030,7 @@ function renderSemana(){
   var fmt = {day:"numeric", month:"long"};
   document.getElementById("range-txt").textContent =
     semana.toLocaleDateString("pt-BR",fmt) + " a " + fim.toLocaleDateString("pt-BR",fmt);
-  document.getElementById("range-sub").textContent = "semana " + (mesmoDia(isoSegunda(hoje),semana) ? "atual" : "de " + fim.getFullYear());
+  document.getElementById("range-sub").textContent = "semana " + (mesmoDia(inicioSemana(hoje),semana) ? "atual" : "de " + fim.getFullYear());
 
   var canto = document.createElement("div");
   canto.className = "gh corner";
@@ -1360,7 +1361,7 @@ function renderMes(){
     cel.innerHTML = '<div class="num">'+d.getDate()+'</div>' +
       '<span class="pill'+(ss.length?"":" vazio")+'">'+(ss.length ? '<b>'+ss.length+'</b>'+(ss.length>1?"sessões":"sessão") : "livre")+'</span>' +
       (ss.length ? '<div class="linha"><span>'+ss.map(function(s){ return String(s.hora)+"h"; }).join(" · ")+'</span></div>' : "");
-    cel.addEventListener("click", function(dd){ return function(){ semana = isoSegunda(dd); mostrarView("semana"); renderTudo(); }; }(d));
+    cel.addEventListener("click", function(dd){ return function(){ semana = inicioSemana(dd); mostrarView("semana"); renderTudo(); }; }(d));
     alvo.appendChild(cel);
   }
 
@@ -1434,7 +1435,7 @@ function horasUsadas(){
 /* conta o que está divulgado e ainda sem paciente: "livre" ficaria ambíguo agora que
    o horário comercial inteiro aparece como atendimento */
 function horasDivulgadasSemana(){
-  var n=0, base = isoSegunda(new Date());
+  var n=0, base = inicioSemana(new Date());
   for(var j=0;j<7;j++){
     var d = somaDias(base,j);
     for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++){
@@ -2954,7 +2955,7 @@ document.querySelectorAll(".tab").forEach(function(t){
 });
 document.getElementById("prev").addEventListener("click", function(){ semana = somaDias(semana,-7); renderTudo(); });
 document.getElementById("next").addEventListener("click", function(){ semana = somaDias(semana,7); renderTudo(); });
-document.getElementById("hoje").addEventListener("click", function(){ semana = isoSegunda(new Date()); renderTudo(); });
+document.getElementById("hoje").addEventListener("click", function(){ semana = inicioSemana(new Date()); renderTudo(); });
 document.getElementById("m-prev").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()-1, 1); renderTudo(); });
 document.getElementById("m-next").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()+1, 1); renderTudo(); });
 document.getElementById("m-hoje").addEventListener("click", function(){ mesRef = new Date(); renderTudo(); });
@@ -3065,10 +3066,12 @@ function rolarSemana(){
   if(rolagemSemana.semana === chave){ wrap.scrollLeft = rolagemSemana.x; return; }
   var hoje = wrap.querySelector(".gh.today");
   wrap.scrollLeft = 0;
-  /* no celular cabem cinco dias: segunda a sexta de uma vez; no fim de semana, desliza até hoje */
+  /* a semana começa no domingo; no celular cabem cinco dias: abre na segunda para mostrar
+     segunda a sexta de uma vez, e no sábado desliza até hoje */
   var diaHoje = new Date().getDay();
-  if(hoje && window.innerWidth <= 700 && (diaHoje === 0 || diaHoje === 6))
-    wrap.scrollLeft = hoje.getBoundingClientRect().left - wrap.getBoundingClientRect().left - wrap.clientLeft - 34;
+  var alvo = (hoje && diaHoje === 6) ? hoje : (diaHoje === 0 && hoje ? null : (wrap.querySelectorAll(".gh .d")[1] || {}).parentNode);
+  if(alvo && window.innerWidth <= 700)
+    wrap.scrollLeft = alvo.getBoundingClientRect().left - wrap.getBoundingClientRect().left - wrap.clientLeft - 34;
   if(wrap.clientWidth > 0){ rolagemSemana.semana = chave; rolagemSemana.x = wrap.scrollLeft; }
 }
 var renderSemanaSemRolagem = renderSemana;
