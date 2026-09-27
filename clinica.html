@@ -421,10 +421,19 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
   .stats{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%}
   .stat{min-width:0}
   /* a semana mostra 3 dias por vez e desliza para o lado; as horas ficam paradas à esquerda */
-  .gridwrap{scroll-snap-type:x mandatory; scroll-padding-left:44px}
-  .grid{grid-template-columns:44px repeat(7, calc((100vw - 26px - 44px) / 3)); min-width:max-content}
-  .gh{scroll-snap-align:start}
-  .hour{position:sticky; left:0; z-index:2; padding:0 6px}
+  .gridwrap{scroll-snap-type:x mandatory; scroll-padding-left:34px}
+  .grid{grid-template-columns:34px repeat(7, calc((100vw - 26px - 34px) / 5)); min-width:max-content}
+  .gh{scroll-snap-align:start; padding:6px 2px}
+  .gh .d{font-size:9.5px; letter-spacing:.04em}
+  .gh .n{font-size:15px}
+  .hour{position:sticky; left:0; z-index:2; padding:0 4px; font-size:10.5px}
+  .cell{padding:0 3px; height:48px}
+  .cell .nm{font-size:10.5px; line-height:1.15; white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:break-word}
+  .cell .lab{font-size:9px}
+  .cell .saiu{font-size:9px}
+  /* no celular a cor e a hachura já dizem o horário de atendimento; a palavra não cabe na coluna */
+  .cell.reservado .nm, .cell.reservado .lab, .cell.divulgado .nm{display:none}
+  .cell.divulgado .lab{font-size:9px}
   .gh.corner{position:sticky; left:0; z-index:4}
   input,select,textarea{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
 }
@@ -1097,22 +1106,22 @@ function estadoCelula(dia, hora, data){
      mesmo quando a hora é o horário fixo de alguém que não vem */
   if(entra){
     var pv = acharPaciente(entra.pacienteId);
-    if(pv) return {classe:"sessao", extra:true, nome:nomeCurto(pv),
+    if(pv) return {classe:"sessao", extra:true, nome:nomeGrade(pv),
       etiqueta:(entra.de ? "← Veio de "+quando(entra.de) : "Encaixe nesta data"),
       /* quem perdeu a hora continua escrito, riscado: a célula conta a troca inteira */
-      saiu: (p && saiuDaHora(ex)) ? nomeCurto(p) : "",
+      saiu: (p && saiuDaHora(ex)) ? nomeGrade(p) : "",
       saiuPara: (p && ex && ex.para) ? quando(ex.para) : "",
       paciente:pv, origem:"extra"};
   }
   if(p){
     var estado = ex ? ex.tipo : "sessao";
-    if(estado==="falta")     return {classe:"falta", nome:nomeCurto(p), etiqueta:"Faltou", paciente:p, origem:"fixo"};
-    if(estado==="remarcada") return {classe:"remarcada", nome:nomeCurto(p),
+    if(estado==="falta")     return {classe:"falta", nome:nomeGrade(p), etiqueta:"Faltou", paciente:p, origem:"fixo"};
+    if(estado==="remarcada") return {classe:"remarcada", nome:nomeGrade(p),
       etiqueta:(ex && ex.para ? "→ Foi para "+quando(ex.para) : "→ Remarcada"), paciente:p, origem:"fixo"};
     /* "não haverá sessão nesta data" não deixa a hora em branco: ela volta a ser o
        horário de atendimento que já era, em vez de virar um buraco no meio do bloco */
     if(estado!=="cancelada")
-      return {classe:"sessao", nome:nomeCurto(p), etiqueta:"", paciente:p, origem:"fixo"};
+      return {classe:"sessao", nome:nomeGrade(p), etiqueta:"", paciente:p, origem:"fixo"};
   }
   /* as duas linhas da célula dizem o estado inteiro: "Atendimento" em cima, divulgado ou não embaixo */
   var bloco = dados.blocos[dia+"-"+hora];
@@ -1132,6 +1141,22 @@ function quando(q){
   return DIAS_CURTO[d.getDay()].toLowerCase()+" "+String(q.hora).padStart(2,"0")+"h";
 }
 /* na grade cabe o nome como ele aparece na planilha: um nome, ou dois quando precisa distinguir */
+/* Na grade aparece primeiro nome e último sobrenome. O nome completo vem do Registro da planilha
+   (nomeCompleto, gravado na leitura) ou, para quem foi lido antes disso, do nome que a planilha
+   põe nos recibos daquele prontuário. Sem nenhum dos dois, fica o nome curto da grade. */
+var cacheNomes = null;
+function nomeCompletoDe(p){
+  if(p.nomeCompleto) return p.nomeCompleto;
+  if(!cacheNomes){
+    cacheNomes = {};
+    (dados.pagamentos || []).forEach(function(g){ if(g.codigo && g.nomePlanilha) cacheNomes[g.codigo] = g.nomePlanilha; });
+  }
+  return cacheNomes[p.codigo] || p.nome || "";
+}
+function nomeGrade(p){
+  var partes = nomeCompletoDe(p).trim().split(/\s+/);
+  return partes.length <= 1 ? partes.join("") : partes[0] + " " + partes[partes.length - 1];
+}
 function nomeCurto(p){
   var partes = (p.nome||"").trim().split(/\s+/);
   return partes.length<=2 ? partes.join(" ") : partes[0]+" "+partes[1];
@@ -2726,7 +2751,7 @@ function montarLeitura(celulas, preenchimentos, registro){
     if(r.modalidade.indexOf("Mensal") === 0) cobranca = "mensal";
     else if(r.modalidade.indexOf("Quinzenal") === 0){ cobranca = "quinzenal"; freq = "quinzenal"; }
     pacientes.push({
-      codigo: r.codigo, nome: escolhida.nome, freq: freq, cobranca: cobranca,
+      codigo: r.codigo, nome: escolhida.nome, nomeCompleto: r.nome, freq: freq, cobranca: cobranca,
       valor: r.valor, dia: escolhida.dia, hora: escolhida.hora,
       status: r.status, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || ""
     });
@@ -2898,7 +2923,7 @@ function mostrarView(v){
 }
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
-  atrasoCache = null; cacheMes = {};
+  atrasoCache = null; cacheMes = {}; cacheNomes = null;
   renderSemana(); renderMes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos();
 }
 
@@ -3040,7 +3065,10 @@ function rolarSemana(){
   if(rolagemSemana.semana === chave){ wrap.scrollLeft = rolagemSemana.x; return; }
   var hoje = wrap.querySelector(".gh.today");
   wrap.scrollLeft = 0;
-  if(hoje && window.innerWidth <= 700) wrap.scrollLeft = hoje.getBoundingClientRect().left - wrap.getBoundingClientRect().left - wrap.clientLeft - 44;
+  /* no celular cabem cinco dias: segunda a sexta de uma vez; no fim de semana, desliza até hoje */
+  var diaHoje = new Date().getDay();
+  if(hoje && window.innerWidth <= 700 && (diaHoje === 0 || diaHoje === 6))
+    wrap.scrollLeft = hoje.getBoundingClientRect().left - wrap.getBoundingClientRect().left - wrap.clientLeft - 34;
   if(wrap.clientWidth > 0){ rolagemSemana.semana = chave; rolagemSemana.x = wrap.scrollLeft; }
 }
 var renderSemanaSemRolagem = renderSemana;
