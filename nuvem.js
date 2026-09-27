@@ -14,7 +14,7 @@ var Nuvem = (function(){
   var CLIENT_ID = "185782688251-p74qi2gguclcosk33f8p653dmb1dtt2a.apps.googleusercontent.com";
   var ESCOPO = "https://www.googleapis.com/auth/drive.file";
   var PROJETO = "185782688251";   // número do projeto no Google Cloud: o Picker exige
-  var CHAVE_PICKER = "";          // chave de navegador do Picker, restrita a este site
+  var CHAVE_PICKER = "AIzaSyC81ALE3SlR_FcJlTwgF8f7kTYqrf-k9vQ";   // chave de navegador do Picker: só a API do Picker, só neste site e no localhost:8000
   var CH_TOKEN = "controle-unico-token";   // só na sessão da aba
 
   var token = null, expira = 0, cliente = null, iniciado = false, saindo = false;

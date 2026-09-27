@@ -203,7 +203,8 @@ function contasClinica(){
   const w = janelaClinica();
   // Regra de Matheus (27/09/2026): o que entrou no mês é tudo; o que falta receber compara
   // só pacientes com pacientes. Empréstimos e acertos vêm da planilha com origem Pendência. ou Extra.
-  const dePaciente = g => !g.origem || g.origem === "Prática Clínica.";
+  // no caderno da Clínica a origem do dinheiro fica em "receita" ("origem" diz de onde veio o registro)
+  const dePaciente = g => !g.receita || g.receita === "Prática Clínica.";
   if (w) {
     const mes = new Date(ref.getFullYear(), ref.getMonth(), 1);
     const n = w.numerosDoMes(mes), doMes = w.pagamentosDoMes(mes);
