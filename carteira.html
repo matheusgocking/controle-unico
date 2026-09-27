@@ -1,0 +1,1922 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f4f6f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141a" media="(prefers-color-scheme: dark)">
+<title>Carteira · Controle Único</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light dark;
+  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
+  --accent:#7030a0; --accent-ink:#ffffff; --accent-soft:#f0e5fb; --area:#7030a0; --aporte:#6f7a8a;
+  --pos:#1f6b4f; --neg:#a3241f; --warn:#8a4b12; --warn-soft:#fbe8d4;
+  /* cores das redes: as mesmas em todo o site, tiradas dos logotipos */
+  --n-binance:#c99400; --n-bsc:#d9731a; --n-base:#0052ff; --n-pulsechain:#d6249f; --n-solana:#0fa37f; --n-banco:#6f7a8a; --n-fora:#8a94a3;
+  --font:"IBM Plex Sans",system-ui,sans-serif; --radius:8px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140; --area:#c8a4f2; --aporte:#818d9d;
+  --pos:#7fd3ac; --neg:#f2a09b; --warn:#efb87c; --warn-soft:#3f2c15;
+  --n-binance:#f0b90b; --n-bsc:#f5a05a; --n-base:#5b8cff; --n-pulsechain:#f062c0; --n-solana:#3ddc97; --n-banco:#aab6c6; --n-fora:#818d9d;
+}}
+:root[data-theme="dark"]{
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140; --area:#c8a4f2; --aporte:#818d9d;
+  --pos:#7fd3ac; --neg:#f2a09b; --warn:#efb87c; --warn-soft:#3f2c15;
+  --n-binance:#f0b90b; --n-bsc:#f5a05a; --n-base:#5b8cff; --n-pulsechain:#f062c0; --n-solana:#3ddc97; --n-banco:#aab6c6; --n-fora:#818d9d;
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--text); font:15px/1.5 var(--font); -webkit-font-smoothing:antialiased; }
+button,select,input,textarea{ font:inherit; color:inherit; }
+.wrap{ max-width:1200px; margin:0 auto; padding:20px 24px 56px; }
+.num{ font-variant-numeric:tabular-nums; font-weight:600; }
+.privado .v{ filter:blur(7px); }
+.pos{ color:var(--pos); } .neg{ color:var(--neg); }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+header{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+header h1{ margin:0; font-size:21px; font-weight:700; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; }
+.marca{ width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 45%, var(--n-pulsechain))); position:relative; box-shadow:0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent); }
+.marca::after{ content:""; position:absolute; inset:8px; border-radius:50%; border:2.5px solid var(--surface); border-right-color:transparent; }
+/* alertas */
+.sino-caixa{ position:relative; }
+.sino{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; }
+.sino .conta{ min-width:18px; height:18px; border-radius:9px; background:var(--warn); color:var(--surface); font-size:11px; font-weight:700; display:inline-grid; place-items:center; padding:0 5px; }
+.sino .conta.urgente{ background:var(--neg); }
+.rot-sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+.painel-alertas{ position:absolute; right:0; top:calc(100% + 8px); width:min(380px, 92vw); max-height:70vh; overflow:auto; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.25); padding:10px; z-index:20; }
+.aviso-item{ display:grid; grid-template-columns:10px 1fr; gap:4px 10px; padding:10px; border-radius:8px; cursor:pointer; }
+.aviso-item:hover{ background:var(--surface-2); }
+.aviso-item i{ width:10px; height:10px; border-radius:50%; margin-top:5px; }
+.aviso-item.urgente i{ background:var(--neg); } .aviso-item.atencao i{ background:var(--warn); } .aviso-item.info i{ background:var(--faint); }
+.aviso-item b{ font-size:14px; } .aviso-item small{ grid-column:2; color:var(--muted); font-size:12px; }
+.painel-alertas .rodape{ border-top:1px solid var(--line); margin-top:6px; padding:10px 10px 4px; font-size:12px; color:var(--faint); display:flex; gap:8px; align-items:center; justify-content:space-between; }
+.status{ color:var(--faint); font-size:13px; }
+.status.trab::before{ content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent); margin-right:6px; animation:pulso 1s infinite alternate; }
+@keyframes pulso{ from{opacity:.3} to{opacity:1} }
+.acoes{ margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.btn{ border:1px solid var(--line); background:var(--surface); border-radius:var(--radius); padding:7px 12px; cursor:pointer; font-size:14px; }
+.btn:hover{ border-color:var(--faint); }
+.btn:disabled{ opacity:.55; cursor:default; }
+.seg{ display:inline-flex; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--surface); }
+.seg button{ border:0; background:none; padding:6px 11px; cursor:pointer; font-size:13px; color:var(--muted); }
+.seg button[aria-pressed="true"]{ background:var(--accent-soft); color:var(--text); font-weight:600; }
+.painel{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; }
+.painel h2{ margin:0 0 12px; font-size:16px; font-weight:700; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.painel h2 .dir{ margin-left:auto; display:flex; gap:10px; align-items:center; font-weight:400; flex-wrap:wrap; }
+.nota{ font-size:12px; color:var(--faint); }
+.vazio{ color:var(--muted); font-size:14px; padding:6px 0; }
+
+/* herói */
+.cabeca{ display:flex; gap:36px; align-items:flex-end; flex-wrap:wrap; }
+.total{ font-size:52px; line-height:1; letter-spacing:-.02em; font-weight:700; font-variant-numeric:tabular-nums; }
+.sub{ color:var(--muted); font-size:14px; margin-top:6px; }
+.par{ display:flex; gap:30px; flex-wrap:wrap; }
+.par span{ display:block; color:var(--muted); font-size:13px; }
+.par b{ font-size:21px; }
+.ctrl{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:18px 0 6px; }
+.legenda{ display:flex; gap:14px; margin-left:auto; font-size:13px; color:var(--muted); flex-wrap:wrap; }
+.legenda i{ display:inline-block; width:14px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px; }
+.grafico{ position:relative; }
+svg.g{ display:block; width:100%; height:300px; }
+.eixo text{ fill:var(--faint); font-size:12px; font-family:var(--font); }
+.grade{ stroke:var(--line); stroke-width:1; }
+.dica{ position:absolute; pointer-events:none; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius); padding:8px 10px; font-size:13px; min-width:180px; opacity:0; transition:opacity .12s; z-index:2; }
+.dica.on{ opacity:1; }
+.dica div{ display:flex; justify-content:space-between; gap:14px; }
+
+.linha2{ display:grid; grid-template-columns:1fr 1.7fr; gap:18px; margin-top:18px; }
+.linha3{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+.cheia{ margin-top:18px; }
+.onde{ list-style:none; margin:0; padding:0; }
+.onde li{ padding:10px 0; border-top:1px solid var(--line); }
+.onde li:first-child{ border-top:0; }
+.onde .l1{ display:flex; justify-content:space-between; gap:10px; }
+.onde .l2{ color:var(--muted); font-size:13px; }
+.barra{ height:6px; background:var(--surface-2); border-radius:3px; margin-top:6px; overflow:hidden; }
+.barra i{ display:block; height:100%; border-radius:3px; }
+table{ width:100%; border-collapse:collapse; font-size:14px; }
+th{ text-align:right; color:var(--muted); font-weight:500; font-size:13px; padding:0 8px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+th:first-child, td:first-child{ text-align:left; padding-left:0; }
+td{ text-align:right; padding:9px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+td.num{ white-space:nowrap; }
+tr.grupo td{ text-align:left; color:var(--muted); font-size:13px; padding-top:16px; border-bottom:0; }
+td small{ display:block; color:var(--faint); font-size:12px; font-weight:400; }
+.selo{ display:inline-block; font-size:11px; padding:1px 6px; border-radius:10px; background:var(--warn-soft); color:var(--warn); margin-left:6px; font-weight:500; vertical-align:middle; }
+.peso{ display:inline-block; width:48px; height:5px; background:var(--surface-2); border-radius:3px; vertical-align:middle; margin-left:8px; overflow:hidden; }
+.peso i{ display:block; height:100%; background:var(--accent); }
+label.chk{ font-size:13px; color:var(--muted); display:inline-flex; gap:6px; align-items:center; cursor:pointer; }
+.lista{ list-style:none; margin:0; padding:0; }
+.lista > li{ padding:10px 0; border-top:1px solid var(--line); }
+.lista > li:first-child{ border-top:0; }
+.lin{ display:flex; justify-content:space-between; gap:12px; }
+.lin .d{ color:var(--faint); font-size:13px; white-space:nowrap; }
+.aviso{ padding:10px 12px; border-left:3px solid var(--warn); background:var(--warn-soft); border-radius:0 var(--radius) var(--radius) 0; margin-bottom:8px; font-size:14px; }
+.aviso small{ display:block; color:var(--muted); }
+.diario li{ display:grid; grid-template-columns:88px 1fr; gap:4px 14px; }
+.diario .d{ color:var(--faint); font-size:13px; padding-top:2px; }
+.diario .depois{ font-size:13px; color:var(--muted); }
+.anotar{ border:0; background:none; color:var(--faint); font-size:12px; padding:2px 0; margin-top:4px; cursor:pointer; }
+.anotar:hover{ color:var(--accent); }
+.diario textarea{ width:100%; min-height:34px; resize:vertical; border:1px solid var(--line); background:var(--surface-2); border-radius:6px; padding:6px 8px; font-size:13px; margin-top:6px; }
+.diario .rede{ color:var(--faint); font-size:12px; }
+select.cat{ font-size:12px; font-weight:600; padding:1px 4px; margin-right:8px; border-radius:10px; border:1px solid var(--line); background:var(--accent-soft); color:var(--text); cursor:pointer; vertical-align:1px; }
+select.cat.duvida{ background:var(--warn-soft); color:var(--warn); border-color:var(--warn); }
+.mais{ margin-top:10px; }
+.drop{ border:1px dashed var(--line); border-radius:var(--radius); padding:12px; text-align:center; color:var(--muted); font-size:13px; margin-top:10px; }
+.drop.sobre{ border-color:var(--accent); background:var(--accent-soft); }
+.oculto{ display:none !important; }
+h1,h2{ text-wrap:balance; }
+.pular{ position:absolute; left:-9999px; top:8px; z-index:5; background:var(--surface); border:1px solid var(--accent); border-radius:var(--radius); padding:8px 12px; color:var(--text); }
+.pular:focus{ left:16px; }
+/* abas */
+.abas{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin:0 0 18px; overflow-x:auto; }
+.abas button{ border:0; background:none; padding:10px 14px; cursor:pointer; font-size:14px; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; }
+.abas button{ flex:none; }
+.abas button:hover{ color:var(--text); }
+.abas button[aria-selected="true"]{ color:var(--text); font-weight:600; border-bottom-color:var(--accent); }
+#cabAtivos th{ cursor:pointer; user-select:none; } #cabAtivos th:hover{ color:var(--text); }
+#cabAtivos th[aria-sort="ascending"], #cabAtivos th[aria-sort="descending"]{ color:var(--text); }
+#cabAtivos .seta{ margin-left:3px; color:var(--accent); }
+.abas .cont{ font-size:12px; color:var(--faint); margin-left:6px; font-weight:400; }
+.abas .cont.alerta{ color:var(--warn); }
+[data-aba][hidden]{ display:none !important; }
+/* variação curta ao lado do total */
+.mudou{ display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; font-size:14px; color:var(--muted); }
+.mudou b{ margin-left:4px; }
+/* rede em cada linha */
+.tag{ display:inline-flex; align-items:center; gap:5px; margin-right:8px; }
+.tag::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--c); }
+.tag:has(.ico)::before{ display:none; }
+.ico{ flex:none; display:inline-block; vertical-align:middle; border-radius:50%; }
+.gcab{ display:flex; align-items:center; gap:12px; background:var(--surface-2); border-radius:var(--radius); padding:10px 12px; margin-top:6px; }
+.gcab b{ display:block; color:var(--text); font-size:15px; } .gcab small{ color:var(--muted); font-size:12px; }
+.gcab .gval{ margin-left:auto; text-align:right; }
+tr.grupo td{ padding-left:0; padding-right:0; }
+tr.resumo td{ color:var(--muted); font-size:13px; border-bottom:0; }
+/* rosca de "Onde está" */
+.rosca{ display:grid; grid-template-columns:170px 1fr; gap:18px; align-items:center; }
+.rosca > svg{ width:170px; height:170px; display:block; }
+.rosca .centro1{ fill:var(--muted); font-size:11px; font-family:var(--font); }
+.rosca .centro2{ fill:var(--text); font-size:16px; font-weight:700; font-family:var(--font); }
+.fatia{ transition:opacity .12s; } .fatia{ cursor:pointer; } .fatia.apagada{ opacity:.25; }
+.rosca > svg:hover .fatia:not(:hover){ opacity:.45; }
+.leg-r li.clic{ cursor:pointer; border-radius:6px; } .leg-r li.clic:hover{ background:var(--surface-2); }
+.voltar{ border:0; background:none; color:var(--accent); font-size:13px; padding:0 0 6px; cursor:pointer; }
+/* botões de linha do gráfico */
+.grafico-lado{ display:grid; grid-template-columns:1fr 150px; gap:14px; align-items:start; }
+.series{ display:flex; flex-direction:column; gap:6px; padding-top:6px; }
+.series .chip{ justify-content:flex-start; }
+svg.g .selecao{ fill:var(--accent); fill-opacity:.14; stroke:var(--accent); stroke-opacity:.5; }
+#svg .alvo{ cursor:crosshair; }
+@media (max-width:700px){ .grafico-lado{ grid-template-columns:1fr; } .series{ flex-direction:row; flex-wrap:wrap; } }
+.chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:4px 11px 4px 8px; font-size:13px; color:var(--muted); cursor:pointer; }
+.chip i{ width:10px; height:10px; border-radius:50%; background:var(--c); }
+.chip[aria-pressed="true"]{ border-color:var(--c); color:var(--text); font-weight:600; background:color-mix(in srgb, var(--c) 12%, var(--surface)); }
+.chip[aria-pressed="false"] .ico, .chip[aria-pressed="false"] i{ opacity:.45; filter:grayscale(1); }
+.leg-r{ list-style:none; margin:0; padding:0; font-size:14px; }
+.leg-r li{ display:flex; gap:8px; align-items:baseline; padding:5px 0; border-top:1px solid var(--line); }
+.leg-r li:first-child{ border-top:0; }
+.leg-r i{ width:10px; height:10px; border-radius:3px; flex:none; align-self:center; }
+.leg-r .n{ flex:1; } .leg-r small{ color:var(--faint); font-size:12px; margin-left:6px; }
+/* mapa */
+.rolar{ overflow-x:auto; }
+svg.mapa{ display:block; width:100%; min-width:760px; height:auto; }
+svg.mapa text{ font-family:var(--font); fill:var(--text); }
+svg.mapa .t2{ fill:var(--muted); font-size:12px; }
+svg.mapa .caixa{ fill:var(--surface-2); stroke:var(--line); }
+svg.mapa .rot{ fill:var(--muted); font-size:12px; paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round; }
+.resumoAp{ display:flex; gap:30px; flex-wrap:wrap; margin-bottom:14px; }
+.resumoAp span{ display:block; color:var(--muted); font-size:13px; } .resumoAp b{ font-size:21px; }
+/* termômetro do mercado */
+.merc{ display:grid; grid-template-columns:230px 1fr; gap:24px; align-items:center; }
+.merc svg.gauge{ width:230px; height:140px; display:block; }
+.merc .ind{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:14px; }
+.merc .ind span{ display:block; color:var(--muted); font-size:13px; } .merc .ind b{ font-size:19px; } .merc .ind small{ display:block; font-size:12px; color:var(--faint); }
+svg.spark{ width:100%; height:44px; display:block; margin-top:6px; }
+/* quem mais rendeu */
+.rend li{ display:grid; grid-template-columns:110px 1fr 90px; gap:12px; align-items:center; }
+.rend .barraR{ position:relative; height:10px; background:var(--surface-2); border-radius:5px; }
+.rend .barraR i{ position:absolute; top:0; bottom:0; border-radius:5px; }
+.rend .barraR::after{ content:""; position:absolute; left:50%; top:-3px; bottom:-3px; width:1px; background:var(--line); }
+.rend .fatos{ grid-column:1 / -1; font-size:12px; color:var(--muted); margin-top:-4px; }
+.rend .fatos span{ margin-right:12px; }
+/* grafo */
+.caixa-grafo{ position:relative; }
+svg.grafo{ display:block; width:100%; height:auto; border-radius:var(--radius); touch-action:none; cursor:grab; user-select:none;
+  background:radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--accent) 7%, var(--surface-2)), var(--surface-2) 70%); }
+svg.grafo.pegando{ cursor:grabbing; }
+svg.grafo text{ font-family:var(--font); fill:var(--text); pointer-events:none; }
+svg.grafo .val{ fill:var(--muted); opacity:0; transition:opacity .2s; }
+svg.grafo.perto .val, svg.grafo .no.viz .val{ opacity:1; }
+svg.grafo .no{ cursor:grab; transition:opacity .2s; }
+svg.grafo .no > circle{ transition:filter .2s; }
+svg.grafo .no.viz > circle, svg.grafo .no:hover > circle{ filter:url(#brilho); }
+svg.grafo .no-moeda .rot{ fill:var(--muted); }
+svg.grafo line{ transition:opacity .2s, stroke .2s; }
+svg.grafo line.viz{ stroke:var(--accent); stroke-opacity:.9; }
+svg.grafo.foco .no:not(.viz), svg.grafo.foco line:not(.viz){ opacity:.12; }
+svg.grafo .dentro{ fill:#fff; paint-order:stroke; stroke:rgba(0,0,0,.35); stroke-width:2px; }
+svg.grafo .no-golpe .rot{ fill:var(--neg); }
+svg.grafo .no-golpe{ cursor:pointer; }
+.painel-golpe{ position:absolute; left:10px; top:10px; bottom:10px; width:min(340px, 80%); overflow:auto; background:var(--surface); border:1px solid var(--neg); border-radius:12px; padding:12px 14px; box-shadow:0 12px 32px rgba(0,0,0,.25); }
+.painel-golpe .pg-topo{ display:flex; gap:8px; align-items:center; } .painel-golpe .pg-topo b{ color:var(--neg); }
+.painel-golpe .fechar{ margin-left:auto; border:0; background:none; font-size:20px; cursor:pointer; color:var(--muted); }
+.grafo-ctrl{ position:absolute; right:10px; top:10px; display:flex; gap:4px; }
+.grafo-ctrl button{ min-width:30px; height:30px; border:1px solid var(--line); background:var(--surface); border-radius:8px; cursor:pointer; font-size:14px; color:var(--muted); padding:0 8px; }
+.grafo-ctrl button:hover{ color:var(--text); border-color:var(--faint); }
+/* fluxo em faixas */
+svg.mapa .rot-f{ paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round; }
+svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.mapa .faixa-f:hover{ stroke-opacity:.55; }
+/* por onde o dinheiro passou */
+.fluxo{ display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
+.fx-col{ background:var(--surface-2); border-radius:10px; padding:14px; }
+.fx-cab{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; } .fx-cab b{ font-size:15px; } .fx-cab .num{ font-size:15px; }
+.fx-col > .nota{ margin:2px 0 10px; }
+.fx-lin{ display:grid; grid-template-columns:1fr auto; gap:4px 10px; padding:9px 0; border-top:1px solid var(--line); }
+.fx-rota{ display:flex; align-items:center; gap:6px; font-size:13.5px; flex-wrap:wrap; } .fx-seta{ color:var(--faint); }
+.fx-barra{ grid-column:1; height:6px; background:var(--surface); border-radius:3px; overflow:hidden; } .fx-barra i{ display:block; height:100%; border-radius:3px; }
+.fx-num{ grid-column:2; grid-row:1 / span 2; text-align:right; align-self:center; } .fx-num small{ display:block; color:var(--faint); font-size:12px; }
+@media (max-width:900px){ .fluxo{ grid-template-columns:1fr; } }
+.bola{ display:inline-block; width:10px; height:10px; border-radius:50%; }
+/* posições com faixa */
+.aviso-sim{ font-size:13px; color:var(--muted); background:var(--accent-soft); border-radius:8px; padding:8px 12px; margin-bottom:10px; }
+.pos-card.sim{ border-style:dashed; border-color:var(--accent); }
+.pos-card{ border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-top:12px; }
+.pos-card:first-child{ margin-top:0; }
+.pos-card .topo{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.pos-card .topo b{ font-size:16px; }
+.pos-card .status{ font-size:12px; padding:2px 8px; border-radius:10px; font-weight:600; }
+.status.dentro{ background:color-mix(in srgb, var(--pos) 18%, transparent); color:var(--pos); }
+.status.fora{ background:var(--warn-soft); color:var(--warn); }
+.pos-card .nums{ display:flex; gap:26px; flex-wrap:wrap; margin:10px 0 6px; font-size:14px; }
+.pos-card .nums span{ display:block; color:var(--muted); font-size:12px; }
+.faixa{ position:relative; height:28px; margin:8px 0 2px; }
+.faixa .trilho{ position:absolute; left:0; right:0; top:12px; height:4px; background:var(--surface-2); border-radius:2px; }
+.faixa .dentro{ position:absolute; top:8px; height:12px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:6px; }
+.faixa .agora{ position:absolute; top:2px; width:2px; height:24px; background:var(--text); }
+.faixa-rot{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
+@media (max-width:700px){ .merc{ grid-template-columns:1fr; justify-items:center; } .merc .ind{ width:100%; } }
+@media (max-width:600px){ .rosca{ grid-template-columns:1fr; justify-items:center; } .leg-r{ width:100%; } }
+@media (max-width:960px){ .linha2,.linha3{ grid-template-columns:1fr; } .total{ font-size:42px; } }
+@media (max-width:600px){ .wrap{ padding:14px 16px 44px; } .acoes{ margin-left:0; } .total{ font-size:36px; } .ocm{ display:none; } .diario li{ grid-template-columns:1fr; } }
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+.nuvem{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin:0;opacity:.9}
+.nuvem-ponto{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.5;flex:none}
+.nuvem-ponto.ok{background:#2f9e5b;opacity:1} .nuvem-ponto.indo{background:#d49a1c;opacity:1} .nuvem-ponto.erro{background:#d0453a;opacity:1}
+#nuvem-acoes{display:flex;gap:6px;flex-wrap:wrap}
+.hidden{display:none !important}
+.portao{border:1px solid currentColor;border-radius:12px;padding:14px 16px;margin:12px 0;opacity:.95}
+.portao p{margin:0 0 10px}
+</style>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="nuvem.js"></script>
+</head>
+<body>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<!-- degradês dos ícones de rede, definidos uma vez fora das abas (um degradê dentro de uma aba escondida some) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gPls" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00E0FF"/><stop offset=".5" stop-color="#8000FF"/><stop offset="1" stop-color="#FF0080"/></linearGradient>
+  <linearGradient id="gSol" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#9945FF"/><stop offset="1" stop-color="#14F195"/></linearGradient>
+</defs></svg>
+<div class="wrap">
+  <header>
+    <h1><span class="marca" aria-hidden="true"></span>Carteira Cripto</h1>
+    <span class="status" id="status" role="status" aria-live="polite">Abrindo…</span>
+    <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto">Carregando…</span>
+      <button class="btn" id="nuvem-entrar">Entrar com o Google</button><span id="nuvem-acoes"></span></p>
+    <div class="acoes">
+      <div class="sino-caixa">
+        <button class="btn sino" id="btnAlertas" aria-expanded="false" aria-controls="painelAlertas" title="Alertas"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="conta oculto" id="contaAlertas"></span><span class="rot-sr">Alertas</span></button>
+        <div class="painel-alertas" id="painelAlertas" hidden></div>
+      </div>
+      <button class="btn" id="btnAtualizar" title="Busca saldos e cotações de agora">Atualizar</button>
+      <button class="btn" id="btnHistorico" title="Relê todas as transações e refaz o gráfico. Leva alguns minutos.">Refazer histórico</button>
+      <button class="btn" id="btnCsv" title="Lê o CSV do histórico de transações exportado da Binance">Ler CSV da Binance</button>
+      <input type="file" id="arqCsv" accept=".csv,.zip,text/csv" class="oculto">
+      <button class="btn" id="btnOlho" aria-pressed="false">Esconder valores</button>
+      <div class="seg" id="moeda" aria-label="Moeda">
+        <button data-v="BRL" aria-pressed="true">R$</button><button data-v="USD">US$</button>
+      </div>
+      <div class="seg" id="tema" aria-label="Tema">
+        <button data-v="auto" aria-pressed="true">Auto</button><button data-v="light" aria-pressed="false">Claro</button><button data-v="dark" aria-pressed="false">Escuro</button>
+      </div>
+    </div>
+  </header>
+  <div class="portao" id="portao" hidden>
+    <p><b>A carteira abre depois do caderno.</b> Os endereços das suas carteiras, o histórico e as anotações
+    moram no seu Google Drive, no arquivo "Controle Único - carteira.json". Entre com o Google para abrir.</p>
+    <p>Primeira vez em que a carteira vai para o Drive? <button class="btn" id="btnInicial">Importar o arquivo inicial</button>
+      <input type="file" id="arqInicial" accept="application/json" class="oculto"></p>
+  </div>
+
+  <nav class="abas" role="tablist" aria-label="Seções" id="abas">
+    <button role="tab" data-aba="geral" aria-selected="true">Visão geral<span class="cont" id="contGeral"></span></button>
+    <button role="tab" data-aba="mapa" aria-selected="false">Mapa</button>
+    <button role="tab" data-aba="ativos" aria-selected="false">Ativos<span class="cont" id="contAtivos"></span></button>
+    <button role="tab" data-aba="aportes" aria-selected="false">Aportes<span class="cont" id="contAportes"></span></button>
+    <button role="tab" data-aba="pools" aria-selected="false">Pools<span class="cont" id="contPools"></span></button>
+    <button role="tab" data-aba="diario" aria-selected="false">Diário<span class="cont" id="contDiario"></span></button>
+  </nav>
+
+  <main id="conteudo" tabindex="-1">
+  <div data-aba="geral">
+  <section class="painel" aria-label="Patrimônio">
+    <div class="cabeca">
+      <div><div class="total v" id="total">—</div><div class="sub" id="subtotal"></div><div class="mudou" id="mudou"></div></div>
+      <div class="par">
+        <div><span id="rotPeriodo">No período</span><b class="num v" id="periodoVar">—</b></div>
+      </div>
+    </div>
+    <div class="ctrl">
+      <div class="seg" id="periodo" aria-label="Período">
+        <button data-v="7">1 semana</button><button data-v="30">1 mês</button><button data-v="90">3 meses</button><button data-v="182">6 meses</button><button data-v="365" aria-pressed="true">1 ano</button><button data-v="0">Tudo</button>
+      </div>
+      <button class="btn oculto" id="btnTirarZoom" style="font-size:13px;padding:5px 10px">Tirar zoom</button>
+    </div>
+    <div class="grafico-lado">
+      <div class="grafico"><svg class="g" id="svg" viewBox="0 0 1000 300" preserveAspectRatio="none" role="img" aria-label="Evolução do patrimônio"></svg><div class="dica" id="dica"></div></div>
+      <div class="series" id="series" role="group" aria-label="Linhas do gráfico"></div>
+    </div>
+    <div class="nota">Passe o mouse para ver cada dia; arraste sobre o gráfico para dar zoom num trecho. Ligue e desligue as linhas à direita. O gráfico com os aportes está na aba Aportes.</div>
+  </section>
+
+  <div class="linha3">
+    <section class="painel" aria-label="Desde a sua última visita"><h2>Desde a sua última visita</h2><div id="visita"></div></section>
+    <section class="painel" aria-label="Onde está"><h2>Onde está</h2><div id="onde"></div></section>
+  </div>
+  <section class="painel cheia" aria-label="Termômetro do mercado"><h2>Termômetro do mercado</h2><div id="mercado"></div></section>
+  <section class="painel cheia" aria-label="Precisa da sua atenção"><h2>Precisa da sua atenção</h2><div id="pendencias"></div>
+    <div class="drop" id="drop">Arraste aqui o CSV exportado da Binance para atualizar os dados da corretora.</div></section>
+  </div>
+
+  <div data-aba="mapa" hidden>
+    <section class="painel" aria-label="Onde está o seu dinheiro"><h2>Onde está o seu dinheiro agora</h2>
+      <div class="caixa-grafo"><svg class="grafo" id="mapaGrafo" viewBox="0 0 1000 620" role="img" aria-label="Grafo das carteiras, redes e moedas"></svg>
+        <div class="grafo-ctrl" id="grafoCtrl"><button data-z="mais" title="Aproximar" aria-label="Aproximar">+</button><button data-z="menos" title="Afastar" aria-label="Afastar">−</button><button data-z="centro" title="Enquadrar tudo" aria-label="Enquadrar tudo">⤢</button><button data-z="reorganizar" title="Reorganizar do zero">Reorganizar</button></div>
+        <div class="painel-golpe" id="painelGolpe" hidden></div></div>
+      <div class="nota" style="margin-top:8px">Arraste as bolhas para organizar (a posição fica salva), arraste o fundo para mover a vista e use a roda do mouse para o zoom; de perto aparecem os valores. O tamanho de cada bolha acompanha o valor. Moedas abaixo de R$ 10 entram em “outras”.</div>
+    </section>
+    <section class="painel cheia" aria-label="Por onde o dinheiro passou"><h2>Por onde o dinheiro passou</h2>
+      <div class="fluxo" id="fluxo"></div>
+      <div class="nota" style="margin-top:10px">Soma de todas as transferências desde 2021, pelo valor do dia de cada uma. Trocas, pools e tokens-golpe ficam de fora.</div>
+    </section>
+  </div>
+
+  <div data-aba="aportes" hidden>
+    <section class="painel" aria-label="Aportes">
+      <h2>Aportes</h2>
+      <div class="resumoAp" id="resumoAp"></div>
+      <div class="ctrl" style="margin-top:0"><div class="legenda" id="legendaAp" style="margin-left:0"></div></div>
+      <div class="grafico"><svg class="g" id="svgAp" viewBox="0 0 1000 300" preserveAspectRatio="none" role="img" aria-label="Patrimônio e total aportado desde o início"></svg><div class="dica" id="dicaAp"></div></div>
+      <div class="nota">O total aportado são os depósitos em reais na Binance, a única entrada de dinheiro novo. Cada ponto na linha tracejada é um aporte.</div>
+    </section>
+    <section class="painel cheia" aria-label="Lista de aportes"><h2>Todos os aportes</h2><ul class="lista" id="listaAp"></ul></section>
+  </div>
+
+  <div data-aba="ativos" hidden>
+    <section class="painel" aria-label="Ativos">
+      <h2>Ativos<span class="dir">
+        <label class="chk"><input type="checkbox" id="pequenos" checked> Esconder abaixo de R$ 10</label>
+        <span class="seg" id="agrupar"><button data-v="ativo" aria-pressed="true">Por ativo</button><button data-v="carteira">Por carteira</button></span>
+      </span></h2>
+      <div class="resumoAp" id="resumoAtivos"></div>
+      <table><thead id="cabAtivos"><tr><th data-col="ativo">Ativo<span class="seta"></span></th><th class="ocm" data-col="q">Quantidade<span class="seta"></span></th><th class="ocm" data-col="avg">Preço médio<span class="seta"></span></th><th class="ocm" data-col="p">Preço<span class="seta"></span></th><th data-col="d1">24 h<span class="seta"></span></th><th data-col="v">Valor<span class="seta"></span></th><th data-col="res">Resultado<span class="seta"></span></th><th data-col="roi" title="Retorno sobre tudo o que a moeda custou, contando o que as vendas já renderam">ROI<span class="seta"></span></th><th class="ocm" data-col="peso">Peso<span class="seta"></span></th></tr></thead><tbody id="ativos"></tbody></table>
+      <div class="nota" style="margin-top:8px">Preço médio e resultado contam desde que a moeda entrou na carteira, pelo preço daquele dia. Transferências entre as suas carteiras não mudam o preço médio. A coluna 24 h compara o preço de agora com o fechamento de ontem.</div>
+    </section>
+    <section class="painel cheia" aria-label="Quem mais rendeu">
+      <h2>Quem mais rendeu<span class="dir"><span class="seg" id="periodoRend"><button data-v="7">7 dias</button><button data-v="30" aria-pressed="true">30 dias</button><button data-v="90">90 dias</button><button data-v="365">1 ano</button></span></span></h2>
+      <div id="rendimento"></div>
+      <div class="nota" style="margin-top:10px">Variação do preço de cada moeda que você tem hoje, com os fatos que costumam pesar numa decisão de venda: lucro sobre o seu preço médio, peso na carteira e liquidez. O site mostra os fatos; não recomenda comprar nem vender.</div>
+    </section>
+    <section class="painel cheia" aria-label="Risco de liquidez"><h2>Risco de liquidez</h2><div id="liquidez"></div></section>
+  </div>
+
+  <div data-aba="pools" hidden>
+    <section class="painel" aria-label="Posições com faixa"><h2>Posições com faixa de preço</h2><div id="posicoes"></div></section>
+    <section class="painel cheia" aria-label="Pools de liquidez"><h2>Pools de liquidez</h2><div id="pools"></div></section>
+  </div>
+
+  <div data-aba="diario" hidden>
+  <section class="painel" aria-label="Diário de decisões">
+    <h2>Diário de decisões<span class="dir">
+      <span class="seg" id="filtroDiario"><button data-v="todos" aria-pressed="true">Tudo</button><button data-v="troca">Trocas</button><button data-v="aporte">Aportes</button><button data-v="mov">Envios e recebimentos</button><button data-v="nota">Com anotação</button><button data-v="duvida">A classificar</button></span>
+    </span></h2>
+    <ul class="lista diario" id="diario"></ul>
+    <button class="btn mais oculto" id="btnMais">Mostrar mais</button>
+    <div class="nota" style="margin-top:10px">Anote por que fez cada movimento. Nas trocas, o site compara hoje o que você recebeu com o que teria se tivesse ficado com o que deu. <button class="btn" id="btnBackup" style="margin-left:8px">Salvar anotações num arquivo</button> <button class="btn" id="btnRestaurar">Restaurar anotações</button><input type="file" id="arqBackup" accept=".json" class="oculto"></div>
+  </section>
+  </div>
+  </main>
+</div>
+
+<script>
+/* Controle Único: os dados pessoais da carteira (endereços, histórico da Solana, extrato da
+   Binance, contratos classificados e as anotações do Diário) moram no caderno
+   "Controle Único - carteira.json", no Google Drive. Este arquivo é público e não traz nenhum. */
+var CARTEIRA_CACHE = "controle-unico-carteira-cache";
+var CARTEIRA_DADOS = null;
+try { CARTEIRA_DADOS = JSON.parse(localStorage.getItem(CARTEIRA_CACHE)); } catch(e){}
+if (CARTEIRA_DADOS) {
+  /* o caderno manda: as anotações e o CSV guardados soltos neste navegador seguem ele */
+  try {
+    localStorage.setItem("cripto-v1-diario", JSON.stringify(CARTEIRA_DADOS.diario || {}));
+    localStorage.setItem("cripto-v1-classe", JSON.stringify(CARTEIRA_DADOS.classe || {}));
+    localStorage.removeItem("cripto-v1-binance");
+  } catch(e){}
+}
+function aoGravarCarteira(k, v){
+  var campo = {"cripto-v1-diario":"diario", "cripto-v1-classe":"classe", "cripto-v1-binance":"binanceCsv"}[k];
+  if (!campo || !CARTEIRA_DADOS) return;
+  CARTEIRA_DADOS[campo] = v;
+  CARTEIRA_DADOS.atualizadoEm = new Date().toISOString();
+  try { localStorage.setItem(CARTEIRA_CACHE, JSON.stringify(CARTEIRA_DADOS)); } catch(e){}
+  if (window.cadernoCarteira) cadernoCarteira.mudou();
+}
+</script>
+<script>
+'use strict';
+/* ================= configuração ================= */
+const EU_EVM = ((CARTEIRA_DADOS && CARTEIRA_DADOS.enderecos && CARTEIRA_DADOS.enderecos.evm) || '').toLowerCase();
+const EU_SOL = (CARTEIRA_DADOS && CARTEIRA_DADOS.enderecos && CARTEIRA_DADOS.enderecos.sol) || '';
+const ZERO = '0x0000000000000000000000000000000000000000';
+const REDES = {
+  binance:    { nome:'Binance',    carteira:'Corretora' },
+  base:       { nome:'Base',       carteira:'MetaMask / Rabby', api:'https://base.blockscout.com/api', nativo:'ETH', gt:'base' },
+  pulsechain: { nome:'PulseChain', carteira:'MetaMask / Rabby', api:'https://api.scan.pulsechain.com/api', rpc:'https://rpc.pulsechain.com', nativo:'PLS', gt:'pulsechain' },
+  solana:     { nome:'Solana',     carteira:'Phantom', rpc:'https://solana-rpc.publicnode.com', nativo:'SOL' },
+  bsc:        { nome:'BNB Chain',  carteira:'MetaMask / Rabby', rpc:'https://bsc-dataseed.binance.org', nativo:'BNB', gt:'bsc' },
+};
+// tokens da BNB Chain lidos pelo saldo (não há histórico gratuito para descobri-los sozinho); conferidos na Zerion e no DeBank em 24/09/2026
+// contratos com que a carteira falou, identificados no explorador de cada rede em 24/09/2026, para classificar o diário
+// endereço → [protocolo, categoria quando sai dinheiro, categoria quando entra, certeza]
+const CONTRATOS = { pulsechain:{}, base:{} };
+((CARTEIRA_DADOS && CARTEIRA_DADOS.contratos) || []).forEach(([r, a, protocolo, envio, receb, certeza]) => CONTRATOS[r][a] = { protocolo, envio, receb, certeza });
+const TOKENS_BSC = (CARTEIRA_DADOS && CARTEIRA_DADOS.tokensBsc) || {};
+const ORDEM = ['binance','base','pulsechain','solana','bsc'];
+// ícones simplificados de cada rede, desenhados aqui para funcionar sem internet
+const DIAMANTE = '<g fill="#F0B90B"><path d="M12 5.2l2.4 2.4L12 10 9.6 7.6z"/><path d="M12 14l2.4 2.4L12 18.8l-2.4-2.4z"/><path d="M5.2 12l2.4-2.4L10 12l-2.4 2.4z"/><path d="M14 12l2.4-2.4 2.4 2.4-2.4 2.4z"/><path d="M12 10.3l1.7 1.7-1.7 1.7-1.7-1.7z"/></g>';
+const ICONES = {
+  binance: `<circle cx="12" cy="12" r="12" fill="#1E2026"/>${DIAMANTE}`,
+  bsc: `<circle cx="12" cy="12" r="12" fill="#F0B90B" fill-opacity=".18"/>${DIAMANTE}`,
+  base: '<circle cx="12" cy="12" r="12" fill="#0052FF"/><path d="M12 19.2a7.2 7.2 0 1 0-7.17-7.9h9.5v1.4h-9.5A7.2 7.2 0 0 0 12 19.2z" fill="#fff"/>',
+  pulsechain: '<circle cx="12" cy="12" r="12" fill="url(#gPls)"/><path d="M4.5 12.5h3.2l1.6-4 2.6 8 2.2-6 1.2 2h4.2" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
+  solana: '<circle cx="12" cy="12" r="12" fill="#101114"/><g fill="url(#gSol)"><path d="M8 7.2h9.4l-1.6 1.7H6.4z"/><path d="M6.4 11.2h9.4l1.6 1.7H8z"/><path d="M8 15.2h9.4l-1.6 1.7H6.4z"/></g>',
+};
+const icone = (r, t = 18) => `<svg class="ico" width="${t}" height="${t}" viewBox="0 0 24 24" aria-hidden="true">${ICONES[r] || ''}</svg>`;
+const PULSEX = 'https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex';
+// grupos com fonte de preço conhecida (preço diário em reais)
+const GRUPOS = {
+  BRL:  { sim:'BRL',  nome:'Real', fixo:1 },
+  BTC:  { sim:'BTC',  nome:'Bitcoin', binance:'BTCBRL' },
+  ETH:  { sim:'ETH',  nome:'Ether (ETH e WETH)', binance:'ETHBRL' },
+  BNB:  { sim:'BNB',  nome:'BNB', binance:'BNBBRL' },
+  SOL:  { sim:'SOL',  nome:'Solana', binance:'SOLBRL' },
+  USD:  { sim:'USD',  nome:'Dólar digital (USDC, USDT, BUSD, DAI)', binance:'USDTBRL' },
+  SHIB: { sim:'SHIB', nome:'Shiba Inu', binance:'SHIBBRL' },
+  KLAY: { sim:'KLAY', nome:'Klaytn', binanceUsd:'KLAYUSDT' },
+  SUSHI:{ sim:'SUSHI',nome:'Sushi', binanceUsd:'SUSHIUSDT' },
+  PLS:  { sim:'PLS',  nome:'PulseChain (PLS e WPLS)', pulsex:'0xa1077a294dde1b09bb078844df40758a5d0f9a27' },
+};
+const MOEDA_BINANCE = { BRL:'BRL', BTC:'BTC', ETH:'ETH', BNB:'BNB', SOL:'SOL', USDC:'USD', USDT:'USD', BUSD:'USD', SHIB:'SHIB', KLAY:'KLAY', SUSHI:'SUSHI' };
+// contratos conhecidos → grupo
+const TOKENS = {
+  'pulsechain:0xa1077a294dde1b09bb078844df40758a5d0f9a27':'PLS',
+  'pulsechain:0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c':'ETH',
+  'pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07':'USD',
+  'pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305':'USD',
+  'pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f':'USD',
+  'base:0x4200000000000000000000000000000000000006':'ETH',
+  'base:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913':'USD',
+  'solana:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v':'USD',
+  'solana:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB':'USD',
+};
+// sobe quando o histórico passa a guardar algo novo; um histórico de versão antiga é refeito sozinho
+const VERSAO_HIST = 2;
+const LS = { precos:'cripto-v1-precos', hist:'cripto-v1-hist', csv:'cripto-v1-binance', diario:'cripto-v1-diario', visita:'cripto-v1-visita', tema:'cripto-v1-tema', vivo:'cripto-v1-vivo', classe:'cripto-v1-classe' };
+const lsGet = (k, d) => { try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } };
+const lsSet = (k, v) => { try{ localStorage.setItem(k, JSON.stringify(v)); if(window.aoGravarCarteira) aoGravarCarteira(k, v); return true; }catch(e){ return false; } };
+
+/* histórico da Solana gravado em 24/09/2026: vem do caderno no Drive (o servidor público não entrega o histórico a uma página) */
+const SOLANA_EVENTOS = (CARTEIRA_DADOS && CARTEIRA_DADOS.solanaEventos) || [];
+/* CSV da Binance: vem do caderno no Drive (antes ficava escrito aqui) */
+const BINANCE_CSV_INICIAL = (CARTEIRA_DADOS && CARTEIRA_DADOS.binanceCsv) || '';
+
+/* ================= utilidades ================= */
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+const dia = t => new Date(t).toISOString().slice(0,10);
+const DIA_MS = 86400000;
+const un = (v, d) => { try{ const b = BigInt(v); const s = 10n ** BigInt(d); return Number(b / s) + Number(b % s) / Number(s); }catch(e){ return Number(v) / 10**d; } };
+let ultimoGT = 0;
+async function pegar(url, opts = {}, tentativas = 5){
+  let erro;
+  for(let i = 0; i < tentativas; i++){
+    try{
+      const r = await fetch(url, opts);
+      if(r.status === 429 || r.status >= 500){ erro = new Error('HTTP ' + r.status); await esperar(2500 * (i + 1) ** 2); continue; }
+      if(!r.ok) throw new Error('HTTP ' + r.status + ' em ' + url.split('?')[0]);
+      return await r.json();
+    }catch(e){ erro = e; if(String(e.message).startsWith('HTTP 4')) throw e; await esperar(1500 * (i + 1)); }
+  }
+  throw erro;
+}
+async function gt(url){ const falta = 2300 - (Date.now() - ultimoGT); if(falta > 0) await esperar(falta); ultimoGT = Date.now(); return pegar(url, { headers:{ accept:'application/json' } }); }
+async function rpc(url, method, params){ const j = await pegar(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ jsonrpc:'2.0', id:1, method, params }) }); if(j.error) throw new Error(j.error.message); return j.result; }
+async function graph(query){ const j = await pegar(PULSEX, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ query }) }); if(j.errors) throw new Error(j.errors[0].message); return j.data; }
+function parseLinha(l){ const out = []; let cur = '', q = false; for(let i = 0; i < l.length; i++){ const c = l[i]; if(q){ if(c === '"'){ if(l[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += c; } else if(c === '"') q = true; else if(c === ','){ out.push(cur); cur = ''; } else cur += c; } out.push(cur); return out; }
+let status = (txt, trab) => { const s = document.getElementById('status'); s.textContent = txt; s.classList.toggle('trab', !!trab); };
+
+/* ================= grupos e preços ================= */
+const infoToken = {}; // chave rede:contrato → {sim, nome}
+for(const [c, t] of Object.entries(TOKENS_BSC)) infoToken['bsc:' + c] = { sim:t.sim, nome:t.nome };
+function grupoDe(e){
+  if(e.rede === 'binance') return MOEDA_BINANCE[e.k] || ('binance:' + e.k);
+  if(e.k === 'nativo') return REDES[e.rede].nativo;
+  return TOKENS[e.rede + ':' + e.k] || (e.rede + ':' + e.k);
+}
+function simDe(g){ if(GRUPOS[g]) return GRUPOS[g].sim; const i = infoToken[g]; return i ? i.sim : g.split(':').pop().slice(0,8); }
+function nomeDe(g){ if(GRUPOS[g]) return GRUPOS[g].nome; const i = infoToken[g]; return i ? i.nome : g; }
+function fontePreco(g){
+  if(GRUPOS[g]) return GRUPOS[g];
+  const [rede, addr] = g.split(':');
+  if(rede === 'pulsechain') return { pulsex: addr };
+  if(rede === 'base' || rede === 'bsc') return { gtNet:rede, addr };
+  if(rede === 'binance') return { binance: addr + 'BRL', binanceUsd: addr + 'USDT' };
+  return {};
+}
+async function klines(sym, desde){
+  const out = {}; let t = desde;
+  for(let i = 0; i < 20; i++){
+    const k = await pegar(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&startTime=${t}&limit=1000`);
+    for(const c of k) out[dia(c[0])] = +c[4];
+    if(k.length < 1000) break; t = k[k.length-1][0] + DIA_MS;
+  }
+  return out;
+}
+async function pulsexDias(addr, desdeSeg){
+  const out = {}; let gtSeg = desdeSeg - DIA_MS/1000;
+  for(let i = 0; i < 10; i++){
+    const d = await graph(`{ tokenDayDatas(first:1000, orderBy:date, orderDirection:asc, where:{token:"${addr}", date_gt:${gtSeg}}){ date priceUSD } }`);
+    const r = d.tokenDayDatas || [];
+    r.forEach(x => { const p = +x.priceUSD; if(p > 0) out[dia(x.date*1000)] = p; });
+    if(r.length < 1000) break; gtSeg = r[r.length-1].date;
+  }
+  return out;
+}
+async function gtDias(net, addr){
+  const pools = await gt(`https://api.geckoterminal.com/api/v2/networks/${net}/tokens/${addr}/pools?page=1`).catch(() => null);
+  const pool = pools && pools.data && pools.data[0] && pools.data[0].attributes.address;
+  if(!pool) return {};
+  const j = await gt(`https://api.geckoterminal.com/api/v2/networks/${net}/pools/${pool}/ohlcv/day?limit=1000&currency=usd&token=${addr}`).catch(() => null);
+  const out = {}; ((j && j.data && j.data.attributes.ohlcv_list) || []).forEach(c => out[dia(c[0]*1000)] = c[4]);
+  return out;
+}
+// cache de preços diários em reais: { g: { 'AAAA-MM-DD': preço } }
+async function atualizarPrecos(grupos, desde, aviso){
+  const cache = lsGet(LS.precos, {});
+  const hoje = dia(Date.now());
+  // relê a partir do último dia gravado, porque ele pode ter sido gravado antes de o dia fechar
+  const falta = g => { const m = cache[g]; if(!m) return desde; const ks = Object.keys(m).sort(); if(!ks.length) return desde; const ult = ks[ks.length-1]; return ult >= hoje ? null : Date.parse(ult); };
+  // dólar em reais primeiro
+  const usdDesde = falta('USD');
+  if(usdDesde != null){ aviso('cotação do dólar'); cache.USD = Object.assign(cache.USD || {}, await klines('USDTBRL', usdDesde)); }
+  const usd = cache.USD;
+  const usdEm = d => precoEm(usd, d) || 5;
+  let n = 0;
+  for(const g of grupos){
+    n++;
+    if(g === 'USD' || g === 'BRL') continue;
+    const f = fontePreco(g), desdeG = falta(g);
+    if(desdeG == null) continue;
+    aviso(`preços de ${simDe(g)} (${n}/${grupos.length})`);
+    let m = {};
+    try{
+      if(f.binance){ try{ m = await klines(f.binance, desdeG); }catch(e){ if(!f.binanceUsd) throw e; } }
+      if(!Object.keys(m).length && f.binanceUsd){ const u = await klines(f.binanceUsd, desdeG).catch(() => ({})); for(const [d,p] of Object.entries(u)) m[d] = p * usdEm(d); }
+      if(f.pulsex){ const u = await pulsexDias(f.pulsex, Math.floor(desdeG/1000)); for(const [d,p] of Object.entries(u)) m[d] = p * usdEm(d); }
+      if(f.gtNet){ const u = await gtDias(f.gtNet, f.addr); for(const [d,p] of Object.entries(u)) m[d] = p * usdEm(d); }
+    }catch(e){ console.warn('preço', g, e); }
+    cache[g] = Object.assign(cache[g] || {}, m);
+    if(!Object.keys(cache[g]).length) cache[g] = {};
+  }
+  if(!lsSet(LS.precos, cache)) console.warn('sem espaço para guardar preços');
+  return cache;
+}
+const ordCache = new WeakMap();
+function precoEm(m, d){
+  if(!m) return 0;
+  if(m[d] != null) return m[d];
+  let ks = ordCache.get(m); if(!ks){ ks = Object.keys(m).sort(); ordCache.set(m, ks); }
+  if(!ks.length) return 0;
+  if(d < ks[0]) return m[ks[0]];
+  let lo = 0, hi = ks.length - 1;
+  while(lo < hi){ const mid = (lo + hi + 1) >> 1; if(ks[mid] <= d) lo = mid; else hi = mid - 1; }
+  return m[ks[lo]];
+}
+
+/* ================= histórico de transações ================= */
+function eventosBinance(txt){
+  const linhas = txt.replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim());
+  const cab = parseLinha(linhas[0]).map(c => c.trim());
+  const col = n => cab.indexOf(n);
+  const iT = col('Tempo'), iO = col('Operação'), iM = col('Moeda'), iA = col('Alterar');
+  if(iT < 0 || iO < 0 || iM < 0 || iA < 0) throw new Error('Este arquivo não é o histórico de transações da Binance (faltam as colunas Tempo, Operação, Moeda e Alterar).');
+  const rows = linhas.slice(1).map(parseLinha).map(c => ({ t: Date.parse(c[iT].trim().replace(' ', 'T') + '-03:00'), op: c[iO].trim(), k: c[iM].trim(), q: parseFloat(c[iA]) })).filter(r => r.t && r.q);
+  rows.sort((a, b) => a.t - b.t);
+  const ev = []; let grupoAnt = null, tAnt = 0, n = 0, h = '';
+  for(const r of rows){
+    const cat = r.op === 'Deposit' ? 'dep' : r.op === 'Withdraw' ? 'saq' : 'trade';
+    if(cat !== 'trade' || grupoAnt !== 'trade' || r.t - tAnt > 2000) h = 'binance:' + r.t + ':' + (n++);
+    grupoAnt = cat; tAnt = r.t;
+    ev.push({ t:r.t, rede:'binance', h, k:r.k, q:r.q, op: cat === 'dep' ? (r.k === 'BRL' ? 'aporte' : 'deposito') : cat === 'saq' ? 'saque' : 'troca', inic: cat !== 'dep', metodo:r.op });
+  }
+  return ev;
+}
+async function historicoEvm(rede, aviso){
+  const R = REDES[rede];
+  const pag = async acao => { let todos = []; for(let p = 1; p <= 80; p++){ aviso(`${R.nome}: ${acao} (página ${p})`); await esperar(900); const j = await pegar(`${R.api}?module=account&action=${acao}&address=${EU_EVM}&sort=asc&page=${p}&offset=250`, {}, 7); const r = Array.isArray(j.result) ? j.result : []; todos = todos.concat(r); if(r.length < 250) break; } return todos; };
+  const tx = await pag('txlist'), tk = await pag('tokentx'), it = await pag('txlistinternal');
+  const inic = new Set(tx.filter(t => t.from.toLowerCase() === EU_EVM).map(t => t.hash));
+  // contrato chamado e função usada em cada transação sua, para classificar no diário
+  const chamada = {}; tx.filter(t => t.from.toLowerCase() === EU_EVM).forEach(t => chamada[t.hash] = { alvo:(t.to || '').toLowerCase(), metodo:(t.functionName || '').split('(')[0] || t.methodId || '' });
+  const ev = [];
+  for(const t of tx){
+    const tm = +t.timeStamp * 1000, from = t.from.toLowerCase(), to = (t.to || '').toLowerCase();
+    if(from === to) continue;
+    if(from === EU_EVM){
+      const fee = un(BigInt(t.gasUsed || 0) * BigInt(t.gasPrice || 0), 18);
+      if(fee) ev.push({ t:tm, rede, h:t.hash, k:'nativo', q:-fee, taxa:true });
+      if(t.isError === '0' && t.value !== '0') ev.push({ t:tm, rede, h:t.hash, k:'nativo', q:-un(t.value,18), para:to });
+    } else if(to === EU_EVM && t.isError === '0' && t.value !== '0') ev.push({ t:tm, rede, h:t.hash, k:'nativo', q:un(t.value,18), de:from });
+  }
+  for(const t of it){
+    if(t.isError && t.isError !== '0') continue;
+    const v = un(t.value || '0', 18); if(!v) continue;
+    const h = t.hash || t.transactionHash, tm = +t.timeStamp * 1000, from = (t.from || '').toLowerCase(), to = (t.to || '').toLowerCase();
+    if(to === EU_EVM && from !== EU_EVM) ev.push({ t:tm, rede, h, k:'nativo', q:v, de:from });
+    else if(from === EU_EVM && to !== EU_EVM) ev.push({ t:tm, rede, h, k:'nativo', q:-v, para:to });
+  }
+  for(const t of tk){
+    const c = t.contractAddress.toLowerCase(), d = +t.tokenDecimal || 0, v = un(t.value || '0', d);
+    const from = t.from.toLowerCase(), to = t.to.toLowerCase();
+    if(!v || from === to) continue;
+    const g = TOKENS[rede + ':' + c] || (rede + ':' + c);
+    if(!infoToken[g] && !GRUPOS[g]) infoToken[g] = { sim: (t.tokenSymbol || '?').slice(0,14), nome: (t.tokenName || '').slice(0,48) };
+    ev.push({ t:+t.timeStamp*1000, rede, h:t.hash, k:c, q: to === EU_EVM ? v : -v, de:from, para:to, lp: /(^PLP$|UNI-V2|Cake-LP|SLP)/.test(t.tokenSymbol || '') || /\bLP\b/.test(t.tokenName || '') });
+  }
+  ev.forEach(e => { e.inic = inic.has(e.h); const c = chamada[e.h]; if(c){ e.alvo = c.alvo; e.metodo = c.metodo; } });
+  return ev;
+}
+// Base: a API nova do Blockscout, que limita menos que a antiga
+const BASE_V2 = `https://base.blockscout.com/api/v2/addresses/${EU_EVM}`;
+async function historicoBase(aviso){
+  const rede = 'base';
+  const pag = async (caminho, nome) => {
+    let todos = [], q = '';
+    for(let p = 1; p <= 100; p++){
+      aviso(`Base: ${nome} (página ${p})`); await esperar(700);
+      const j = await pegar(`${BASE_V2}/${caminho}${q ? (caminho.includes('?') ? '&' : '?') + q : ''}`, {}, 7);
+      todos = todos.concat(j.items || []);
+      if(!j.next_page_params) break;
+      q = new URLSearchParams(Object.entries(j.next_page_params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString();
+    }
+    return todos;
+  };
+  const tx = await pag('transactions', 'transações'), tk = await pag('token-transfers?type=ERC-20', 'tokens'), it = await pag('internal-transactions', 'transações internas');
+  const L = x => ((x && x.hash) || '').toLowerCase();
+  const inic = new Set(tx.filter(t => L(t.from) === EU_EVM).map(t => t.hash));
+  const topo = {}; tx.forEach(t => topo[t.hash] = t);
+  const chamada = {}; tx.filter(t => L(t.from) === EU_EVM).forEach(t => chamada[t.hash] = { alvo:L(t.to), metodo:t.method || '' });
+  const ev = [];
+  for(const t of tx){
+    const tm = Date.parse(t.timestamp), from = L(t.from), to = L(t.to);
+    if(from === to) continue;
+    if(from === EU_EVM){
+      const fee = un((t.fee && t.fee.value) || '0', 18);
+      if(fee) ev.push({ t:tm, rede, h:t.hash, k:'nativo', q:-fee, taxa:true });
+      if(t.status === 'ok' && t.value !== '0') ev.push({ t:tm, rede, h:t.hash, k:'nativo', q:-un(t.value,18), para:to });
+    } else if(to === EU_EVM && t.status === 'ok' && t.value !== '0') ev.push({ t:tm, rede, h:t.hash, k:'nativo', q:un(t.value,18), de:from });
+  }
+  for(const t of it){
+    if(t.success === false) continue;
+    const v = un(t.value || '0', 18); if(!v) continue;
+    const h = t.transaction_hash, from = L(t.from), to = L(t.to), tp = topo[h];
+    if(tp && L(tp.from) === from && L(tp.to) === to && tp.value === t.value) continue; // a chamada principal já foi contada
+    if(to === EU_EVM && from !== EU_EVM) ev.push({ t:Date.parse(t.timestamp), rede, h, k:'nativo', q:v, de:from });
+    else if(from === EU_EVM && to !== EU_EVM) ev.push({ t:Date.parse(t.timestamp), rede, h, k:'nativo', q:-v, para:to });
+  }
+  for(const t of tk){
+    const tok = t.token || {}, c = (tok.address_hash || tok.address || '').toLowerCase(), d = +((t.total && t.total.decimals) || tok.decimals || 0);
+    const v = un((t.total && t.total.value) || '0', d), from = L(t.from), to = L(t.to);
+    if(!v || from === to) continue;
+    const g = TOKENS[rede + ':' + c] || (rede + ':' + c);
+    if(!infoToken[g] && !GRUPOS[g]) infoToken[g] = { sim:(tok.symbol || '?').slice(0,14), nome:(tok.name || '').slice(0,48) };
+    ev.push({ t:Date.parse(t.timestamp), rede, h:t.transaction_hash || t.tx_hash, k:c, q: to === EU_EVM ? v : -v, de:from, para:to, lp: /(UNI-V2|Cake-LP|SLP|^PLP$)/.test(tok.symbol || '') });
+  }
+  ev.forEach(e => { e.inic = inic.has(e.h); const c = chamada[e.h]; if(c){ e.alvo = c.alvo; e.metodo = c.metodo; } });
+  return ev;
+}
+// Solana: os servidores públicos não entregam o histórico a uma página local, então ele vem gravado (SOLANA_EVENTOS).
+// Movimento novo aparece como diferença entre o saldo de agora e o histórico, em "Precisa da sua atenção".
+const historicoSolana = () => SOLANA_EVENTOS.map(e => Object.assign({}, e));
+
+/* ================= pools de liquidez ================= */
+async function montarPools(ev){
+  const porPar = {};
+  for(const e of ev.filter(e => e.lp)){
+    const p = porPar[e.k] || (porPar[e.k] = { par:e.k, rede:e.rede, carteira:0, farms:{}, abertura:e.t, fechamento:null, txs:new Set(), rem:new Set() });
+    const contra = e.q > 0 ? e.de : e.para;
+    p.carteira += e.q;
+    if(e.q > 0 && contra === ZERO){ p.txs.add(e.h); p.abertura = Math.min(p.abertura, e.t); }
+    else if(e.q < 0 && (contra === e.k || contra === ZERO)){ p.txs.add(e.h); p.rem.add(e.h); p.fechamento = e.t; }
+    else p.farms[contra] = (p.farms[contra] || 0) - e.q;
+  }
+  const pools = Object.values(porPar);
+  const farmsTodos = new Set();
+  for(const p of pools){
+    p.stake = Object.values(p.farms).reduce((a, b) => a + Math.max(0, b), 0);
+    p.lpTotal = Math.max(0, p.carteira) + p.stake;
+    p.status = p.lpTotal < 1e-9 ? 'encerrada' : 'ativa';
+    Object.keys(p.farms).forEach(f => farmsTodos.add(f));
+    for(const [f, q] of Object.entries(p.farms)){
+      if(q > 1e-9 && REDES[p.rede].rpc){
+        const code = await rpc(REDES[p.rede].rpc, 'eth_getCode', [f, 'latest']).catch(() => null);
+        if(code === '0x'){ p.status = 'presa'; p.farmMorta = f; }
+      }
+    }
+  }
+  // recompensas recebidas das farms
+  const recompensas = {};
+  for(const e of ev) if(!e.lp && e.q > 0 && e.de && farmsTodos.has(e.de)){ const g = grupoDe(e); recompensas[g] = (recompensas[g] || 0) + e.q; }
+  // composição atual pelo índice da PulseX
+  const ids = pools.filter(p => p.rede === 'pulsechain').map(p => `"${p.par}"`).join(',');
+  if(ids){
+    // a PulseX tem duas versões de pools, cada uma com o seu índice
+    for(const url of [PULSEX, PULSEX + 'v2']){
+      try{
+        const r = await pegar(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ query:`{ pairs(where:{id_in:[${ids}]}){ id token0{ id symbol } token1{ id symbol } reserve0 reserve1 totalSupply reserveUSD } }` }) });
+        for(const x of (r.data && r.data.pairs) || []){ const p = porPar[x.id]; if(p && !p.nome){ p.nome = x.token0.symbol + ' / ' + x.token1.symbol; p.reserveUSD = +x.reserveUSD; p.totalSupply = +x.totalSupply; p.t0 = x.token0; p.t1 = x.token1; p.r0 = +x.reserve0; p.r1 = +x.reserve1; } }
+      }catch(e){ console.warn('pools', e); }
+    }
+  }
+  return { pools: pools.map(p => ({ par:p.par, rede:p.rede, nome:p.nome || 'LP ' + p.par.slice(0,8), abertura:p.abertura, fechamento:p.fechamento, status:p.status, lpTotal:p.lpTotal, reserveUSD:p.reserveUSD || 0, totalSupply:p.totalSupply || 0, t0:p.t0 && p.t0.symbol, t1:p.t1 && p.t1.symbol, r0:p.r0, r1:p.r1, farmMorta:p.farmMorta || null, txs:[...p.txs], rem:[...p.rem] })), recompensas, farms:[...farmsTodos] };
+}
+
+/* ================= contabilidade ================= */
+function contabilizar(ev, precos){
+  const P = (g, d) => g === 'BRL' ? 1 : precoEm(precos[g], d);
+  const txs = []; const porH = {};
+  for(const e of ev){ let x = porH[e.h]; if(!x){ x = porH[e.h] = { h:e.h, t:e.t, rede:e.rede, inic:!!e.inic, op:e.op, ev:[] }; txs.push(x); } x.ev.push(e); if(e.op === 'aporte') x.op = 'aporte'; }
+  txs.sort((a, b) => a.t - b.t);
+  const pos = {}, transito = {}, taxas = {}, caixasPool = {};
+  const P0 = g => pos[g] || (pos[g] = { q:0, custo:0, realizado:0 });
+  const entrar = (g, q, custo) => { const p = P0(g); p.q += q; p.custo += Math.max(0, custo); };
+  const sair = (g, q) => { const p = P0(g); const avg = p.q > 1e-18 ? p.custo / p.q : 0; const u = Math.min(q, Math.max(p.q, 0)); const c = avg * u; p.q -= q; p.custo = Math.max(0, p.custo - c); if(p.q < 1e-12){ p.q = Math.max(p.q, 0); if(p.q === 0) p.custo = 0; } return { custo:c, avg }; };
+  // casa envios e recebimentos entre as suas próprias carteiras (a Binance registra o saque segundos depois da chegada)
+  const liquido = x => { const net = {}; x.ev.filter(e => !e.taxa).forEach(e => net[e.g] = (net[e.g] || 0) + e.q); return Object.entries(net).filter(([g, q]) => Math.abs(q) > 1e-12); };
+  const saidas = [], entradas = [];
+  for(const x of txs){
+    const l = liquido(x); if(l.length !== 1 || x.op === 'aporte' || x.ev.some(e => e.poolTx)) continue;
+    const [g, q] = l[0];
+    if(q < 0 && (x.rede === 'binance' ? x.op === 'saque' : x.inic)) saidas.push({ x, g, q:-q, resto:-q, chegou:0 });
+    else if(q > 0 && (x.rede === 'binance' ? x.op === 'deposito' : !x.inic)) entradas.push({ x, g, q, resto:q });
+  }
+  const janela = (s, e) => { const dt = e.x.t - s.x.t; return dt >= -6 * 3600e3 && dt <= 4 * DIA_MS; };
+  const redeOk = (s, e) => e.x.rede !== s.x.rede || (s.x.rede === 'binance' && Math.abs(e.q - s.q) <= s.q * 0.001); // saque devolvido pela Binance
+  // 1) pares de quantidade parecida; 2) o que sobrar, casado por quantidade dentro da janela (pontes juntam ou dividem valores)
+  for(const s of saidas){
+    let melhor = null;
+    for(const e of entradas){ if(e.resto < e.q || e.g !== s.g || !redeOk(s, e) || !janela(s, e) || e.q > s.q * 1.0001 || e.q < s.q * 0.85) continue; if(!melhor || Math.abs(e.x.t - s.x.t) < Math.abs(melhor.x.t - s.x.t)) melhor = e; }
+    if(melhor){ s.chegou = melhor.q; s.resto = 0; melhor.resto = 0; s.destino = melhor.x.rede; }
+  }
+  for(const s of saidas){
+    if(s.resto <= 1e-12) continue;
+    for(const e of entradas.filter(e => e.resto > 1e-12 && e.g === s.g && e.x.rede !== s.x.rede && janela(s, e)).sort((a, b) => a.x.t - b.x.t)){
+      const u = Math.min(s.resto, e.resto); s.resto -= u; e.resto -= u; s.chegou += u; s.destino = s.destino || e.x.rede; if(s.resto <= 1e-12) break;
+    }
+  }
+  const mapaS = new Map(saidas.filter(s => s.chegou > 0).map(s => [s.x, s])), mapaE = new Map(entradas.filter(e => e.resto < e.q - 1e-12).map(e => [e.x, e]));
+  let aportado = 0; const mov = [];
+  for(const x of txs){
+    const d = dia(x.t);
+    for(const e of x.ev.filter(e => e.taxa)){ const q = -e.q; sair(e.g, q); taxas[e.g] = (taxas[e.g] || 0) + q * P(e.g, d); }
+    const net = {};
+    x.ev.filter(e => !e.taxa).forEach(e => net[e.g] = (net[e.g] || 0) + e.q);
+    const outs = Object.entries(net).filter(([g, q]) => q < -1e-12).map(([g, q]) => [g, -q]);
+    const ins = Object.entries(net).filter(([g, q]) => q > 1e-12);
+    let tipo = null, valOut = 0, valIn = 0;
+    const S = mapaS.get(x), E = mapaE.get(x);
+    if(S){ // transferência entre carteiras suas: não muda o preço médio
+      const { g, q } = S;
+      if(S.resto <= q * 0.15){ const perda = q - S.chegou; if(perda > 0){ sair(g, perda); taxas[g] = (taxas[g] || 0) + perda * P(g, d); } }
+      else { sair(g, S.resto); if(x.rede === 'binance'){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += S.resto; t.datas.push(x.t); } }
+      mov.push({ id:x.h, t:x.t, rede:x.rede, destino:S.destino, tipo:'transferencia', outs:[[g, q]], ins:[], valOut:q * P(g, d), valIn:0 });
+      continue;
+    }
+    if(E){ // chegada de transferência sua; só a sobra (se houver) conta como entrada nova
+      if(E.resto > 1e-12){ entrar(E.g, E.resto, E.resto * P(E.g, d)); mov.push({ id:x.h, t:x.t, rede:x.rede, tipo:'recebimento', outs:[], ins:[[E.g, E.resto]], valOut:0, valIn:E.resto * P(E.g, d) }); }
+      continue;
+    }
+    if(x.ev.some(e => e.poolTx)){
+      // entrar na pool guarda o custo das moedas; ao sair, a diferença é o resultado da pool, e as moedas voltam pelo preço do dia
+      const par = x.ev.find(e => e.poolTx).poolPar, cx = caixasPool[par] || (caixasPool[par] = { custo:0, resultado:0 });
+      valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0); valIn = ins.reduce((a, [g, q]) => a + q * P(g, d), 0);
+      outs.forEach(([g, q]) => { cx.custo += sair(g, q).custo; });
+      ins.forEach(([g, q]) => entrar(g, q, q * P(g, d)));
+      if(x.ev.some(e => e.poolRem)){ cx.resultado += valIn - cx.custo; cx.custo = 0; }
+      else cx.custo = Math.max(0, cx.custo - valIn); // sobra devolvida na entrada
+      tipo = x.ev.some(e => e.poolRem) ? 'poolSaida' : 'pool';
+      mov.push({ id:x.h, t:x.t, rede:x.rede, tipo, pool:x.ev.find(e => e.poolTx).poolTx, outs, ins, valOut, valIn });
+      continue;
+    }
+    if(x.op === 'aporte'){ tipo = 'aporte'; ins.forEach(([g, q]) => { aportado += q * P(g, d); entrar(g, q, q * P(g, d)); }); valIn = ins.reduce((a, [g, q]) => a + q * P(g, d), 0); }
+    else if(ins.length && outs.length){
+      tipo = 'troca';
+      valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0); valIn = ins.reduce((a, [g, q]) => a + q * P(g, d), 0);
+      const base = valOut || valIn;
+      outs.forEach(([g, q]) => { const pr = P(g, d); const s = sair(g, q); if(pr){ P0(g).realizado += q * pr - s.custo; P0(g).custoVendido = (P0(g).custoVendido || 0) + s.custo; } });
+      ins.forEach(([g, q]) => entrar(g, q, valIn ? base * (q * P(g, d)) / valIn : base / ins.length));
+    } else if(outs.length){
+      // saque da Binance que não chegou em nenhuma carteira sua fica registrado como pendência
+      tipo = x.rede === 'binance' ? 'saque' : 'envio'; valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0);
+      outs.forEach(([g, q]) => { sair(g, q); if(x.rede === 'binance'){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += q; t.datas.push(x.t); } });
+    } else if(ins.length){
+      tipo = x.rede === 'binance' || !x.inic ? 'recebimento' : 'resgate'; valIn = ins.reduce((a, [g, q]) => a + q * P(g, d), 0);
+      ins.forEach(([g, q]) => entrar(g, q, q * P(g, d)));
+    }
+    if(tipo) mov.push({ id:x.h, t:x.t, rede:x.rede, tipo, outs, ins, valOut, valIn });
+  }
+  // contrato chamado, função e contraparte de cada movimento, para a classificação do diário
+  mov.forEach(m => { const x = porH[m.id]; if(!x) return; const e0 = x.ev.find(e => e.alvo) || x.ev.find(e => e.metodo); if(e0){ m.alvo = e0.alvo; m.metodo = e0.metodo; } const ec = x.ev.find(e => !e.taxa && (e.q > 0 ? e.de : e.para)); if(ec) m.contra = ec.q > 0 ? ec.de : ec.para; });
+  return { pos, transito, taxas, aportado, mov, resultadoPools: Object.fromEntries(Object.entries(caixasPool).map(([p, c]) => [p, { resultado:c.resultado, aberto:c.custo }])) };
+}
+
+/* série diária de patrimônio, por rede */
+function montarSerie(ev, precos){
+  const evs = ev.filter(e => !e.excluido || e.lp).slice().sort((a, b) => a.t - b.t);
+  if(!evs.length) return [];
+  const hold = {}; ORDEM.forEach(r => hold[r] = {});
+  const emPool = {}, lpSaldo = {}; // moedas paradas em pools abertas, e o LP de cada pool
+  const inicio = Date.parse(dia(evs[0].t)), hoje = Date.parse(dia(Date.now()));
+  const serie = []; let i = 0, aporte = 0;
+  for(let t = inicio; t <= hoje; t += DIA_MS){
+    const d = dia(t);
+    while(i < evs.length && dia(evs[i].t) <= d){
+      const e = evs[i++];
+      if(e.lp){
+        const antes = lpSaldo[e.k] || 0, contra = e.q > 0 ? e.de : e.para;
+        if(e.q > 0 && contra === ZERO) lpSaldo[e.k] = antes + e.q;
+        else if(e.q < 0 && (contra === e.k || contra === ZERO)){ const depois = Math.max(0, antes + e.q), f = antes > 0 ? depois / antes : 0; const ep = emPool[e.k]; if(ep) for(const g in ep.q) ep.q[g] *= f; lpSaldo[e.k] = depois; }
+        continue;
+      }
+      hold[e.rede][e.g] = (hold[e.rede][e.g] || 0) + e.q;
+      if(e.poolPar && !e.poolPresa && e.q < 0){ const ep = emPool[e.poolPar] || (emPool[e.poolPar] = { rede:e.rede, q:{} }); ep.q[e.g] = (ep.q[e.g] || 0) - e.q; }
+      if(e.op === 'aporte' && e.g === 'BRL') aporte += e.q;
+    }
+    const redes = {}; let total = 0;
+    const pr = g => g === 'BRL' ? 1 : precoEm(precos[g], d);
+    for(const r of ORDEM){ let v = 0; for(const [g, q] of Object.entries(hold[r])){ if(q > 1e-12) v += q * pr(g); } redes[r] = v; total += v; }
+    for(const ep of Object.values(emPool)){ let v = 0; for(const [g, q] of Object.entries(ep.q)) if(q > 1e-12) v += q * pr(g); redes[ep.rede] += v; total += v; }
+    serie.push({ d, v: total, a: aporte, r: redes, usd: precoEm(precos.USD, d) || 5 });
+  }
+  return serie;
+}
+
+/* ================= montagem completa do histórico ================= */
+async function refazerHistorico(){
+  const aviso = t => status('Montando o histórico: ' + t + '…', true);
+  const csv = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
+  let ev = [];
+  if(csv) ev = ev.concat(eventosBinance(csv));
+  // se uma rede falhar, mantém o histórico anterior em vez de gravar um incompleto
+  for(const rede of ['pulsechain','base']){ try{ ev = ev.concat(rede === 'base' ? await historicoBase(aviso) : await historicoEvm(rede, aviso)); }catch(e){ console.warn(rede, e); if(HIST) throw new Error(`o servidor da ${REDES[rede].nome} não respondeu (${e.message}); mantive o histórico anterior`); avisosMontagem.push(`Não consegui ler o histórico da ${REDES[rede].nome} (${e.message}).`); } }
+  ev = ev.concat(historicoSolana());
+  aviso('pools de liquidez');
+  const { pools, recompensas, farms } = await montarPools(ev);
+  // transações de entrada e saída de pool: enquanto a pool está aberta, as moedas colocadas continuam contando no patrimônio
+  const txPool = {}, txRem = new Set(); pools.forEach(p => { p.txs.forEach(h => txPool[h] = p); p.rem.forEach(h => txRem.add(h)); });
+  ev.forEach(e => { e.g = grupoDe(e); if(e.lp) e.excluido = true; const p = txPool[e.h]; if(p && !e.taxa){ e.poolTx = p.nome; e.poolPar = p.par; e.poolPresa = p.status === 'presa'; e.poolRem = txRem.has(e.h); } });
+  // tokens-golpe: nunca movimentados por você e sem preço conhecido
+  const mexidos = new Set(ev.filter(e => e.inic && !e.excluido).map(e => e.g));
+  const golpe = new Set();
+  ev.forEach(e => { if(!e.excluido && !GRUPOS[e.g] && !mexidos.has(e.g) && e.rede !== 'binance'){ golpe.add(e.g); e.excluido = true; } });
+  const usados = [...new Set(ev.filter(e => !e.excluido).map(e => e.g))];
+  const inicio = Math.min(...ev.map(e => e.t));
+  const precos = await atualizarPrecos(usados.concat(['USD']), Date.parse(dia(inicio)), aviso);
+  aviso('calculando');
+  const conta = contabilizar(ev.filter(e => !e.excluido), precos);
+  const serie = montarSerie(ev, precos);
+  // quantidade que o histórico diz existir hoje, por rede e grupo
+  const fim = {}; ev.filter(e => !e.excluido).forEach(e => { const k = e.rede + '|' + e.g; fim[k] = (fim[k] || 0) + e.q; });
+  const hist = { versao: VERSAO_HIST, geradoEm: Date.now(), serie, pos: conta.pos, transito: conta.transito, taxas: conta.taxas, aportado: conta.aportado, mov: conta.mov.reverse(), pools, recompensas, farms, resultadoPools: conta.resultadoPools, golpe: golpe.size, golpeLista: [...golpe].map(g => ({ g, rede:g.split(':')[0], sim:simDe(g), nome:nomeDe(g) })), fim, info: infoToken, avisos: avisosMontagem.slice() };
+  if(!lsSet(LS.hist, hist)){ hist.serie = hist.serie.filter((x, i, a) => i % 2 === 0 || i === a.length - 1); lsSet(LS.hist, hist); }
+  return hist;
+}
+let avisosMontagem = [];
+
+/* ================= saldos de agora ================= */
+async function saldosAgora(hist){
+  const saldos = []; // {rede, g, q}
+  const add = (rede, g, q) => { if(q > 1e-12) saldos.push({ rede, g, q }); };
+  const erros = [];
+  // Binance: soma do CSV
+  const csv = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
+  if(csv){ const s = {}; eventosBinance(csv).forEach(e => { const g = grupoDe(e); s[g] = (s[g] || 0) + e.q; }); Object.entries(s).forEach(([g, q]) => add('binance', g, q)); }
+  for(const rede of ['pulsechain','base']){
+    const R = REDES[rede];
+    try{
+      let nativo, lista;
+      if(rede === 'base'){
+        // saldo lido direto da blockchain: a lista de saldos do Blockscout demora a atualizar
+        const RPC = 'https://mainnet.base.org';
+        nativo = BigInt(await rpc(RPC, 'eth_getBalance', [EU_EVM, 'latest'])).toString();
+        const cs = new Set(Object.keys(TOKENS).filter(k => k.startsWith('base:')).map(k => k.slice(5)));
+        if(hist) Object.keys(hist.fim || {}).forEach(k => { const g = k.split('|')[1]; if(k.startsWith('base|base:')) cs.add(g.slice(5)); });
+        const arr = [...cs], pad = EU_EVM.slice(2).padStart(64, '0');
+        const req = arr.flatMap((c, i) => [{ jsonrpc:'2.0', id:2*i, method:'eth_call', params:[{ to:c, data:'0x70a08231' + pad }, 'latest'] }, { jsonrpc:'2.0', id:2*i+1, method:'eth_call', params:[{ to:c, data:'0x313ce567' }, 'latest'] }]);
+        const porId = {};
+        for(let i = 0; i < req.length; i += 10){ // o servidor aceita até 10 consultas por lote
+          const resp = await pegar(RPC, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(req.slice(i, i + 10)) });
+          if(!Array.isArray(resp)) throw new Error('resposta inesperada da Base');
+          resp.forEach(r => porId[r.id] = r.result);
+        }
+        const big = h => h && h !== '0x' ? BigInt(h) : 0n;
+        lista = arr.map((c, i) => ({ contractAddress:c, balance: big(porId[2*i]).toString(), decimals: porId[2*i+1] && porId[2*i+1] !== '0x' ? Number(big(porId[2*i+1])) : 18, symbol:(infoToken['base:' + c] || {}).sim }));
+      } else {
+        nativo = (await pegar(`${R.api}?module=account&action=balance&address=${EU_EVM}`)).result || '0';
+        lista = (await pegar(`${R.api}?module=account&action=tokenlist&address=${EU_EVM}`)).result || [];
+      }
+      add(rede, R.nativo, un(nativo, 18));
+      for(const t of lista){
+        const c = (t.contractAddress || '').toLowerCase(), g = TOKENS[rede + ':' + c] || (rede + ':' + c);
+        if(!GRUPOS[g] && !(hist && hist.pos && hist.pos[g])) continue; // fora do histórico = golpe ou nunca usado
+        if(/(^PLP$|UNI-V2)/.test(t.symbol || '')) continue;
+        if(!infoToken[g] && !GRUPOS[g]) infoToken[g] = { sim:(t.symbol || '?').slice(0,14), nome:(t.name || '').slice(0,48) };
+        add(rede, g, un(t.balance || '0', +t.decimals || 0));
+      }
+    }catch(e){ erros.push(R.nome); if(VIVO) VIVO.saldos.filter(s => s.rede === rede).forEach(s => add(rede, s.g, s.q)); }
+  }
+  try{
+    const b = await rpc(REDES.bsc.rpc, 'eth_getBalance', [EU_EVM, 'latest']); add('bsc', 'BNB', un(BigInt(b).toString(), 18));
+    const cs = Object.keys(TOKENS_BSC), pad = EU_EVM.slice(2).padStart(64, '0');
+    if(cs.length){
+      const resp = await pegar(REDES.bsc.rpc, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(cs.map((c, i) => ({ jsonrpc:'2.0', id:i, method:'eth_call', params:[{ to:c, data:'0x70a08231' + pad }, 'latest'] }))) });
+      if(!Array.isArray(resp)) throw new Error('resposta inesperada da BNB Chain');
+      resp.forEach(r => { const c = cs[r.id]; add('bsc', 'bsc:' + c, un(r.result && r.result !== '0x' ? BigInt(r.result).toString() : '0', TOKENS_BSC[c].dec)); });
+    }
+  }catch(e){ erros.push('BNB Chain'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'bsc').forEach(s => add('bsc', s.g, s.q)); }
+  try{
+    const j = await pegar(`https://lite-api.jup.ag/ultra/v1/balances/${EU_SOL}`);
+    for(const [mint, b] of Object.entries(j || {})){ if(mint === 'SOL'){ add('solana', 'SOL', +b.uiAmount); continue; } const g = TOKENS['solana:' + mint] || ('solana:' + mint); if(!GRUPOS[g] && !(hist && hist.pos && hist.pos[g])) continue; add('solana', g, +b.uiAmount); }
+  }catch(e){ erros.push('Solana'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'solana').forEach(s => add('solana', s.g, s.q)); }
+  return { saldos, erros };
+}
+async function precosAgora(grupos){
+  const out = {}, liq = {};
+  const tick = await pegar('https://api.binance.com/api/v3/ticker/price').catch(() => []);
+  const tb = {}; (tick || []).forEach(x => tb[x.symbol] = +x.price);
+  const usd = tb.USDTBRL || 5;
+  out.BRL = 1; out.USD = usd;
+  const porRede = { pulsechain:[] };
+  for(const g of grupos){
+    if(out[g] != null) continue;
+    const f = fontePreco(g);
+    if(f.fixo) out[g] = f.fixo;
+    else if(f.binance && tb[f.binance]) out[g] = tb[f.binance];
+    else if(f.binanceUsd && tb[f.binanceUsd]) out[g] = tb[f.binanceUsd] * usd;
+    else if(f.pulsex) porRede.pulsechain.push([g, f.pulsex]);
+    else if(f.gtNet) (porRede[f.gtNet] = porRede[f.gtNet] || []).push([g, f.addr]);
+  }
+  for(const [net, lista] of Object.entries(porRede)){
+    for(let i = 0; i < lista.length; i += 30){
+      const parte = lista.slice(i, i + 30);
+      const j = await gt(`https://api.geckoterminal.com/api/v2/networks/${net}/tokens/multi/${parte.map(x => x[1]).join(',')}`).catch(() => null);
+      for(const t of (j && j.data) || []){ const a = t.attributes, par = parte.find(x => x[1] === a.address.toLowerCase()); if(par){ out[par[0]] = (+a.price_usd || 0) * usd; liq[par[0]] = +a.total_reserve_in_usd || 0; } }
+    }
+  }
+  return { precos: out, liq, usd };
+}
+
+/* ================= estado e desenho ================= */
+const est = { ordem:{ col:'v', dir:-1 }, zoom:null, series:lsGet('cripto-v1-series', ['total']), ondeRede:null, periodoRend:30, periodo:365, modo:'linha', moeda:'BRL', agrupar:'ativo', pequenos:true, filtro:'todos', limiteDiario:30 };
+let HIST = lsGet(LS.hist, null), VIVO = lsGet(LS.vivo, null), VISITA_ANT = lsGet(LS.visita, null), PRECOS = lsGet(LS.precos, {});
+if(HIST && HIST.info) Object.assign(infoToken, HIST.info);
+const DIARIO = lsGet(LS.diario, {}), CLASSE = lsGet(LS.classe, {});
+const nomeMes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const fmtData = t => { const d = new Date(t); return String(d.getDate()).padStart(2,'0') + ' ' + nomeMes[d.getMonth()] + ' ' + d.getFullYear(); };
+const fmtDia = s => s.slice(8,10) + ' ' + nomeMes[+s.slice(5,7) - 1] + ' ' + s.slice(2,4);
+function din(v, usdRate){
+  const x = est.moeda === 'USD' ? v / (usdRate || (VIVO && VIVO.usd) || 5) : v;
+  const ax = Math.abs(x);
+  const f = ax > 0 && ax < 1 ? { maximumSignificantDigits:3 } : { minimumFractionDigits:2, maximumFractionDigits:2 };
+  return (x < 0 ? '−' : '') + (est.moeda === 'USD' ? 'US$ ' : 'R$ ') + (ax > 0 && ax < 0.001 ? miudo(ax) : ax.toLocaleString('pt-BR', f));
+}
+// preço minúsculo com os zeros contados, como no DeBank: 0,000057 → 0,0₄57
+function miudo(ax){
+  let zeros = Math.ceil(-Math.log10(ax)) - 1, sig = Math.round(ax * 10 ** (zeros + 3));
+  if(sig >= 1000){ zeros--; sig = 100; }
+  return '0,0' + String(zeros).replace(/\d/g, c => '₀₁₂₃₄₅₆₇₈₉'[c]) + String(sig).replace(/0+$/, '');
+}
+// preço de fechamento de dias atrás, pelo cache de preços diários
+function precoAntes(g, dias){
+  if(g === 'BRL') return 1;
+  const m = PRECOS[g];
+  return m && Object.keys(m).length ? precoEm(m, dia(Date.now() - dias * DIA_MS)) : 0;
+}
+// quanto as moedas de agora variaram em N dias (sem contar aportes e movimentos)
+function variacao(dias){
+  let agora = 0, antes = 0;
+  linhasVivas().forEach(x => { const p0 = precoAntes(x.g, dias); if(!p0 || !x.p) return; antes += x.q * p0; agora += x.v; });
+  return antes ? { dif: agora - antes, pct: agora / antes - 1 } : null;
+}
+const qtd = q => q >= 1000 ? q.toLocaleString('pt-BR', { maximumFractionDigits:0 }) : q.toLocaleString('pt-BR', { maximumSignificantDigits:5 });
+const pct = v => !isFinite(v) ? '—' : Math.abs(v) < 0.0005 ? '0%' : (v > 0 ? '+' : '−') + Math.abs(v * 100).toLocaleString('pt-BR', { maximumFractionDigits:1 }) + '%';
+const sinal = v => v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+const sinalPct = v => Math.abs(v) < 0.0005 ? '' : sinal(v); // o que aparece como 0% fica sem cor
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+
+function linhasVivas(){
+  if(!VIVO) return [];
+  return VIVO.saldos.map(s => ({ ...s, p: VIVO.precos[s.g] || 0, v: s.q * (VIVO.precos[s.g] || 0) }));
+}
+function totalVivo(){ return linhasVivas().reduce((a, x) => a + x.v, 0); }
+
+function desenharTopo(){
+  const total = totalVivo(), ap = HIST ? HIST.aportado : 0;
+  document.getElementById('total').textContent = VIVO ? din(total) : '—';
+  const nRedes = new Set(linhasVivas().filter(x => x.v >= 1).map(x => x.rede)).size;
+  document.getElementById('subtotal').textContent = VIVO ? `Patrimônio agora, em ${nRedes} lugares. Cotações de ${new Date(VIVO.t).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}.` : 'Buscando saldos…';
+  document.getElementById('mudou').innerHTML = VIVO ? [[1, '24 h'], [7, '7 dias']].map(([d, rot]) => { const x = variacao(d); return x ? `<span>${rot}<b class="num v ${sinal(x.dif)}">${x.dif > 0 ? '+' : ''}${din(x.dif)} (${pct(x.pct)})</b></span>` : ''; }).join('') : '';
+  const serie = serieVisivel();
+  const pv = document.getElementById('periodoVar');
+  // em "Tudo" a variação partiria do primeiro aporte e só repetiria o Resultado
+  pv.parentElement.hidden = !est.periodo;
+  if(serie.length > 1){ const ini = serie[0].v, fim = VIVO ? total : serie[serie.length-1].v; pv.textContent = pct(fim / ini - 1); pv.className = 'num v ' + sinal(fim - ini); document.getElementById('rotPeriodo').textContent = 'Desde ' + fmtDia(serie[0].d); }
+}
+function serieVisivel(periodo = est.periodo){
+  if(!HIST || !HIST.serie.length) return [];
+  let s = HIST.serie.slice();
+  if(VIVO){ const hoje = dia(Date.now()); const ult = s[s.length-1]; const r = {}; ORDEM.forEach(x => r[x] = 0); linhasVivas().forEach(x => r[x.rede] += x.v); const ponto = { d:hoje, v:totalVivo(), a:HIST.aportado, r, usd:VIVO.usd }; if(ult.d === hoje) s[s.length-1] = ponto; else s.push(ponto); }
+  if(periodo) s = s.filter(x => x.d >= dia(Date.now() - periodo * DIA_MS));
+  return s;
+}
+// zoom da Visão geral: trecho escolhido arrastando o mouse sobre o gráfico
+const serieComZoom = () => { const s = serieVisivel(); return est.zoom ? s.filter(x => x.d >= est.zoom.ini && x.d <= est.zoom.fim) : s; };
+// Visão geral: você liga e desliga cada linha (patrimônio total e cada rede)
+function desenharGrafico(){
+  const S = serieComZoom(), temRede = r => S.some(x => (x.r[r] || 0) >= 1);
+  document.getElementById('btnTirarZoom').classList.toggle('oculto', !est.zoom);
+  const chips = [['total', 'Patrimônio', 'var(--area)']].concat(ORDEM.filter(temRede).map(r => [r, REDES[r].nome, `var(--n-${r})`]));
+  document.getElementById('series').innerHTML = chips.map(([k, nome, cor]) => `<button class="chip" data-s="${k}" aria-pressed="${est.series.includes(k)}" style="--c:${cor}">${k === 'total' ? '<i></i>' : icone(k, 14)}${nome}</button>`).join('');
+  grafico({ svg:'svg', dica:'dica', leg:null, S, modo:'series', series:est.series.filter(k => k === 'total' || temRede(k)), zoom:true });
+}
+// o mesmo gráfico serve à Visão geral (só patrimônio ou por rede) e à aba Aportes (patrimônio e total aportado)
+function grafico(o){
+  const svg = document.getElementById(o.svg), W = 1000, H = 300, L = 84, R = 12, T = 12, B = 28;
+  const S = o.S, n = S.length;
+  const leg = o.leg ? document.getElementById(o.leg) : { innerHTML:'' };
+  if(n < 2){ svg.innerHTML = `<text x="500" y="150" text-anchor="middle" fill="var(--faint)" font-size="14">O gráfico aparece quando o histórico terminar de ser montado.</text>`; leg.innerHTML = ''; return; }
+  const cv = (v, x) => est.moeda === 'USD' ? v / x.usd : v;
+  const sr = o.series || [], valS = (k, x) => k === 'total' ? x.v : (x.r[k] || 0);
+  const max = (o.modo === 'series' ? Math.max(...S.map(x => Math.max(0, ...sr.map(k => cv(valS(k, x), x))))) : Math.max(...S.map(x => Math.max(cv(x.v, x), o.aportes ? cv(x.a, x) : 0)))) * 1.1 || 1;
+  const xs = i => L + (W - L - R) * i / (n - 1), ys = v => T + (H - T - B) * (1 - v / max);
+  let h = '';
+  for(let g = 0; g <= 4; g++){ const v = max * g / 4, yy = T + (H - T - B) * (1 - g / 4); h += `<line class="grade" x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}"/><g class="eixo"><text x="${L-8}" y="${yy+4}" text-anchor="end">${(est.moeda === 'USD' ? 'US$ ' : 'R$ ') + (v >= 1000 ? (v/1000).toLocaleString('pt-BR', { maximumFractionDigits:1 }) + ' mil' : Math.round(v))}</text></g>`; }
+  const passos = 6;
+  for(let k = 0; k <= passos; k++){ const i = Math.round((n - 1) * k / passos); h += `<g class="eixo"><text x="${xs(i)}" y="${H-8}" text-anchor="${k === 0 ? 'start' : k === passos ? 'end' : 'middle'}">${fmtDia(S[i].d)}</text></g>`; }
+  if(o.modo === 'series'){
+    for(const k of sr){
+      const lp = S.map((x, i) => `${xs(i).toFixed(1)},${ys(cv(valS(k, x), x)).toFixed(1)}`).join(' ');
+      if(k === 'total'){
+        h += `<defs><linearGradient id="gA-${o.svg}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--area)" stop-opacity=".22"/><stop offset="1" stop-color="var(--area)" stop-opacity="0"/></linearGradient></defs><polygon points="${xs(0)},${H-B} ${lp} ${xs(n-1)},${H-B}" fill="url(#gA-${o.svg})"/>`;
+        h += `<polyline points="${lp}" fill="none" stroke="var(--area)" stroke-width="2.4" stroke-linejoin="round"/>`;
+      } else h += `<polyline points="${lp}" fill="none" stroke="var(--n-${k})" stroke-width="2" stroke-linejoin="round"/>`;
+    }
+  } else if(o.modo === 'linha'){
+    const lp = S.map((x, i) => `${xs(i).toFixed(1)},${ys(cv(x.v, x)).toFixed(1)}`).join(' ');
+    h += `<defs><linearGradient id="gA-${o.svg}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--area)" stop-opacity=".26"/><stop offset="1" stop-color="var(--area)" stop-opacity="0"/></linearGradient></defs>`;
+    h += `<polygon points="${xs(0)},${H-B} ${lp} ${xs(n-1)},${H-B}" fill="url(#gA-${o.svg})"/>`;
+    if(o.aportes){ let da = ''; S.forEach((x, i) => { const y = ys(cv(x.a, x)).toFixed(1); da += i ? ` H${xs(i).toFixed(1)} V${y}` : `M${xs(0)},${y}`; }); h += `<path d="${da}" fill="none" stroke="var(--aporte)" stroke-width="2" stroke-dasharray="6 5"/>`; }
+    h += `<polyline points="${lp}" fill="none" stroke="var(--area)" stroke-width="2.2" stroke-linejoin="round"/>`;
+    if(o.aportes) S.forEach((x, i) => { if(i && x.a - S[i-1].a >= 0.5) h += `<circle class="marcaAp" cx="${xs(i).toFixed(1)}" cy="${ys(cv(x.a, x)).toFixed(1)}" r="3.5" fill="var(--aporte)" stroke="var(--surface)" stroke-width="1.5"/>`; });
+    leg.innerHTML = `<span><i style="background:var(--area)"></i>Patrimônio</span>` + (o.aportes ? `<span><i style="background:var(--aporte)"></i>Total aportado</span>` : '');
+  } else {
+    let base = S.map(() => 0);
+    for(const r of ORDEM){ const topo = S.map((x, i) => base[i] + cv(x.r[r] || 0, x)); if(topo.every((v, i) => v === base[i])) continue; const pts = topo.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ') + ' ' + base.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).reverse().join(' '); h += `<polygon points="${pts}" fill="var(--n-${r})" fill-opacity=".85"/>`; base = topo; }
+    leg.innerHTML = ORDEM.map(r => `<span><i style="background:var(--n-${r})"></i>${REDES[r].nome}</span>`).join('');
+  }
+  h += `<line class="cruz" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="var(--faint)" stroke-width="1" opacity="0"/><circle class="ponto" r="4.5" fill="var(--area)" stroke="var(--surface)" stroke-width="2" opacity="0"/>`;
+  h += `<rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent" class="alvo"/>`;
+  svg.innerHTML = h;
+  const dica = document.getElementById(o.dica), alvo = svg.querySelector('.alvo'), cruz = svg.querySelector('.cruz'), ponto = svg.querySelector('.ponto');
+  alvo.addEventListener('mousemove', ev => {
+    const bb = svg.getBoundingClientRect(), fx = (ev.clientX - bb.left) / bb.width * W;
+    const i = Math.max(0, Math.min(n - 1, Math.round((fx - L) / (W - L - R) * (n - 1)))), x = S[i];
+    cruz.setAttribute('x1', xs(i)); cruz.setAttribute('x2', xs(i)); cruz.setAttribute('opacity', 1);
+    ponto.setAttribute('cx', xs(i)); ponto.setAttribute('cy', ys(cv(x.v, x))); ponto.setAttribute('opacity', o.modo === 'linha' || sr.includes('total') ? 1 : 0);
+    const linhas = o.modo === 'series' ? sr.map(k => `<div><span>${k === 'total' ? 'Patrimônio' : REDES[k].nome}</span><b class="num v">${din(valS(k, x), x.usd)}</b></div>`).join('')
+      : o.modo === 'linha' && !o.aportes ? `<div><span>Patrimônio</span><b class="num v">${din(x.v, x.usd)}</b></div>`
+      : o.modo === 'linha'
+      ? `<div><span>Patrimônio</span><b class="num v">${din(x.v, x.usd)}</b></div><div><span>Aportado</span><b class="num v">${din(x.a, x.usd)}</b></div><div><span>Resultado</span><b class="num v ${sinal(x.v - x.a)}">${x.a ? pct(x.v / x.a - 1) : '—'}</b></div>` + (i && x.a - S[i-1].a >= 0.5 ? `<div><span>Aporte no dia</span><b class="num v">${din(x.a - S[i-1].a, x.usd)}</b></div>` : '')
+      : ORDEM.filter(r => x.r[r] >= 0.5).map(r => `<div><span>${REDES[r].nome}</span><b class="num v">${din(x.r[r], x.usd)}</b></div>`).join('');
+    dica.innerHTML = `<div style="margin-bottom:4px"><b>${fmtDia(x.d)}</b></div>` + linhas;
+    const px = xs(i) / W * bb.width; dica.style.left = Math.min(bb.width - 200, Math.max(0, px + 12)) + 'px'; dica.style.top = '10px'; dica.classList.add('on');
+  });
+  alvo.addEventListener('mouseleave', () => { dica.classList.remove('on'); cruz.setAttribute('opacity', 0); ponto.setAttribute('opacity', 0); });
+  if(o.zoom){
+    // arrastar sobre o gráfico seleciona um trecho; ao soltar, o gráfico mostra só ele
+    const idx = ev => { const bb = svg.getBoundingClientRect(), fx = (ev.clientX - bb.left) / bb.width * W; return Math.max(0, Math.min(n - 1, Math.round((fx - L) / (W - L - R) * (n - 1)))); };
+    let ini = null, sel = null;
+    alvo.addEventListener('mousedown', ev => { ev.preventDefault(); ini = idx(ev); sel = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); sel.setAttribute('class', 'selecao'); sel.setAttribute('y', T); sel.setAttribute('height', H - T - B); svg.insertBefore(sel, alvo); });
+    alvo.addEventListener('mousemove', ev => { if(ini == null) return; const j = idx(ev), a = Math.min(ini, j), b = Math.max(ini, j); sel.setAttribute('x', xs(a)); sel.setAttribute('width', Math.max(1, xs(b) - xs(a))); });
+    const fim = ev => { if(ini == null) return; const j = idx(ev), a = Math.min(ini, j), b = Math.max(ini, j); ini = null; if(sel) sel.remove(); if(b - a >= 2){ est.zoom = { ini:S[a].d, fim:S[b].d }; desenharGrafico(); } };
+    alvo.addEventListener('mouseup', fim); alvo.addEventListener('mouseleave', ev => { if(ini != null){ ini = null; if(sel) sel.remove(); } });
+  }
+}
+function desenharOnde(){
+  const el = document.getElementById('onde'); const lin = linhasVivas(); const total = totalVivo();
+  if(!lin.length){ el.innerHTML = '<p class="vazio">Buscando saldos…</p>'; return; }
+  const por = {}; lin.forEach(x => por[x.rede] = (por[x.rede] || 0) + x.v);
+  const lista = Object.entries(por).sort((a, b) => b[1] - a[1]);
+  const sel = est.ondeRede && por[est.ondeRede] ? est.ondeRede : null;
+  const R0 = 68, C = 2 * Math.PI * R0; let acum = 0;
+  // clicar numa fatia (ou na linha da legenda) mostra as moedas daquela rede
+  const fatias = lista.map(([r, v]) => { const f = total ? v / total : 0, len = Math.max(0, f * C - (f < 1 ? 1.5 : 0)); const s = `<circle class="fatia${sel && sel !== r ? ' apagada' : ''}" data-r="${r}" cx="85" cy="85" r="${R0}" fill="none" stroke="var(--n-${r})" stroke-width="${sel === r ? 30 : 24}" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-acum).toFixed(2)}" transform="rotate(-90 85 85)"><title>${REDES[r].nome}: ${din(v)} (clique para ver as moedas)</title></circle>`; acum += f * C; return s; }).join('');
+  const vc = sel ? por[sel] : total, moedaTxt = v => `${est.moeda === 'USD' ? 'US$ ' : 'R$ '}${Math.round(est.moeda === 'USD' ? v / (VIVO.usd || 5) : v).toLocaleString('pt-BR')}`;
+  const centro = `<text class="centro1" x="85" y="80" text-anchor="middle">${sel ? REDES[sel].nome : lista.length + ' lugares'}</text><text class="centro2 v" x="85" y="100" text-anchor="middle">${moedaTxt(vc)}</text>`;
+  let direita;
+  if(sel){
+    const m = {}; lin.filter(x => x.rede === sel).forEach(x => { const o = m[x.g] || (m[x.g] = { q:0, v:0 }); o.q += x.q; o.v += x.v; });
+    const ms = Object.entries(m).sort((a, b) => b[1].v - a[1].v);
+    direita = `<div><button class="voltar" data-r="">← Todas as redes</button><ul class="leg-r">${ms.map(([g, o]) => `<li>${icone(sel, 16)}<span class="n"><b>${esc(simDe(g))}</b><small class="v">${qtd(o.q)}</small></span><b class="num v">${din(o.v)}</b><small class="num">${(por[sel] ? o.v / por[sel] * 100 : 0).toLocaleString('pt-BR', { maximumFractionDigits:1 })}%</small></li>`).join('')}</ul></div>`;
+  } else direita = `<ul class="leg-r">${lista.map(([r, v]) => `<li class="clic" data-r="${r}" tabindex="0" role="button" aria-label="Ver as moedas em ${REDES[r].nome}">${icone(r, 16)}<span class="n">${REDES[r].nome}<small>${REDES[r].carteira}</small></span><b class="num v">${din(v)}</b><small class="num">${(total ? v / total * 100 : 0).toLocaleString('pt-BR', { maximumFractionDigits:1 })}%</small></li>`).join('')}</ul>`;
+  el.innerHTML = `<div class="rosca"><svg viewBox="0 0 170 170" role="img" aria-label="Patrimônio por rede">${fatias}${centro}</svg>${direita}</div>`;
+}
+function desenharAportes(){
+  const aps = HIST ? HIST.mov.filter(m => m.tipo === 'aporte') : [];
+  document.getElementById('contAportes').textContent = aps.length || '';
+  if(!HIST){ document.getElementById('resumoAp').innerHTML = '<p class="vazio">Aparece quando o histórico terminar de ser montado.</p>'; return; }
+  const total = totalVivo(), ap = HIST.aportado;
+  const cx = (rot, val, cls = '') => `<div><span>${rot}</span><b class="num v ${cls}">${val}</b></div>`;
+  document.getElementById('resumoAp').innerHTML = cx('Total aportado', din(ap)) + (VIVO ? cx('Patrimônio agora', din(total)) + cx('Resultado', din(total - ap) + '  ' + pct((total - ap) / ap), sinal(total - ap)) : '') +
+    cx('Aportes', aps.length) + (aps.length ? cx('Último aporte', fmtData(aps[0].t)) + cx('Valor médio', din(ap / aps.length)) : '');
+  grafico({ svg:'svgAp', dica:'dicaAp', leg:'legendaAp', S:serieVisivel(0), modo:'linha', aportes:true });
+  let soma = ap;
+  document.getElementById('listaAp').innerHTML = aps.map(m => { const li = `<li class="lin"><span>${fmtData(m.t)}<small class="nota" style="display:block">Total aportado até aqui: <span class="v">${din(soma)}</span></small></span><b class="num v">${din(m.valIn)}</b></li>`; soma -= m.valIn; return li; }).join('') || '<li class="vazio">Nenhum aporte encontrado.</li>';
+}
+
+/* ================= termômetro do mercado ================= */
+const rapido = url => fetch(url).then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+async function mercadoAgora(){
+  const out = {};
+  const [f, g, t] = await Promise.allSettled([
+    rapido('https://api.alternative.me/fng/?limit=31'),
+    rapido('https://api.coingecko.com/api/v3/global'),
+    rapido('https://api.binance.com/api/v3/ticker/24hr?symbols=' + encodeURIComponent('["BTCUSDT","ETHUSDT"]')),
+  ]);
+  if(f.status === 'fulfilled') out.fng = f.value.data.map(x => ({ v:+x.value, c:x.value_classification, t:+x.timestamp * 1000 }));
+  if(g.status === 'fulfilled'){ const d = g.value.data; out.cap = d.total_market_cap.usd; out.capVar = d.market_cap_change_percentage_24h_usd; out.btcDom = d.market_cap_percentage.btc; out.ethDom = d.market_cap_percentage.eth; }
+  if(t.status === 'fulfilled'){ out.tick = {}; t.value.forEach(x => out.tick[x.symbol] = { p:+x.lastPrice, v:+x.priceChangePercent / 100 }); }
+  return out;
+}
+const MEDO = { 'Extreme Fear':'Medo extremo', 'Fear':'Medo', 'Neutral':'Neutro', 'Greed':'Ganância', 'Extreme Greed':'Ganância extrema' };
+const corMedo = v => v < 25 ? 'var(--neg)' : v < 45 ? 'var(--warn)' : v <= 55 ? 'var(--faint)' : 'var(--pos)';
+function desenharMercado(){
+  const el = document.getElementById('mercado'), m = VIVO && VIVO.mercado;
+  if(!m || (!m.fng && !m.cap)){ el.innerHTML = `<p class="vazio">${VIVO ? 'Não consegui ler os indicadores agora. Clique em Atualizar para tentar de novo.' : 'Buscando indicadores…'}</p>`; return; }
+  let gauge = '';
+  if(m.fng && m.fng.length){
+    const v = m.fng[0].v, cx = 115, cy = 118, R = 92;
+    const pt = (p, r = R) => { const a = Math.PI * (1 - p / 100); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; };
+    const arco = (a, b, cor) => { const [x1, y1] = pt(a), [x2, y2] = pt(b); return `<path d="M${x1.toFixed(1)},${y1.toFixed(1)} A${R},${R} 0 0 1 ${x2.toFixed(1)},${y2.toFixed(1)}" fill="none" stroke="${cor}" stroke-width="16"/>`; };
+    const [nx, ny] = pt(v, R - 22);
+    gauge = `<div><svg class="gauge" viewBox="0 0 230 140" role="img" aria-label="Índice de medo e ganância: ${v}">${arco(0, 24.5, 'var(--neg)')}${arco(25.5, 44.5, 'var(--warn)')}${arco(45.5, 54.5, 'var(--faint)')}${arco(55.5, 74.5, 'color-mix(in srgb, var(--pos) 60%, transparent)')}${arco(75.5, 100, 'var(--pos)')}
+      <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--text)" stroke-width="3" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="6" fill="var(--text)"/>
+      <text x="${cx}" y="${cy - 30}" text-anchor="middle" font-size="30" font-weight="700" fill="var(--text)" font-family="var(--font)">${v}</text>
+      <text x="${cx}" y="${cy + 18}" text-anchor="middle" font-size="14" font-weight="600" fill="${corMedo(v)}" font-family="var(--font)">${MEDO[m.fng[0].c] || m.fng[0].c}</text></svg>`;
+    const s = m.fng.slice().reverse(), n = s.length;
+    if(n > 1) gauge += `<svg class="spark" viewBox="0 0 230 44" preserveAspectRatio="none" aria-label="Últimos 30 dias"><polyline points="${s.map((x, i) => `${(i / (n - 1) * 226 + 2).toFixed(1)},${(40 - x.v / 100 * 36).toFixed(1)}`).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.8"/><line x1="0" x2="230" y1="${40 - 18}" y2="${40 - 18}" stroke="var(--line)" stroke-dasharray="3 3"/></svg><div class="nota" style="text-align:center">últimos 30 dias</div>`;
+    gauge += '</div>';
+  }
+  const ant = d => m.fng && m.fng[d] ? `${m.fng[d].v} · ${MEDO[m.fng[d].c] || m.fng[d].c}` : '—';
+  const ind = [];
+  if(m.fng) ind.push(['Medo e ganância há 7 dias', ant(7)], ['Há 30 dias', ant(30)]);
+  if(m.cap) ind.push(['Valor de todo o mercado cripto', `US$ ${(m.cap / 1e12).toLocaleString('pt-BR', { maximumFractionDigits:2 })} tri`, `<span class="${sinal(m.capVar)}">${pct(m.capVar / 100)} em 24 h</span>`], ['Dominância do Bitcoin', m.btcDom.toLocaleString('pt-BR', { maximumFractionDigits:1 }) + '%', 'parte do mercado que é BTC'], ['Dominância do Ether', m.ethDom.toLocaleString('pt-BR', { maximumFractionDigits:1 }) + '%']);
+  if(m.tick) for(const [s, nome] of [['BTCUSDT', 'Bitcoin'], ['ETHUSDT', 'Ether']]) if(m.tick[s]) ind.push([nome, 'US$ ' + m.tick[s].p.toLocaleString('pt-BR', { maximumFractionDigits:0 }), `<span class="${sinal(m.tick[s].v)}">${pct(m.tick[s].v)} em 24 h</span>`]);
+  el.innerHTML = `<div class="merc">${gauge}<div class="ind">${ind.map(([a, b, c]) => `<div><span>${a}</span><b class="num">${b}</b>${c ? `<small>${c}</small>` : ''}</div>`).join('')}</div></div>
+    <div class="nota" style="margin-top:10px">O índice de medo e ganância, do site alternative.me, vai de 0 (medo extremo) a 100 (ganância extrema) e mede o humor do mercado de cripto. Mercado total e dominância vêm da CoinGecko; preços, da Binance.</div>`;
+}
+
+/* ================= quem mais rendeu ================= */
+function desenharRendimento(){
+  const el = document.getElementById('rendimento');
+  if(!VIVO){ el.innerHTML = '<p class="vazio">Buscando saldos…</p>'; return; }
+  const total = totalVivo(), d = est.periodoRend, por = {};
+  linhasVivas().forEach(x => { if(x.g === 'BRL') return; const o = por[x.g] || (por[x.g] = { g:x.g, q:0, v:0, p:x.p }); o.q += x.q; o.v += x.v; });
+  const lin = Object.values(por).filter(x => x.v >= 10).map(x => { const p0 = precoAntes(x.g, d); return { ...x, ch: p0 && x.p ? x.p / p0 - 1 : null }; }).filter(x => x.ch != null).sort((a, b) => b.ch - a.ch);
+  if(!lin.length){ el.innerHTML = '<p class="vazio">Sem preços antigos para comparar ainda.</p>'; return; }
+  const maxAbs = Math.max(...lin.map(x => Math.abs(x.ch)), 0.01);
+  el.innerHTML = '<ul class="lista rend">' + lin.map(x => {
+    const w = Math.abs(x.ch) / maxAbs * 50, cor = x.ch >= 0 ? 'var(--pos)' : 'var(--neg)';
+    const p = HIST && HIST.pos[x.g], avg = p && p.q > 1e-12 ? p.custo / p.q : null, lucro = avg ? x.v - avg * x.q : null;
+    const fatos = [];
+    if(lucro != null) fatos.push(`Vender hoje ${lucro >= 0 ? 'realizaria lucro' : 'realizaria prejuízo'} de <b class="num v ${sinal(lucro)}">${din(Math.abs(lucro))}</b> (${pct(lucro / (avg * x.q))} sobre o seu preço médio)`);
+    fatos.push(`${(x.v / total * 100).toLocaleString('pt-BR', { maximumFractionDigits:1 })}% da carteira`);
+    if(liquidezBaixa(x.g, x.v)) fatos.push('<span class="selo">baixa liquidez</span>');
+    return `<li><span><b>${esc(simDe(x.g))}</b></span><div class="barraR"><i style="${x.ch >= 0 ? 'left:50%' : 'right:50%'};width:${w.toFixed(1)}%;background:${cor}"></i></div><b class="num ${sinalPct(x.ch)}" style="text-align:right">${pct(x.ch)}</b><div class="fatos">${fatos.map(f => `<span>${f}</span>`).join('')}</div></li>`;
+  }).join('') + '</ul>';
+}
+
+/* ================= posições com faixa de preço (liquidez concentrada) ================= */
+const GERENTES_CL = [
+  { rede:'base', nome:'Uniswap v3', end:'0x03a520b32c04bf3beef7beb72e919cf822ed34f1', tipo:'uni', link:id => `https://app.uniswap.org/positions/v3/base/${id}` },
+  { rede:'base', nome:'Aerodrome', end:'0x827922686190790b37229fd06084350e74485b72', tipo:'aero', link:() => 'https://aerodrome.finance/dash' },
+];
+const RPC_BASE = 'https://base-rpc.publicnode.com'; // o mainnet.base.org limita consultas em lote
+const h64 = x => (typeof x === 'bigint' ? (x < 0n ? x + (1n << 256n) : x).toString(16) : x.replace(/^0x/, '')).padStart(64, '0');
+const palavras = r => { const w = (r || '0x').slice(2); const o = []; for(let i = 0; i + 64 <= w.length; i += 64) o.push(w.slice(i, i + 64)); return o; };
+const semSinal = w => BigInt('0x' + (w || '0'));
+const comSinal = w => { const n = semSinal(w); return n >= (1n << 255n) ? n - (1n << 256n) : n; };
+const txtAbi = r => { try{ const w = palavras(r); if(w.length < 3) return ''; const n = Number(semSinal(w[1])); const hex = w.slice(2).join('').slice(0, n * 2); return decodeURIComponent(hex.replace(/(..)/g, '%$1')); }catch(e){ return '?'; } };
+async function lote(url, chamadas){
+  const out = [];
+  for(let i = 0; i < chamadas.length; i += 10){
+    const parte = chamadas.slice(i, i + 10);
+    const r = await pegar(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(parte.map((c, j) => ({ jsonrpc:'2.0', id:j, method:'eth_call', params:[{ to:c[0], data:c[1] }, 'latest'] }))) });
+    if(!Array.isArray(r)) throw new Error('resposta inesperada');
+    const erro = r.find(x => x.error); if(erro) throw new Error(erro.error.message);
+    r.sort((a, b) => a.id - b.id).forEach(x => out.push(x.result));
+  }
+  return out;
+}
+async function posicoesAbertas(){
+  // simulação: uma posição aberta de outra carteira, só para ver o layout (não entra no total). Vem do botão "Ver uma simulação" ou de ?posicao=uni:123 no link
+  const eu = h64(EU_EVM), simul = lsGet('cripto-v1-simulacao', 'uni:6094669'), teste = new URLSearchParams(location.search).get('posicao') || (simul !== 'nao' ? simul : null);
+  const out = [];
+  for(const G of GERENTES_CL){
+    const [bal] = await lote(RPC_BASE, [[G.end, '0x70a08231' + eu]]);
+    const n = Math.min(Number(semSinal(palavras(bal)[0])), 50);
+    let ids = n ? (await lote(RPC_BASE, Array.from({ length:n }, (_, i) => [G.end, '0x2f745c59' + eu + h64(BigInt(i))]))).map(r => semSinal(palavras(r)[0])) : [];
+    const idTeste = teste && teste.split(':')[0] === G.tipo ? BigInt(teste.split(':')[1]) : null;
+    if(idTeste != null) ids.push(idTeste);
+    if(!ids.length) continue;
+    const ps = await lote(RPC_BASE, ids.map(id => [G.end, '0x99fbab88' + h64(id)]));
+    const abertas = ids.map((id, i) => ({ id, w:palavras(ps[i]) })).filter(x => x.w.length > 7 && semSinal(x.w[7]) > 0n);
+    if(!abertas.length) continue;
+    const [fab] = await lote(RPC_BASE, [[G.end, '0xc45a0155']]), fabrica = '0x' + palavras(fab)[0].slice(24);
+    for(const { id, w } of abertas){
+      const t0 = '0x' + w[2].slice(24), t1 = '0x' + w[3].slice(24), taxa = comSinal(w[4]), tl = Number(comSinal(w[5])), tu = Number(comSinal(w[6])), L = Number(semSinal(w[7]));
+      const [pool] = await lote(RPC_BASE, [[fabrica, (G.tipo === 'uni' ? '0x1698ee82' : '0x28af8d0b') + h64(t0) + h64(t1) + h64(taxa)]]);
+      const endPool = '0x' + palavras(pool)[0].slice(24);
+      const r = await lote(RPC_BASE, [[endPool, '0x3850c7bd'], [t0, '0x95d89b41'], [t0, '0x313ce567'], [t1, '0x95d89b41'], [t1, '0x313ce567']]);
+      const s0 = palavras(r[0]), d0 = Number(semSinal(palavras(r[2])[0])), d1 = Number(semSinal(palavras(r[4])[0]));
+      const sqrtP = Number(semSinal(s0[0])) / 2 ** 96, tick = Number(comSinal(s0[1]));
+      const sa = Math.sqrt(1.0001 ** tl), sb = Math.sqrt(1.0001 ** tu), sp = Math.min(Math.max(sqrtP, sa), sb);
+      const a0 = L * (sb - sp) / (sp * sb) / 10 ** d0, a1 = L * (sp - sa) / 10 ** d1;
+      const esc10 = 10 ** (d0 - d1), preco = t => 1.0001 ** t * esc10;
+      const g0 = TOKENS['base:' + t0] || 'base:' + t0, g1 = TOKENS['base:' + t1] || 'base:' + t1;
+      [[g0, txtAbi(r[1])], [g1, txtAbi(r[3])]].forEach(([g, s]) => { if(!GRUPOS[g] && !infoToken[g]) infoToken[g] = { sim:s.slice(0, 14), nome:s }; });
+      // mostra o preço da moeda "de verdade" em dólar digital, não o contrário
+      const inverte = g0 === 'USD' && g1 !== 'USD';
+      out.push({ teste: id === idTeste, gerente:G.nome, link:G.link(String(id)), id:String(id), rede:G.rede, pool:endPool, t0, t1, g0, g1, a0, a1, inverte,
+        p: inverte ? 1 / (sqrtP * sqrtP * esc10) : sqrtP * sqrtP * esc10, pa: inverte ? 1 / preco(tu) : preco(tl), pb: inverte ? 1 / preco(tl) : preco(tu), dentro: tick >= tl && tick < tu });
+    }
+  }
+  // histórico de preço de cada pool (GeckoTerminal), no mesmo sentido do preço mostrado
+  for(const x of out){
+    const j = await gt(`https://api.geckoterminal.com/api/v2/networks/${x.rede}/pools/${x.pool}/ohlcv/day?limit=90&currency=token&token=${x.inverte ? x.t1 : x.t0}`).catch(() => null);
+    x.serie = ((j && j.data && j.data.attributes.ohlcv_list) || []).map(c => [c[0] * 1000, +c[4]]).sort((a, b) => a[0] - b[0]);
+  }
+  return out;
+}
+function desenharPosicoes(){
+  const el = document.getElementById('posicoes'), ps = (VIVO && VIVO.posicoes) || [];
+  if(!ps.length){ el.innerHTML = `<p class="vazio" style="margin:0 0 10px">Nenhuma posição aberta agora. Quando você abrir uma na Uniswap v3 ou na Aerodrome (Base), ela aparece aqui sozinha: o gráfico do preço com a sua faixa, se está dentro ou fora dela, quanto vale e o link para administrar.</p><button class="btn" id="btnSimular">Ver uma simulação</button>`; return; }
+  el.innerHTML = ps.map(x => {
+    const s0 = simDe(x.g0), s1 = simDe(x.g1), base = x.inverte ? s1 : s0, cot = x.inverte ? s0 : s1;
+    const pr = VIVO.precos, valor = x.a0 * (pr[x.g0] || 0) + x.a1 * (pr[x.g1] || 0);
+    const fmtP = v => v.toLocaleString('pt-BR', { maximumSignificantDigits:5 });
+    const lo = Math.min(x.pa, x.p) * 0.92, hi = Math.max(x.pb, x.p) * 1.08, pc = v => ((v - lo) / (hi - lo) * 100).toFixed(2);
+    const borda = x.dentro ? Math.min(x.p / x.pa - 1, 1 - x.p / x.pb) : null;
+    // gráfico: preço diário com a faixa em destaque
+    let graf = '';
+    if(x.serie && x.serie.length > 1){
+      const S = x.serie, W = 1000, H = 220, Lm = 70, Rm = 10, T = 10, B = 24, vals = S.map(s => s[1]).concat([x.pa, x.pb]);
+      const mn = Math.min(...vals) * 0.97, mx = Math.max(...vals) * 1.03, X = i => Lm + (W - Lm - Rm) * i / (S.length - 1), Y = v => T + (H - T - B) * (1 - (v - mn) / (mx - mn));
+      graf = `<svg class="g" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height:220px;margin-top:10px" role="img" aria-label="Preço de ${esc(base)} em ${esc(cot)} com a sua faixa">
+        <rect x="${Lm}" y="${Y(x.pb).toFixed(1)}" width="${W - Lm - Rm}" height="${(Y(x.pa) - Y(x.pb)).toFixed(1)}" fill="var(--accent-soft)"/>
+        <line x1="${Lm}" x2="${W - Rm}" y1="${Y(x.pb).toFixed(1)}" y2="${Y(x.pb).toFixed(1)}" stroke="var(--accent)" stroke-dasharray="5 4"/><line x1="${Lm}" x2="${W - Rm}" y1="${Y(x.pa).toFixed(1)}" y2="${Y(x.pa).toFixed(1)}" stroke="var(--accent)" stroke-dasharray="5 4"/>
+        <g class="eixo"><text x="${Lm - 6}" y="${(Y(x.pb) + 4).toFixed(1)}" text-anchor="end">${fmtP(x.pb)}</text><text x="${Lm - 6}" y="${(Y(x.pa) + 4).toFixed(1)}" text-anchor="end">${fmtP(x.pa)}</text>
+        <text x="${Lm}" y="${H - 6}">${fmtData(S[0][0])}</text><text x="${W - Rm}" y="${H - 6}" text-anchor="end">hoje</text></g>
+        <polyline points="${S.map((s, i) => `${X(i).toFixed(1)},${Y(s[1]).toFixed(1)}`).join(' ')}" fill="none" stroke="var(--text)" stroke-width="2"/>
+        <circle cx="${X(S.length - 1).toFixed(1)}" cy="${Y(x.p).toFixed(1)}" r="5" fill="${x.dentro ? 'var(--pos)' : 'var(--warn)'}" stroke="var(--surface)" stroke-width="2"/></svg>`;
+    }
+    return `${x.teste ? `<div class="aviso-sim"><b>Simulação.</b> Esta é a posição aberta de outra carteira, só para você ver como fica; não entra no seu total. <button class="btn" id="btnSimular" style="font-size:12px;padding:3px 8px;margin-left:6px">Tirar simulação</button></div>` : ''}<div class="pos-card${x.teste ? ' sim' : ''}"><div class="topo">${icone(x.rede, 20)}<b>${esc(base)} / ${esc(cot)}</b>${x.teste ? '<span class="status fora" style="background:var(--accent-soft);color:var(--accent)">Simulação</span>' : ''}<span class="status ${x.dentro ? 'dentro' : 'fora'}">${x.dentro ? 'Dentro da faixa, rendendo taxas' : x.p < x.pa ? 'Fora da faixa, abaixo: parada' : 'Fora da faixa, acima: parada'}</span>
+        <span class="nota">${esc(x.gerente)} · ${REDES[x.rede].nome} · posição nº ${esc(x.id)}</span><a class="btn" style="margin-left:auto" href="${x.link}" target="_blank" rel="noopener">Administrar na ${esc(x.gerente.split(' ')[0])}</a></div>
+      <div class="nums"><div><span>Valor agora</span><b class="num v">${valor ? din(valor) : '—'}</b></div><div><span>Dentro da posição</span><b class="num v">${qtd(x.a0)} ${esc(s0)} + ${qtd(x.a1)} ${esc(s1)}</b></div><div><span>Preço agora</span><b class="num">${fmtP(x.p)} ${esc(cot)}</b></div><div><span>Faixa</span><b class="num">${fmtP(x.pa)} a ${fmtP(x.pb)}</b></div>${borda != null ? `<div><span>Até a borda mais perto</span><b class="num">${pct(borda).replace('+', '')}</b></div>` : ''}</div>
+      <div class="faixa"><div class="trilho"></div><div class="dentro" style="left:${pc(x.pa)}%;width:${(pc(x.pb) - pc(x.pa)).toFixed(2)}%"></div><div class="agora" style="left:${pc(x.p)}%" title="Preço agora"></div></div>
+      <div class="faixa-rot"><span>${fmtP(lo)}</span><span>preço de ${esc(base)} em ${esc(cot)}</span><span>${fmtP(hi)}</span></div>${graf}</div>`;
+  }).join('');
+}
+
+/* ================= grafo do mapa, no estilo do Obsidian ================= */
+// arraste as bolhas, arraste o fundo para mover a vista, roda do mouse ou botões para o zoom; as posições ficam salvas
+const GF = { nos:[], arestas:[], pos:lsGet('cripto-v1-grafo', {}), alfa:0, rodando:false, arrasto:null, pan:null, W:1000, H:620, k:1, tx:0, ty:0 };
+function desenharGrafo(){
+  const svg = document.getElementById('mapaGrafo');
+  const lin = linhasVivas().filter(x => x.v > 0), total = totalVivo();
+  if(!lin.length){ svg.innerHTML = `<text x="500" y="310" text-anchor="middle" fill="var(--faint)" font-size="14">Buscando saldos…</text>`; return; }
+  const nomeApp = { 'Corretora':'Corretora Binance' }, nos = [], arestas = [], add = (id, o, pai) => { nos.push({ id, ...o }); if(pai) arestas.push([pai, id]); };
+  const raio = v => 5 + 26 * Math.sqrt(total > 0 ? Math.max(0, v) / total : 0);
+  add('voce', { rot:'Você', val:total, tipo:'voce', r:24 });
+  const apps = {}; lin.forEach(x => { const a = REDES[x.rede].carteira; (apps[a] = apps[a] || {})[x.rede] = (apps[a][x.rede] || []).concat([x]); });
+  for(const [a, redes] of Object.entries(apps)){
+    const va = Object.values(redes).flat().reduce((s, x) => s + x.v, 0);
+    add('app:' + a, { rot:nomeApp[a] || a, val:va, tipo:'app', r:Math.max(12, raio(va)) }, 'voce');
+    for(const [r, xs] of Object.entries(redes)){
+      const vr = xs.reduce((s, x) => s + x.v, 0);
+      add('rede:' + r, { rot:REDES[r].nome, val:vr, tipo:'rede', rede:r, r:Math.max(15, raio(vr)) }, 'app:' + a);
+      const m = {}; xs.forEach(x => m[x.g] = (m[x.g] || 0) + x.v);
+      let outras = 0, nOut = 0;
+      for(const [g, v] of Object.entries(m)){ if(v >= 10) add(`moeda:${r}:${g}`, { rot:simDe(g), val:v, tipo:'moeda', rede:r, r:Math.max(14, raio(v)) }, 'rede:' + r); else { outras += v; nOut++; } }
+      if(nOut) add(`moeda:${r}:outras`, { rot:`+${nOut}`, dica:`outras ${nOut} moeda(s) abaixo de R$ 10`, val:outras, tipo:'moeda', rede:r, r:11 }, 'rede:' + r);
+    }
+  }
+  // tokens-golpe: em vermelho, um por rede; clique para ver quais são e o que fazer
+  const golpes = {}; ((HIST && HIST.golpeLista) || []).forEach(x => (golpes[x.rede] = golpes[x.rede] || []).push(x));
+  for(const [r, l] of Object.entries(golpes)) add('golpe:' + r, { rot:`${l.length} ${l.length > 1 ? 'golpes' : 'golpe'}`, dica:'Clique para ver os tokens-golpe', val:0, tipo:'golpe', rede:r, r:12 }, nos.some(n => n.id === 'rede:' + r) ? 'rede:' + r : 'voce');
+  const porId = {}; nos.forEach(n => porId[n.id] = n);
+  const nivel = { voce:0, app:1, rede:2, moeda:3, golpe:3 };
+  // posição de partida em anéis: você no centro, depois aplicativos, redes e moedas, cada ramo na sua fatia do círculo (assim nada nasce cruzado)
+  const filhos = {}; arestas.forEach(([a, b]) => (filhos[a] = filhos[a] || []).push(b));
+  const folhas = id => (filhos[id] || []).length ? filhos[id].reduce((s, f) => s + folhas(f), 0) : 1;
+  const anel = { voce:0, app:120, rede:215, moeda:295, golpe:295 };
+  const espalhar = (id, a0, a1) => { const n = porId[id], a = (a0 + a1) / 2; n.ax = GF.W / 2 + Math.cos(a) * anel[n.tipo] * 1.45; n.ay = GF.H / 2 + Math.sin(a) * anel[n.tipo] * 0.92; let ini = a0; const tot = folhas(id); (filhos[id] || []).forEach(f => { const fim = ini + (a1 - a0) * folhas(f) / tot; espalhar(f, ini, fim); ini = fim; }); };
+  espalhar('voce', -Math.PI / 2, Math.PI * 1.5);
+  nos.forEach((n, i) => {
+    const p = GF.pos[n.id];
+    if(p && isFinite(p.x) && isFinite(p.y) && p.x !== null && p.y !== null){ n.x = p.x; n.y = p.y; }
+    else if(!Object.keys(GF.pos).length){ n.x = n.ax; n.y = n.ay; }
+    else { const pai = arestas.find(a => a[1] === n.id), P = pai && porId[pai[0]], ang = i * 2.4, d = 50 + nivel[n.tipo] * 25; n.x = (P && P.x != null ? P.x : n.ax) + Math.cos(ang) * d; n.y = (P && P.y != null ? P.y : n.ay) + Math.sin(ang) * d; }
+    n.vx = n.vy = 0;
+  });
+  GF.nos = nos; GF.arestas = arestas.map(([a, b]) => ({ a:porId[a], b:porId[b] }));
+  const corDe = n => n.tipo === 'voce' ? 'var(--accent)' : n.tipo === 'app' ? 'var(--n-banco)' : n.tipo === 'golpe' ? 'var(--neg)' : `var(--n-${n.rede})`;
+  let h = `<defs><filter id="brilho" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect class="fundo" width="${GF.W}" height="${GF.H}" fill="transparent"/><g id="vista">`;
+  h += GF.arestas.map(e => `<line stroke="var(--faint)" stroke-opacity=".45" stroke-width="${(0.8 + 3 * e.b.val / total).toFixed(2)}"/>`).join('');
+  h += nos.map((n, i) => {
+    const cor = corDe(n);
+    const miolo = n.tipo === 'rede' ? `<circle r="${n.r.toFixed(1)}" fill="var(--surface)" stroke="${cor}" stroke-width="2.5"/><g transform="translate(${(-n.r * 0.7).toFixed(1)},${(-n.r * 0.7).toFixed(1)}) scale(${(n.r * 1.4 / 24).toFixed(3)})">${ICONES[n.rede] || ''}</g>`
+      : n.tipo === 'golpe' ? `<circle r="${n.r}" fill="var(--neg)" stroke="var(--surface)" stroke-width="1.5"/><text class="dentro" text-anchor="middle" y="4.5" font-size="13" font-weight="800">!</text>`
+      : n.tipo === 'moeda' ? `<circle r="${n.r.toFixed(1)}" fill="${cor}" stroke="var(--surface)" stroke-width="1.5"/><text class="dentro" text-anchor="middle" y="${n.r >= 20 ? 4 : 3.5}" font-size="${Math.min(12.5, Math.max(8.5, n.r * 2 / Math.max(3, n.rot.length) * 1.1)).toFixed(1)}" font-weight="700">${esc(n.rot)}</text>`
+      : `<circle r="${n.r.toFixed(1)}" fill="${cor}" fill-opacity="${n.tipo === 'voce' ? 1 : .8}" stroke="var(--surface)" stroke-width="1.5"/>`;
+    const rotulo = n.tipo === 'moeda' ? '' : `<text class="rot" text-anchor="middle" y="${(n.r + 14).toFixed(1)}" font-size="12.5" font-weight="650">${esc(n.rot)}</text>`;
+    const valor = n.tipo === 'golpe' ? '' : `<text class="val v" text-anchor="middle" y="${(n.r + (rotulo ? 27 : 13)).toFixed(1)}" font-size="10.5">${din(n.val)}</text>`;
+    return `<g class="no no-${n.tipo}" data-i="${i}">${miolo}${rotulo}${valor}<title>${esc(n.dica || n.rot)}${n.tipo === 'golpe' ? '' : ': ' + din(n.val)}</title></g>`;
+  }).join('') + '</g>';
+  svg.innerHTML = h;
+  GF.vista = svg.querySelector('#vista'); GF.elNos = [...svg.querySelectorAll('.no')]; GF.elArestas = [...svg.querySelectorAll('#vista > line')];
+  aplicarVista();
+  if(!svg.dataset.ligado){ ligarGrafo(svg); svg.dataset.ligado = 1; }
+  // bolha nova (sem posição salva) pede mais movimento para achar o lugar dela
+  const novos = nos.filter(n => !GF.pos[n.id] || GF.pos[n.id].x === null).length;
+  GF.alfa = Math.max(GF.alfa, !Object.keys(GF.pos).length ? 0.5 : novos ? 0.6 : 0.15); rodarGrafo();
+}
+function aplicarVista(){ if(GF.vista) GF.vista.setAttribute('transform', `translate(${GF.tx.toFixed(1)},${GF.ty.toFixed(1)}) scale(${GF.k.toFixed(3)})`); const s = document.getElementById('mapaGrafo'); if(s) s.classList.toggle('perto', GF.k >= 1.3); }
+function rodarGrafo(){ if(!GF.rodando){ GF.rodando = true; requestAnimationFrame(passoGrafo); } }
+function passoGrafo(){
+  const N = GF.nos, a = GF.alfa, W = GF.W, H = GF.H;
+  for(let i = 0; i < N.length; i++) for(let j = i + 1; j < N.length; j++){
+    const p = N[i], q = N[j]; let dx = q.x - p.x, dy = q.y - p.y, d2 = dx * dx + dy * dy || 1, d = Math.sqrt(d2);
+    const f = 9000 * a / d2; dx /= d; dy /= d; p.vx -= dx * f; p.vy -= dy * f; q.vx += dx * f; q.vy += dy * f;
+    const min = p.r + q.r + 22; if(d < min){ const s = (min - d) / 2; p.x -= dx * s; p.y -= dy * s; q.x += dx * s; q.y += dy * s; }
+  }
+  for(const e of GF.arestas){ const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y, d = Math.sqrt(dx * dx + dy * dy) || 1, alvo = e.a.r + e.b.r + 55, f = (d - alvo) / d * 0.05 * a; e.a.vx += dx * f; e.a.vy += dy * f; e.b.vx -= dx * f; e.b.vy -= dy * f; }
+  for(const n of N){
+    n.vx += (W / 2 - n.x) * 0.0008 * a; n.vy += (H / 2 - n.y) * 0.0012 * a;
+    // borda macia: quem passa da área visível é puxado de volta
+    const mx = n.r + 30, my = n.r + 30;
+    if(n.x < mx) n.vx += (mx - n.x) * 0.1; if(n.x > W - mx) n.vx -= (n.x - W + mx) * 0.1;
+    if(n.y < my) n.vy += (my - n.y) * 0.1; if(n.y > H - my - 20) n.vy -= (n.y - H + my + 20) * 0.1;
+    if(GF.arrasto === n){ n.x = n.fx; n.y = n.fy; n.vx = n.vy = 0; continue; }
+    n.vx *= 0.6; n.vy *= 0.6; n.x += n.vx; n.y += n.vy;
+    // uma conta inválida não pode travar o grafo: a bolha volta para perto do centro
+    if(!isFinite(n.x) || !isFinite(n.y)){ n.x = W / 2 + (Math.random() - 0.5) * 200; n.y = H / 2 + (Math.random() - 0.5) * 200; n.vx = n.vy = 0; }
+  }
+  GF.elArestas.forEach((l, i) => { const e = GF.arestas[i]; l.setAttribute('x1', e.a.x.toFixed(1)); l.setAttribute('y1', e.a.y.toFixed(1)); l.setAttribute('x2', e.b.x.toFixed(1)); l.setAttribute('y2', e.b.y.toFixed(1)); });
+  GF.elNos.forEach((g, i) => g.setAttribute('transform', `translate(${N[i].x.toFixed(1)},${N[i].y.toFixed(1)})`));
+  GF.alfa *= GF.arrasto ? 1 : 0.982;
+  if(GF.alfa > 0.008 || GF.arrasto) requestAnimationFrame(passoGrafo);
+  else { GF.rodando = false; N.forEach(n => GF.pos[n.id] = { x:+n.x.toFixed(1), y:+n.y.toFixed(1) }); lsSet('cripto-v1-grafo', GF.pos); }
+}
+const EXPLORADOR = { pulsechain:a => `https://scan.pulsechain.com/token/${a}`, base:a => `https://basescan.org/token/${a}`, solana:a => `https://solscan.io/token/${a}`, bsc:a => `https://bscscan.com/token/${a}` };
+const CHAIN_ID = { pulsechain:369, base:8453, bsc:56 };
+function abrirGolpes(r){
+  const el = document.getElementById('painelGolpe'), l = ((HIST && HIST.golpeLista) || []).filter(x => x.rede === r);
+  el.innerHTML = `<div class="pg-topo">${icone(r, 18)}<b>${l.length} tokens-golpe na ${REDES[r].nome}</b><button class="fechar" aria-label="Fechar">×</button></div>
+    <p class="nota" style="margin:6px 0 10px;font-size:12.5px;color:var(--muted)">Chegaram sem você pedir. <b>Não abra os links, não aprove e não tente vender</b>: é assim que golpistas drenam carteiras. Eles já não entram no seu total. O que dá para fazer com segurança: conferir no explorador e revogar aprovações antigas.</p>
+    ${CHAIN_ID[r] ? `<a class="btn" style="display:inline-block;margin-bottom:10px;font-size:13px" href="https://revoke.cash/address/${EU_EVM}?chainId=${CHAIN_ID[r]}" target="_blank" rel="noopener">Revisar aprovações no revoke.cash</a>` : ''}
+    <ul class="lista">${l.map(x => { const a = x.g.split(':')[1]; return `<li class="lin"><span><b>${esc(x.sim)}</b><small class="nota" style="display:block">${esc(x.nome || '')}</small></span>${EXPLORADOR[r] ? `<a class="nota" href="${EXPLORADOR[r](a)}" target="_blank" rel="noopener">explorador ↗</a>` : ''}</li>`; }).join('')}</ul>`;
+  el.hidden = false;
+}
+function zoomGrafo(fator, cx = GF.W / 2, cy = GF.H / 2){
+  const k = Math.min(4, Math.max(0.35, GF.k * fator)); fator = k / GF.k;
+  GF.tx = cx - (cx - GF.tx) * fator; GF.ty = cy - (cy - GF.ty) * fator; GF.k = k; aplicarVista();
+}
+function centralizarGrafo(){
+  if(!GF.nos.length) return;
+  const xs = GF.nos.map(n => n.x), ys = GF.nos.map(n => n.y), x0 = Math.min(...xs) - 60, x1 = Math.max(...xs) + 60, y0 = Math.min(...ys) - 50, y1 = Math.max(...ys) + 60;
+  GF.k = Math.min(2, GF.W / (x1 - x0), GF.H / (y1 - y0)); GF.tx = (GF.W - (x0 + x1) * GF.k) / 2; GF.ty = (GF.H - (y0 + y1) * GF.k) / 2; aplicarVista();
+}
+function ligarGrafo(svg){
+  const pt = ev => { const m = svg.getScreenCTM().inverse(), p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; return p.matrixTransform(m); };
+  const noMundo = p => ({ x:(p.x - GF.tx) / GF.k, y:(p.y - GF.ty) / GF.k });
+  svg.addEventListener('pointerdown', ev => {
+    const g = ev.target.closest('.no'), p = pt(ev);
+    GF.clique = { x:ev.clientX, y:ev.clientY, no:g ? GF.nos[+g.dataset.i] : null };
+    if(g){ const n = GF.nos[+g.dataset.i], w = noMundo(p); n.fx = w.x; n.fy = w.y; GF.arrasto = n; GF.alfa = Math.max(GF.alfa, 0.3); rodarGrafo(); }
+    else GF.pan = { x:p.x, y:p.y, tx:GF.tx, ty:GF.ty };
+    svg.setPointerCapture(ev.pointerId); svg.classList.add('pegando');
+  });
+  svg.addEventListener('pointermove', ev => {
+    if(GF.arrasto){ const w = noMundo(pt(ev)); GF.arrasto.fx = w.x; GF.arrasto.fy = w.y; }
+    else if(GF.pan){ const p = pt(ev); GF.tx = GF.pan.tx + p.x - GF.pan.x; GF.ty = GF.pan.ty + p.y - GF.pan.y; aplicarVista(); }
+  });
+  const soltar = ev => {
+    svg.classList.remove('pegando'); if(GF.arrasto){ GF.arrasto = null; GF.alfa = Math.max(GF.alfa, 0.15); rodarGrafo(); } GF.pan = null;
+    // clique (sem arrastar) numa bolha vermelha abre a lista de tokens-golpe daquela rede
+    const c = GF.clique; GF.clique = null;
+    if(c && c.no && c.no.tipo === 'golpe' && ev && Math.hypot(ev.clientX - c.x, ev.clientY - c.y) < 5) abrirGolpes(c.no.rede);
+  };
+  svg.addEventListener('pointerup', soltar); svg.addEventListener('pointercancel', soltar);
+  svg.addEventListener('wheel', ev => { ev.preventDefault(); const p = pt(ev); zoomGrafo(ev.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y); }, { passive:false });
+  // passar o mouse destaca a bolha, as vizinhas e as ligações
+  svg.addEventListener('pointerover', ev => { const g = ev.target.closest('.no'); if(!g || GF.arrasto) return; const n = GF.nos[+g.dataset.i]; svg.classList.add('foco'); GF.arestas.forEach((e, i) => { const liga = e.a === n || e.b === n; GF.elArestas[i].classList.toggle('viz', liga); if(liga){ GF.elNos[GF.nos.indexOf(e.a)].classList.add('viz'); GF.elNos[GF.nos.indexOf(e.b)].classList.add('viz'); } }); g.classList.add('viz'); });
+  svg.addEventListener('pointerout', ev => { if(ev.target.closest('.no') && !GF.arrasto){ svg.classList.remove('foco'); svg.querySelectorAll('.viz').forEach(x => x.classList.remove('viz')); } });
+  document.getElementById('grafoCtrl').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    if(b.dataset.z === 'mais') zoomGrafo(1.25); else if(b.dataset.z === 'menos') zoomGrafo(0.8); else if(b.dataset.z === 'centro') centralizarGrafo();
+    else if(b.dataset.z === 'reorganizar'){ GF.pos = {}; lsSet('cripto-v1-grafo', {}); GF.k = 1; GF.tx = GF.ty = 0; desenharGrafo(); }
+  });
+}
+
+/* ================= por onde o dinheiro passou: resumo em três colunas ================= */
+function desenharMapaFluxo(){
+  const el = document.getElementById('fluxo');
+  if(!HIST){ el.innerHTML = '<p class="vazio">Aparece quando o histórico terminar de ser montado.</p>'; return; }
+  const NOME = { banco:'Banco', fora:'Fora das suas carteiras' };
+  const ar = {}, add = (grupo, a, b, v) => { if(!v || a === b) return; const k = grupo + a + '>' + b; const e = ar[k] || (ar[k] = { grupo, a, b, v:0, n:0 }); e.v += v; e.n++; };
+  for(const m of HIST.mov){
+    if(m.tipo === 'aporte') add('entrou', 'banco', 'binance', m.valIn);
+    else if(m.tipo === 'transferencia' && m.destino && m.destino !== m.rede) add('andou', m.rede, m.destino, m.valOut);
+    else if(m.tipo === 'saque') add('saiu', 'binance', 'fora', m.valOut);
+    else if(m.tipo === 'envio' || m.tipo === 'recebimento'){
+      const c = classeDe(m).cat;
+      if(/Liquidez|Farm|Troca|Poeira|Golpe/.test(c)) continue;
+      const corretora = c === 'Envio para corretora' || c === 'Transferência entre carteiras';
+      if(m.tipo === 'envio') corretora ? add('andou', m.rede, 'binance', m.valOut) : add('saiu', m.rede, 'fora', m.valOut);
+      else corretora ? add('andou', 'binance', m.rede, m.valIn) : add('entrou', 'fora', m.rede, m.valIn);
+    }
+  }
+  const lista = Object.values(ar).filter(e => e.v >= 1), max = Math.max(1, ...lista.map(e => e.v));
+  const ponta = k => REDES[k] ? `${icone(k, 18)}<span>${REDES[k].nome}</span>` : `<span class="bola" style="background:var(--n-${k === 'banco' ? 'banco' : 'fora'})"></span><span>${NOME[k]}</span>`;
+  const cor = k => REDES[k] ? `var(--n-${k})` : `var(--n-${k === 'banco' ? 'banco' : 'fora'})`;
+  const col = (grupo, titulo, expl) => {
+    const l = lista.filter(e => e.grupo === grupo).sort((p, q) => q.v - p.v), soma = l.reduce((s, e) => s + e.v, 0);
+    return `<div class="fx-col"><div class="fx-cab"><b>${titulo}</b><span class="num v">${din(soma)}</span></div><p class="nota">${expl}</p>` +
+      (l.length ? l.map(e => `<div class="fx-lin"><div class="fx-rota">${ponta(e.a)}<span class="fx-seta">→</span>${ponta(e.b)}</div><div class="fx-barra"><i style="width:${(e.v / max * 100).toFixed(1)}%;background:${cor(e.a)}"></i></div><div class="fx-num"><b class="num v">${din(e.v)}</b><small>${e.n} ${e.n > 1 ? 'vezes' : 'vez'}</small></div></div>`).join('') : '<p class="vazio">Nada.</p>') + '</div>';
+  };
+  el.innerHTML = col('entrou', 'Entrou', 'Dinheiro novo: aportes e o que chegou de fora.') + col('andou', 'Andou entre as suas carteiras', 'Transferências de uma carteira sua para outra.') + col('saiu', 'Saiu', 'Saques e envios que não chegaram em carteira sua.');
+}
+function liquidezBaixa(g, valor){
+  if(GRUPOS[g] && !GRUPOS[g].pulsex) return false;
+  const l = VIVO && VIVO.liq ? VIVO.liq[g] : null;
+  if(l == null) return !GRUPOS[g];
+  const usd = VIVO.usd || 5;
+  return l < 250000 || valor / usd > l * 0.02;
+}
+function desenharAtivos(){
+  const tb = document.getElementById('ativos'); const total = totalVivo();
+  let lista = linhasVivas();
+  desenharResumoAtivos();
+  if(!lista.length){ tb.innerHTML = '<tr><td colspan="9" class="vazio">Buscando saldos…</td></tr>'; return; }
+  const juntar = chave => { const m = {}; lista.forEach(x => { const k = chave(x); if(!m[k]) m[k] = { ...x, redes:new Set() }; else { m[k].q += x.q; m[k].v += x.v; } m[k].redes.add(x.rede); }); return Object.values(m); };
+  lista = est.agrupar === 'ativo' ? juntar(x => x.g) : juntar(x => x.rede + '|' + x.g);
+  const miudos = est.pequenos ? lista.filter(x => x.v < 10) : [];
+  if(est.pequenos) lista = lista.filter(x => x.v >= 10);
+  // números de cada linha, calculados uma vez para mostrar e para ordenar
+  const temCustoVendido = HIST && HIST.versao >= 2;
+  lista.forEach(x => {
+    const p = HIST && HIST.pos[x.g];
+    x.avg = p && p.q > 1e-12 ? p.custo / p.q : null;
+    x.res = x.avg != null ? x.v - x.avg * x.q : null; x.real = p ? p.realizado : 0;
+    const p1 = x.g === 'BRL' ? 0 : precoAntes(x.g, 1); x.d1 = p1 && x.p ? x.p / p1 - 1 : null;
+    // ROI: tudo o que a moeda já devolveu (valor de hoje + o que as vendas renderam) sobre tudo o que custou
+    const investido = p ? p.custo + (p.custoVendido || 0) : 0;
+    x.roi = temCustoVendido && investido > 0.01 ? (p.custo + (p.custoVendido || 0) + (x.res || 0) + x.real) / investido - 1 : null;
+    x.sim = simDe(x.g);
+  });
+  const { col, dir } = est.ordem;
+  const chaveOrd = { ativo:x => x.sim.toLowerCase(), q:x => x.q, avg:x => x.avg, p:x => x.p, d1:x => x.d1, v:x => x.v, res:x => x.res, roi:x => x.roi, peso:x => x.v }[col];
+  lista.sort((a, b) => { const va = chaveOrd(a), vb = chaveOrd(b); if(va == null && vb == null) return b.v - a.v; if(va == null) return 1; if(vb == null) return -1; return (va < vb ? -1 : va > vb ? 1 : 0) * dir; });
+  document.querySelectorAll('#cabAtivos th[data-col]').forEach(th => { const on = th.dataset.col === col; th.setAttribute('aria-sort', on ? (dir > 0 ? 'ascending' : 'descending') : 'none'); th.querySelector('.seta').textContent = on ? (dir > 0 ? '↑' : '↓') : ''; });
+  const tag = r => `<span class="tag">${icone(r, 14)}${REDES[r].nome}</span>`;
+  const totRede = {}; linhasVivas().forEach(x => totRede[x.rede] = (totRede[x.rede] || 0) + x.v);
+  const linha = x => {
+    const baixa = liquidezBaixa(x.g, x.v);
+    return `<tr><td><b>${esc(x.sim)}</b>${baixa ? '<span class="selo">baixa liquidez</span>' : ''}<small>${est.agrupar === 'ativo' ? [...x.redes].map(tag).join('') : esc(nomeDe(x.g))}</small></td>
+      <td class="num v ocm">${qtd(x.q)}</td><td class="num ocm">${x.avg != null ? din(x.avg) : '—'}</td><td class="num ocm">${din(x.p)}</td><td class="num ${x.d1 != null ? sinalPct(x.d1) : ''}">${x.d1 != null ? pct(x.d1) : '—'}</td><td class="num v">${din(x.v)}</td>
+      <td class="num v ${sinal(x.res)}">${x.res != null ? din(x.res) + `<small>${pct(x.res / (x.avg * x.q))}${Math.abs(x.real) >= 1 ? ', vendido: ' + din(x.real) : ''}</small>` : '—'}</td>
+      <td class="num ${x.roi != null ? sinalPct(x.roi) : ''}">${x.roi != null ? pct(x.roi) : '—'}</td>
+      <td class="num ocm">${(total ? x.v / total * 100 : 0).toLocaleString('pt-BR', { maximumFractionDigits:1 })}%<span class="peso"><i style="width:${total ? x.v / total * 100 : 0}%"></i></span></td></tr>`;
+  };
+  let h = '';
+  if(est.agrupar === 'carteira'){ for(const r of ORDEM){ const l = lista.filter(x => x.rede === r); if(l.length) h += `<tr class="grupo"><td colspan="9"><div class="gcab">${icone(r, 30)}<div><b>${REDES[r].nome}</b><small>${REDES[r].carteira} · ${l.length} ${l.length > 1 ? 'ativos' : 'ativo'}</small></div><div class="gval"><b class="num v">${din(totRede[r] || 0)}</b><small>${(total ? (totRede[r] || 0) / total * 100 : 0).toLocaleString('pt-BR', { maximumFractionDigits:1 })}% do total</small></div></div></td></tr>` + l.map(linha).join(''); } }
+  else h = lista.map(linha).join('');
+  if(miudos.length) h += `<tr class="resumo"><td colspan="9">${miudos.length} ${miudos.length > 1 ? 'ativos pequenos escondidos' : 'ativo pequeno escondido'}, somando <b class="num v">${din(miudos.reduce((a, x) => a + x.v, 0))}</b>.</td></tr>`;
+  tb.innerHTML = h || '<tr><td colspan="9" class="vazio">Nada acima de R$ 10.</td></tr>';
+  document.getElementById('contAtivos').textContent = lista.length;
+}
+// resumo acima da tabela: o retorno da carteira inteira
+function desenharResumoAtivos(){
+  const el = document.getElementById('resumoAtivos');
+  if(!VIVO || !HIST){ el.innerHTML = ''; return; }
+  const total = totalVivo(), ap = HIST.aportado;
+  let naoReal = 0, real = 0; const vistos = new Set();
+  linhasVivas().forEach(x => { const p = HIST.pos[x.g]; if(p && p.q > 1e-12) naoReal += x.v - p.custo / p.q * x.q; });
+  Object.values(HIST.pos).forEach(p => real += p.realizado || 0);
+  const cx = (rot, val, cls = '', dica = '') => `<div title="${dica}"><span>${rot}</span><b class="num v ${cls}">${val}</b></div>`;
+  el.innerHTML = cx('ROI da carteira', pct((total - ap) / ap), sinalPct((total - ap) / ap), 'Patrimônio de hoje sobre o total aportado') + cx('Resultado sobre o aportado', din(total - ap), sinal(total - ap)) +
+    cx('Lucro ou prejuízo em aberto', din(naoReal), sinal(naoReal), 'O que você ganharia ou perderia vendendo tudo hoje, pelo preço médio') + cx('Já realizado em vendas', din(real), sinal(real), 'Soma do que as vendas renderam acima ou abaixo do preço médio');
+}
+function desenharLiquidez(){
+  const el = document.getElementById('liquidez'); const total = totalVivo();
+  if(!VIVO){ el.innerHTML = '<p class="vazio">Buscando saldos…</p>'; return; }
+  const por = {}; linhasVivas().forEach(x => por[x.g] = (por[x.g] || 0) + x.v);
+  const baixas = Object.entries(por).filter(([g, v]) => v >= 1 && liquidezBaixa(g, v)).sort((a, b) => b[1] - a[1]);
+  const soma = baixas.reduce((a, [, v]) => a + v, 0);
+  el.innerHTML = `<p style="margin:0 0 10px"><b class="num v">${din(soma)}</b> (${pct(total ? soma / total : 0).replace('+','')} do patrimônio) está em moedas difíceis de vender pelo preço mostrado.</p>` +
+    (baixas.length ? '<ul class="lista">' + baixas.map(([g, v]) => { const l = VIVO.liq[g]; return `<li class="lin"><span><b>${esc(simDe(g))}</b><small class="nota">${l != null ? 'Dinheiro nas pools: US$ ' + Math.round(l).toLocaleString('pt-BR') : 'Sem pool conhecida'}</small></span><b class="num v">${din(v)}</b></li>`; }).join('') + '</ul>' : '<p class="vazio">Nenhuma moeda com liquidez baixa.</p>') +
+    '<p class="nota" style="margin-top:10px">Conta como baixa liquidez a moeda com menos de US$ 250 mil nas pools, ou quando a sua posição passa de 2% desse valor.</p>';
+}
+function desenharPools(){
+  const el = document.getElementById('pools');
+  if(!HIST){ el.innerHTML = '<p class="vazio">Aparece quando o histórico terminar de ser montado.</p>'; return; }
+  const ps = HIST.pools || [];
+  const cp = document.getElementById('contPools'), abertas = ps.filter(p => p.status !== 'encerrada').length;
+  cp.textContent = abertas ? abertas + (abertas > 1 ? ' abertas' : ' aberta') : ''; cp.classList.toggle('alerta', ps.some(p => p.status === 'presa'));
+  if(!ps.length){ el.innerHTML = '<p class="vazio">Nenhuma pool encontrada nas suas carteiras.</p>'; return; }
+  const usd = (VIVO && VIVO.usd) || 5;
+  const ordem = { ativa:0, presa:1, encerrada:2 };
+  const txtStatus = { ativa:'Ativa', presa:'Presa numa farm desativada', encerrada:'Encerrada' };
+  let h = '<ul class="lista">' + ps.slice().sort((a, b) => ordem[a.status] - ordem[b.status] || b.abertura - a.abertura).map(p => {
+    const parte = p.totalSupply ? p.lpTotal / p.totalSupply : 0, valor = parte * p.reserveUSD * usd;
+    const comp = parte && p.r0 ? `${qtd(parte * p.r0)} ${esc(p.t0)} e ${qtd(parte * p.r1)} ${esc(p.t1)}` : '';
+    const rp = (HIST.resultadoPools || {})[p.par];
+    const resTxt = !rp ? '' : p.status === 'encerrada' ? ` Resultado: <b class="num v ${sinal(rp.resultado)}">${din(rp.resultado)}</b> (o que voltou, pelo preço do dia da saída, menos o custo do que entrou).`
+      : rp.aberto ? ` Custo do que entrou: <b class="num v">${din(rp.aberto)}</b>.` : '';
+    return `<li><div class="lin"><span><b>${esc(p.nome)}</b> <span class="${p.status === 'presa' ? 'selo' : 'nota'}">${txtStatus[p.status]}</span></span>${p.status !== 'encerrada' ? `<b class="num v">${din(valor)}</b>` : ''}</div>
+      <div class="nota">${REDES[p.rede].nome}. Entrou em ${fmtData(p.abertura)}${p.fechamento && p.status === 'encerrada' ? ', saiu em ' + fmtData(p.fechamento) : ''}.${comp && p.status !== 'encerrada' ? ' Hoje a sua parte é ' + comp + '.' : ''}${p.status === 'presa' ? ' O contrato da farm não existe mais, então não dá para retirar.' : ''}${resTxt}</div></li>`;
+  }).join('') + '</ul>';
+  const rec = Object.entries(HIST.recompensas || {}).filter(([g, q]) => q > 0);
+  if(rec.length){ h += `<p class="nota" style="margin-top:10px">Recompensas recebidas das farms: ${rec.map(([g, q]) => `${qtd(q)} ${esc(simDe(g))}${VIVO && VIVO.precos[g] ? ' (hoje ' + din(q * VIVO.precos[g]) + ')' : ''}`).join(', ')}.</p>`; }
+  el.innerHTML = h;
+}
+function descreverMov(m){
+  const lado = l => l.map(([g, q]) => `${qtd(q)} ${esc(simDe(g))}`).join(' e ');
+  if(m.tipo === 'aporte') return `Aporte de ${din(m.valIn)} na Binance`;
+  if(m.tipo === 'troca') return `Trocou ${lado(m.outs)} por ${lado(m.ins)}`;
+  if(m.tipo === 'transferencia' && m.destino === m.rede) return `Saque de ${lado(m.outs)} devolvido pela Binance`;
+  if(m.tipo === 'transferencia') return `Transferiu ${lado(m.outs)} da ${REDES[m.rede].nome} para a ${REDES[m.destino].nome}`;
+  if(m.tipo === 'saque') return `Sacou ${lado(m.outs)} da Binance, sem chegada em carteira sua`;
+  if(m.tipo === 'pool') return `Colocou ${lado(m.outs)} na pool ${esc(m.pool)}${m.ins.length ? ' e recebeu ' + lado(m.ins) : ''}`;
+  if(m.tipo === 'poolSaida') return `Retirou ${lado(m.ins)} da pool ${esc(m.pool)}`;
+  if(m.tipo === 'envio') return `Enviou ${lado(m.outs)} para fora das suas carteiras`;
+  if(m.tipo === 'recebimento') return `Recebeu ${lado(m.ins)}`;
+  if(m.tipo === 'resgate') return `Resgatou ${lado(m.ins)}`;
+  return m.tipo;
+}
+/* classificação do diário: automática quando os dados bastam; o resto fica "A classificar" para você escolher */
+const CATEGORIAS = ['Aporte', 'Compra', 'Venda', 'Troca', 'Conversão de poeira em BNB', 'Transferência entre carteiras', 'Ponte entre redes', 'Saque devolvido', 'Saque sem destino conhecido', 'Depósito vindo de fora', 'Liquidez: entrada', 'Liquidez: saída', 'Farm: depósito', 'Farm: saque', 'Farm: recompensa', 'Airdrop', 'Recebimento de terceiros', 'Envio para terceiros', 'Envio para corretora', 'Poeira (golpe)', 'Drenado (golpe)', 'Golpe / ignorar', 'Outro'];
+function classificar(m){
+  const K = m.alvo && CONTRATOS[m.rede] ? CONTRATOS[m.rede][m.alvo] : null, Kc = m.contra && CONTRATOS[m.rede] ? CONTRATOS[m.rede][m.contra] : null;
+  const farm = f => f && (HIST.farms || []).includes(f);
+  const estavel = g => g === 'USD' || g === 'BRL';
+  const via = (K && K.protocolo) || (m.rede === 'binance' ? 'Binance' : '');
+  if(m.tipo === 'aporte') return { cat:'Aporte', certo:true };
+  if(m.tipo === 'transferencia') return m.destino === m.rede ? { cat:'Saque devolvido', certo:true } : { cat: m.rede !== 'binance' && m.destino !== 'binance' ? 'Ponte entre redes' : 'Transferência entre carteiras', certo:true };
+  if(m.tipo === 'saque') return { cat:'Saque sem destino conhecido', certo:true };
+  if(m.tipo === 'pool') return { cat:'Liquidez: entrada', via, certo:true };
+  if(m.tipo === 'poolSaida') return { cat:'Liquidez: saída', via, certo:true };
+  if(m.tipo === 'troca'){
+    if(/Small Assets/.test(m.metodo || '')) return { cat:'Conversão de poeira em BNB', via, certo:true };
+    const deu = m.outs.every(([g]) => estavel(g)), recebeu = m.ins.every(([g]) => estavel(g));
+    return { cat: deu && !recebeu ? 'Compra' : recebeu && !deu ? 'Venda' : 'Troca', via, certo:true };
+  }
+  if(m.tipo === 'resgate' || m.tipo === 'recebimento'){
+    if(farm(m.contra) || farm(m.alvo)) return { cat:'Farm: recompensa', via, certo:true };
+    // quantia minúscula que chegou sem você pedir: “poeira” mandada por golpistas para sujar o histórico
+    if(m.tipo === 'recebimento' && m.rede !== 'binance' && m.valIn < 0.05) return { cat:'Poeira (golpe)', certo:true };
+    const k = Kc || K; if(k) return { cat:k.receb, via:k.protocolo, certo:k.certeza === 'confirmado' };
+    if(m.rede === 'binance') return { cat:'Depósito vindo de fora', certo:false };
+  }
+  if(m.tipo === 'envio'){ const k = K || Kc; if(k) return { cat:k.envio, via:k.protocolo, certo:k.certeza === 'confirmado' }; }
+  return { cat:'A classificar', certo:false };
+}
+function classeDe(m){ const c = classificar(m); return CLASSE[m.id] ? { cat:CLASSE[m.id], via:c.via, certo:true, sua:true } : c; }
+function desenharDiario(){
+  const el = document.getElementById('diario');
+  if(!HIST){ el.innerHTML = '<li class="vazio">Aparece quando o histórico terminar de ser montado.</li>'; return; }
+  const filtros = { todos:() => true, troca:m => m.tipo === 'troca', aporte:m => m.tipo === 'aporte', mov:m => ['envio','recebimento','resgate','transferencia','saque','pool','poolSaida'].includes(m.tipo), nota:m => DIARIO[m.id], duvida:m => !classeDe(m).certo };
+  const lista = HIST.mov.filter(filtros[est.filtro]);
+  const nDuvida = HIST.mov.filter(filtros.duvida).length;
+  document.getElementById('contDiario').textContent = HIST.mov.length + (nDuvida ? ` · ${nDuvida} a classificar` : '');
+  document.getElementById('contDiario').classList.toggle('alerta', nDuvida > 0);
+  document.querySelector('#filtroDiario [data-v="duvida"]').textContent = `A classificar (${nDuvida})`;
+  const pr = g => VIVO && VIVO.precos[g] != null ? VIVO.precos[g] : null;
+  el.innerHTML = lista.slice(0, est.limiteDiario).map(m => {
+    let depois = '';
+    if(m.tipo === 'troca' && VIVO){
+      const hojeIn = m.ins.reduce((a, [g, q]) => a + q * (pr(g) || 0), 0), hojeOut = m.outs.reduce((a, [g, q]) => a + q * (pr(g) || 0), 0);
+      if(hojeIn || hojeOut) depois = `<div class="depois">Hoje, o que você recebeu vale <b class="num v">${din(hojeIn)}</b>; o que deu valeria <b class="num v">${din(hojeOut)}</b>. <span class="${sinal(hojeIn - hojeOut)}">${hojeIn >= hojeOut ? 'A troca rendeu ' : 'Ficar parado teria rendido '}${din(Math.abs(hojeIn - hojeOut))} a mais.</span></div>`;
+    }
+    const c = classeDe(m);
+    const opcoes = (c.certo ? [] : ['A classificar']).concat(CATEGORIAS).map(o => `<option${o === c.cat ? ' selected' : ''}>${o}</option>`).join('');
+    const selo = `<select class="cat${c.certo ? '' : ' duvida'}" data-id="${esc(m.id)}" aria-label="Categoria" title="${c.sua ? 'Escolhida por você' : c.certo ? 'Classificada automaticamente' : 'Não tenho certeza: escolha a categoria'}">${opcoes}</select>`;
+    return `<li><span class="d">${fmtData(m.t)}</span><div><div>${selo}${c.via ? `<span class="rede">${esc(c.via)}</span> ` : ''}${descreverMov(m)} <span class="rede">${REDES[m.rede].nome}</span></div>${depois}${DIARIO[m.id] ? `<textarea data-id="${esc(m.id)}" placeholder="Por que fiz isso?" aria-label="Anotação">${esc(DIARIO[m.id])}</textarea>` : `<button class="anotar" data-id="${esc(m.id)}">+ Anotar</button>`}</div></li>`;
+  }).join('') || '<li class="vazio">Nada neste filtro.</li>';
+  document.getElementById('btnMais').classList.toggle('oculto', lista.length <= est.limiteDiario);
+}
+function desenharVisita(){
+  const el = document.getElementById('visita');
+  if(!VIVO){ el.innerHTML = '<p class="vazio">Buscando saldos…</p>'; return; }
+  const ant = VISITA_ANT;
+  if(!ant){ el.innerHTML = '<p class="vazio">Primeira visita. Da próxima vez, aqui aparece o que mudou desde hoje.</p>'; return; }
+  const total = totalVivo(), dif = total - ant.total;
+  const vars = Object.entries(ant.precos || {}).filter(([g, p]) => p > 0 && VIVO.precos[g] > 0 && g !== 'BRL' && g !== 'USD' && (VIVO.saldos.find(s => s.g === g && s.q * VIVO.precos[g] >= 10))).map(([g, p]) => [g, VIVO.precos[g] / p - 1]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 4);
+  const novos = HIST ? HIST.mov.filter(m => m.t > ant.t) : [];
+  el.innerHTML = `<p style="margin:0 0 8px">Você esteve aqui em ${fmtData(ant.t)}. Desde então, o patrimônio foi de <b class="num v">${din(ant.total)}</b> para <b class="num v">${din(total)}</b> (<span class="${sinalPct(ant.total ? dif / ant.total : 0)}">${pct(ant.total ? dif / ant.total : 0)}</span>).</p>` +
+    (vars.length ? '<ul class="lista">' + vars.map(([g, v]) => `<li class="lin"><span>${esc(simDe(g))}</span><b class="num ${sinalPct(v)}">${pct(v)}</b></li>`).join('') + '</ul>' : '') +
+    `<p class="nota" style="margin-top:8px">${novos.length ? novos.length + ' movimento(s) novo(s) nas carteiras, na aba Diário.' : 'Nenhum movimento novo nas carteiras.'}</p>`;
+}
+function desenharPendencias(){
+  const el = document.getElementById('pendencias'); const itens = [];
+  const usd = (VIVO && VIVO.usd) || 5;
+  if(HIST){
+    for(const [g, t] of Object.entries(HIST.transito || {})){ if(t.q > 1e-9){ const v = t.q * ((VIVO && VIVO.precos[g]) || 0); if(v >= 5) itens.push([`${qtd(t.q)} ${esc(simDe(g))} sacados da Binance não chegaram em nenhuma carteira sua`, `Saques de ${[...new Set((t.datas || []).map(x => nomeMes[new Date(x).getMonth()] + '/' + String(new Date(x).getFullYear()).slice(2)))].join(', ')}. Hoje valeriam ${din(v)} e contam como saída do patrimônio.${g === 'BNB' ? ' Lembrete na nota Crypto para 01/10/2026.' : ''}`]); } }
+    if(HIST.golpe) itens.push([`${HIST.golpe} tokens-golpe ocultos`, 'Chegaram sem você pedir, com nomes como “Claim…”. Não abra os links nem tente vender.']);
+    (HIST.pools || []).filter(p => p.status === 'presa').forEach(p => itens.push([`Pool ${esc(p.nome)} presa numa farm desativada`, 'O contrato da farm não existe mais. O valor está na aba Pools.']));
+    if(Date.now() - HIST.geradoEm > 7 * DIA_MS) itens.push(['Histórico com mais de uma semana', 'Clique em Refazer histórico para incluir os movimentos recentes no gráfico e no diário.']);
+    (HIST.avisos || []).forEach(a => itens.push([a, 'Tente Refazer histórico mais tarde.']));
+    // saldo de agora x histórico
+    if(VIVO){ const vivo = {}; VIVO.saldos.filter(s => !s.pool).forEach(s => vivo[s.rede + '|' + s.g] = (vivo[s.rede + '|' + s.g] || 0) + s.q); let dif = 0; const onde = new Set(); for(const k of new Set([...Object.keys(vivo), ...Object.keys(HIST.fim || {})])){ const [r, g] = k.split('|'); if(r === 'bsc' || r === 'binance') continue; const d = (vivo[k] || 0) - Math.max(0, (HIST.fim || {})[k] || 0); const v = Math.abs(d) * (VIVO.precos[g] || 0); if(v >= 5){ dif += v; onde.add(REDES[r].nome); } } if(dif >= 5) itens.push([`Diferença de ${din(dif)} entre o saldo de agora e o histórico`, `Em ${[...onde].join(', ')}. Pode ser movimento recente: clique em Refazer histórico.`]); }
+  }
+  itens.push(['A BNB Chain não tem histórico gratuito', 'Entra só o saldo de agora, sem passado no gráfico.']);
+  if(VIVO && VIVO.erros && VIVO.erros.length) itens.unshift([`Não consegui ler o saldo de agora em ${VIVO.erros.join(', ')}`, 'Estou usando o último saldo conhecido. Clique em Atualizar para tentar de novo.']);
+  el.innerHTML = itens.map(([a, b]) => `<div class="aviso">${a}<small>${b}</small></div>`).join('');
+}
+/* ================= alertas: o que é urgente fica no sino do topo ================= */
+function calcularAlertas(){
+  const A = [], add = (nivel, id, titulo, detalhe, aba) => A.push({ nivel, id, titulo, detalhe, aba });
+  if(!VIVO) return A;
+  const total = totalVivo();
+  (VIVO.posicoes || []).filter(x => !x.teste && !x.dentro).forEach(x => add('urgente', 'faixa:' + x.id, `Pool ${simDe(x.g0)} / ${simDe(x.g1)} fora da faixa`, `O preço saiu da sua faixa (${x.p < x.pa ? 'abaixo' : 'acima'}); a posição parou de render taxas.`, 'pools'));
+  const d1 = variacao(1), d7 = variacao(7);
+  if(d1 && d1.pct <= -0.10) add('urgente', 'queda24', `Patrimônio caiu ${pct(d1.pct).replace('−', '')} em 24 h`, `Queda de ${din(-d1.dif)} desde o fechamento de ontem.`, 'geral');
+  else if(d7 && d7.pct <= -0.15) add('atencao', 'queda7', `Patrimônio caiu ${pct(d7.pct).replace('−', '')} em 7 dias`, `Queda de ${din(-d7.dif)} na semana.`, 'geral');
+  const por = {}; linhasVivas().forEach(x => { const o = por[x.g] || (por[x.g] = { v:0, p:x.p }); o.v += x.v; });
+  for(const [g, o] of Object.entries(por)){
+    const peso = total ? o.v / total : 0, p1 = precoAntes(g, 1);
+    if(peso >= 0.05 && p1 && o.p / p1 - 1 <= -0.15) add('urgente', 'moeda24:' + g, `${simDe(g)} caiu ${pct(o.p / p1 - 1).replace('−', '')} em 24 h`, `É ${(peso * 100).toLocaleString('pt-BR', { maximumFractionDigits:1 })}% da sua carteira.`, 'ativos');
+    if(peso >= 0.05 && liquidezBaixa(g, o.v)) add('atencao', 'liq:' + g, `${simDe(g)} tem liquidez baixa`, `${din(o.v)} numa moeda difícil de vender pelo preço mostrado.`, 'ativos');
+  }
+  const f = VIVO.mercado && VIVO.mercado.fng && VIVO.mercado.fng[0];
+  if(f && (f.v <= 20 || f.v >= 80)) add('atencao', 'medo:' + f.t, `Mercado em ${(MEDO[f.c] || f.c).toLowerCase()} (${f.v})`, 'Momento de humor extremo no mercado de cripto.', 'geral');
+  if(VIVO.erros && VIVO.erros.length) add('atencao', 'erro', `Não consegui ler ${VIVO.erros.join(', ')}`, 'Estou usando o último saldo conhecido.', 'geral');
+  if(HIST && VISITA_ANT){ const n = HIST.mov.filter(m => m.t > VISITA_ANT.t).length; if(n) add('info', 'novos', `${n} movimento(s) novo(s) nas carteiras`, 'Desde a sua última visita.', 'diario'); }
+  if(HIST){ const n = HIST.mov.filter(m => !classeDe(m).certo).length; if(n) add('info', 'classificar', `${n} transações a classificar no Diário`, 'Escolha a categoria das que eu não tive certeza.', 'diario'); }
+  return A;
+}
+function desenharAlertas(){
+  const A = calcularAlertas(), fortes = A.filter(a => a.nivel !== 'info'), c = document.getElementById('contaAlertas');
+  c.textContent = fortes.length; c.classList.toggle('oculto', !fortes.length); c.classList.toggle('urgente', A.some(a => a.nivel === 'urgente'));
+  const perm = 'Notification' in window ? Notification.permission : 'indisponivel';
+  document.getElementById('painelAlertas').innerHTML = (A.length ? A.map(a => `<div class="aviso-item ${a.nivel}" data-aba="${a.aba}" role="button" tabindex="0"><i></i><b>${esc(a.titulo)}</b><small>${esc(a.detalhe)}</small></div>`).join('') : '<p class="vazio" style="padding:10px">Nada urgente agora.</p>') +
+    `<div class="rodape"><span>Vermelho é urgente; laranja, atenção.</span>${perm === 'default' ? '<button class="btn" id="btnAvisos" style="font-size:12px;padding:4px 8px">Avisar no Windows</button>' : perm === 'granted' ? '<span>Avisos do Windows ligados</span>' : ''}</div>`;
+  // aviso do Windows para o que é urgente e ainda não foi avisado (só com a página aberta)
+  if(perm === 'granted'){
+    const vistos = lsGet('cripto-v1-avisados', {});
+    A.filter(a => a.nivel === 'urgente' && !vistos[a.id]).forEach(a => { try{ new Notification('Carteira Cripto: ' + a.titulo, { body:a.detalhe }); }catch(e){} vistos[a.id] = Date.now(); });
+    lsSet('cripto-v1-avisados', vistos);
+  }
+}
+function tudo(){ desenharAlertas(); desenharTopo(); desenharGrafico(); desenharOnde(); desenharMercado(); desenharAportes(); desenharGrafo(); desenharMapaFluxo(); desenharRendimento(); desenharPosicoes(); desenharAtivos(); desenharLiquidez(); desenharPools(); desenharDiario(); desenharVisita(); desenharPendencias(); }
+
+/* ================= fluxo ================= */
+let ocupado = false;
+async function atualizarVivo(){
+  status('Buscando saldos e cotações…', true);
+  const { saldos, erros } = await saldosAgora(HIST);
+  const grupos = [...new Set(saldos.map(s => s.g).concat(Object.keys((HIST && HIST.recompensas) || {})).concat(HIST ? HIST.mov.slice(0, 60).flatMap(m => m.ins.concat(m.outs).map(x => x[0])) : []))];
+  const { precos, liq, usd } = await precosAgora(grupos);
+  const antes = VIVO;
+  VIVO = { t:Date.now(), saldos, precos, liq, usd, erros };
+  status('Buscando indicadores do mercado e posições de pool…', true);
+  VIVO.mercado = await mercadoAgora().catch(() => (antes && antes.mercado) || {});
+  VIVO.posicoes = await posicoesAbertas().catch(e => { console.warn('posições', e); return (antes && antes.posicoes) || []; });
+  // preço das moedas das posições que ainda não tinham cotação
+  const faltam = [...new Set(VIVO.posicoes.flatMap(x => [x.g0, x.g1]))].filter(g => precos[g] == null);
+  if(faltam.length){ const extra = await precosAgora(faltam).catch(() => null); if(extra){ Object.assign(precos, extra.precos); Object.assign(liq, extra.liq); } }
+  // o que está dentro de uma posição aberta continua sendo seu e entra no patrimônio (a posição de teste, não)
+  VIVO.posicoes.filter(x => !x.teste).forEach(x => { if(x.a0 > 0) saldos.push({ rede:x.rede, g:x.g0, q:x.a0, pool:true }); if(x.a1 > 0) saldos.push({ rede:x.rede, g:x.g1, q:x.a1, pool:true }); });
+  lsSet(LS.vivo, VIVO);
+  // fechamentos diários recentes das moedas que você tem, para as variações de 24 h e 7 dias
+  const temPreco = [...new Set(saldos.filter(s => s.q * (precos[s.g] || 0) >= 1).map(s => s.g))].filter(g => g !== 'BRL' && PRECOS[g] && Object.keys(PRECOS[g]).length);
+  if(temPreco.length){ try{ PRECOS = await atualizarPrecos(temPreco, Date.now() - 30 * DIA_MS, t => status('Buscando ' + t + '…', true)); }catch(e){ console.warn('preços recentes', e); } }
+}
+async function iniciar(){
+  tudo();
+  if(ocupado) return; ocupado = true;
+  try{
+    await atualizarVivo(); tudo();
+    const velho = !HIST || HIST.versao !== VERSAO_HIST || Date.now() - HIST.geradoEm > 12 * 3600 * 1000;
+    if(velho){ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); await atualizarVivo(); }
+    tudo();
+    status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }));
+    // registra a visita de agora para a próxima vez
+    lsSet(LS.visita, { t:Date.now(), total:totalVivo(), precos:VIVO.precos });
+  }catch(e){ console.error(e); status('Algo falhou: ' + e.message + '. Clique em Atualizar para tentar de novo.'); }
+  ocupado = false;
+  window.__pronto = true;
+}
+
+/* ================= controles ================= */
+function seg(id, chave, depois){
+  document.querySelectorAll('#' + id + ' button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#' + id + ' button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    if(chave) est[chave] = chave === 'periodo' ? +b.dataset.v : b.dataset.v;
+    if(depois) depois(b.dataset.v); else tudo();
+  }));
+}
+document.getElementById('series').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if(!b) return;
+  const k = b.dataset.s, on = est.series.includes(k);
+  if(on && est.series.length === 1) return; // sempre fica ao menos uma linha
+  est.series = on ? est.series.filter(x => x !== k) : est.series.concat([k]);
+  lsSet('cripto-v1-series', est.series); desenharGrafico();
+});
+const escolherRede = r => { est.ondeRede = r && r !== est.ondeRede ? r : null; desenharOnde(); };
+document.getElementById('onde').addEventListener('click', e => { const t = e.target.closest('[data-r]'); if(t) escolherRede(t.dataset.r); });
+document.getElementById('onde').addEventListener('keydown', e => { const t = e.target.closest('li.clic'); if(t && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); escolherRede(t.dataset.r); } });
+{ // sino de alertas
+  const btn = document.getElementById('btnAlertas'), pn = document.getElementById('painelAlertas');
+  const abrir = on => { pn.hidden = !on; btn.setAttribute('aria-expanded', on); };
+  btn.addEventListener('click', e => { e.stopPropagation(); abrir(pn.hidden); });
+  document.addEventListener('click', e => { if(!pn.hidden && !e.target.closest('.sino-caixa')) abrir(false); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && !pn.hidden){ abrir(false); btn.focus(); } });
+  pn.addEventListener('click', async e => {
+    if(e.target.id === 'btnAvisos'){ await Notification.requestPermission(); desenharAlertas(); return; }
+    const a = e.target.closest('.aviso-item'); if(a){ abrir(false); abrirAba(a.dataset.aba); }
+  });
+  pn.addEventListener('keydown', e => { const a = e.target.closest('.aviso-item'); if(a && e.key === 'Enter'){ abrir(false); abrirAba(a.dataset.aba); } });
+}
+seg('periodo', 'periodo', () => { est.zoom = null; tudo(); });
+// clicar no cabeçalho da tabela de ativos ordena por aquela coluna; clicar de novo inverte
+document.getElementById('cabAtivos').addEventListener('click', e => { const th = e.target.closest('th[data-col]'); if(!th) return; const c = th.dataset.col; est.ordem = est.ordem.col === c ? { col:c, dir:-est.ordem.dir } : { col:c, dir:c === 'ativo' ? 1 : -1 }; desenharAtivos(); });
+// liga e desliga a simulação de pool (posição aberta nº 6094669 da Uniswap v3 na Base, de outra carteira)
+document.getElementById('posicoes').addEventListener('click', async e => {
+  if(e.target.id !== 'btnSimular') return;
+  const ligada = lsGet('cripto-v1-simulacao', 'uni:6094669') !== 'nao';
+  lsSet('cripto-v1-simulacao', ligada ? 'nao' : 'uni:6094669');
+  e.target.disabled = true; status('Buscando a posição…', true);
+  try{ VIVO.posicoes = await posicoesAbertas(); status(ligada ? 'Simulação retirada.' : 'Simulação carregada.'); }catch(err){ status('Não consegui carregar a posição: ' + err.message); }
+  desenharPosicoes(); desenharAlertas();
+});
+document.getElementById('painelGolpe').addEventListener('click', e => { if(e.target.closest('.fechar')) e.currentTarget.hidden = true; });
+document.getElementById('btnTirarZoom').addEventListener('click', () => { est.zoom = null; desenharGrafico(); }); seg('moeda', 'moeda'); seg('agrupar', 'agrupar');
+seg('periodoRend', null, v => { est.periodoRend = +v; desenharRendimento(); });
+seg('filtroDiario', 'filtro', () => { est.limiteDiario = 30; desenharDiario(); });
+seg('tema', null, v => {
+  if(v === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v;
+  // a barra do navegador acompanha o tema escolhido
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m, i) => m.content = v === 'light' ? '#f4f6f9' : v === 'dark' ? '#10141a' : i ? '#10141a' : '#f4f6f9');
+  lsSet(LS.tema, v);
+});
+{ const t = lsGet(LS.tema, 'auto'); const b = document.querySelector(`#tema [data-v="${t}"]`); if(b) b.click(); }
+document.getElementById('pequenos').addEventListener('change', e => { est.pequenos = e.target.checked; desenharAtivos(); });
+document.getElementById('btnOlho').addEventListener('click', e => { const on = document.body.classList.toggle('privado'); e.target.setAttribute('aria-pressed', on); e.target.textContent = on ? 'Mostrar valores' : 'Esconder valores'; });
+document.getElementById('btnAtualizar').addEventListener('click', async () => { if(ocupado) return; ocupado = true; try{ await atualizarVivo(); tudo(); status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui atualizar: ' + e.message); } ocupado = false; });
+async function refazerTudo(){ if(ocupado) return; ocupado = true; try{ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); PRECOS = lsGet(LS.precos, {}); await atualizarVivo(); tudo(); status('Histórico refeito às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui refazer o histórico: ' + e.message); } ocupado = false; }
+document.getElementById('btnHistorico').addEventListener('click', () => { if(!ocupado && confirm('Refazer o histórico relê todas as transações e leva uns 2 minutos. Continuar?')) refazerTudo(); });
+// abas: a aba aberta fica no endereço da página (#ativos, #pools, #diario)
+const ABAS = ['geral', 'mapa', 'ativos', 'aportes', 'pools', 'diario'];
+function abrirAba(nome, focar){
+  if(!ABAS.includes(nome)) nome = 'geral';
+  document.querySelectorAll('#abas [role="tab"]').forEach(b => { const on = b.dataset.aba === nome; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; if(on && focar) b.focus(); });
+  document.querySelectorAll('main > [data-aba]').forEach(p => p.hidden = p.dataset.aba !== nome);
+  if(nome === 'mapa' && GF.nos.length){ GF.alfa = Math.max(GF.alfa, 0.3); rodarGrafo(); }
+  const alvo = location.pathname + location.search + (nome === 'geral' ? '' : '#' + nome);
+  try{ history.replaceState(null, '', alvo); }catch(e){}
+}
+document.querySelectorAll('#abas [role="tab"]').forEach(b => b.addEventListener('click', () => abrirAba(b.dataset.aba)));
+document.getElementById('abas').addEventListener('keydown', e => {
+  const i = ABAS.indexOf(document.activeElement.dataset.aba); if(i < 0) return;
+  const j = e.key === 'ArrowRight' ? (i + 1) % ABAS.length : e.key === 'ArrowLeft' ? (i + ABAS.length - 1) % ABAS.length : e.key === 'Home' ? 0 : e.key === 'End' ? ABAS.length - 1 : -1;
+  if(j >= 0){ e.preventDefault(); abrirAba(ABAS[j], true); }
+});
+abrirAba(location.hash.slice(1));
+document.getElementById('btnMais').addEventListener('click', () => { est.limiteDiario += 30; desenharDiario(); });
+// o campo de anotação só aparece quando você pede
+document.getElementById('diario').addEventListener('click', e => { const b = e.target.closest('.anotar'); if(!b) return; const t = document.createElement('textarea'); t.dataset.id = b.dataset.id; t.placeholder = 'Por que fiz isso?'; t.setAttribute('aria-label', 'Anotação'); b.replaceWith(t); t.focus(); });
+document.getElementById('diario').addEventListener('change', e => { if(e.target.tagName === 'SELECT'){ const id = e.target.dataset.id, v = e.target.value; if(v === 'A classificar') delete CLASSE[id]; else CLASSE[id] = v; lsSet(LS.classe, CLASSE); marcarAnot(); desenharDiario(); } });
+document.getElementById('diario').addEventListener('input', e => { if(e.target.tagName === 'TEXTAREA'){ const id = e.target.dataset.id, v = e.target.value.trim(); if(v) DIARIO[id] = v; else delete DIARIO[id]; lsSet(LS.diario, DIARIO); marcarAnot(); } });
+
+/* ---------------- desfazer e refazer ----------------
+   O que é dele aqui são as classificações e as anotações do diário: é o que o Ctrl+Z
+   desfaz. Dentro de um campo de texto o Ctrl+Z continua sendo o do navegador, que
+   desfaz o que foi digitado. */
+const UNDO = { pilha:[], refazer:[], atual:null };
+function instantaneoAnot(){ return JSON.stringify({ classe:CLASSE, diario:DIARIO }); }
+function marcarAnot(){
+  const agora = instantaneoAnot();
+  if(UNDO.atual === null){ UNDO.atual = agora; return; }
+  if(agora === UNDO.atual) return;
+  UNDO.pilha.push(UNDO.atual);
+  if(UNDO.pilha.length > 60) UNDO.pilha.shift();
+  UNDO.refazer.length = 0;
+  UNDO.atual = agora;
+}
+function aplicarAnot(json, msg){
+  const j = JSON.parse(json);
+  Object.keys(CLASSE).forEach(k => delete CLASSE[k]); Object.assign(CLASSE, j.classe || {});
+  Object.keys(DIARIO).forEach(k => delete DIARIO[k]); Object.assign(DIARIO, j.diario || {});
+  lsSet(LS.classe, CLASSE); lsSet(LS.diario, DIARIO);
+  UNDO.atual = json;
+  desenharDiario();
+  status(msg);
+}
+document.addEventListener('keydown', e => {
+  if(!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const alvo = e.target, tag = alvo && alvo.tagName ? alvo.tagName.toLowerCase() : '';
+  if(tag === 'input' || tag === 'textarea' || tag === 'select' || (alvo && alvo.isContentEditable)) return;
+  const k = String(e.key || '').toLowerCase();
+  if(k === 'z' && !e.shiftKey){
+    e.preventDefault();
+    if(!UNDO.pilha.length){ status('Nada para desfazer.'); return; }
+    UNDO.refazer.push(UNDO.atual === null ? instantaneoAnot() : UNDO.atual);
+    aplicarAnot(UNDO.pilha.pop(), 'Desfeito.' + (UNDO.pilha.length ? ' Ctrl+Z desfaz mais.' : ''));
+  } else if(k === 'y' || (k === 'z' && e.shiftKey)){
+    e.preventDefault();
+    if(!UNDO.refazer.length){ status('Nada para refazer.'); return; }
+    UNDO.pilha.push(UNDO.atual === null ? instantaneoAnot() : UNDO.atual);
+    aplicarAnot(UNDO.refazer.pop(), 'Refeito.');
+  }
+});
+marcarAnot(); /* primeiro instantâneo: o estado com que o site abriu */
+async function lerArquivoCsv(f){
+  const txt = await f.text();
+  try{ const ev = eventosBinance(txt); lsSet(LS.csv, txt); status(`CSV da Binance lido: ${ev.length} linhas. Refazendo o histórico…`, true); refazerTudo(); }
+  catch(e){ status(e.message); }
+}
+document.getElementById('btnCsv').addEventListener('click', () => document.getElementById('arqCsv').click());
+document.getElementById('arqCsv').addEventListener('change', e => { if(e.target.files[0]) lerArquivoCsv(e.target.files[0]); e.target.value = ''; });
+const drop = document.getElementById('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('sobre'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('sobre'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('sobre'); const f = e.dataTransfer.files[0]; if(f) lerArquivoCsv(f); });
+document.getElementById('btnBackup').addEventListener('click', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ diario:DIARIO, classe:CLASSE, visita:lsGet(LS.visita, null), csv:lsGet(LS.csv, null) }, null, 1)], { type:'application/json' })); a.download = 'carteira-cripto-anotacoes.json'; a.click(); });
+document.getElementById('btnRestaurar').addEventListener('click', () => document.getElementById('arqBackup').click());
+document.getElementById('arqBackup').addEventListener('change', async e => { const f = e.target.files[0]; if(!f) return; try{ const j = JSON.parse(await f.text()); Object.assign(DIARIO, j.diario || {}); lsSet(LS.diario, DIARIO); Object.assign(CLASSE, j.classe || {}); lsSet(LS.classe, CLASSE); if(j.csv) lsSet(LS.csv, j.csv); marcarAnot(); desenharDiario(); status('Anotações restauradas.'); }catch(err){ status('Esse arquivo não é um backup do site.'); } e.target.value = ''; });
+var cadernoCarteira = Nuvem.caderno({
+  id: "carteira", nome: "Controle Único - carteira.json", rotulo: "a Carteira", criarVazio: false,
+  textoSemArquivo: "A carteira ainda não está no seu Drive. Na primeira vez, importe o arquivo inicial.",
+  obter: () => CARTEIRA_DADOS,
+  aplicar: d => {
+    if (JSON.stringify(d) === JSON.stringify(CARTEIRA_DADOS)) return;
+    try { localStorage.setItem(CARTEIRA_CACHE, JSON.stringify(d)); } catch(e){}
+    Nuvem.recarregar();   /* recomeça com o caderno novo: endereços e histórico podem ter mudado */
+  },
+  temDados: d => !!(d && d.enderecos && d.enderecos.evm)
+});
+document.getElementById('btnInicial').addEventListener('click', () => document.getElementById('arqInicial').click());
+document.getElementById('arqInicial').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  try{
+    const j = JSON.parse(await f.text());
+    if(!(j.enderecos && j.enderecos.evm)) throw new Error('o arquivo não tem os endereços da carteira');
+    localStorage.setItem(CARTEIRA_CACHE, JSON.stringify(j));
+    CARTEIRA_DADOS = j; cadernoCarteira.mudou();
+    Nuvem.recarregar();
+  }catch(err){ document.getElementById('status').textContent = 'Não consegui ler esse arquivo: ' + err.message; }
+});
+Nuvem.iniciar();
+if (CARTEIRA_DADOS && EU_EVM) iniciar();
+else { document.getElementById('portao').hidden = false; document.getElementById('status').textContent = 'Esperando o caderno da carteira.'; }
+</script>
+</body>
+</html>

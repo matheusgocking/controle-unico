@@ -424,7 +424,7 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
   <div class="top">
     <div class="brand">
       <h1>Agenda Clínica</h1>
-      <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto">Carregando…</span> <button class="btn sm" id="nuvem-entrar">Entrar com o Google</button></p>
+      <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto">Carregando…</span> <button class="btn sm" id="nuvem-entrar">Entrar com o Google</button><span id="nuvem-acoes"></span></p>
       <div class="acoes-topo">
         <button class="btn sm" id="ler-planilha">Ler a planilha</button>
         <input type="file" id="arquivo-planilha" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
@@ -831,7 +831,7 @@ function carregar(){
 function gravar(){
   try{ localStorage.setItem(CHAVE, JSON.stringify(dados)); }
   catch(e){ /* navegador sem armazenamento: os dados valem só nesta aba */ }
-  if(window.Nuvem) Nuvem.mudou();
+  if(window.cadernoClinica) cadernoClinica.mudou();
 }
 
 /* ---------------- desfazer e refazer ----------------
@@ -3012,7 +3012,8 @@ document.getElementById("tema").addEventListener("click", function(){
 
 renderTudo();
 avisoPlanilha();
-Nuvem.iniciar({
+var cadernoClinica = Nuvem.caderno({
+  id: "clinica", nome: "Controle Único - clínica.json", rotulo: "a Clínica",
   obter: function(){ return dados; },
   aplicar: function(d){
     dados = d;
@@ -3026,6 +3027,7 @@ Nuvem.iniciar({
   },
   temDados: function(d){ return !!(d && d.pacientes && d.pacientes.length); }
 });
+Nuvem.iniciar();
 </script>
 </body>
 </html>

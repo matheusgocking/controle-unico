@@ -2,254 +2,169 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Controle Único · Teste</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle Único</title>
+<meta name="description" content="Controle Único: dinheiro, casa, clínica e carteira num lugar só, guardados no Google Drive de quem usa.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237030A0'/%3E%3Ctext x='16' y='21' font-family='Segoe UI,sans-serif' font-size='13' font-weight='700' fill='white' text-anchor='middle'%3ECU%3C/text%3E%3C/svg%3E">
 <style>
-  :root {
-    --fundo: #f6f4f0; --cartao: #ffffff; --texto: #26221e; --suave: #6f675f;
-    --borda: #e2ddd5; --botao: #5b4a86; --botao-texto: #ffffff;
-    --ok: #2f7a4a; --erro: #b3372f;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --fundo: #1b1917; --cartao: #25221f; --texto: #eee9e2; --suave: #a79e94;
-      --borda: #3a3530; --botao: #9d8ccc; --botao-texto: #1b1917;
-      --ok: #6cc28c; --erro: #ec7d73;
-    }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--fundo); color: var(--texto);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 { font-size: 1.4rem; margin: 0 0 4px; }
-  .sub { color: var(--suave); margin: 0 0 24px; }
-  .passo { background: var(--cartao); border: 1px solid var(--borda); border-radius: 12px;
-    padding: 16px; margin-bottom: 12px; }
-  .passo h2 { font-size: 1rem; margin: 0 0 4px; }
-  .passo p { margin: 0 0 12px; color: var(--suave); font-size: .92rem; }
-  button, label.botao { display: inline-block; min-height: 44px; padding: 10px 18px; border: 0;
-    border-radius: 8px; background: var(--botao); color: var(--botao-texto);
-    font: inherit; font-weight: 600; cursor: pointer; }
-  button:disabled { opacity: .45; cursor: default; }
-  input[type=file] { display: none; }
-  .res { margin-top: 10px; font-size: .92rem; min-height: 1.4em; white-space: pre-wrap; }
-  .res.ok { color: var(--ok); } .res.erro { color: var(--erro); }
-  footer { margin-top: 24px; font-size: .85rem; color: var(--suave); }
-  footer a { color: inherit; }
+:root{
+  --bg:#f1f0f4; --surface:#ffffff; --line:#d8d5e0;
+  --text:#1a1920; --muted:#57545f;
+  --accent:#7030A0; --accent-ink:#ffffff;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#161519; --surface:#1f1e24; --line:#38353f;
+  --text:#eceaf0; --muted:#a8a4b1;
+  --accent:#c8a4f2; --accent-ink:#1a1420;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#161519; --surface:#1f1e24; --line:#38353f;
+  --text:#eceaf0; --muted:#a8a4b1;
+  --accent:#c8a4f2; --accent-ink:#1a1420;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:15px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;
+  display:flex; flex-direction:column;
+}
+header{
+  flex:none; background:var(--surface); border-bottom:1px solid var(--line);
+  padding:8px 14px; padding-top:calc(8px + env(safe-area-inset-top,0px));
+  display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
+}
+.marca{display:flex; align-items:center; gap:9px; font-weight:600}
+.selo{width:28px; height:28px; border-radius:8px; background:var(--accent); color:var(--accent-ink);
+  display:grid; place-items:center; font-size:13px; font-weight:700; flex:none}
+nav{display:flex; gap:2px; overflow-x:auto; flex:1 1 auto; scrollbar-width:thin}
+nav button{
+  border:0; background:transparent; color:var(--muted); font:inherit; font-size:14px;
+  padding:8px 14px; border-radius:8px; cursor:pointer; white-space:nowrap;
+}
+nav button:hover{color:var(--text)}
+nav button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); font-weight:600}
+.dir{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.bt{border:1px solid var(--line); background:transparent; color:var(--muted); font:inherit; font-size:13px;
+  padding:6px 11px; border-radius:99px; cursor:pointer; text-decoration:none}
+.bt:hover{color:var(--text)}
+.bt.p{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+.nuvem{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); margin:0}
+.nuvem-ponto{width:8px; height:8px; border-radius:50%; background:var(--muted); flex:none}
+.nuvem-ponto.ok{background:#2f9e5b} .nuvem-ponto.indo{background:#d49a1c} .nuvem-ponto.erro{background:#d0453a}
+.hidden{display:none !important}
+.palco{flex:1 1 auto; position:relative; min-height:0}
+.palco iframe{position:absolute; inset:0; width:100%; height:100%; border:0; background:var(--bg)}
+@media (max-width:560px){
+  .marca span{display:none}
+  nav{order:3; flex-basis:100%}
+  nav button{padding:8px 11px; font-size:13.5px}
+  .dir{margin-left:auto}
+}
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="exportar-xlsx.js"></script>
-<script src="ler-xlsx.js"></script>
+<script src="nuvem.js"></script>
 </head>
 <body>
-<main>
-  <h1>Controle Único</h1>
-  <p><a href="clinica.html"><button>Abrir a Clínica</button></a></p>
-  <p class="sub">Teste da fundação: o app consegue guardar um caderno no seu Google Drive, ler de volta, virar planilha e voltar da planilha?</p>
+<header>
+  <div class="marca"><div class="selo">CU</div><span>Controle Único</span></div>
+  <nav id="abas" aria-label="Módulos">
+    <button data-p="tudo" aria-pressed="true">Tudo</button>
+    <button data-p="dinheiro" aria-pressed="false">Dinheiro</button>
+    <button data-p="casa" aria-pressed="false">Casa</button>
+    <button data-p="clinica" aria-pressed="false">Clínica</button>
+    <button data-p="carteira" aria-pressed="false">Carteira</button>
+  </nav>
+  <div class="dir">
+    <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto" class="hidden"></span>
+      <button class="bt p" id="nuvem-entrar" type="button">Entrar com o Google</button></p>
+    <button class="bt" id="tema" type="button" title="Tema claro ou escuro">Tema</button>
+    <a class="bt" href="privacidade.html">Privacidade</a>
+  </div>
+</header>
 
-  <section class="passo">
-    <h2>1. Entrar</h2>
-    <p>Abre a janela do Google. O app só enxerga os arquivos que ele mesmo criar no seu Drive.</p>
-    <button id="entrar">Entrar com o Google</button>
-    <div class="res" id="r1"></div>
-  </section>
-
-  <section class="passo">
-    <h2>2. Gravar um caderno de teste</h2>
-    <p>Cria (ou atualiza) o arquivo "Controle Único - teste.json" no seu Drive, com lançamentos inventados.</p>
-    <button id="gravar" disabled>Gravar no Drive</button>
-    <div class="res" id="r2"></div>
-  </section>
-
-  <section class="passo">
-    <h2>3. Ler de volta</h2>
-    <p>Busca o arquivo no Drive e confere se voltou exatamente igual ao que foi gravado.</p>
-    <button id="ler" disabled>Ler do Drive</button>
-    <div class="res" id="r3"></div>
-  </section>
-
-  <section class="passo">
-    <h2>4. Baixar a planilha</h2>
-    <p>Gera um arquivo do Excel com o caderno que está no Drive.</p>
-    <button id="baixar" disabled>Baixar planilha</button>
-    <div class="res" id="r4"></div>
-  </section>
-
-  <section class="passo">
-    <h2>5. Restaurar da planilha</h2>
-    <p>Escolha a planilha baixada no passo 4 (pode abrir e salvar no Excel antes). O app remonta o caderno e compara com o do Drive.</p>
-    <label class="botao" id="restaurarRotulo" for="arquivo" aria-disabled="true" style="opacity:.45">Escolher planilha</label>
-    <input type="file" id="arquivo" accept=".xlsx" disabled>
-    <div class="res" id="r5"></div>
-  </section>
-
-  <footer>Nada aqui fica guardado em servidor: o caderno vai do seu navegador direto para o seu Drive. <a href="privacidade.html">Privacidade</a>.</footer>
-</main>
+<main class="palco" id="palco"></main>
 
 <script>
-const CLIENT_ID = "185782688251-p74qi2gguclcosk33f8p653dmb1dtt2a.apps.googleusercontent.com";
-const ESCOPO = "https://www.googleapis.com/auth/drive.file";
-const NOME = "Controle Único - teste.json";
-const CABECALHO = ["data", "descricao", "categoria", "valor"];
+// Cada módulo é uma página própria, carregada dentro desta casca. Tudo, Dinheiro e Casa
+// dividem o app.html e trocam de tela pelo endereço, sem recarregar os cadernos.
+// Quem entra com o Google em qualquer uma passa o acesso para as outras (nuvem.js).
+var PAGINAS = {
+  tudo:     { quadro:"app",      src:"app.html#tudo" },
+  dinheiro: { quadro:"app",      src:"app.html#dinheiro" },
+  casa:     { quadro:"app",      src:"app.html#casa" },
+  clinica:  { quadro:"clinica",  src:"clinica.html" },
+  carteira: { quadro:"carteira", src:"carteira.html" }
+};
+var NOMES = { tudo:"Tudo", dinheiro:"Dinheiro", casa:"Casa", clinica:"Clínica", carteira:"Carteira" };
 
-let token = null;
-let gravado = null;   // o caderno exatamente como foi gravado nesta sessão
+var palco = document.getElementById("palco");
+var quadros = {};
+var atual = null;
 
-const $ = id => document.getElementById(id);
-function mostra(id, texto, tipo) { const el = $(id); el.textContent = texto; el.className = "res" + (tipo ? " " + tipo : ""); }
-const hora = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
-function cadernoDeTeste() {
-  return {
-    versao: 1,
-    caderno: "teste",
-    atualizado: new Date().toISOString(),
-    lancamentos: [
-      { data: "2026-09-01", descricao: "Mercado São João", categoria: "Casa", valor: -212.47 },
-      { data: "2026-09-03", descricao: "Pão & café <padaria>", categoria: "Alimentação", valor: -18.9 },
-      { data: "2026-09-05", descricao: "Sessão MGOQ01", categoria: "Clínica", valor: 180 },
-      { data: "2026-09-10", descricao: "Conta de luz, vencimento dia 10", categoria: "Casa", valor: -164.33 }
-    ]
-  };
+function quadro(k, src){
+  if (quadros[k]) return quadros[k];
+  var f = document.createElement("iframe");
+  f.id = "q-" + k; f.title = k; f.src = src; f.hidden = true;
+  palco.appendChild(f);
+  quadros[k] = f;
+  return f;
 }
 
-// ---- Drive ----
-async function drive(url, opcoes = {}) {
-  const r = await fetch(url, { ...opcoes, headers: { ...(opcoes.headers || {}), Authorization: "Bearer " + token } });
-  if (r.status === 401) throw new Error("O acesso expirou. Clique em Entrar com o Google de novo.");
-  if (!r.ok) throw new Error(`O Drive respondeu ${r.status}: ${(await r.text()).slice(0, 300)}`);
-  return r;
-}
-
-async function acharArquivo() {
-  const q = encodeURIComponent(`name='${NOME}' and trashed=false`);
-  const r = await drive(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name,modifiedTime)`);
-  const { files } = await r.json();
-  return files[0] || null;
-}
-
-async function gravar(caderno) {
-  const conteudo = JSON.stringify(caderno, null, 2);
-  const existente = await acharArquivo();
-  if (existente) {
-    await drive(`https://www.googleapis.com/upload/drive/v3/files/${existente.id}?uploadType=media`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: conteudo
-    });
-    return "atualizado";
+function mostrar(p){
+  var cfg = PAGINAS[p]; if (!cfg) return;
+  var novo = !quadros[cfg.quadro];
+  var f = quadro(cfg.quadro, cfg.src);
+  if (!novo && cfg.quadro === "app"){
+    try { f.contentWindow.location.hash = p; } catch(e){ f.src = cfg.src; }
   }
-  const limite = "controleunico" + Date.now();
-  const corpo =
-    `--${limite}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-    JSON.stringify({ name: NOME, mimeType: "application/json" }) +
-    `\r\n--${limite}\r\nContent-Type: application/json\r\n\r\n` + conteudo + `\r\n--${limite}--`;
-  await drive("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-    method: "POST", headers: { "Content-Type": `multipart/related; boundary=${limite}` }, body: corpo
-  });
-  return "criado";
+  for (var q in quadros) quadros[q].hidden = (q !== cfg.quadro);
+  f.title = NOMES[p];
+  atual = p;
+  // voltou para um módulo já aberto: ele confere se o Drive mudou em outro aparelho
+  if (!novo) { try { f.contentWindow.Nuvem.aoMostrar(); } catch(e){} }
+  var b = document.querySelectorAll("#abas button");
+  for (var i = 0; i < b.length; i++) b[i].setAttribute("aria-pressed", String(b[i].dataset.p === p));
+  try { localStorage.setItem("cu-painel-aba", p); } catch(e){}
+  try { history.replaceState(null, "", "#" + p); } catch(e){}
 }
 
-async function lerDoDrive() {
-  const arq = await acharArquivo();
-  if (!arq) throw new Error("Ainda não há caderno de teste no Drive. Faça o passo 2.");
-  const r = await drive(`https://www.googleapis.com/drive/v3/files/${arq.id}?alt=media`);
-  return await r.json();
+document.getElementById("abas").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-p]");
+  if (b) mostrar(b.dataset.p);
+});
+
+/* o tema escolhido aqui vale para a casca e para os módulos abertos */
+function aplicarTema(v){
+  document.documentElement.dataset.theme = v;
+  for (var q in quadros) { try { quadros[q].contentDocument.documentElement.setAttribute("data-theme", v); } catch(e){} }
 }
+document.getElementById("tema").addEventListener("click", function(){
+  var r = document.documentElement;
+  var escuro = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  var v = escuro ? "light" : "dark";
+  aplicarTema(v);
+  try { localStorage.setItem("cu-painel-tema", v); localStorage.setItem("cu-tema", v); } catch(e){}
+});
+try { var t = localStorage.getItem("cu-painel-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+palco.addEventListener("load", function(e){
+  var t = document.documentElement.dataset.theme;
+  if (t && e.target.tagName === "IFRAME") { try { e.target.contentDocument.documentElement.setAttribute("data-theme", t); } catch(err){} }
+}, true);
 
-// ---- planilha ----
-function paraAbas(caderno) {
-  return [
-    { nome: "Lançamentos", linhas: [CABECALHO, ...caderno.lancamentos.map(l => CABECALHO.map(c => l[c]))] },
-    { nome: "Sobre", linhas: [["caderno", caderno.caderno], ["versao", caderno.versao], ["atualizado", caderno.atualizado]] }
-  ];
-}
+var inicial = (location.hash || "").replace("#", "");
+if (!PAGINAS[inicial]) { try { inicial = localStorage.getItem("cu-painel-aba") || "tudo"; } catch(e){ inicial = "tudo"; } }
+if (!PAGINAS[inicial]) inicial = "tudo";
+mostrar(inicial);
+// A aba Tudo pergunta os números do mês à Clínica: ela abre junto, escondida, desde o começo.
+quadro("clinica", PAGINAS.clinica.src).addEventListener("load", function(){
+  try { quadros.app && quadros.app.contentWindow.desenhar(); } catch(e){}
+});
 
-function deAbas(abas) {
-  const lanc = abas.find(a => a.nome === "Lançamentos");
-  const sobre = abas.find(a => a.nome === "Sobre");
-  if (!lanc || !sobre) throw new Error("A planilha não tem as abas Lançamentos e Sobre.");
-  const [cab, ...linhas] = lanc.linhas.filter(l => l.length);
-  const meta = Object.fromEntries(sobre.linhas.filter(l => l.length).map(([k, v]) => [k, v]));
-  return {
-    versao: Number(meta.versao),
-    caderno: String(meta.caderno),
-    atualizado: String(meta.atualizado),
-    lancamentos: linhas.map(l => Object.fromEntries(cab.map((c, i) => [c, c === "valor" ? Number(l[i]) : String(l[i] ?? "")])))
-  };
-}
-
-// Compara dois cadernos e devolve a primeira diferença, ou null.
-function diferenca(a, b) {
-  const ja = JSON.stringify(a), jb = JSON.stringify(b);
-  if (ja === jb) return null;
-  for (let i = 0; i < Math.max(a.lancamentos.length, b.lancamentos.length); i++) {
-    const x = JSON.stringify(a.lancamentos[i]), y = JSON.stringify(b.lancamentos[i]);
-    if (x !== y) return `lançamento ${i + 1}:\n  esperado ${x}\n  veio     ${y}`;
-  }
-  return "os dados gerais do caderno (versão, nome ou data)";
-}
-
-// ---- botões ----
-let clienteToken = null;
-$("entrar").onclick = () => {
-  if (!window.google?.accounts?.oauth2) { mostra("r1", "O Google ainda não carregou. Espere um segundo e tente de novo.", "erro"); return; }
-  clienteToken ??= google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: ESCOPO,
-    callback: resp => {
-      if (resp.error) { mostra("r1", "O Google recusou: " + resp.error, "erro"); return; }
-      token = resp.access_token;
-      mostra("r1", "Entrou às " + hora() + ".", "ok");
-      for (const id of ["gravar", "ler", "baixar", "arquivo"]) $(id).disabled = false;
-      $("restaurarRotulo").style.opacity = 1;
-      $("restaurarRotulo").removeAttribute("aria-disabled");
-    },
-    error_callback: e => mostra("r1", "A janela do Google foi fechada ou bloqueada (" + e.type + ").", "erro")
-  });
-  clienteToken.requestAccessToken();
-};
-
-$("gravar").onclick = async () => {
-  mostra("r2", "Gravando…");
-  try {
-    const c = cadernoDeTeste();
-    const como = await gravar(c);
-    gravado = c;
-    mostra("r2", `Caderno ${como} no seu Drive às ${hora()}, com ${c.lancamentos.length} lançamentos.`, "ok");
-  } catch (e) { mostra("r2", e.message, "erro"); }
-};
-
-$("ler").onclick = async () => {
-  mostra("r3", "Lendo…");
-  try {
-    const c = await lerDoDrive();
-    if (!gravado) { mostra("r3", `Leu o caderno do Drive (${c.lancamentos.length} lançamentos). Para comparar, grave antes no passo 2.`, "ok"); return; }
-    const d = diferenca(gravado, c);
-    mostra("r3", d ? "Voltou diferente em " + d : `Voltou exatamente igual ao que foi gravado: ${c.lancamentos.length} lançamentos, com acentos, & e < > inteiros.`, d ? "erro" : "ok");
-  } catch (e) { mostra("r3", e.message, "erro"); }
-};
-
-$("baixar").onclick = async () => {
-  mostra("r4", "Gerando…");
-  try {
-    const c = await lerDoDrive();
-    baixar(xlsx(paraAbas(c)), "Controle Único - teste.xlsx");
-    mostra("r4", "Planilha baixada: Controle Único - teste.xlsx, abas Lançamentos e Sobre.", "ok");
-  } catch (e) { mostra("r4", e.message, "erro"); }
-};
-
-$("arquivo").onchange = async ev => {
-  const f = ev.target.files[0];
-  ev.target.value = "";
-  if (!f) return;
-  mostra("r5", "Lendo a planilha…");
-  try {
-    const daPlanilha = deAbas(await lerXlsx(await f.arrayBuffer()));
-    const doDrive = await lerDoDrive();
-    const d = diferenca(doDrive, daPlanilha);
-    mostra("r5", d ? "A planilha difere do Drive em " + d
-      : `A planilha remonta o caderno exatamente igual ao do Drive: ${daPlanilha.lancamentos.length} lançamentos. A volta funciona.`, d ? "erro" : "ok");
-  } catch (e) { mostra("r5", e.message, "erro"); }
-};
+Nuvem.iniciar();
 </script>
 </body>
 </html>

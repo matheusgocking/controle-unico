@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dinheiro e Casa · Controle Único</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
+  --accent:#7030a0; --accent-ink:#ffffff; --accent-soft:#f0e5fb;
+  --pos:#1f6b4f; --neg:#a3241f; --warn:#8a4b12; --warn-soft:#fbe8d4;
+  --font:"IBM Plex Sans",system-ui,sans-serif; --radius:8px;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140;
+  --pos:#7fd3ac; --neg:#f2a09b; --warn:#efb87c; --warn-soft:#3f2c15;
+}}
+:root[data-theme="dark"]{
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140;
+  --pos:#7fd3ac; --neg:#f2a09b; --warn:#efb87c; --warn-soft:#3f2c15;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 64px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.topo{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.marca{font-weight:600;margin-right:auto;display:flex;align-items:baseline;gap:8px}
+.marca b{color:var(--accent)}
+button.b{border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:14px;padding:7px 12px;border-radius:var(--radius);cursor:pointer}
+button.b:hover{border-color:var(--accent)}
+button.b.p{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.b.s{font-size:13px;padding:5px 9px}
+.nuvem{font-size:13px;color:var(--faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0}
+.nuvem-ponto{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.nuvem-ponto.ok{background:#2f9e5b} .nuvem-ponto.indo{background:#d49a1c} .nuvem-ponto.erro{background:#d0453a}
+#nuvem-acoes{display:flex;gap:6px;flex-wrap:wrap}
+.hidden{display:none !important}
+nav.abas{display:flex;gap:2px;overflow-x:auto;margin:14px 0 18px;border-bottom:1px solid var(--line)}
+nav.abas button{border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font:inherit;padding:9px 14px;cursor:pointer;white-space:nowrap}
+nav.abas button[aria-pressed="true"]{color:var(--text);border-bottom-color:var(--accent);font-weight:500}
+.mes{display:flex;align-items:center;gap:10px;margin:14px 0}
+.mes strong{font-size:17px;font-weight:600;min-width:160px;text-align:center}
+h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);margin:22px 0 10px;font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.card.forte{border-color:var(--accent);background:var(--accent-soft)}
+.card .r{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.4px}
+.card .v{font-size:21px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
+.card .n{font-size:12px;color:var(--muted);margin-top:3px}
+.v.pos{color:var(--pos)} .v.neg{color:var(--neg)} .v.nd{color:var(--faint);font-size:16px;font-weight:500}
+form.linha{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px;display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));align-items:end;margin-bottom:16px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+input,select{width:100%;font:inherit;font-size:14px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text)}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+td input.dia{width:64px;padding:4px 6px}
+.tabela{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius);margin-bottom:8px}
+.tabela table{min-width:520px}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);font-size:14px}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--faint);background:var(--surface-2)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.x{border:0;background:transparent;color:var(--faint);cursor:pointer;font-size:15px;padding:0 4px}
+.x:hover{color:var(--neg)}
+.vazio{padding:24px 14px;text-align:center;color:var(--faint);background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius)}
+.aviso{background:var(--warn-soft);border:1px solid var(--line);border-radius:var(--radius);padding:11px 14px;font-size:14px;margin:14px 0 4px}
+.aviso b{font-weight:600}
+.origem{font-size:12.5px;color:var(--faint);margin-top:14px;line-height:1.6}
+.pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);background:var(--surface-2);margin-left:6px;vertical-align:1px}
+.pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:560px){ .mes strong{min-width:120px;font-size:15px} }
+</style>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="exportar-xlsx.js"></script>
+<script src="nuvem.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="topo">
+    <div class="marca"><b>Controle Único</b></div>
+    <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto">Carregando…</span>
+      <button class="b s" id="nuvem-entrar">Entrar com o Google</button><span id="nuvem-acoes"></span></p>
+    <button class="b" id="tema" title="Tema claro ou escuro">◐</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="abas" id="abas"></nav>
+  <main id="tela"></main>
+  <div class="pe">
+    <button class="b s" id="exportar">Baixar planilha</button>
+    <button class="b s" id="exportarJson">Exportar dados</button>
+    <button class="b s" id="importarJson">Importar dados</button>
+    <input type="file" id="arquivoJson" accept="application/json" class="hidden">
+  </div>
+</div>
+
+<script>
+// ===================================================================
+// Dinheiro e Casa. Dois cadernos, cada um num arquivo do Google Drive:
+// "Controle Único - dinheiro.json" (só dele) e "Controle Único - casa.json"
+// (dele e da pessoa com quem divide a casa). A aba Tudo junta os dois com a Clínica e a Carteira,
+// que moram em páginas próprias dentro da mesma casca (index.html).
+// As contas seguem os sistemas do Vault: Ciclo do Dinheiro do Mês e Ciclo da Sessão.
+// Este arquivo é público: nenhum dado pessoal fica escrito aqui.
+// ===================================================================
+
+// Fora da casca, esta página não tem a Clínica ao lado para a aba Tudo: abre pela casca.
+if (window.top === window.self) location.replace("index.html" + (location.hash || "#tudo"));
+
+const CATEGORIAS = ["Moradia.","Alimentação.","Ifood.","Transporte.","Saúde.","Viagens.","Entretenimento.","Comunicação.","Prática Clínica.","Contabilidade.","Assinaturas.","Gastos Mãe.","Reserva.","Gastos Fixos."];
+const CAT_CASA   = ["Serviços Domésticos.","Mercado.","Fumo.","IPTU.","Internet.","Gás.","Energia.","Condomínio.","Ifood."];
+const TIPOS      = ["Despesa.","Receita.","Aporte.","Resgate."];
+const FORMAS     = ["PIX.","Crédito.","Débito.","Dinheiro."];
+
+const VAZIO = {
+  matheus: () => ({ versao:1, caderno:"dinheiro", atualizadoEm:null, lancamentos:[], gastosFixos:[],
+                    reserva:{ saldoBase:0, dataBase:null, meta:0 } }),
+  casa:    () => ({ versao:1, caderno:"casa", atualizadoEm:null, lancamentos:[], pessoas:["Pessoa 1","Pessoa 2"], divisao:0.5 })
+};
+const NOME_DRIVE = { matheus:"Controle Único - dinheiro.json", casa:"Controle Único - casa.json" };
+const ID_NUVEM   = { matheus:"dinheiro", casa:"casa" };
+
+// ---------- armazenamento: cache no navegador + caderno no Google Drive ----------
+const chaveCache = c => "controle-unico-" + ID_NUVEM[c] + "-cache";
+const armazem = {
+  ler(c){ try { const t = localStorage.getItem(chaveCache(c)); return t ? JSON.parse(t) : null; } catch(e){ return null; } },
+  gravar(c, d){ d.atualizadoEm = new Date().toISOString();
+    try { localStorage.setItem(chaveCache(c), JSON.stringify(d)); } catch(e){}
+    if (nuvem[c]) nuvem[c].mudou(); }
+};
+
+const livro = {};
+for (const c of Object.keys(VAZIO)) livro[c] = Object.assign(VAZIO[c](), armazem.ler(c) || {});
+function salvar(c){ armazem.gravar(c, livro[c]); desenhar(); }
+
+const nuvem = {};
+for (const c of Object.keys(VAZIO)) {
+  nuvem[c] = Nuvem.caderno({
+    id: ID_NUVEM[c], nome: NOME_DRIVE[c], rotulo: c === "casa" ? "o caderno da Casa" : "o caderno do Dinheiro",
+    compartilhado: c === "casa",
+    obter: () => livro[c],
+    aplicar: d => { livro[c] = Object.assign(VAZIO[c](), d); try { localStorage.setItem(chaveCache(c), JSON.stringify(livro[c])); } catch(e){} desenhar(); },
+    temDados: d => !!(d && ((d.lancamentos && d.lancamentos.length) || (d.gastosFixos && d.gastosFixos.length)))
+  });
+}
+
+// ---------- utilidades ----------
+const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+let aba = "tudo";
+let ref = new Date(); ref.setDate(1);
+const novoId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
+const dinheiro = v => (Number(v) || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+const chaveMes = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+const noMes = l => (l.data || "").slice(0, 7) === chaveMes(ref);
+const hojeISO = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const soma = (a, f) => a.reduce((s, x) => s + (Number(f ? f(x) : x) || 0), 0);
+const escH = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const dia = d => (d || "").slice(8,10) + "/" + (d || "").slice(5,7);
+const primeiro = n => String(n || "").split(" ")[0];
+// Gasto fixo guarda o valor de cada mês ("2026-07": 509), como a aba Gastos Fixos da planilha:
+// há conta de todo mês e conta de um mês só (anuidade, assinatura anual).
+const valorFixo = (g, chave) => g.valores ? (Number(g.valores[chave]) || 0) : (Number(g.valor) || 0);
+const lerLocal = k => { try { const t = localStorage.getItem(k); return t ? JSON.parse(t) : null; } catch(e){ return null; } };
+
+// ---------- o que vem das outras páginas ----------
+// A Clínica mora em clinica.html, carregada ao lado desta pela casca. A aba Tudo pergunta
+// os números do mês à própria Clínica, para as duas telas nunca discordarem.
+function janelaClinica(){
+  try {
+    const f = window.parent.document.getElementById("q-clinica");
+    const w = f && f.contentWindow;
+    if (w && typeof w.numerosDoMes === "function" && w.dados && w.dados.pacientes) return w;
+  } catch(e){}
+  return null;
+}
+function contasClinica(){
+  const w = janelaClinica();
+  // Regra de Matheus (27/09/2026): o que entrou no mês é tudo; o que falta receber compara
+  // só pacientes com pacientes. Empréstimos e acertos vêm da planilha com origem Pendência. ou Extra.
+  const dePaciente = g => !g.origem || g.origem === "Prática Clínica.";
+  if (w) {
+    const mes = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    const n = w.numerosDoMes(mes), doMes = w.pagamentosDoMes(mes);
+    const pacientes = soma(doMes.filter(dePaciente), g => g.valor);
+    return { ok:true, ativos:w.dados.pacientes.length, previsto:n.previsto, recebido:n.recebido, pacientes,
+             falta:Math.max(n.previsto - pacientes, 0), sessoes:n.sessoes };
+  }
+  // Sem a Clínica aberta: o recebido sai do caderno guardado neste aparelho; o previsto não.
+  const c = lerLocal("controle-unico-clinica-cache");
+  const doMes = c ? (c.pagamentos || []).filter(noMes) : [];
+  return { ok:false, ativos:c ? (c.pacientes || []).length : null, previsto:null, recebido:soma(doMes, g => g.valor),
+           pacientes:soma(doMes.filter(dePaciente), g => g.valor), falta:null, sessoes:null };
+}
+// A Carteira grava o total de cada visita (cripto-v1-visita) neste mesmo navegador.
+function carteiraAgora(){
+  const v = lerLocal("cripto-v1-visita");
+  return v && typeof v.total === "number" ? { total:v.total, t:v.t } : null;
+}
+
+// ---------- contas ----------
+// Regra do sistema Ciclo do Dinheiro do Mês: a casa entra no financeiro
+// dele só pelo que ELE pagou, no lugar da categoria Moradia.
+function contasCasa(){
+  const doMes = livro.casa.lancamentos.filter(noMes);
+  const total = soma(doMes, l => l.valor);
+  const metade = total * (Number(livro.casa.divisao) || 0.5);
+  const pagou = {}, dif = {};
+  for (const p of livro.casa.pessoas){
+    pagou[p] = soma(doMes.filter(l => l.quem === p), l => l.valor);
+    dif[p] = pagou[p] - metade;
+  }
+  return { total, metade, pagou, dif };
+}
+
+// Matheus, 25/09/2026: a metade serve para mostrar quem pagou mais e quem pagou menos,
+// não para acertar contas. Quem ficou atrás costuma pagar mais nas compras seguintes.
+function balanca(c, p1, p2){
+  if (c.dif[p1] < -0.005) return `${primeiro(p1)} está ${dinheiro(-c.dif[p1])} atrás`;
+  if (c.dif[p2] < -0.005) return `${primeiro(p2)} está ${dinheiro(-c.dif[p2])} atrás`;
+  return "empatado";
+}
+
+function contasDinheiro(){
+  const doMes = livro.matheus.lancamentos.filter(noMes);
+  const cl = contasClinica();
+  const casa = contasCasa();
+  const minhaCasa = casa.pagou[livro.casa.pessoas[0]] || 0;
+
+  const receitaSolta = soma(doMes.filter(l => l.tipo === "Receita."), l => l.valor);
+  const entrou = receitaSolta + cl.recebido;
+  // Moradia fica de fora para não contar duas vezes: ela vem da casa.
+  // Os gastos fixos do mês contam como despesa do mês, como na planilha.
+  const fixosDoMes = livro.matheus.gastosFixos.filter(g => valorFixo(g, chaveMes(ref)) > 0);
+  const fixosMes = soma(fixosDoMes, g => valorFixo(g, chaveMes(ref)));
+  const saiu = soma(doMes.filter(l => l.tipo === "Despesa." && l.categoria !== "Moradia."), l => l.valor) + fixosMes + minhaCasa;
+
+  const agora = new Date();
+  const faltaSair = chaveMes(ref) === chaveMes(agora)
+    ? soma(fixosDoMes.filter(g => Number(g.dia) > agora.getDate()), g => valorFixo(g, chaveMes(ref))) : null;
+  const semDia = fixosDoMes.filter(g => !Number(g.dia)).length;
+
+  const r = livro.matheus.reserva;
+  const desde = r.dataBase || "0000-00-00";
+  const movReserva = livro.matheus.lancamentos.filter(l => l.categoria === "Reserva." && (l.data || "") >= desde);
+  const reserva = (Number(r.saldoBase) || 0)
+    + soma(movReserva.filter(l => l.tipo === "Aporte."), l => l.valor)
+    - soma(movReserva.filter(l => l.tipo === "Resgate."), l => l.valor);
+
+  return { entrou, receitaSolta, recebidoClinica: cl.recebido, dePacientes: cl.pacientes, saiu, minhaCasa, fixosMes, faltaSair, semDia, reserva,
+           sobra: entrou - saiu, falta: cl.falta, clinicaOk: cl.ok };
+}
+
+// ---------- telas ----------
+const ABAS = [["tudo","Tudo"],["dinheiro","Dinheiro"],["casa","Casa"]];
+
+function barraMes(){
+  return `<div class="mes"><button class="b" data-mes="-1" aria-label="Mês anterior">‹</button>
+    <strong>${MESES[ref.getMonth()]} de ${ref.getFullYear()}</strong>
+    <button class="b" data-mes="1" aria-label="Próximo mês">›</button></div>`;
+}
+
+function telaTudo(){
+  const d = contasDinheiro(), c = contasCasa(), cl = contasClinica(), cart = carteiraAgora();
+  const [p1, p2] = livro.casa.pessoas;
+  const acerto = balanca(c, p1, p2);
+  const patrimonio = d.reserva + (cart ? cart.total : 0);
+  const nd = motivo => `<div class="v nd">—</div><div class="n">${motivo}</div>`;
+
+  return barraMes() + `
+  <div class="aviso">Os números saem dos cadernos no seu Google Drive. As planilhas continuam valendo em paralelo
+  até você conferir que os dois batem.</div>
+
+  <h2 class="sec">O mês</h2>
+  <div class="cards">
+    <div class="card"><div class="r">Já entrou</div><div class="v pos">${dinheiro(d.entrou)}</div>
+      <div class="n">${dinheiro(d.dePacientes)} de pacientes${d.recebidoClinica - d.dePacientes > 0.005 ? ` · ${dinheiro(d.recebidoClinica - d.dePacientes)} de acertos` : ""}</div></div>
+    <div class="card"><div class="r">Ainda vai entrar</div>
+      ${d.falta === null ? nd("abra a Clínica para calcular") : `<div class="v">${dinheiro(d.falta)}</div>
+      <div class="n">previsto da agenda menos o recebido</div>`}</div>
+    <div class="card"><div class="r">Já saiu</div><div class="v neg">${dinheiro(d.saiu)}</div>
+      <div class="n">inclui ${dinheiro(d.fixosMes)} de fixos e ${dinheiro(d.minhaCasa)} da casa</div></div>
+    <div class="card"><div class="r">Ainda vai sair</div>
+      ${d.faltaSair === null ? nd("só no mês corrente")
+        : `<div class="v">${dinheiro(d.faltaSair)}</div><div class="n">fixos que vencem depois de hoje (já contados em saiu)${d.semDia ? ` · ${d.semDia} sem dia marcado` : ""}</div>`}</div>
+    <div class="card forte"><div class="r">Sobra do mês</div>
+      <div class="v ${d.sobra >= 0 ? "pos" : "neg"}">${dinheiro(d.sobra)}</div>
+      <div class="n">entrou menos saiu</div></div>
+  </div>
+
+  <h2 class="sec">Patrimônio</h2>
+  <div class="cards">
+    <div class="card forte"><div class="r">Total</div><div class="v">${dinheiro(patrimonio)}</div>
+      <div class="n">reserva mais carteira${cart ? "" : " (carteira ainda não lida)"}</div></div>
+    <div class="card"><div class="r">Reserva</div><div class="v">${dinheiro(d.reserva)}</div>
+      <div class="n">base mais aportes menos resgates</div></div>
+    <div class="card"><div class="r">Carteira cripto</div>
+      ${cart ? `<div class="v">${dinheiro(cart.total)}</div><div class="n">lida em ${new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}</div>`
+        : nd("abra a aba Carteira uma vez neste aparelho")}</div>
+  </div>
+
+  <h2 class="sec">Casa</h2>
+  <div class="cards">
+    <div class="card"><div class="r">Total do mês</div><div class="v">${dinheiro(c.total)}</div>
+      <div class="n">metade: ${dinheiro(c.metade)}</div></div>
+    <div class="card"><div class="r">Você pagou</div><div class="v">${dinheiro(c.pagou[p1])}</div>
+      <div class="n">entra como moradia no seu mês</div></div>
+    <div class="card"><div class="r">Balança</div><div class="v nd">${escH(acerto)}</div>
+      <div class="n">quem pagou mais e quem pagou menos neste mês</div></div>
+  </div>
+
+  <h2 class="sec">Clínica</h2>
+  <div class="cards">
+    <div class="card"><div class="r">Pacientes na agenda</div>
+      ${cl.ativos === null ? nd("abra a Clínica") : `<div class="v">${cl.ativos}</div><div class="n">com horário fixo</div>`}</div>
+    <div class="card"><div class="r">Previsto no mês</div>
+      ${cl.previsto === null ? nd("abra a Clínica") : `<div class="v">${dinheiro(cl.previsto)}</div><div class="n">pela cobrança de cada um</div>`}</div>
+    <div class="card"><div class="r">Recebido</div><div class="v pos">${dinheiro(cl.recebido)}</div>
+      <div class="n">pagamentos do mês</div></div>
+    <div class="card"><div class="r">Sessões no mês</div>
+      ${cl.sessoes === null ? nd("abra a Clínica") : `<div class="v">${cl.sessoes}</div><div class="n">marcadas na agenda, fora as remarcadas</div>`}</div>
+  </div>
+
+  <div class="origem">
+    <b>De onde vem cada número.</b> Já entrou: receitas soltas do Dinheiro mais os pagamentos de pacientes da Clínica.
+    Já saiu: despesas lançadas no mês, sem a categoria moradia, mais os gastos fixos do mês e o que você pagou
+    na casa, como manda o sistema Ciclo do Dinheiro do Mês. Ainda vai entrar e Previsto: a mesma conta do Painel da Clínica, pela agenda
+    e pela cobrança de cada paciente. Carteira: o total da última vez que a aba Carteira abriu neste aparelho.
+  </div>`;
+}
+
+function telaDinheiro(){
+  const d = contasDinheiro();
+  const doMes = livro.matheus.lancamentos.filter(noMes).sort((a,b) => b.data.localeCompare(a.data));
+  const r = livro.matheus.reserva;
+
+  const cards = `<div class="cards">
+    <div class="card"><div class="r">Receita solta</div><div class="v pos">${dinheiro(d.receitaSolta)}</div>
+      <div class="n">fora os pacientes</div></div>
+    <div class="card"><div class="r">Despesas do mês</div><div class="v neg">${dinheiro(d.saiu - d.minhaCasa)}</div>
+      <div class="n">lançadas mais ${dinheiro(d.fixosMes)} de fixos; a moradia vem da casa</div></div>
+    <div class="card"><div class="r">Reserva</div><div class="v">${dinheiro(d.reserva)}</div>
+      <div class="n">meta: ${dinheiro(r.meta)}</div></div>
+  </div>`;
+
+  const form = `<form class="linha" id="fLanc">
+    <div><label>Data</label><input type="date" name="data" value="${hojeISO()}" required></div>
+    <div><label>Tipo</label><select name="tipo">${TIPOS.map(t => `<option>${t}</option>`).join("")}</select></div>
+    <div style="grid-column:span 2"><label>Descrição</label><input name="descricao" placeholder="o que foi" required></div>
+    <div><label>Categoria</label><select name="categoria">${CATEGORIAS.map(t => `<option>${t}</option>`).join("")}</select></div>
+    <div><label>Forma</label><select name="forma">${FORMAS.map(t => `<option>${t}</option>`).join("")}</select></div>
+    <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
+    <div><button class="b p" type="submit">Lançar</button></div>
+  </form>`;
+
+  const tab = doMes.length ? `<div class="tabela"><table><thead><tr>
+      <th>Data</th><th>Tipo</th><th>Descrição</th><th>Categoria</th><th>Forma</th><th class="n">Valor</th><th></th></tr></thead>
+    <tbody>${doMes.map(l => `<tr><td>${dia(l.data)}</td><td>${escH(l.tipo)}</td><td>${escH(l.descricao)}</td>
+      <td>${escH(l.categoria)}</td><td>${escH(l.forma)}</td><td class="n">${dinheiro(l.valor)}</td>
+      <td><button class="x" data-apagar="matheus:lancamentos:${l.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table></div>`
+    : `<div class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</div>`;
+
+  const km = chaveMes(ref);
+  const fixos = livro.matheus.gastosFixos.length
+    ? `<div class="tabela"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Dia</th><th class="n">Em ${MESES[ref.getMonth()]}</th><th></th></tr></thead>
+       <tbody>${livro.matheus.gastosFixos.slice().sort((a, b) => valorFixo(b, km) - valorFixo(a, km)).map(g => `<tr><td>${escH(g.descricao)}</td><td>${escH(g.categoria)}</td>
+       <td><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${g.id}" value="${g.dia || ""}" placeholder="—" aria-label="Dia do mês"></td>
+       <td class="n"><input class="dia" style="width:96px;text-align:right" type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${g.id}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor neste mês"></td>
+       <td><button class="x" data-apagar="matheus:gastosFixos:${g.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table></div>`
+    : `<div class="vazio">Nenhum gasto fixo cadastrado.</div>`;
+
+  const formFixo = `<form class="linha" id="fFixo">
+    <div style="grid-column:span 2"><label>Gasto fixo</label><input name="descricao" placeholder="assinatura, conta" required></div>
+    <div><label>Categoria</label><select name="categoria">${CATEGORIAS.map(t => `<option>${t}</option>`).join("")}</select></div>
+    <div><label>Dia do mês</label><input type="number" name="dia" min="1" max="31" inputmode="numeric" required></div>
+    <div><label>Valor por mês</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
+    <div><button class="b" type="submit">Cadastrar deste mês até dezembro</button></div>
+  </form>`;
+
+  const formReserva = `<form class="linha" id="fReserva">
+    <div><label>Saldo conferido</label><input type="number" name="saldoBase" step="0.01" inputmode="decimal" value="${r.saldoBase || ""}"></div>
+    <div><label>Conferido em</label><input type="date" name="dataBase" value="${r.dataBase || ""}"></div>
+    <div><label>Meta</label><input type="number" name="meta" step="0.01" inputmode="decimal" value="${r.meta || ""}"></div>
+    <div><button class="b" type="submit">Guardar</button></div>
+  </form>`;
+
+  return barraMes() + cards + `<h2 class="sec">Lançamentos</h2>` + form + tab +
+    `<h2 class="sec">Gastos fixos <span class="pill">valor de cada mês, como na planilha; em branco, não cobra naquele mês</span></h2>` + formFixo + fixos +
+    `<h2 class="sec">Reserva <span class="pill">aportes e resgates contam a partir da data conferida</span></h2>` + formReserva;
+}
+
+function telaCasa(){
+  const c = contasCasa();
+  const doMes = livro.casa.lancamentos.filter(noMes).sort((a,b) => b.data.localeCompare(a.data));
+  const [p1, p2] = livro.casa.pessoas;
+  const acerto = balanca(c, p1, p2);
+
+  const cards = `<div class="cards">
+    <div class="card"><div class="r">Total do mês</div><div class="v">${dinheiro(c.total)}</div>
+      <div class="n">dividido: ${dinheiro(c.metade)}</div></div>
+    ${livro.casa.pessoas.map(p => `<div class="card"><div class="r">${escH(primeiro(p))} pagou</div>
+      <div class="v">${dinheiro(c.pagou[p])}</div>
+      <div class="n">${c.dif[p] >= 0 ? "a mais" : "a menos"}: ${dinheiro(Math.abs(c.dif[p]))}</div></div>`).join("")}
+    <div class="card forte"><div class="r">Balança</div><div class="v nd">${escH(acerto)}</div>
+      <div class="n">saldo do mês, não um acerto a pagar</div></div>
+  </div>`;
+
+  const form = `<form class="linha" id="fCasa">
+    <div><label>Data</label><input type="date" name="data" value="${hojeISO()}" required></div>
+    <div><label>Quem comprou</label><select name="quem">${livro.casa.pessoas.map(p => `<option>${escH(p)}</option>`).join("")}</select></div>
+    <div style="grid-column:span 2"><label>Descrição</label><input name="descricao" placeholder="opcional"></div>
+    <div><label>Categoria</label><select name="categoria">${CAT_CASA.map(t => `<option>${t}</option>`).join("")}</select></div>
+    <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
+    <div><button class="b p" type="submit">Lançar</button></div>
+  </form>`;
+
+  const tab = doMes.length ? `<div class="tabela"><table><thead><tr>
+      <th>Data</th><th>Quem</th><th>Descrição</th><th>Categoria</th><th class="n">Valor</th><th></th></tr></thead>
+    <tbody>${doMes.map(l => `<tr><td>${dia(l.data)}</td><td>${escH(primeiro(l.quem))}</td><td>${escH(l.descricao || "-")}</td>
+      <td>${escH(l.categoria)}</td><td class="n">${dinheiro(l.valor)}</td>
+      <td><button class="x" data-apagar="casa:lancamentos:${l.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table></div>`
+    : `<div class="vazio">Nenhuma compra em ${MESES[ref.getMonth()]}.</div>`;
+
+  const divisao = `<form class="linha" id="fDivisao">
+    <div><label>Parte de ${escH(primeiro(p1))} (em %)</label>
+      <input type="number" name="divisao" min="0" max="100" step="1" value="${Math.round((livro.casa.divisao || .5) * 100)}"></div>
+    <div><button class="b" type="submit">Guardar</button></div>
+  </form>`;
+
+  const pessoas = `<form class="linha" id="fPessoas">
+    <div><label>Primeira pessoa (a do seu mês)</label><input name="p1" value="${escH(p1)}" required></div>
+    <div><label>Segunda pessoa</label><input name="p2" value="${escH(p2)}" required></div>
+    <div><button class="b" type="submit">Guardar</button></div>
+  </form>`;
+
+  return barraMes() + cards + `<h2 class="sec">Compras</h2>` + form + tab +
+    `<h2 class="sec">Divisão <span class="pill">na planilha, 50% escrito em doze células</span></h2>` + divisao +
+    `<h2 class="sec">Quem divide a casa <span class="pill">os nomes ficam só no caderno, no seu Drive</span></h2>` + pessoas;
+}
+
+// ---------- desenho ----------
+function desenhar(){
+  document.getElementById("abas").innerHTML =
+    ABAS.map(([k, n]) => `<button data-a="${k}" aria-pressed="${k === aba}">${n}</button>`).join("");
+  const t = document.getElementById("tela");
+  t.innerHTML = aba === "tudo" ? telaTudo() : aba === "dinheiro" ? telaDinheiro() : telaCasa();
+  ligar();
+}
+
+function ligar(){
+  document.querySelectorAll("[data-mes]").forEach(b => b.onclick = () => {
+    ref.setMonth(ref.getMonth() + Number(b.dataset.mes)); desenhar();
+  });
+  document.querySelectorAll("[data-apagar]").forEach(b => b.onclick = () => {
+    if (!confirm("Apagar esta linha?")) return;
+    const [cad, lista, id] = b.dataset.apagar.split(":");
+    livro[cad][lista] = livro[cad][lista].filter(x => x.id !== id); salvar(cad);
+  });
+  document.querySelectorAll("[data-valorfixo]").forEach(i => i.onchange = () => {
+    const g = livro.matheus.gastosFixos.find(x => x.id === i.dataset.valorfixo); if (!g) return;
+    if (!g.valores) g.valores = {};
+    const n = Number(i.value), k = chaveMes(ref);
+    if (n > 0) g.valores[k] = n; else delete g.valores[k];
+    salvar("matheus");
+  });
+  document.querySelectorAll("[data-dia]").forEach(i => i.onchange = () => {
+    const g = livro.matheus.gastosFixos.find(x => x.id === i.dataset.dia);
+    if (g) { const n = Number(i.value); g.dia = n >= 1 && n <= 31 ? n : null; salvar("matheus"); }
+  });
+
+  const pega = f => Object.fromEntries(new FormData(f));
+  const liga = (idForm, fn) => { const f = document.getElementById(idForm); if (f) f.onsubmit = e => { e.preventDefault(); fn(f, pega(f)); }; };
+
+  liga("fLanc", (f, d) => { livro.matheus.lancamentos.push({ id:novoId(), data:d.data, tipo:d.tipo,
+    descricao:d.descricao, categoria:d.categoria, forma:d.forma, valor:Number(d.valor) }); salvar("matheus"); });
+  liga("fFixo", (f, d) => {
+    const valores = {};
+    for (let m = ref.getMonth(); m < 12; m++) valores[ref.getFullYear() + "-" + String(m + 1).padStart(2, "0")] = Number(d.valor);
+    livro.matheus.gastosFixos.push({ id:novoId(), descricao:d.descricao, categoria:d.categoria, dia:Number(d.dia), valores });
+    salvar("matheus"); });
+  liga("fReserva", (f, d) => { livro.matheus.reserva = { saldoBase:Number(d.saldoBase) || 0,
+    dataBase:d.dataBase || null, meta:Number(d.meta) || 0 }; salvar("matheus"); });
+  liga("fCasa", (f, d) => { livro.casa.lancamentos.push({ id:novoId(), data:d.data, quem:d.quem,
+    descricao:d.descricao || "-", categoria:d.categoria, valor:Number(d.valor) }); salvar("casa"); });
+  liga("fDivisao", (f, d) => { livro.casa.divisao = Math.min(Math.max(Number(d.divisao) || 50, 0), 100) / 100; salvar("casa"); });
+  liga("fPessoas", (f, d) => {
+    const antigos = livro.casa.pessoas.slice(), novos = [d.p1.trim(), d.p2.trim()];
+    // quem já comprou continua sendo a mesma pessoa, com o nome novo
+    livro.casa.lancamentos.forEach(l => { const i = antigos.indexOf(l.quem); if (i >= 0) l.quem = novos[i]; });
+    livro.casa.pessoas = novos; salvar("casa");
+  });
+}
+
+document.getElementById("abas").onclick = e => {
+  const b = e.target.closest("[data-a]"); if (!b) return; aba = b.dataset.a;
+  try { location.hash = aba; } catch(e){}
+  desenhar();
+};
+// A casca (index.html) troca de aba mudando o endereço: app.html#casa.
+function abaDoEndereco(){
+  const k = (location.hash || "").replace("#", "");
+  return ABAS.some(([c]) => c === k) ? k : null;
+}
+window.addEventListener("hashchange", () => {
+  const k = abaDoEndereco();
+  if (k && k !== aba) aba = k;
+  desenhar();   // redesenha mesmo na mesma aba: a Clínica ou a Carteira podem ter mudado
+});
+// a Clínica e a Carteira gravam neste mesmo navegador: quando mudam, a aba Tudo acompanha
+window.addEventListener("storage", e => {
+  if (e.key === "controle-unico-clinica-cache" || e.key === "cripto-v1-visita") desenhar();
+});
+document.getElementById("tema").onclick = () => {
+  const r = document.documentElement;
+  r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark";
+  try { localStorage.setItem("cu-tema", r.dataset.theme); } catch(e){}
+};
+
+document.getElementById("exportar").onclick = () => {
+  const m = chaveMes(ref);
+  const abas = [
+    { nome:"Lançamentos", linhas:[["Data","Tipo","Descrição","Categoria","Forma de Pagamento","Valor"],
+      ...livro.matheus.lancamentos.map(l => [l.data, l.tipo, l.descricao, l.categoria, l.forma, l.valor])] },
+    { nome:"Gastos Fixos " + ref.getFullYear(), linhas:[["Descrição","Categorias","Dia", ...MESES.map(n => n[0].toUpperCase() + n.slice(1))],
+      ...livro.matheus.gastosFixos.map(g => [g.descricao, g.categoria, g.dia || "-",
+        ...MESES.map((n, i) => valorFixo(g, ref.getFullYear() + "-" + String(i + 1).padStart(2, "0")) || "-")])] },
+    { nome:"Casa", linhas:[["Data","Quem Comprou?","Descrição","Categorias","Valor"],
+      ...livro.casa.lancamentos.map(l => [l.data, l.quem, l.descricao, l.categoria, l.valor])] }
+  ];
+  const w = janelaClinica();
+  if (w) {
+    const pac = {}; w.dados.pacientes.forEach(p => pac[p.id] = p);
+    abas.push({ nome:"Recebimentos", linhas:[["Data","Prontuário","Nome","Valor","Meio","Observação"],
+      ...w.dados.pagamentos.map(g => [g.data, (pac[g.pacienteId] || {}).codigo || g.codigo || "-", (pac[g.pacienteId] || {}).nome || "-", g.valor, g.meio || "-", g.obs || ""])] });
+  }
+  baixar(xlsx(abas), `Controle Único ${m}.xlsx`);
+};
+
+// cópia dos dois cadernos num arquivo só, e a volta dele
+document.getElementById("exportarJson").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ dinheiro:livro.matheus, casa:livro.casa }, null, 2)], { type:"application/json" }));
+  a.download = "controle-unico-dinheiro-e-casa-" + hojeISO() + ".json"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+document.getElementById("importarJson").onclick = () => document.getElementById("arquivoJson").click();
+document.getElementById("arquivoJson").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try { importarCadernos(JSON.parse(await f.text())); }
+  catch(err){ alert("Não consegui ler esse arquivo: " + err.message); }
+};
+function importarCadernos(j){
+  const vem = [];
+  if (j.dinheiro && Array.isArray(j.dinheiro.lancamentos)) vem.push(["matheus", j.dinheiro, `${j.dinheiro.lancamentos.length} lançamentos e ${(j.dinheiro.gastosFixos || []).length} gastos fixos`]);
+  if (j.casa && Array.isArray(j.casa.lancamentos)) vem.push(["casa", j.casa, `${j.casa.lancamentos.length} compras da casa`]);
+  if (!vem.length) throw new Error("o arquivo não tem caderno de dinheiro nem de casa");
+  if (!confirm("Isto substitui o que está no app por: " + vem.map(v => v[2]).join(" e ") + ". Seguir?")) return;
+  vem.forEach(([c, d]) => { livro[c] = Object.assign(VAZIO[c](), d); armazem.gravar(c, livro[c]); });
+  desenhar();
+}
+
+try { const t = localStorage.getItem("cu-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+{ const k = abaDoEndereco(); if (k) aba = k; }
+// Dentro da casca quem manda nas abas é a barra de cima: a daqui sairia repetida.
+try { if (window.top !== window.self) document.getElementById("abas").hidden = true; } catch(e){}
+desenhar();
+Nuvem.iniciar();
+</script>
+</body>
+</html>
