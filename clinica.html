@@ -420,21 +420,29 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
   .tab{white-space:nowrap; padding:7px 12px}
   .stats{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%}
   .stat{min-width:0}
-  /* a semana mostra 3 dias por vez e desliza para o lado; as horas ficam paradas à esquerda */
-  .gridwrap{scroll-snap-type:x mandatory; scroll-padding-left:34px}
-  .grid{grid-template-columns:34px repeat(7, calc((100vw - 26px - 34px) / 5)); min-width:max-content}
-  .gh{scroll-snap-align:start; padding:6px 2px}
-  .gh .d{font-size:9.5px; letter-spacing:.04em}
-  .gh .n{font-size:15px}
-  .hour{position:sticky; left:0; z-index:2; padding:0 4px; font-size:10.5px}
-  .cell{padding:0 3px; height:48px}
-  .cell .nm{font-size:10.5px; line-height:1.15; white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:break-word}
-  .cell .lab{font-size:9px}
-  .cell .saiu{font-size:9px}
-  /* no celular a cor e a hachura já dizem o horário de atendimento; a palavra não cabe na coluna */
+  /* a semana inteira cabe na tela, de domingo a sábado, sem deslizar (27/09/2026):
+     nome e sobrenome em até duas linhas, e o horário de atendimento só com cor e hachura */
+  .bar{gap:8px; margin-bottom:10px}
+  .nav{width:100%; gap:6px}
+  .range{font-size:15px; line-height:1.25; margin-left:4px}
+  .range small{font-size:11px}
+  .stats{grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px}
+  .stat{padding:6px 7px}
+  .stat b{font-size:14px; white-space:nowrap}
+  .stat span{font-size:9px; letter-spacing:.03em; line-height:1.2; display:block}
+  #msg{width:100%; padding:8px}
+  .gridwrap{overflow-x:hidden}
+  .grid{grid-template-columns:28px repeat(7, minmax(0,1fr)); min-width:0}
+  .gh{padding:5px 0}
+  .gh .d{font-size:9px; letter-spacing:0}
+  .gh .n{font-size:14px}
+  .hour{padding:0 3px 0 0; font-size:9.5px; line-height:44px}
+  .cell{padding:0 1px; height:44px; border-left-width:2px}
+  .cell .nm{font-size:9.5px; line-height:1.15; white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; hyphens:auto}
+  .cell .lab{font-size:8px; letter-spacing:-.01em}
+  .cell .saiu{display:none}
   .cell.reservado .nm, .cell.reservado .lab, .cell.divulgado .nm{display:none}
-  .cell.divulgado .lab{font-size:9px}
-  .gh.corner{position:sticky; left:0; z-index:4}
+  .cell.divulgado .lab{font-size:8px}
   input,select,textarea{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
 }
 .nuvem{display:flex; flex-wrap:wrap; align-items:center; gap:8px}

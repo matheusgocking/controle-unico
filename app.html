@@ -8,151 +8,198 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" rel="stylesheet">
 <style>
+/* Mesmo desenho da Clínica e da Carteira (27/09/2026): fundo cinza-azulado, painéis brancos
+   de borda fina, números em negrito e gráficos em rosca. O jeito de app fica só no celular. */
 :root{
-  --bg:#f3f2f6; --surface:#ffffff; --surface-2:#f0eef5; --line:#e2dfe8; --text:#1a1920; --muted:#5a5663; --faint:#8a8594;
-  --accent:#7030a0; --accent-ink:#ffffff; --accent-soft:#f1e8f8;
-  --pos:#1f7a52; --neg:#b3372f; --neu:#7030a0;
-  --p1:#7030a0; --p2:#d08a2c; --res:#2f8f6b; --cri:#d08a2c;
-  --font:"IBM Plex Sans",system-ui,sans-serif; --num:"Literata",Georgia,serif; --radius:14px;
-  --sombra:0 1px 2px rgba(20,16,30,.05), 0 4px 16px rgba(20,16,30,.05);
+  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
+  --accent:#7030a0; --accent-soft:#f0e5fb;
+  --pos:#1f6b4f; --pos-soft:#dcefe6; --neg:#a3241f; --neg-soft:#fbdedd; --warn:#8a4b12; --warn-soft:#fbe8d4;
+  /* cores das roscas: a paleta validada para daltonismo, na ordem fixa; a oitava é "Outros" */
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300; --c7:#4a3aa7; --c8:#8a94a3;
+  --font:"IBM Plex Sans",system-ui,sans-serif; --radius:8px;
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --bg:#141318; --surface:#1d1c22; --surface-2:#26242d; --line:#34313c; --text:#eeebf3; --muted:#b0abba; --faint:#8a8594;
-  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2c2238;
-  --pos:#7fd3ac; --neg:#f2a09b; --neu:#c8a4f2; --p1:#b98ae8; --p2:#e7ad5c; --res:#6cc9a1; --cri:#e7ad5c;
-  --sombra:none;
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-soft:#2e2140;
+  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d;
 }}
 :root[data-theme="dark"]{
-  --bg:#141318; --surface:#1d1c22; --surface-2:#26242d; --line:#34313c; --text:#eeebf3; --muted:#b0abba; --faint:#8a8594;
-  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2c2238;
-  --pos:#7fd3ac; --neg:#f2a09b; --neu:#c8a4f2; --p1:#b98ae8; --p2:#e7ad5c; --res:#6cc9a1; --cri:#e7ad5c;
-  --sombra:none;
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-soft:#2e2140;
+  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45}
-.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
-header{position:sticky;top:0;z-index:5;background:var(--bg)}
-.topo{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.marca{font-weight:600;margin-right:auto} .marca b{color:var(--accent)}
-button.b{border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:14px;padding:8px 14px;border-radius:10px;cursor:pointer}
-button.b:hover{border-color:var(--accent)}
-button.b.p{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
-button.b.s{font-size:13px;padding:6px 10px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1200px;margin:0 auto;padding:4px 24px 56px}
+.hidden{display:none !important}
+.pos{color:var(--pos)} .neg{color:var(--neg)} .warn{color:var(--warn)}
+.nota{font-size:12.5px;color:var(--faint)}
+.vazio{color:var(--muted);font-size:14px;padding:8px 0}
+
+/* topo: marca, estado do Drive, tema */
+.topo{max-width:1200px;margin:0 auto;padding:12px 24px 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.marca{font-weight:700;margin-right:auto}
 .nuvem{font-size:12.5px;color:var(--faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0}
 .nuvem-ponto{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
 .nuvem-ponto.ok{background:#2f9e5b} .nuvem-ponto.indo{background:#d49a1c} .nuvem-ponto.erro{background:#d0453a}
 #nuvem-acoes{display:flex;gap:6px;flex-wrap:wrap}
-.hidden{display:none !important}
+#nuvem-texto{flex:1 1 0;min-width:0}
 nav.abas{display:flex;gap:4px;margin:12px 0 4px}
-nav.abas button{border:0;background:transparent;color:var(--muted);font:inherit;padding:8px 14px;border-radius:99px;cursor:pointer}
-nav.abas button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+nav.abas button{border:0;background:transparent;color:var(--muted);padding:7px 14px;border-radius:8px;cursor:pointer}
+nav.abas button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:inset 0 0 0 1px var(--line)}
+
+/* botões */
+.b{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:7px 12px;cursor:pointer;font-size:14px}
+.b:hover{border-color:var(--faint)}
+.b.p{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600}
+.b.s{font-size:13px;padding:5px 10px}
+.redondo{width:34px;height:34px;padding:0;display:inline-grid;place-items:center;font-size:17px}
 
 /* mês */
-.mes{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 12px}
-.mes strong{font-family:var(--num);font-size:22px;font-weight:600;text-transform:capitalize}
-.mes strong span{color:var(--faint);font-weight:400}
-.redondo{width:38px;height:38px;padding:0 !important;border-radius:50% !important;font-size:18px !important}
+.mes{display:flex;align-items:center;gap:10px;margin:10px 0 16px}
+.mes h1{margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em;text-transform:capitalize;min-width:170px;text-align:center}
+.mes h1 span{color:var(--faint);font-weight:400}
 
-/* cartões */
-h2.sec{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:26px 0 10px;font-weight:600}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--sombra)}
-.card .r{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-.card .v{font-family:var(--num);font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.card .n,.nota{font-size:12.5px;color:var(--muted);margin-top:6px}
-.v.pos{color:var(--pos)} .v.neg{color:var(--neg)} .v.nd{color:var(--faint);font-size:20px}
-.duas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
-.duas.tres{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* painéis */
+.painel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;min-width:0}
+.painel h2{margin:0 0 14px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.painel h2 .dir{margin-left:auto;font-weight:400;font-size:13px;color:var(--faint)}
+.duas{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;margin-top:18px}
+.duas.igual{grid-template-columns:1fr 1fr}
+.duas.larga{grid-template-columns:1.75fr 1fr;align-items:start}
+.coluna{display:grid;gap:18px;align-content:start;min-width:0}
 
-/* número principal */
-.hero{border-radius:20px;padding:18px 18px 16px;color:#fff;background:linear-gradient(135deg,#7a3bb0,#4e2272);box-shadow:0 8px 28px rgba(80,30,120,.25)}
-.hero.neg{background:linear-gradient(135deg,#8c3a5e,#4e2272)}
-.hero .rot{font-size:12px;text-transform:uppercase;letter-spacing:.08em;opacity:.8;font-weight:600}
-.hero .grande{font-family:var(--num);font-size:40px;font-weight:600;letter-spacing:-.02em;margin:2px 0 12px;font-variant-numeric:tabular-nums}
-.hero .nota{color:rgba(255,255,255,.78)}
-.linha-f{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;font-size:13.5px;margin-top:6px}
-.linha-f b{font-variant-numeric:tabular-nums;font-weight:600}
-.hero .trilho{background:rgba(255,255,255,.18)}
-.hero .trilho i.ent{background:#9ff0c8} .hero .trilho i.sai{background:#ffb3a8}
+/* situação do mês */
+.situ{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;align-items:stretch}
+.linha-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.linha-k + .linha-k{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+.k span{display:block;color:var(--muted);font-size:13px}
+.k b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-top:2px;white-space:nowrap}
+.k small{display:block;color:var(--faint);font-size:12px;margin-top:3px}
+.k.destaque b{font-size:32px}
+.veredito{border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;justify-content:center;gap:10px;background:var(--surface-2)}
+.veredito.pos{background:var(--pos-soft)} .veredito.neg{background:var(--neg-soft)} .veredito.warn{background:var(--warn-soft)}
+.veredito .topo-v{display:flex;align-items:center;gap:12px}
+.seta{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface)}
+.seta svg{width:26px;height:26px}
+.veredito b{font-size:19px;line-height:1.2}
+.veredito p{margin:0;font-size:13.5px;color:var(--text)}
+.veredito.pos b,.veredito.pos .seta{color:var(--pos)} .veredito.neg b,.veredito.neg .seta{color:var(--neg)} .veredito.warn b,.veredito.warn .seta{color:var(--warn)}
 
-/* barras */
-.trilho{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;display:flex;margin-top:8px}
-.trilho i{display:block;height:100%;border-radius:99px}
-.trilho.duplo i{border-radius:0}
-.trilho i.res,.pt.res{background:var(--res)} .trilho i.cri,.pt.cri{background:var(--cri)}
-.trilho i.p1,.pt.p1{background:var(--p1)} .trilho i.p2,.pt.p2{background:var(--p2)}
-.trilho i.cat{background:var(--accent)}
-.partes{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:13.5px;color:var(--muted)}
-.partes b{color:var(--text);margin-left:4px;font-variant-numeric:tabular-nums}
-.pt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
-.topo-card{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.balanca-txt{font-size:13.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:5px 10px;border-radius:99px}
-.meta{font-size:12.5px;color:var(--muted);margin-top:14px}
+/* rosca */
+.rosca{display:grid;grid-template-columns:170px minmax(0,1fr);gap:20px;align-items:center}
+.rosca > svg{width:170px;height:170px;display:block}
+.rosca .centro1{fill:var(--muted);font-size:11px;font-family:var(--font)}
+.rosca .centro2{fill:var(--text);font-size:16px;font-weight:700;font-family:var(--font)}
+.fatia{transition:opacity .12s}
+.rosca > svg:hover .fatia:not(:hover),.rosca.foco .fatia:not(.on){opacity:.35}
+.leg{list-style:none;margin:0;padding:0;font-size:14px}
+.leg li{display:flex;gap:8px;align-items:baseline;padding:5px 4px;border-top:1px solid var(--line);border-radius:4px}
+.leg li:first-child{border-top:0}
+.leg li:hover{background:var(--surface-2)}
+.leg i{width:10px;height:10px;border-radius:3px;flex:none;align-self:center}
+.leg .n{flex:1;min-width:0}
+.leg .n small{display:block;color:var(--faint);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leg b{font-weight:600;white-space:nowrap}
+.leg .pc{color:var(--faint);font-size:12px;min-width:44px;text-align:right}
+/* rosca em painel estreito (coluna da direita): o gráfico em cima e a legenda embaixo */
+.painel{container-type:inline-size}
+@container (max-width:460px){ .rosca{grid-template-columns:minmax(0,1fr);justify-items:center} .leg{width:100%;min-width:0} }
+.leg .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.selo-b{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--surface-2);color:var(--text)}
 
-/* clínica em miniatura */
-.mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.mini div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:var(--sombra)}
-.mini b{display:block;font-family:var(--num);font-size:18px;font-variant-numeric:tabular-nums}
-.mini span{font-size:12px;color:var(--muted)}
+/* números soltos (como na Clínica) */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;min-width:0}
+.painel .stat{background:var(--surface-2);border-color:transparent}
+.stat span{display:block;color:var(--muted);font-size:12px}
+.stat b{display:block;font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat small{display:block;color:var(--faint);font-size:11.5px}
+.stats.duas-col{grid-template-columns:repeat(2,minmax(0,1fr))}
+.trilho{height:5px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+.painel .stat .trilho{background:var(--line)}
+.trilho i{display:block;height:100%;background:var(--c3);border-radius:3px}
 
-/* categorias */
-.cats{display:grid;gap:9px}
-.cat-l{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;font-size:13.5px}
-.cat-l b{font-variant-numeric:tabular-nums;font-weight:600}
-.cat-l .trilho{grid-column:1 / -1;margin-top:0;height:6px}
-
-/* listas */
-ul.lista{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--sombra);overflow:hidden}
-ul.lista li{display:grid;grid-template-columns:44px minmax(0,1fr) auto 26px;gap:10px;align-items:center;padding:10px 10px 10px 14px;border-bottom:1px solid var(--line)}
-ul.lista li:last-child{border-bottom:0}
-.data{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums;line-height:1.2}
-.data b{display:block;font-size:17px;color:var(--text);font-family:var(--num)}
-.desc{min-width:0} .desc b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.desc span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.val{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-.val.pos{color:var(--pos)} .val.neg{color:var(--text)} .val.neu{color:var(--neu)}
-.desc span.quem,.quem{display:inline-block;width:auto;font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;color:#fff}
-.quem.p1{background:var(--p1)} .quem.p2{background:var(--p2)}
-ul.lista li.fixo{grid-template-columns:minmax(0,1fr) 62px 96px 26px}
-ul.lista input{padding:6px 8px;text-align:right}
-.x{border:0;background:transparent;color:var(--faint);cursor:pointer;font-size:18px;padding:0;line-height:1}
+/* tabelas */
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;color:var(--muted);font-weight:500;font-size:12.5px;padding:0 8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t th:first-child,table.t td:first-child{padding-left:0}
+table.t th:last-child,table.t td:last-child{padding-right:0}
+table.t .dir{text-align:right;white-space:nowrap}
+table.t tr:last-child td{border-bottom:0}
+table.t tbody tr:hover td{background:var(--surface-2)}
+td.c-data{color:var(--muted);white-space:nowrap;width:1%}
+td.c-desc b{font-weight:500}
+td.c-cat,td.c-forma{color:var(--muted)}
+td.c-val{font-weight:600}
+td.c-val.pos{color:var(--pos)}
+td.c-x{width:1%}
+table.t input{width:84px;padding:5px 8px;text-align:right}
+table.t input.dia{width:58px}
+.so-cel{display:none}
+.quem{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.quem i{width:9px;height:9px;border-radius:50%}
+.x{border:0;background:transparent;color:var(--faint);cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
 .x:hover{color:var(--neg)}
-.vazio{padding:22px 14px;text-align:center;color:var(--faint);background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius)}
 
-/* formulários escondidos atrás de um botão */
+/* formulários atrás de um botão */
 details.novo{margin:0 0 12px}
-details.novo > summary{list-style:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;background:var(--accent);color:var(--accent-ink);font-weight:600;padding:9px 16px;border-radius:99px;font-size:14px}
-details.novo.leve > summary{background:var(--surface);color:var(--text);border:1px solid var(--line);font-weight:500}
+details.novo > summary{list-style:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:1px solid var(--line);background:var(--surface);padding:6px 12px;border-radius:var(--radius);font-size:14px}
+details.novo > summary:hover{border-color:var(--faint)}
 details.novo > summary::-webkit-details-marker{display:none}
 details.novo[open] > summary{margin-bottom:10px}
-form.linha{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));align-items:end;box-shadow:var(--sombra)}
+form.linha{background:var(--surface-2);border-radius:var(--radius);padding:12px;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));align-items:end}
 label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-input,select{width:100%;font:inherit;font-size:14px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
-input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
-.cabeca{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:26px 0 10px}
-.cabeca h2.sec{margin:0}
-details.origem{margin-top:24px;font-size:12.5px;color:var(--muted);line-height:1.6}
+input,select{width:100%;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--text)}
+details.origem{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6}
 details.origem summary{cursor:pointer;color:var(--faint)}
-.pe{margin-top:32px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
-/* ---------- celular ---------- */
-/* na casca, o botão de entrar é o da barra de cima; aqui fica só o aviso, numa linha com o ponto */
-.na-casca #nuvem-entrar{display:none !important}
-#nuvem-texto{flex:1 1 0; min-width:0}
-.na-casca .marca, .na-casca #tema, .na-casca nav.abas{display:none}   /* a casca já tem marca, tema e abas */
+/* dentro da casca: o botão de entrar, a marca, o tema e as abas ficam na barra de cima */
+.na-casca #nuvem-entrar,.na-casca .marca,.na-casca #tema,.na-casca nav.abas{display:none !important}
+
+@media (max-width:960px){
+  .duas,.duas.igual,.duas.larga{grid-template-columns:1fr}
+  .situ{grid-template-columns:1fr}
+}
+/* ---------- celular: aqui sim, jeito de app ---------- */
 @media (max-width:700px){
   .topo{padding:6px 12px}
   .wrap{padding:0 12px 48px}
-  .duas.tres{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .duas.tres .card:last-child{grid-column:1 / -1}
-  .mini{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .hero .grande{font-size:34px}
-  .card .v{font-size:21px}
+  .mes{justify-content:space-between;margin:8px 0 12px}
+  .mes h1{font-size:19px;min-width:0}
+  .painel{padding:14px}
+  .duas{gap:12px;margin-top:12px}
+  .coluna{gap:12px}
+  .linha-k{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .linha-k .k.destaque{grid-column:1 / -1}
+  .k b{font-size:21px} .k.destaque b{font-size:28px}
+  .rosca{grid-template-columns:minmax(0,1fr);justify-items:center}
+  .leg{width:100%}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .stat b{font-size:17px}
+  table.t thead{display:none}
+  table.t tr{display:grid;grid-template-columns:38px minmax(0,1fr) auto 22px;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+  table.t tr:last-child{border-bottom:0}
+  table.t td{border:0;padding:0 !important}
+  table.t tbody tr:hover td{background:transparent}
+  td.c-cat,td.c-forma,td.c-quem{display:none}
+  td.c-data{font-size:12.5px}
+  .so-cel{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  td.c-desc{min-width:0} td.c-desc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  table.fixos tr{grid-template-columns:minmax(0,1fr) 54px 84px 22px}
+  table.fixos input{width:100%}
   form.linha{grid-template-columns:repeat(2,minmax(0,1fr))}
   form.linha > div[style]{grid-column:1 / -1 !important}
-  form.linha button.b{width:100%}
+  form.linha .b{width:100%}
   input,select{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
-  ul.lista li.fixo{grid-template-columns:minmax(0,1fr) 54px 84px 22px;gap:6px}
 }
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="exportar-xlsx.js"></script>
@@ -166,7 +213,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
     <div class="marca"><b>Controle Único</b></div>
     <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto">Carregando…</span>
       <button class="b s" id="nuvem-entrar">Entrar com o Google</button><span id="nuvem-acoes"></span></p>
-    <button class="b" id="tema" title="Tema claro ou escuro">◐</button>
+    <button class="b s" id="tema" title="Tema claro ou escuro">◐</button>
   </div>
 </header>
 
@@ -334,121 +381,158 @@ function contasDinheiro(){
     + soma(movReserva.filter(l => l.tipo === "Aporte."), l => l.valor)
     - soma(movReserva.filter(l => l.tipo === "Resgate."), l => l.valor);
 
+  const sobra = entrou - saiu;
   return { entrou, receitaSolta, recebidoClinica: cl.recebido, dePacientes: cl.pacientes, saiu, minhaCasa, fixosMes, faltaSair, semDia, reserva,
-           sobra: entrou - saiu, falta: cl.falta, clinicaOk: cl.ok };
+           sobra, falta: cl.falta, clinicaOk: cl.ok, fimDoMes: sobra + (cl.falta || 0) - (faltaSair || 0) };
 }
 
 // ---------- telas ----------
 const ABAS = [["tudo","Tudo"],["dinheiro","Dinheiro"],["casa","Casa"]];
 
 const pct = (a, b) => b > 0 ? Math.max(0, Math.min(100, (Number(a) || 0) / b * 100)) : 0;
-const nd = motivo => `<div class="v nd">—</div><div class="n">${motivo}</div>`;
-const diaBonito = d => `<b>${(d || "").slice(8, 10)}</b>${["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][Number((d || "").slice(5, 7)) - 1] || ""}`;
+const pctTxt = (a, b) => (b > 0 ? (a / b * 100) : 0).toLocaleString("pt-BR", { maximumFractionDigits:1 }) + "%";
+const redondo = v => (v < 0 ? "−" : "") + "R$ " + Math.round(Math.abs(Number(v) || 0)).toLocaleString("pt-BR");
+const sinalDin = v => (v < -0.005 ? "−" : "") + dinheiro(Math.abs(v));
+const semPonto = s => String(s || "").replace(/\.$/, "").replace(". (", " (");
+const dataCurta = d => (d || "").slice(8, 10) + "/" + (d || "").slice(5, 7);
+const nd = motivo => `<b class="nota" style="font-size:22px">—</b><small>${motivo}</small>`;
 
 function barraMes(){
   return `<div class="mes"><button class="b redondo" data-mes="-1" aria-label="Mês anterior">‹</button>
-    <strong>${MESES[ref.getMonth()]} <span>${ref.getFullYear()}</span></strong>
+    <h1>${MESES[ref.getMonth()]} <span>${ref.getFullYear()}</span></h1>
     <button class="b redondo" data-mes="1" aria-label="Próximo mês">›</button></div>`;
 }
 
-function cartaoCasa(c){
-  const [p1, p2] = livro.casa.pessoas;
-  const parte = Number(livro.casa.divisao) || 0.5;
-  return `<div class="card">
-    <div class="topo-card"><div><div class="r">Total da casa no mês</div><div class="v">${dinheiro(c.total)}</div></div>
-      <div class="balanca-txt">${escH(balanca(c, p1, p2))}</div></div>
-    <div class="trilho duplo"><i class="p1" style="width:${pct(c.pagou[p1], c.total)}%"></i><i class="p2" style="width:${pct(c.pagou[p2], c.total)}%"></i></div>
-    <div class="partes">
-      <div><span class="pt p1"></span>${escH(primeiro(p1))} pagou<b>${dinheiro(c.pagou[p1])}</b></div>
-      <div><span class="pt p2"></span>${escH(primeiro(p2))} pagou<b>${dinheiro(c.pagou[p2])}</b></div>
-    </div>
-    <div class="nota">Parte de cada um: ${Math.round(parte * 100)}% e ${Math.round((1 - parte) * 100)}%. A balança mostra quem pagou mais no mês, não uma conta a acertar.</div>
-  </div>`;
+// Rosca como a da Carteira ("Onde está"), porque é o gráfico que ele gosta para ver partes de um todo.
+// itens: [rótulo, valor, cor, detalhe opcional]. A legenda ao lado leva o valor e a porcentagem.
+function rosca(itens, centro, aria){
+  itens = itens.filter(x => x[1] > 0.005);
+  const total = soma(itens, x => x[1]);
+  if (!total) return `<p class="vazio">Nada neste mês.</p>`;
+  const R0 = 68, C = 2 * Math.PI * R0, gap = itens.length > 1 ? 2 : 0; let acum = 0;
+  const fatias = itens.map(([rot, v, cor], i) => {
+    const f = v / total, len = Math.max(0.5, f * C - gap);
+    const s = `<circle class="fatia" data-i="${i}" cx="85" cy="85" r="${R0}" fill="none" stroke="${cor}" stroke-width="24"
+      stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-acum).toFixed(2)}" transform="rotate(-90 85 85)">
+      <title>${escH(rot)}: ${dinheiro(v)} (${pctTxt(v, total)})</title></circle>`;
+    acum += f * C; return s;
+  }).join("");
+  const meio = `<text class="centro1" x="85" y="80" text-anchor="middle">${escH(centro)}</text>
+    <text class="centro2" x="85" y="100" text-anchor="middle">${redondo(total)}</text>`;
+  const leg = itens.map(([rot, v, cor, det], i) => `<li data-i="${i}"><i style="background:${cor}"></i>
+    <span class="n">${escH(rot)}${det ? `<small>${escH(det)}</small>` : ""}</span><b>${dinheiro(v)}</b><span class="pc">${pctTxt(v, total)}</span></li>`).join("");
+  return `<div class="rosca"><svg viewBox="0 0 170 170" role="img" aria-label="${escH(aria)}">${fatias}${meio}</svg><ul class="leg">${leg}</ul></div>`;
 }
 
-// para onde foi o dinheiro do mês: despesas lançadas e fixos por categoria, mais a casa
+// para onde foi o dinheiro do mês: despesas lançadas e fixos por categoria, mais a casa.
+// Sete fatias com cor e o resto junto em "Outros", para a rosca continuar legível.
 function porCategoria(){
-  const km = chaveMes(ref), soma = {};
+  const km = chaveMes(ref), s = {};
   livro.matheus.lancamentos.filter(noMes).filter(l => l.tipo === "Despesa." && l.categoria !== "Moradia.")
-    .forEach(l => soma[l.categoria] = (soma[l.categoria] || 0) + (Number(l.valor) || 0));
-  livro.matheus.gastosFixos.forEach(g => { const v = valorFixo(g, km); if (v) soma[g.categoria] = (soma[g.categoria] || 0) + v; });
+    .forEach(l => s[l.categoria] = (s[l.categoria] || 0) + (Number(l.valor) || 0));
+  livro.matheus.gastosFixos.forEach(g => { const v = valorFixo(g, km); if (v) s[g.categoria] = (s[g.categoria] || 0) + v; });
   const casa = contasCasa().pagou[livro.casa.pessoas[0]] || 0;
-  if (casa) soma["Moradia. (casa)"] = (soma["Moradia. (casa)"] || 0) + casa;
-  return Object.entries(soma).sort((a, b) => b[1] - a[1]);
+  if (casa) s["Moradia. (casa)"] = (s["Moradia. (casa)"] || 0) + casa;
+  return Object.entries(s).filter(e => e[1] > 0.005).sort((a, b) => b[1] - a[1]);
 }
-function blocoCategorias(){
-  const cats = porCategoria(), maior = cats.length ? cats[0][1] : 0;
-  if (!cats.length) return `<div class="vazio">Nada saiu em ${MESES[ref.getMonth()]}.</div>`;
-  return `<div class="card"><div class="cats">${cats.map(([k, v]) => `<div class="cat-l"><span>${escH(k.replace(/\.$/, "").replace(". (", " ("))}</span><b>${dinheiro(v)}</b>
-    <div class="trilho"><i class="cat" style="width:${pct(v, maior)}%"></i></div></div>`).join("")}</div></div>`;
+function roscaCategorias(){
+  const cats = porCategoria();
+  if (!cats.length) return `<p class="vazio">Nada saiu em ${MESES[ref.getMonth()]}.</p>`;
+  const cabem = cats.length > 8 ? 7 : 8;
+  const itens = cats.slice(0, cabem).map(([k, v], i) => [semPonto(k), v, `var(--c${i + 1})`]);
+  const resto = cats.slice(cabem);
+  if (resto.length) itens.push(["Outros", soma(resto, e => e[1]), "var(--c8)", resto.map(e => semPonto(e[0])).join(", ")]);
+  return rosca(itens, "saiu", "Despesas do mês por categoria");
+}
+
+function roscaCasa(c){
+  const [p1, p2] = livro.casa.pessoas;
+  return rosca([[primeiro(p1), c.pagou[p1], "var(--c1)"], [primeiro(p2), c.pagou[p2], "var(--c2)"]], "casa no mês", "Quem pagou a casa");
+}
+
+// Situação do mês: primeiro o que de fato entrou e saiu, depois o que ainda vem,
+// e a seta dizendo se dá para gastar (pedido dele, 27/09/2026).
+function veredito(d){
+  const agora = new Date(), km = chaveMes(ref), hoje = chaveMes(agora);
+  const nome = MESES[ref.getMonth()];
+  const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
+  const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}</b></div><p>${texto}</p></div>`;
+  if (km < hoje) return d.sobra >= 0
+    ? caixa("pos", true, "Fechou positivo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${dinheiro(d.sobra)} de sobra.`)
+    : caixa("neg", false, "Fechou negativo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${sinalDin(d.sobra)}.`);
+  const semPrevisto = d.falta === null ? " (sem o previsto da Clínica, que ainda não abriu neste aparelho)" : "";
+  const fim = d.fimDoMes;
+  if (fim < -0.005) return caixa("neg", false, "Não pode gastar",
+    `Mesmo que entre tudo o que falta, ${nome} fecha em ${sinalDin(fim)}${semPrevisto}.`);
+  if (d.sobra < -0.005) return caixa("warn", true, "Segure até entrar",
+    `Hoje está em ${sinalDin(d.sobra)}. Se entrar o previsto, fecha em ${dinheiro(fim)}: dá para gastar isso, mas só depois que entrar${semPrevisto}.`);
+  return caixa("pos", true, "Pode gastar", `Até ${dinheiro(fim)} sem fechar ${nome} no vermelho${semPrevisto}.`);
 }
 
 function telaTudo(){
   const d = contasDinheiro(), c = contasCasa(), cl = contasClinica(), cart = carteiraAgora();
   const r = livro.matheus.reserva;
-  const patrimonio = d.reserva + (cart ? cart.total : 0);
-  const maior = Math.max(d.entrou, d.saiu, 1);
-  const acertos = d.recebidoClinica - d.dePacientes > 0.005 ? ` e ${dinheiro(d.recebidoClinica - d.dePacientes)} de acertos` : "";
+  const [p1, p2] = livro.casa.pessoas;
+  const outros = d.entrou - d.dePacientes;
+  const lancado = d.saiu - d.fixosMes - d.minhaCasa;
+  const corrente = chaveMes(ref) === chaveMes(new Date());
+
+  const patrimonio = rosca([["Reserva", d.reserva, "var(--c3)", r.meta ? `${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}` : ""],
+                            ["Carteira", cart ? cart.total : 0, "var(--c4)", cart ? "lida em " + new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : ""]],
+                           "patrimônio", "Patrimônio: reserva e carteira");
 
   return barraMes() + `
-  <section class="hero ${d.sobra >= 0 ? "pos" : "neg"}">
-    <div class="rot">Sobra do mês</div>
-    <div class="grande">${dinheiro(d.sobra)}</div>
-    <div class="linha-f"><span>Entrou</span><div class="trilho"><i class="ent" style="width:${pct(d.entrou, maior)}%"></i></div><b>${dinheiro(d.entrou)}</b></div>
-    <div class="linha-f"><span>Saiu</span><div class="trilho"><i class="sai" style="width:${pct(d.saiu, maior)}%"></i></div><b>${dinheiro(d.saiu)}</b></div>
-    <div class="nota">Entrou ${dinheiro(d.dePacientes)} de pacientes${acertos}. Saiu inclui ${dinheiro(d.fixosMes)} de fixos e ${dinheiro(d.minhaCasa)} da casa.</div>
+  <section class="painel"><h2>Situação do mês<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
+    <div class="situ"><div>
+      <div class="linha-k">
+        <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes${outros > 0.005 ? ` e ${dinheiro(outros)} de outras entradas` : ""}</small></div>
+        <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b><small>${dinheiro(lancado)} lançados, ${dinheiro(d.fixosMes)} de fixos e ${dinheiro(d.minhaCasa)} da casa</small></div>
+        <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei</small></div>
+      </div>
+      <div class="linha-k">
+        <div class="k"><span>Ainda vou receber</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>previsto da agenda menos o que os pacientes já pagaram</small>`}</div>
+        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("só no mês corrente") : `<b>${dinheiro(d.faltaSair)}</b><small>fixos que vencem depois de hoje${d.semDia ? `, ${d.semDia} sem dia marcado` : ""}</small>`}</div>
+        <div class="k destaque"><span>Fecha o mês em</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>saldo mais o que vou receber, menos o que vai sair</small></div>
+      </div>
+    </div>${veredito(d)}</div>
   </section>
 
   <div class="duas">
-    <div class="card"><div class="r">Ainda vai entrar</div>
-      ${d.falta === null ? nd("abra a Clínica para calcular") : `<div class="v">${dinheiro(d.falta)}</div><div class="n">previsto da agenda menos o que os pacientes pagaram</div>`}</div>
-    <div class="card"><div class="r">Ainda vai sair</div>
-      ${d.faltaSair === null ? nd("só no mês corrente")
-        : `<div class="v">${dinheiro(d.faltaSair)}</div><div class="n">fixos que vencem depois de hoje${d.semDia ? ` · ${d.semDia} sem dia marcado` : ""}</div>`}</div>
+    <section class="painel"><h2>Para onde foi</h2>${roscaCategorias()}</section>
+    <section class="painel"><h2>Patrimônio</h2>${patrimonio}
+      ${cart ? "" : `<p class="nota">Abra a aba Carteira uma vez neste aparelho para o total dela entrar aqui.</p>`}</section>
   </div>
 
-  <h2 class="sec">Patrimônio</h2>
-  <div class="card">
-    <div class="r">Total</div><div class="v">${dinheiro(patrimonio)}</div>
-    <div class="trilho duplo"><i class="res" style="width:${pct(d.reserva, patrimonio)}%"></i><i class="cri" style="width:${pct(cart ? cart.total : 0, patrimonio)}%"></i></div>
-    <div class="partes">
-      <div><span class="pt res"></span>Reserva<b>${dinheiro(d.reserva)}</b></div>
-      <div><span class="pt cri"></span>Carteira<b>${cart ? dinheiro(cart.total) : "—"}</b></div>
-    </div>
-    ${r.meta ? `<div class="meta">A reserva está em ${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}</div>
-    <div class="trilho"><i class="res" style="width:${pct(d.reserva, r.meta)}%"></i></div>` : ""}
-    <div class="nota">${cart ? "Carteira lida em " + new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) + "." : "Abra a aba Carteira uma vez neste aparelho para o total dela entrar aqui."}</div>
+  <div class="duas igual">
+    <section class="painel"><h2>Casa<span class="dir"><span class="selo-b">${escH(balanca(c, p1, p2))}</span></span></h2>${roscaCasa(c)}
+      <p class="nota">A balança mostra quem pagou mais no mês, não uma conta a acertar.</p></section>
+    <section class="painel"><h2>Clínica</h2>
+      <div class="stats duas-col">
+        <div class="stat"><span>Pacientes na agenda</span><b>${cl.ativos === null ? "—" : cl.ativos}</b></div>
+        <div class="stat"><span>Sessões no mês</span><b>${cl.sessoes === null ? "—" : cl.sessoes}</b></div>
+        <div class="stat"><span>Previsto</span><b>${cl.previsto === null ? "—" : dinheiro(cl.previsto)}</b></div>
+        <div class="stat"><span>Recebido</span><b>${dinheiro(cl.recebido)}</b>${cl.previsto ? `<div class="trilho"><i style="width:${pct(cl.pacientes, cl.previsto)}%"></i></div><small>${Math.round(pct(cl.pacientes, cl.previsto))}% do previsto, só pacientes</small>` : ""}</div>
+      </div></section>
   </div>
-
-  <h2 class="sec">Casa</h2>
-  ${cartaoCasa(c)}
-
-  <h2 class="sec">Clínica</h2>
-  <div class="mini">
-    <div><b>${cl.ativos === null ? "—" : cl.ativos}</b><span>pacientes na agenda</span></div>
-    <div><b>${cl.sessoes === null ? "—" : cl.sessoes}</b><span>sessões no mês</span></div>
-    <div><b>${cl.previsto === null ? "—" : dinheiro(cl.previsto)}</b><span>previsto</span></div>
-    <div><b>${dinheiro(cl.recebido)}</b><span>recebido</span></div>
-  </div>
-
-  <h2 class="sec">Para onde foi</h2>
-  ${blocoCategorias()}
 
   <details class="origem"><summary>De onde vem cada número</summary>
-    Entrou: receitas soltas do Dinheiro mais os pagamentos da Clínica (pacientes e acertos). Saiu: despesas lançadas no mês,
+    Recebi: receitas soltas do Dinheiro mais os pagamentos da Clínica (pacientes e acertos). Gastei: despesas lançadas no mês,
     sem a categoria moradia, mais os gastos fixos do mês e o que você pagou na casa, como manda o sistema Ciclo do Dinheiro
-    do Mês. Ainda vai entrar e Previsto: a mesma conta do Painel da Clínica, pela agenda e pela cobrança de cada paciente,
-    menos o que os pacientes já pagaram. Carteira: o total da última vez que a aba Carteira abriu neste aparelho.
+    do Mês. Ainda vou receber: a mesma conta do Painel da Clínica, pela agenda e pela cobrança de cada paciente, menos o que
+    os pacientes já pagaram. Ainda vai sair: gastos fixos com dia depois de hoje. A seta compara o fim do mês com zero.
+    Carteira: o total da última vez que a aba Carteira abriu neste aparelho.
   </details>`;
 }
 
-function itemLanc(l){
-  const cls = l.tipo === "Receita." || l.tipo === "Resgate." ? "pos" : l.tipo === "Aporte." ? "neu" : "neg";
-  const sinal = cls === "pos" ? "+ " : cls === "neg" ? "− " : "";
-  return `<li><div class="data">${diaBonito(l.data)}</div>
-    <div class="desc"><b>${escH(l.descricao)}</b><span>${escH(l.categoria)} · ${escH(l.forma)}${l.tipo !== "Despesa." ? " · " + escH(l.tipo) : ""}</span></div>
-    <div class="val ${cls}">${sinal}${dinheiro(l.valor)}</div>
-    <button class="x" data-apagar="matheus:lancamentos:${l.id}" aria-label="Apagar">×</button></li>`;
+function linhaLanc(l){
+  const cls = l.tipo === "Receita." || l.tipo === "Resgate." ? "pos" : "";
+  const sinal = cls ? "+ " : l.tipo === "Despesa." ? "− " : "";
+  const tipo = l.tipo !== "Despesa." ? ` · ${semPonto(l.tipo)}` : "";
+  return `<tr><td class="c-data">${dataCurta(l.data)}</td>
+    <td class="c-desc"><b>${escH(l.descricao)}</b><span class="so-cel">${escH(semPonto(l.categoria))} · ${escH(semPonto(l.forma))}${tipo}</span></td>
+    <td class="c-cat">${escH(semPonto(l.categoria))}${tipo}</td><td class="c-forma">${escH(semPonto(l.forma))}</td>
+    <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
+    <td class="c-x"><button class="x" data-apagar="matheus:lancamentos:${l.id}" aria-label="Apagar">×</button></td></tr>`;
 }
 
 function telaDinheiro(){
@@ -458,13 +542,11 @@ function telaDinheiro(){
   const km = chaveMes(ref);
   const fixosMes = livro.matheus.gastosFixos.slice().sort((a, b) => valorFixo(b, km) - valorFixo(a, km));
 
-  const cards = `<div class="duas tres">
-    <div class="card"><div class="r">Despesas do mês</div><div class="v neg">${dinheiro(d.saiu - d.minhaCasa)}</div>
-      <div class="n">lançadas e ${dinheiro(d.fixosMes)} de fixos</div></div>
-    <div class="card"><div class="r">Receita solta</div><div class="v pos">${dinheiro(d.receitaSolta)}</div>
-      <div class="n">fora os pacientes</div></div>
-    <div class="card"><div class="r">Reserva</div><div class="v">${dinheiro(d.reserva)}</div>
-      ${r.meta ? `<div class="trilho"><i class="res" style="width:${pct(d.reserva, r.meta)}%"></i></div><div class="n">${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}</div>` : `<div class="n">sem meta</div>`}</div>
+  const stats = `<div class="stats">
+    <div class="stat"><span>Despesas do mês</span><b>${dinheiro(d.saiu - d.minhaCasa)}</b><small>sem a casa</small></div>
+    <div class="stat"><span>Gastos fixos</span><b>${dinheiro(d.fixosMes)}</b><small>${d.faltaSair === null ? "do mês" : dinheiro(d.faltaSair) + " ainda vão sair"}</small></div>
+    <div class="stat"><span>Receitas fora a clínica</span><b class="pos">${dinheiro(d.receitaSolta)}</b><small>lançadas aqui</small></div>
+    <div class="stat"><span>Reserva</span><b>${dinheiro(d.reserva)}</b>${r.meta ? `<div class="trilho"><i style="width:${pct(d.reserva, r.meta)}%"></i></div><small>${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}</small>` : `<small>sem meta</small>`}</div>
   </div>`;
 
   const form = `<details class="novo"><summary>+ Novo lançamento</summary><form class="linha" id="fLanc">
@@ -477,44 +559,70 @@ function telaDinheiro(){
     <div><button class="b p" type="submit">Lançar</button></div>
   </form></details>`;
 
-  const lista = doMes.length ? `<ul class="lista">${doMes.map(itemLanc).join("")}</ul>`
-    : `<div class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</div>`;
+  const lista = doMes.length ? `<table class="t"><thead><tr><th>Dia</th><th>Descrição</th><th>Categoria</th><th>Forma</th><th class="dir">Valor</th><th></th></tr></thead>
+    <tbody>${doMes.map(linhaLanc).join("")}</tbody></table>`
+    : `<p class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</p>`;
 
   const fixos = fixosMes.length
-    ? `<ul class="lista">${fixosMes.map(g => `<li class="fixo">
-        <div class="desc"><b>${escH(g.descricao)}</b><span>${escH(g.categoria)}</span></div>
-        <input type="number" min="1" max="31" inputmode="numeric" data-dia="${g.id}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês">
-        <input type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${g.id}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor em ${MESES[ref.getMonth()]}">
-        <button class="x" data-apagar="matheus:gastosFixos:${g.id}" aria-label="Apagar">×</button></li>`).join("")}</ul>`
-    : `<div class="vazio">Nenhum gasto fixo cadastrado.</div>`;
+    ? `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Dia</th><th class="dir">Valor em ${MESES[ref.getMonth()]}</th><th></th></tr></thead><tbody>
+      ${fixosMes.map(g => `<tr><td class="c-desc"><b>${escH(g.descricao)}</b><span class="so-cel">${escH(semPonto(g.categoria))}</span></td>
+        <td class="c-cat">${escH(semPonto(g.categoria))}</td>
+        <td class="dir"><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${g.id}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês"></td>
+        <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${g.id}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor em ${MESES[ref.getMonth()]}"></td>
+        <td class="c-x"><button class="x" data-apagar="matheus:gastosFixos:${g.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
+    : `<p class="vazio">Nenhum gasto fixo cadastrado.</p>`;
 
-  const formFixo = `<details class="novo leve"><summary>+ Novo gasto fixo</summary><form class="linha" id="fFixo">
+  const formFixo = `<details class="novo"><summary>+ Novo gasto fixo</summary><form class="linha" id="fFixo">
     <div style="grid-column:span 2"><label>Gasto fixo</label><input name="descricao" placeholder="assinatura, conta" required></div>
     <div><label>Categoria</label><select name="categoria">${CATEGORIAS.map(t => `<option>${t}</option>`).join("")}</select></div>
     <div><label>Dia do mês</label><input type="number" name="dia" min="1" max="31" inputmode="numeric" required></div>
     <div><label>Valor por mês</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
-    <div><button class="b" type="submit">Cadastrar deste mês até dezembro</button></div>
+    <div><button class="b p" type="submit">Cadastrar deste mês até dezembro</button></div>
   </form></details>`;
 
-  const formReserva = `<details class="novo leve"><summary>Ajustar a reserva</summary><form class="linha" id="fReserva">
+  const formReserva = `<details class="novo"><summary>Ajustar a reserva</summary><form class="linha" id="fReserva">
     <div><label>Saldo conferido</label><input type="number" name="saldoBase" step="0.01" inputmode="decimal" value="${r.saldoBase || ""}"></div>
     <div><label>Conferido em</label><input type="date" name="dataBase" value="${r.dataBase || ""}"></div>
     <div><label>Meta</label><input type="number" name="meta" step="0.01" inputmode="decimal" value="${r.meta || ""}"></div>
-    <div><button class="b" type="submit">Guardar</button></div>
-  </form><div class="nota">Aportes e resgates da categoria Reserva contam a partir da data conferida.</div></details>`;
+    <div><button class="b p" type="submit">Guardar</button></div>
+  </form></details>`;
 
-  return barraMes() + cards +
-    `<div class="cabeca"><h2 class="sec">Lançamentos</h2></div>` + form + lista +
-    `<h2 class="sec">Para onde foi</h2>` + blocoCategorias() +
-    `<div class="cabeca"><h2 class="sec">Gastos fixos · dia e valor em ${MESES[ref.getMonth()]}</h2></div>` + formFixo + fixos +
-    `<h2 class="sec">Reserva</h2>` + formReserva;
+  return barraMes() + stats + `
+  <div class="duas larga">
+    <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
+    <div class="coluna">
+      <section class="painel"><h2>Para onde foi</h2>${roscaCategorias()}</section>
+      <section class="painel"><h2>Reserva</h2>
+        <div class="stats duas-col" style="margin-bottom:12px">
+          <div class="stat"><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
+          <div class="stat"><span>Meta</span><b>${r.meta ? dinheiro(r.meta) : "—"}</b></div>
+        </div>${formReserva}
+        <p class="nota">Aportes e resgates da categoria Reserva contam a partir da data conferida${r.dataBase ? " (" + dataCurta(r.dataBase) + "/" + r.dataBase.slice(0, 4) + ")" : ""}.</p></section>
+    </div>
+  </div>
+  <section class="painel" style="margin-top:18px"><h2>Gastos fixos<span class="dir">dia e valor em ${MESES[ref.getMonth()]}</span></h2>${formFixo}${fixos}</section>`;
 }
 
 function telaCasa(){
   const c = contasCasa();
   const doMes = livro.casa.lancamentos.filter(noMes).sort((a,b) => b.data.localeCompare(a.data));
   const [p1, p2] = livro.casa.pessoas;
-  const classe = q => q === p1 ? "p1" : "p2";
+  const cor = q => q === p1 ? "var(--c1)" : "var(--c2)";
+  const parte = Number(livro.casa.divisao) || 0.5;
+
+  const porCat = {};
+  doMes.forEach(l => porCat[l.categoria] = (porCat[l.categoria] || 0) + (Number(l.valor) || 0));
+  const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
+  const cabem = cats.length > 8 ? 7 : 8;
+  const itensCat = cats.slice(0, cabem).map(([k, v], i) => [semPonto(k), v, `var(--c${i + 1})`]);
+  if (cats.length > cabem) itensCat.push(["Outros", soma(cats.slice(cabem), e => e[1]), "var(--c8)", cats.slice(cabem).map(e => semPonto(e[0])).join(", ")]);
+
+  const stats = `<div class="stats">
+    <div class="stat"><span>Total da casa no mês</span><b>${dinheiro(c.total)}</b><small>${doMes.length} compra${doMes.length === 1 ? "" : "s"}</small></div>
+    <div class="stat"><span>${escH(primeiro(p1))} pagou</span><b>${dinheiro(c.pagou[p1])}</b><small>parte: ${dinheiro(c.total * parte)}</small></div>
+    <div class="stat"><span>${escH(primeiro(p2))} pagou</span><b>${dinheiro(c.pagou[p2])}</b><small>parte: ${dinheiro(c.total * (1 - parte))}</small></div>
+    <div class="stat"><span>Balança</span><b style="font-size:16px;white-space:normal">${escH(balanca(c, p1, p2))}</b><small>quem pagou mais no mês</small></div>
+  </div>`;
 
   const form = `<details class="novo"><summary>+ Nova compra</summary><form class="linha" id="fCasa">
     <div><label>Data</label><input type="date" name="data" value="${hojeISO()}" required></div>
@@ -525,28 +633,36 @@ function telaCasa(){
     <div><button class="b p" type="submit">Lançar</button></div>
   </form></details>`;
 
-  const lista = doMes.length ? `<ul class="lista">${doMes.map(l => `<li><div class="data">${diaBonito(l.data)}</div>
-      <div class="desc"><b>${escH(l.categoria.replace(/\.$/, ""))}${l.descricao && l.descricao !== "-" ? " · " + escH(l.descricao) : ""}</b>
-        <span><span class="quem ${classe(l.quem)}">${escH(primeiro(l.quem))}</span></span></div>
-      <div class="val">${dinheiro(l.valor)}</div>
-      <button class="x" data-apagar="casa:lancamentos:${l.id}" aria-label="Apagar">×</button></li>`).join("")}</ul>`
-    : `<div class="vazio">Nenhuma compra em ${MESES[ref.getMonth()]}.</div>`;
+  const quem = q => `<span class="quem"><i style="background:${cor(q)}"></i>${escH(primeiro(q))}</span>`;
+  const lista = doMes.length ? `<table class="t"><thead><tr><th>Dia</th><th>Compra</th><th>Quem</th><th class="dir">Valor</th><th></th></tr></thead><tbody>
+    ${doMes.map(l => `<tr><td class="c-data">${dataCurta(l.data)}</td>
+      <td class="c-desc"><b>${escH(semPonto(l.categoria))}${l.descricao && l.descricao !== "-" ? " · " + escH(l.descricao) : ""}</b><span class="so-cel">${quem(l.quem)}</span></td>
+      <td class="c-quem">${quem(l.quem)}</td>
+      <td class="c-val dir">${dinheiro(l.valor)}</td>
+      <td class="c-x"><button class="x" data-apagar="casa:lancamentos:${l.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
+    : `<p class="vazio">Nenhuma compra em ${MESES[ref.getMonth()]}.</p>`;
 
-  const ajustes = `<details class="novo leve"><summary>Divisão e nomes</summary>
+  const ajustes = `<details class="novo"><summary>Divisão e nomes</summary>
     <form class="linha" id="fDivisao">
       <div><label>Parte de ${escH(primeiro(p1))} (em %)</label>
-        <input type="number" name="divisao" min="0" max="100" step="1" value="${Math.round((livro.casa.divisao || .5) * 100)}"></div>
-      <div><button class="b" type="submit">Guardar</button></div>
+        <input type="number" name="divisao" min="0" max="100" step="1" value="${Math.round(parte * 100)}"></div>
+      <div><button class="b p" type="submit">Guardar</button></div>
     </form>
     <form class="linha" id="fPessoas" style="margin-top:10px">
       <div><label>Primeira pessoa (a do seu mês)</label><input name="p1" value="${escH(p1)}" required></div>
       <div><label>Segunda pessoa</label><input name="p2" value="${escH(p2)}" required></div>
-      <div><button class="b" type="submit">Guardar</button></div>
-    </form><div class="nota">Os nomes ficam só no caderno da casa, no Drive.</div></details>`;
+      <div><button class="b p" type="submit">Guardar</button></div>
+    </form><p class="nota">Os nomes ficam só no caderno da casa, no Drive.</p></details>`;
 
-  return barraMes() + cartaoCasa(c) +
-    `<div class="cabeca"><h2 class="sec">Compras</h2></div>` + form + lista +
-    `<h2 class="sec">Ajustes</h2>` + ajustes;
+  return barraMes() + stats + `
+  <div class="duas larga">
+    <section class="painel"><h2>Compras<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
+    <div class="coluna">
+      <section class="painel"><h2>Quem pagou</h2>${roscaCasa(c)}</section>
+      <section class="painel"><h2>Por categoria</h2>${rosca(itensCat, "casa no mês", "Compras da casa por categoria")}</section>
+      <section class="painel"><h2>Ajustes</h2>${ajustes}</section>
+    </div>
+  </div>`;
 }
 
 // ---------- desenho ----------
@@ -566,6 +682,12 @@ function desenhar(){
 function ligar(){
   document.querySelectorAll("[data-mes]").forEach(b => b.onclick = () => {
     ref.setMonth(ref.getMonth() + Number(b.dataset.mes)); desenhar();
+  });
+  // passar o mouse na legenda acende a fatia correspondente da rosca
+  document.querySelectorAll(".rosca .leg li").forEach(li => {
+    const r = li.closest(".rosca"), f = r.querySelector(`.fatia[data-i="${li.dataset.i}"]`);
+    li.onmouseenter = () => { r.classList.add("foco"); if (f) f.classList.add("on"); };
+    li.onmouseleave = () => { r.classList.remove("foco"); if (f) f.classList.remove("on"); };
   });
   document.querySelectorAll("[data-apagar]").forEach(b => b.onclick = () => {
     if (!confirm("Apagar esta linha?")) return;
