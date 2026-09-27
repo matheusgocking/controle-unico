@@ -196,6 +196,12 @@ button,input,select,textarea{font:inherit; color:inherit}
    para não parecer com o encaixe, que é cheio e escuro. */
 .cell.remarcada{background:var(--t-remarcada-bg); border:1px dashed var(--t-remarcada-bar); border-left:4px dashed var(--t-remarcada-bar); color:var(--t-remarcada-fg); cursor:grab}
 .cell.remarcada .nm{text-decoration:line-through; font-weight:400; opacity:.8}
+/* cortesia: a sessão acontece (roxo de sessão), mas não cobra: o contorno tracejado por dentro diz isso */
+.cell.cortesia{background:var(--t-sessao-bg); border-left-color:var(--t-sessao-bar); color:var(--t-sessao-fg); outline:2px dashed var(--t-sessao-bar); outline-offset:-5px}
+select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:12.5px; max-width:100%}
+@media (max-width:700px){ select.situacao{min-height:40px; font-size:16px} } /* área de toque; abaixo de 16 px o iPhone dá zoom */
+.ss-desde{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted)}
+.ss-desde input{padding:4px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:12.5px}
 /* paciente com pagamento vencido: uma tarja na borda direita, sem escrever nada na célula */
 .cell.devendo{box-shadow:inset -5px 0 0 var(--devendo)}
 .cell.devendo:hover{box-shadow:inset -5px 0 0 var(--devendo), inset 0 0 0 9999px rgba(128,128,128,.14)}
@@ -472,6 +478,7 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-view="semana">Semana</button>
       <button class="tab" role="tab" aria-selected="false" data-view="mes">Mês</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="sessoes">Sessões</button>
       <button class="tab" role="tab" aria-selected="false" data-view="painel">Painel</button>
       <button class="tab" role="tab" aria-selected="false" data-view="meta">Meta</button>
       <button class="tab" role="tab" aria-selected="false" data-view="pacientes">Pacientes</button>
@@ -533,7 +540,40 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
     <div class="legend" style="margin-top:10px">
       <span><i style="background:var(--surface); border-color:var(--border)"></i>Dia de semana</span>
       <span><i style="background:var(--fds-bg); border-color:var(--fds-line)"></i>Sábado e domingo</span>
-      <span class="dica">A receita do mês segue a regra da planilha: ciclo mensal conta o valor cheio, quinzenal conta o valor do mês e avulsa conta por sessão realizada.</span>
+      <span class="dica">A receita do mês segue a cobrança de cada paciente: ciclo mensal conta o valor cheio, quinzenal conta o valor do mês e avulsa conta por sessão cobrada (realizada, ou falta sem aviso de 24 horas). Remarcada, cortesia e "não haverá" não cobram.</span>
+    </div>
+  </section>
+
+  <!-- ============ SESSÕES ============ -->
+  <!-- Decisão 12 (27/09/2026): cada sessão é um registro, com data, paciente e situação. A lista
+       sai da agenda (horário fixo mais as marcas da semana) e mexer aqui mexe na grade também. -->
+  <section id="v-sessoes" class="hidden">
+    <div class="bar">
+      <div class="nav">
+        <button class="btn sm" id="ss-prev" aria-label="Mês anterior">←</button>
+        <button class="btn sm" id="ss-hoje">Mês atual</button>
+        <button class="btn sm" id="ss-next" aria-label="Próximo mês">→</button>
+        <div class="range"><span id="ss-titulo"></span><small id="ss-sub"></small></div>
+      </div>
+      <div class="stats">
+        <div class="stat" title="Sessões que aconteceram e são cobradas. As que ainda vão acontecer aparecem como previstas."><b id="ss-realizadas">0</b><span id="ss-realizadas-rot">Realizadas</span></div>
+        <div class="stat" title="Faltas sem aviso de 24 horas: contam como sessão e são cobradas."><b id="ss-faltas">0</b><span>Não compareceu</span></div>
+        <div class="stat" title="Remarcadas com aviso e sessões que não haverá: não são cobradas."><b id="ss-desmarcadas">0</b><span>Desmarcadas</span></div>
+        <div class="stat" title="Sessões dadas sem cobrar."><b id="ss-cortesias">0</b><span>Cortesias</span></div>
+        <div class="stat" title="Quanto as desmarcadas e as cortesias valeriam, pelo valor por sessão de cada paciente."><b id="ss-valor">R$ 0</b><span>Não cobrado</span></div>
+      </div>
+      <label class="ss-desde" for="ss-desde">Contando desde <input type="date" id="ss-desde" aria-label="A partir de quando a agenda registra o que aconteceu"></label>
+    </div>
+    <div class="panel">
+      <h2>Uma linha por sessão</h2>
+      <p class="sub">O que aconteceu com cada sessão do mês. A linha nasce do horário fixo do paciente e a situação é a que você deu na grade da semana; mudar aqui muda lá também. Quem faltou sem avisar 24 horas antes é cobrado; remarcada, cortesia e "não haverá" não cobram.</p>
+      <div class="tabwrap">
+        <table class="tab" id="ss-tabela">
+          <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint" style="margin-top:10px">A data em "Contando desde" diz a partir de quando a agenda registra o que de fato aconteceu; antes dela, o mês é só projeção e fica de fora das contas por paciente e do painel.</p>
     </div>
   </section>
 
@@ -726,15 +766,30 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
 
     <div class="panel">
       <h2>Registrar um pagamento</h2>
-      <p class="sub">Quem pagou, quando pagou e quanto. O próximo vencimento sai daqui: ciclo mensal vale quatro semanas, quinzenal duas, e quem paga por sessão vence na sessão seguinte.</p>
+      <p class="sub">Um lançamento só para tudo o que entra: pagamento de paciente, pendência ou acerto. O próximo vencimento sai daqui: ciclo mensal vale quatro semanas, quinzenal duas, e quem paga por sessão vence na sessão seguinte.</p>
+      <div class="grid2">
+        <div class="field">
+          <label for="pg-origem">Origem</label>
+          <select id="pg-origem">
+            <option value="Prática Clínica.">Paciente: conta na receita da clínica</option>
+            <option value="Pendência.">Pendência: empréstimo, acerto, dívida antiga</option>
+            <option value="Extra.">Extra: outra entrada</option>
+          </select>
+          <span class="hint">Só a origem Paciente entra na receita da clínica; o resto conta no total do mês (regra de 27/09/2026).</span>
+        </div>
+        <div class="field">
+          <label for="pg-data">Quando pagou</label>
+          <input type="date" id="pg-data">
+        </div>
+      </div>
       <div class="grid2">
         <div class="field">
           <label for="pg-paciente">Quem pagou</label>
           <select id="pg-paciente"></select>
         </div>
-        <div class="field">
-          <label for="pg-data">Quando pagou</label>
-          <input type="date" id="pg-data">
+        <div class="field hidden" id="pg-quem-campo">
+          <label for="pg-quem">De quem, ou o quê</label>
+          <input id="pg-quem" placeholder="ex.: acerto da viagem, empréstimo devolvido">
         </div>
       </div>
       <div class="grid2">
@@ -1008,7 +1063,12 @@ function receitaMensal(p, sessoesNoMes){
   if(p.cobranca==="quinzenal") return p.valor;
   return p.valor*sessoesNoMes;
 }
-function sessoesDoDia(data){
+/* Estados de uma sessão: "sessao" (acontece e cobra), "falta" (não compareceu sem aviso de
+   24 horas: cobra), "remarcada" (avisou: não cobra), "cancelada" (não haverá: não cobra) e
+   "cortesia" (acontece, mas não cobra). Com comCanceladas, a lista traz também as "não haverá",
+   para a aba Sessões mostrar o mês inteiro. */
+function cobraSessao(estado){ return estado==="sessao" || estado==="falta"; }
+function sessoesDoDia(data, comCanceladas){
   var lista = [];
   var dia = data.getDay();
   for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++){
@@ -1019,11 +1079,11 @@ function sessoesDoDia(data){
       /* sessão que veio de outro horário: conta na hora em que vai acontecer, e é a única
          que conta ali, porque quem era fixo naquela hora não vem */
       var pe = acharPaciente(entra.pacienteId);
-      if(pe) lista.push({paciente:pe, hora:h, estado:"sessao"});
+      if(pe) lista.push({paciente:pe, hora:h, estado:"sessao", origem:"extra"});
     } else if(p){
       var estado = ex ? ex.tipo : "sessao";
-      if(estado==="cancelada") continue;
-      lista.push({paciente:p, hora:h, estado:estado});
+      if(estado==="cancelada" && !comCanceladas) continue;
+      lista.push({paciente:p, hora:h, estado:estado, origem:"fixo"});
     }
   }
   return lista;
@@ -1096,6 +1156,7 @@ function renderSemana(){
       grade.appendChild(b);
 
       if(info.classe==="sessao"){ sessoes++; receita += valorSessao(info.paciente); }
+      if(info.classe==="cortesia") sessoes++; /* acontece, ocupa a hora, mas não entra na receita */
       if(info.classe==="divulgado") divulgadosLivres++;
     }
   }
@@ -1127,6 +1188,7 @@ function estadoCelula(dia, hora, data){
     if(estado==="falta")     return {classe:"falta", nome:nomeGrade(p), etiqueta:"Faltou", paciente:p, origem:"fixo"};
     if(estado==="remarcada") return {classe:"remarcada", nome:nomeGrade(p),
       etiqueta:(ex && ex.para ? "→ Foi para "+quando(ex.para) : "→ Remarcada"), paciente:p, origem:"fixo"};
+    if(estado==="cortesia") return {classe:"cortesia", nome:nomeGrade(p), etiqueta:"Cortesia", aria:nomeGrade(p)+", sessão cortesia, não cobrada", paciente:p, origem:"fixo"};
     /* "não haverá sessão nesta data" não deixa a hora em branco: ela volta a ser o
        horário de atendimento que já era, em vez de virar um buraco no meio do bloco */
     if(estado!=="cancelada")
@@ -1206,6 +1268,7 @@ function abrirMenu(e){
       corpo += botao("falta","Marcar falta","var(--t-falta-bar)");
       corpo += botao("remarcada","Marcar como remarcada","var(--t-remarcada-bar)");
       corpo += botao("cancelada","Não haverá sessão nesta data","var(--border-strong)");
+      corpo += botao("cortesia","Sessão cortesia (não cobrada)","var(--t-sessao-bar)");
       if(ex) corpo += botao("limpar-excecao","Voltar ao normal","var(--accent)");
     }
     corpo += "<hr>";
@@ -1242,7 +1305,7 @@ function abrirMenu(e){
     b.addEventListener("click", function(){
       var a = b.dataset.acao;
       var kData = chaveData(data)+"|"+hora, kBloco = dia+"-"+hora;
-      if(a==="falta"||a==="remarcada"||a==="cancelada") marcarSaida(kData, a);
+      if(a==="falta"||a==="remarcada"||a==="cancelada"||a==="cortesia") marcarSaida(kData, a);
       else if(a==="limpar-excecao") delete dados.excecoes[kData];
       else if(a==="tirar-entrada") tirarEntrada(kData);
       else if(a==="limpar-bloco") delete dados.blocos[kBloco];
@@ -1359,7 +1422,8 @@ function renderMes(){
     if(noMes){
       totalSessoes += ss.length;
       ss.forEach(function(s){
-        if(s.estado==="falta") return;
+        /* a receita segue a cobrança: falta sem aviso cobra, cortesia não (regra das 24 horas) */
+        if(!cobraSessao(s.estado)) return;
         contagemPorPaciente[s.paciente.id] = (contagemPorPaciente[s.paciente.id]||0)+1;
       });
     }
@@ -1487,7 +1551,7 @@ function movimentosDaSemana(){
     var d = deISO(data);
     if(!d || isNaN(d.getTime())) return;
     var fixo = pacienteEm(d.getDay(), hora, d);
-    if(ex.tipo === "falta" || ex.tipo === "remarcada" || ex.tipo === "cancelada"){
+    if(ex.tipo === "falta" || ex.tipo === "remarcada" || ex.tipo === "cancelada" || ex.tipo === "cortesia"){
       lista.push({data:data, hora:hora, tipo:ex.tipo, paciente:fixo,
         detalhe: ex.para ? "foi para "+quando(ex.para) : ""});
     }
@@ -1563,7 +1627,7 @@ function desenharMovimentos(lista){
     alvo.innerHTML = '<p class="pvazio">Nenhuma falta, remarcação ou encaixe marcado até agora.</p>';
     return;
   }
-  var rotulo = {falta:"Faltou", remarcada:"Remarcada", cancelada:"Não haverá sessão", entrou:"Entrou nesta data"};
+  var rotulo = {falta:"Faltou", remarcada:"Remarcada", cancelada:"Não haverá sessão", cortesia:"Cortesia", entrou:"Entrou nesta data"};
   var h = '<div class="linhas movs">';
   lista.forEach(function(m){
     var d = deISO(m.data);
@@ -1648,6 +1712,7 @@ function abrirFicha(p){
       '<div class="fcab"><span class="ini grande" id="fi-ini"></span>' +
         '<div><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span></div></div>' +
       '<div class="fipag" id="fi-pag"></div>' +
+      '<div class="fipag" id="fi-sess"></div>' +
       '<div class="fipag" id="fi-form"></div>' +
       '<div class="grid2">' +
         '<div class="field"><label for="fi-nome">Nome na agenda</label>' +
@@ -1683,7 +1748,24 @@ function abrirFicha(p){
     document.getElementById("fi-sub").textContent = p.codigo+" · "+DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h";
     document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
     pintarPagamentos();
+    pintarSessoes();
     pintarFormulacao();
+  }
+  /* as sessões destrinchadas (pedido dele, 25/09/2026): quantas realizadas, quantas faltas
+     cobradas, quantas remarcadas e cortesias, e quanto o que não foi cobrado valeria */
+  function pintarSessoes(){
+    var el = document.getElementById("fi-sess");
+    var desde = mesDesde();
+    if(p.inicio && deISO(p.inicio) > desde) desde = deISO(p.inicio);
+    var c = contarSessoesDe(p, desde, hoje0());
+    el.innerHTML = '<div class="topo"><h3>Sessões</h3><span class="hint">desde '+dataLonga(desde)+', pela agenda</span></div>' +
+      '<div class="duas">' +
+        '<span>Realizadas: <b>'+c.realizadas+'</b></span>' +
+        '<span>Não compareceu (cobradas): <b>'+c.faltas+'</b></span>' +
+        '<span>Remarcadas: <b>'+c.remarcadas+'</b></span>' +
+        '<span>Cortesias: <b>'+c.cortesias+'</b></span>' +
+        '<span>Não cobrado: <b>'+moeda(c.naoCobrado)+'</b></span>' +
+      '</div>';
   }
   /* espelho da aba Formulação de Caso: só leitura, porque a planilha é dona do conteúdo */
   function pintarFormulacao(){
@@ -1897,9 +1979,13 @@ function mapaDeAtraso(){
 
 /* devolve false quando ele desiste: "Recebi hoje" é um clique só, e clicar duas vezes
    sem querer lançaria o mesmo dinheiro de novo */
-function registrarPagamento(pacienteId, dataISO, valor, meio, obs){
+/* receita é a origem do dinheiro (Prática Clínica., Pendência., Extra.), como na aba Recebimentos
+   da planilha; só a de paciente conta na receita da clínica. Sem paciente (pacienteId vazio), o
+   nome de quem pagou fica em nomePlanilha, o mesmo campo dos recibos que a planilha não casou. */
+function registrarPagamento(pacienteId, dataISO, valor, meio, obs, receita, quem){
+  receita = receita || "Prática Clínica.";
   var repetido = dados.pagamentos.filter(function(g){
-    return g.pacienteId===pacienteId && g.data===dataISO;
+    return pacienteId && g.pacienteId===pacienteId && g.data===dataISO;
   })[0];
   if(repetido){
     var p = acharPaciente(pacienteId);
@@ -1909,11 +1995,13 @@ function registrarPagamento(pacienteId, dataISO, valor, meio, obs){
   }
   dados.pagamentos.push({
     id: "g"+Date.now()+Math.floor(Math.random()*1000),
-    pacienteId: pacienteId,
+    pacienteId: pacienteId||"",
+    nomePlanilha: pacienteId ? "" : (quem||""),
     data: dataISO,
     valor: Number(valor)||0,
     meio: meio||"pix",
-    obs: obs||""
+    obs: obs||"",
+    receita: receita
   });
   salvar(); renderTudo();
   return true;
@@ -2000,7 +2088,7 @@ function renderPagamentos(){
     .sort(function(a,b){ return (a.dia-b.dia) || (a.hora-b.hora); })
     .map(function(p){
       return '<option value="'+p.id+'">'+esc(p.nome)+' · '+DIAS_CURTO[p.dia]+' '+String(p.hora).padStart(2,"0")+'h</option>';
-    }).join("");
+    }).join("") + '<option value="">Outra pessoa, fora da agenda</option>';
   if(escolhido) sel.value = escolhido;
   if(!document.getElementById("pg-data").value) document.getElementById("pg-data").value = chaveData(hoje0());
   dicaPagamento(false);
@@ -2016,9 +2104,10 @@ function renderPagamentos(){
     var div = document.createElement("div");
     div.className = "recibo";
     div.innerHTML =
-      '<span class="q">'+esc(p ? p.nome : "Paciente fora da agenda")+'</span>' +
+      '<span class="q">'+esc(p ? p.nome : (g.nomePlanilha || "Paciente fora da agenda"))+'</span>' +
       '<span>'+dataLonga(deISO(g.data))+'</span>' +
-      '<span class="meio">'+esc(MEIOS[g.meio]||g.meio||"")+'</span>' +
+      (g.receita && g.receita !== "Prática Clínica." ? '<span class="meio">'+esc(g.receita.replace(/\.$/,""))+'</span>' : "") +
+      (g.meio ? '<span class="meio">'+esc(MEIOS[g.meio]||g.meio)+'</span>' : "") +
       (g.obs ? '<span class="hint">'+esc(g.obs)+'</span>' : "") +
       '<span class="v">'+moeda(g.valor)+'</span>' +
       '<button class="apagar" data-apagar="'+g.id+'" title="Apagar este registro">apagar</button>';
@@ -2039,7 +2128,9 @@ function dicaPagamento(trocouPaciente){
   var campo = document.getElementById("pg-valor");
   var dica = document.getElementById("pg-dica");
   var p = acharPaciente(sel.value);
-  if(!p){ dica.textContent = ""; return; }
+  /* "Outra pessoa": aparece o campo de escrever de quem veio */
+  document.getElementById("pg-quem-campo").classList.toggle("hidden", !!p || sel.value !== "");
+  if(!p){ dica.textContent = sel.value === "" ? "Fora da agenda: escreva de quem veio e escolha a origem." : ""; return; }
   if(trocouPaciente || !campo.value) campo.value = p.valor;
   var s = situacaoPagamento(p);
   dica.textContent = rotuloCobranca(p) + " · " + moeda(p.valor) + " por ciclo · " +
@@ -2065,16 +2156,128 @@ function numerosDoMes(ref){
     if(d.getMonth()!==ref.getMonth()) break;
     sessoesDoDia(d).forEach(function(s){
       if(s.estado==="remarcada") return;
-      sessoes++; /* falta continua sendo hora ocupada, igual à aba Mês */
-      if(s.estado!=="falta") cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
+      sessoes++; /* falta e cortesia continuam sendo hora ocupada, igual à aba Mês */
+      /* a receita segue a cobrança: falta sem aviso cobra, cortesia não (regra das 24 horas) */
+      if(cobraSessao(s.estado)) cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
     });
   }
   var previsto = 0;
   dados.pacientes.forEach(function(p){ var n = cont[p.id]||0; if(n>0) previsto += receitaMensal(p, n); });
-  var recebido = 0;
-  pagamentosDoMes(ref).forEach(function(g){ recebido += Number(g.valor)||0; });
-  cacheMes[chave] = {sessoes:sessoes, previsto:previsto, recebido:recebido};
+  /* o que entrou é tudo; o que falta receber compara só pacientes com pacientes (regra dele, 27/09/2026) */
+  var recebido = 0, recebidoPacientes = 0;
+  pagamentosDoMes(ref).forEach(function(g){ var v = Number(g.valor)||0; recebido += v; if(dePaciente(g)) recebidoPacientes += v; });
+  cacheMes[chave] = {sessoes:sessoes, previsto:previsto, recebido:recebido, recebidoPacientes:recebidoPacientes};
   return cacheMes[chave];
+}
+function dePaciente(g){ return !g.receita || g.receita === "Prática Clínica."; }
+
+/* ---------------- sessões: uma linha por sessão ---------------- */
+var ROTULO_SITUACAO = {sessao:"Realizada", falta:"Não compareceu (cobra)", remarcada:"Remarcada (não cobra)", cancelada:"Não haverá sessão", cortesia:"Cortesia (não cobra)"};
+/* a partir de quando a agenda registra o que aconteceu: o que ele guardou em Contando desde,
+   ou o mês da primeira marca da grade, ou o mês de hoje */
+function mesDesde(){
+  var c = dados.config.contarDesde;
+  if(!c){
+    var chaves = Object.keys(dados.excecoes||{}).map(function(k){ return k.split("|")[0]; }).filter(Boolean).sort();
+    c = chaves.length ? chaves[0] : chaveData(hoje0());
+  }
+  var d = deISO(c);
+  if(isNaN(d.getTime())) d = hoje0();
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function foraDoRegistro(ano, mes){ return new Date(ano, mes, 1) < mesDesde(); }
+function sessoesDoMes(ref){
+  var lista = [];
+  for(var i=0;i<31;i++){
+    var d = new Date(ref.getFullYear(), ref.getMonth(), 1+i);
+    if(d.getMonth()!==ref.getMonth()) break;
+    sessoesDoDia(d, true).forEach(function(s){ lista.push({data:d, hora:s.hora, paciente:s.paciente, estado:s.estado, origem:s.origem}); });
+  }
+  return lista;
+}
+/* conta as sessões de um paciente entre duas datas, pelo que a agenda registra */
+function contarSessoesDe(p, de, ate){
+  var c = {realizadas:0, previstas:0, faltas:0, remarcadas:0, canceladas:0, cortesias:0, naoCobrado:0};
+  var hoje = hoje0();
+  for(var d = new Date(de.getFullYear(), de.getMonth(), de.getDate()); d <= ate; d = somaDias(d, 1)){
+    sessoesDoDia(d, true).forEach(function(s){
+      if(s.paciente.id !== p.id) return;
+      if(s.estado==="sessao"){ if(d > hoje) c.previstas++; else c.realizadas++; }
+      else if(s.estado==="falta") c.faltas++;
+      else if(s.estado==="remarcada"){ c.remarcadas++; c.naoCobrado += valorSessao(p); }
+      else if(s.estado==="cancelada"){ c.canceladas++; c.naoCobrado += valorSessao(p); }
+      else if(s.estado==="cortesia"){ c.cortesias++; c.naoCobrado += valorSessao(p); }
+    });
+  }
+  return c;
+}
+function renderSessoes(){
+  var ref = new Date(mesRef.getFullYear(), mesRef.getMonth(), 1);
+  var hoje = hoje0();
+  document.getElementById("ss-titulo").textContent = ref.toLocaleDateString("pt-BR",{month:"long", year:"numeric"});
+  var desde = document.getElementById("ss-desde");
+  if(document.activeElement !== desde) desde.value = chaveData(mesDesde());
+
+  var lista = sessoesDoMes(ref);
+  var realizadas = 0, previstas = 0, faltas = 0, desmarcadas = 0, cortesias = 0, naoCobrado = 0;
+  lista.forEach(function(s){
+    var v = valorSessao(s.paciente);
+    if(s.estado==="sessao"){ if(s.data > hoje) previstas++; else realizadas++; }
+    else if(s.estado==="falta") faltas++;
+    else if(s.estado==="remarcada" || s.estado==="cancelada"){ desmarcadas++; naoCobrado += v; }
+    else if(s.estado==="cortesia"){ cortesias++; naoCobrado += v; }
+  });
+  document.getElementById("ss-realizadas").textContent = realizadas;
+  document.getElementById("ss-realizadas-rot").textContent = previstas ? "Realizadas · " + previstas + " prevista" + (previstas>1 ? "s" : "") : "Realizadas";
+  document.getElementById("ss-faltas").textContent = faltas;
+  document.getElementById("ss-desmarcadas").textContent = desmarcadas;
+  document.getElementById("ss-cortesias").textContent = cortesias;
+  document.getElementById("ss-valor").textContent = moeda(naoCobrado);
+  document.getElementById("ss-sub").textContent = lista.length + (lista.length===1 ? " sessão na agenda do mês" : " sessões na agenda do mês") +
+    (foraDoRegistro(ref.getFullYear(), ref.getMonth()) ? " · antes de Contando desde: só projeção" : "");
+
+  var tb = document.querySelector("#ss-tabela tbody");
+  tb.innerHTML = "";
+  if(!lista.length){
+    tb.innerHTML = '<tr><td colspan="5"><p class="pvazio">Nenhuma sessão na agenda deste mês.</p></td></tr>';
+    return;
+  }
+  lista.forEach(function(s){
+    var k = chaveData(s.data)+"|"+s.hora;
+    var futuro = s.data > hoje;
+    var tr = document.createElement("tr");
+    if(s.estado==="falta") tr.className = "linha-atraso";
+    var situacao;
+    if(s.origem==="extra") situacao = '<span class="sit ok">Encaixe · '+(futuro ? "prevista" : "realizada")+'</span>';
+    else {
+      situacao = '<select class="situacao" data-sessao="'+k+'" aria-label="Situação da sessão de '+esc(nomeCurto(s.paciente))+' em '+dataCurta(s.data)+'">' +
+        Object.keys(ROTULO_SITUACAO).map(function(e){
+          var rot = (e==="sessao" && futuro) ? "Prevista" : ROTULO_SITUACAO[e];
+          return '<option value="'+e+'"'+(s.estado===e ? " selected" : "")+'>'+rot+'</option>';
+        }).join("") + '</select>';
+    }
+    tr.innerHTML =
+      '<td>'+DIAS_CURTO[s.data.getDay()]+', '+dataCurta(s.data)+'</td>' +
+      '<td>'+String(s.hora).padStart(2,"0")+'h</td>' +
+      '<td><button class="linknome" data-ficha="'+s.paciente.id+'">'+esc(nomeCurto(s.paciente))+'</button></td>' +
+      '<td>'+situacao+'</td>' +
+      '<td class="num">'+(cobraSessao(s.estado) ? moeda(valorSessao(s.paciente)) : '<span class="hint">'+moeda(valorSessao(s.paciente))+' não cobrado</span>')+'</td>';
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("[data-ficha]").forEach(function(b){
+    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.ficha); if(p) abrirFicha(p); });
+  });
+  tb.querySelectorAll("select[data-sessao]").forEach(function(sel){
+    sel.addEventListener("change", function(){
+      var k = sel.dataset.sessao, v = sel.value, atual = dados.excecoes[k];
+      if(v==="sessao"){
+        /* volta ao normal sem derrubar quem entrou nesta hora, se alguém entrou */
+        if(atual && atual.entra) dados.excecoes[k] = {tipo:"extra", pacienteId:atual.entra.pacienteId, remarcada:atual.entra.remarcada, de:atual.entra.de};
+        else delete dados.excecoes[k];
+      } else marcarSaida(k, v);
+      salvar(); renderTudo();
+    });
+  });
 }
 /* altura em pixel: assim a barra não depende de o pai ter altura definida */
 function alturaBarra(v, max){ return max > 0 ? Math.round((Number(v)||0)/max*ALTURA_GRAF) : 0; }
@@ -2201,9 +2404,10 @@ function renderPainel(){
      passado era o que fazia este painel parecer genérico */
   /* o recebido para de existir depois do mês corrente: zero ali não é "não entrou nada",
      é "ainda não aconteceu" */
+  /* desde a aba Sessões, os meses já registrados (a partir de Contando desde) também entram */
   var serieRecebido = anoTodo.map(function(x){ return (mesAtual >= 0 && x.mes > mesAtual) ? null : x.recebido; });
-  var seriePrevista = anoTodo.map(function(x){ return (mesAtual >= 0 && x.mes < mesAtual) ? null : x.previsto; });
-  var serieSessoes = anoTodo.map(function(x){ return (mesAtual >= 0 && x.mes < mesAtual) ? null : x.sessoes; });
+  var seriePrevista = anoTodo.map(function(x){ return foraDoRegistro(ano, x.mes) ? null : x.previsto; });
+  var serieSessoes = anoTodo.map(function(x){ return foraDoRegistro(ano, x.mes) ? null : x.sessoes; });
 
   graficoDeLinhas(document.getElementById("pn-graf-dinheiro"), [
     {nome:"recebido", valores:serieRecebido, cor:"var(--g-rec)"},
@@ -2214,7 +2418,7 @@ function renderPainel(){
     {nome:"sessões", valores:serieSessoes, cor:"var(--g-rec)"}
   ], {destaque:mesAtual, titulo:"sessões mês a mês em "+ano});
   document.getElementById("pn-nota-sessoes").textContent =
-    "Meses já passados ficam de fora: o site não guarda sessão realizada, só o que a agenda marca.";
+    "Conta a agenda com as situações da aba Sessões, desde " + dataLonga(mesDesde()) + "; meses anteriores ficam de fora.";
 
   var soAtePassado = function(a){ return a.map(function(v,i){ return (mesAtual >= 0 && i > mesAtual) ? null : v; }); };
   graficoDeLinhas(document.getElementById("pn-graf-carteira"), [
@@ -2230,7 +2434,7 @@ function renderPainel(){
   var tb = document.querySelector("#pn-tabela tbody");
   tb.innerHTML = "";
   anoTodo.forEach(function(x){
-    var passado = (mesAtual >= 0 && x.mes < mesAtual);
+    var passado = foraDoRegistro(ano, x.mes);
     var tr = document.createElement("tr");
     if(x.mes===mesAtual) tr.className = "meta-ok";
     tr.innerHTML = "<td>"+MESES_CURTO[x.mes]+"</td>" +
@@ -2253,8 +2457,8 @@ function renderPainel(){
 
   document.getElementById("pn-financeiro").innerHTML =
     linha("Receita projetada no mês", moeda(agora.previsto)) +
-    linha("Recebido no mês", moeda(agora.recebido)) +
-    linha("Falta receber neste mês", moeda(Math.max(0, agora.previsto - agora.recebido))) +
+    linha("Recebido no mês", moeda(agora.recebido) + (Math.abs(agora.recebido - agora.recebidoPacientes) > 0.005 ? ' <span class="hint">('+moeda(agora.recebidoPacientes)+' de pacientes)</span>' : "")) +
+    linha("Falta receber neste mês", moeda(Math.max(0, agora.previsto - agora.recebidoPacientes))) +
     linha("Dívida vencida acumulada", moeda(dividaVencida));
 
   var ordem = [
@@ -2311,7 +2515,8 @@ function renderPainel(){
     "Este painel espelha o <b>Dashboard</b> da planilha, com três contas refeitas: a sessão é contada no dia em que acontece, " +
     "e não no mês em que o tratamento termina; a receita projetada segue a regra de cobrança de cada paciente, em vez de somar o valor cru; " +
     "e o que falta receber no mês fica separado da dívida vencida, porque as duas têm bases diferentes. " +
-    "Novos pacientes, encerramentos e altas clínicas não entram aqui: dependem de data de início e de fim, que continuam no Registro da planilha.";
+    "O que falta receber compara só pacientes com pacientes: pendências e acertos entram no recebido, não no previsto. " +
+    "Novos pacientes, encerramentos e altas clínicas vêm das datas de início e de fim do Registro da planilha, trazidas pelo botão Ler a planilha.";
 }
 
 /* ---------------- ler a planilha ---------------- */
@@ -2923,7 +3128,7 @@ function avisarLeitura(txt){
 
 /* ---------------- navegação e utilidades ---------------- */
 function mostrarView(v){
-  ["semana","mes","painel","meta","pacientes","pagamentos"].forEach(function(x){
+  ["semana","mes","sessoes","painel","meta","pacientes","pagamentos"].forEach(function(x){
     document.getElementById("v-"+x).classList.toggle("hidden", x!==v);
   });
   document.querySelectorAll(".tab").forEach(function(t){
@@ -2933,7 +3138,7 @@ function mostrarView(v){
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
   atrasoCache = null; cacheMes = {}; cacheNomes = null;
-  renderSemana(); renderMes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos();
+  renderSemana(); renderMes(); renderSessoes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos();
 }
 
 /* A planilha continua mudando enquanto as duas existirem: se a agenda deste arquivo
@@ -2998,20 +3203,33 @@ document.getElementById("arquivo-planilha").addEventListener("change", function(
 document.getElementById("pg-prev").addEventListener("click", function(){ mesPag = new Date(mesPag.getFullYear(), mesPag.getMonth()-1, 1); renderPagamentos(); });
 document.getElementById("pg-next").addEventListener("click", function(){ mesPag = new Date(mesPag.getFullYear(), mesPag.getMonth()+1, 1); renderPagamentos(); });
 document.getElementById("pg-hoje").addEventListener("click", function(){ mesPag = new Date(); renderPagamentos(); });
+/* a aba Sessões anda junto com Mês e Painel: o mesmo mês visto de outro jeito */
+document.getElementById("ss-prev").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()-1, 1); renderTudo(); });
+document.getElementById("ss-next").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()+1, 1); renderTudo(); });
+document.getElementById("ss-hoje").addEventListener("click", function(){ mesRef = new Date(); renderTudo(); });
+document.getElementById("ss-desde").addEventListener("change", function(){
+  var v = document.getElementById("ss-desde").value;
+  if(v) dados.config.contarDesde = v; else delete dados.config.contarDesde;
+  salvar(); renderTudo();
+});
 document.getElementById("pg-paciente").addEventListener("change", function(){ dicaPagamento(true); });
 document.getElementById("pg-add").addEventListener("click", function(){
   var p = acharPaciente(document.getElementById("pg-paciente").value);
+  var quem = document.getElementById("pg-quem").value.trim();
+  var origem = document.getElementById("pg-origem").value;
   var data = document.getElementById("pg-data").value;
   var valor = Number(document.getElementById("pg-valor").value);
-  if(!p){ avisarPagamento("Escolha quem pagou."); return; }
+  if(!p && !quem){ avisarPagamento("Escolha quem pagou, ou escreva de quem veio."); return; }
   if(!data){ avisarPagamento("Falta a data do pagamento."); return; }
   if(!(valor > 0)){ avisarPagamento("Falta o valor."); return; }
-  if(!registrarPagamento(p.id, data, valor, document.getElementById("pg-meio").value, document.getElementById("pg-obs").value.trim())) return;
+  if(!registrarPagamento(p ? p.id : "", data, valor, document.getElementById("pg-meio").value, document.getElementById("pg-obs").value.trim(), origem, quem)) return;
   document.getElementById("pg-obs").value = "";
+  document.getElementById("pg-quem").value = "";
   mesPag = deISO(data); /* abre o mês do pagamento que ele acabou de lançar */
   renderPagamentos();
-  var venc = proximoVencimento(p);
-  avisarPagamento(p.nome + " · " + moeda(valor) + " em " + dataLonga(deISO(data)) +
+  var venc = p ? proximoVencimento(p) : null;
+  avisarPagamento((p ? p.nome : quem) + " · " + moeda(valor) + " em " + dataLonga(deISO(data)) +
+    (origem !== "Prática Clínica." ? " · " + origem.replace(/\.$/,"") + ", fora da receita da clínica" : "") +
     (venc ? ". Próximo vencimento: " + dataLonga(venc) + "." : "."));
 });
 

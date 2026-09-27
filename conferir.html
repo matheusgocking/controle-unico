@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conferência · Controle Único</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Mesmo desenho das outras telas (app.html): fundo cinza-azulado, painéis brancos de borda fina. */
+:root{
+  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
+  --accent:#7030a0; --accent-soft:#f0e5fb;
+  --pos:#1f6b4f; --pos-soft:#dcefe6; --neg:#a3241f; --neg-soft:#fbdedd; --warn:#8a4b12; --warn-soft:#fbe8d4;
+  --font:"IBM Plex Sans",system-ui,sans-serif; --radius:8px;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-soft:#2e2140;
+  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
+}}
+:root[data-theme="dark"]{
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-soft:#2e2140;
+  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1200px;margin:0 auto;padding:4px 24px 56px}
+.hidden{display:none !important}
+.pos{color:var(--pos)} .neg{color:var(--neg)} .warn{color:var(--warn)}
+.nota{font-size:12.5px;color:var(--faint)}
+.vazio{color:var(--muted);font-size:14px;padding:8px 0;margin:0}
+.topo{max-width:1200px;margin:0 auto;padding:12px 24px 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.marca{font-weight:700;margin-right:auto}
+.b{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:7px 12px;cursor:pointer;font-size:14px;min-height:36px}
+.b:hover{border-color:var(--faint)}
+.b.p{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600}
+.b.s{font-size:13px;padding:5px 10px;min-height:32px}
+.redondo{width:36px;height:36px;padding:0;display:inline-grid;place-items:center;font-size:17px}
+.mes{display:flex;align-items:center;gap:10px;margin:10px 0 16px}
+.mes h1{margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em;text-transform:capitalize;min-width:170px;text-align:center}
+.mes h1 span{color:var(--faint);font-weight:400}
+.painel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;min-width:0;margin-top:18px}
+.painel h2{margin:0 0 6px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.painel h2 .dir{margin-left:auto;font-weight:400;font-size:13px;color:var(--faint)}
+.painel h3{margin:18px 0 8px;font-size:14px;font-weight:600;color:var(--muted)}
+.painel > p.sub{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
+
+/* escolha das planilhas */
+.arquivos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.arq{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;display:flex;gap:10px;align-items:center;min-width:0}
+.arq i{width:10px;height:10px;border-radius:50%;background:var(--faint);flex:none}
+.arq.ok i{background:#2f9e5b}
+.arq b{display:block;font-size:14px;font-weight:600}
+.arq span{display:block;font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arq.solta{border-style:dashed}
+.acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#status{font-size:13px;color:var(--muted)}
+.zona{border:2px dashed var(--line);border-radius:var(--radius);padding:14px;text-align:center;color:var(--muted);font-size:13.5px;margin-top:10px}
+.zona.sobre{border-color:var(--accent);background:var(--accent-soft)}
+
+/* resumo */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-size:13.5px;background:var(--surface)}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--faint)}
+.chip.ok i{background:#2f9e5b} .chip.dif i{background:#d0453a} .chip.falta i{background:#d49a1c}
+.chip b{font-weight:600}
+
+/* tabelas */
+.tabwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;color:var(--muted);font-weight:500;font-size:12.5px;padding:0 8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t th:first-child,table.t td:first-child{padding-left:0}
+table.t th:last-child,table.t td:last-child{padding-right:0}
+table.t .dir{text-align:right;white-space:nowrap}
+table.t tr:last-child td{border-bottom:0}
+table.t tr.dif td{background:color-mix(in srgb, var(--neg-soft) 55%, transparent)}
+table.t tr.dif td.c-dif{font-weight:600;color:var(--neg)}
+table.t tr.igual td.c-dif{color:var(--pos)}
+table.t td.c-obs{color:var(--faint);font-size:12.5px}
+table.t td.c-rot{white-space:nowrap}
+table.t.itens td.c-chk{width:1%;padding-right:4px}
+table.t.itens tr.feito td{opacity:.55}
+table.t.itens tr.feito td.c-desc{text-decoration:line-through}
+table.t.itens td.c-lado{white-space:nowrap}
+.selo{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.selo.planilha{background:var(--warn-soft);color:var(--warn)}
+.selo.app{background:var(--accent-soft);color:var(--accent)}
+.selo.dif{background:var(--neg-soft);color:var(--neg)}
+input[type=checkbox]{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer}
+/* a caixa inteira (36 px) é clicável: é a área de toque, não só o quadradinho */
+.chk{display:inline-grid;place-items:center;width:36px;height:36px;margin:-8px 0;cursor:pointer;border-radius:8px}
+.chk:hover{background:var(--surface-2)}
+details.lista{margin-top:14px}
+details.lista > summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;gap:8px;align-items:center;padding:6px 0}
+details.lista > summary::-webkit-details-marker{display:none}
+details.lista > summary::before{content:"›";display:inline-block;transition:transform .12s;color:var(--faint);width:12px}
+details.lista[open] > summary::before{transform:rotate(90deg)}
+details.lista > summary .q{font-weight:400;color:var(--faint);font-size:13px}
+.pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.na-casca .marca,.na-casca #tema{display:none !important}
+@media (max-width:700px){
+  .topo{padding:6px 12px}
+  .wrap{padding:0 12px 48px}
+  .painel{padding:14px}
+  .arquivos{grid-template-columns:1fr}
+  .mes{justify-content:space-between;margin:8px 0 12px}
+  .mes h1{font-size:19px;min-width:0}
+  table.t{font-size:13.5px}
+  input,select{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+<script src="ler-xlsx.js"></script>
+<script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
+</head>
+<body>
+<header>
+  <div class="topo">
+    <div class="marca"><b>Controle Único</b> · Conferência</div>
+    <button class="b s" id="tema" title="Tema claro ou escuro">◐</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="painel" style="margin-top:8px">
+    <h2>Conferir o app com as planilhas</h2>
+    <p class="sub">Escolha as três planilhas do OneDrive (Controle Financeiro, Gastos da Casa e Prática Clínica). Elas são lidas aqui, no seu navegador, e não saem do computador: nada é enviado nem alterado nelas. A lista abaixo mostra, um item por linha, o que está diferente entre o app e a planilha no mês aberto.</p>
+    <div class="arquivos" id="arquivos"></div>
+    <div class="acoes">
+      <button class="b p" id="escolher" type="button">Escolher as planilhas</button>
+      <input type="file" id="arquivo" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple class="hidden">
+      <button class="b" id="limparConferidos" type="button">Desmarcar os conferidos</button>
+      <button class="b" id="copiar" type="button">Copiar a lista</button>
+      <span id="status" role="status"></span>
+    </div>
+    <div class="zona" id="zona">Ou arraste os arquivos para cá.</div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <div id="mesbar"></div>
+  <div id="telas"></div>
+  <p class="nota" style="margin-top:22px">O app lê os cadernos guardados neste aparelho (Dinheiro, Casa e Clínica). Se algum ainda não foi aberto aqui, abra a aba dele uma vez e volte. A planilha continua sendo a fonte de verdade até você dizer o contrário: esta tela só mostra onde os dois discordam, e você decide qual está certo.</p>
+</div>
+
+<script>
+"use strict";
+// ===================================================================
+// Conferência: o modo conferência do Controle Único (decisão 4 da árvore, 26/09/2026).
+// Lê as três planilhas de controle no navegador (ler-xlsx.js) e compara com os cadernos
+// que o app guarda neste aparelho. Nada escreve na planilha nem no caderno.
+// Este arquivo é público: nenhum dado pessoal fica escrito aqui.
+// ===================================================================
+
+const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const CH = { dinheiro:"controle-unico-dinheiro-cache", casa:"controle-unico-casa-cache", clinica:"controle-unico-clinica-cache", conferidos:"controle-unico-conferidos" };
+let ref = new Date(); ref.setDate(1);
+const planilhas = { financeiro:null, casa:null, clinica:null };
+
+// ---------- utilidades ----------
+const lerLocal = k => { try { const t = localStorage.getItem(k); return t ? JSON.parse(t) : null; } catch(e){ return null; } };
+const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+const norm = s => String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const semPonto = s => String(s || "").replace(/\.$/, "");
+const txt = v => (v == null ? "" : String(v)).trim();
+const isNum = v => typeof v === "number" && !isNaN(v);
+const round2 = v => Math.round(v * 100) / 100;
+// '-' quer dizer zero nas planilhas dele; texto que não é número vira nulo (erro de fórmula, célula vazia)
+const num = v => isNum(v) ? v : (txt(v) === "-" ? 0 : null);
+const dinheiro = v => (Number(v) || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+const chaveMes = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+const escH = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const dataCurta = iso => (iso || "").slice(8, 10) + "/" + (iso || "").slice(5, 7);
+const MESES_N = MESES.map(norm);
+// o Excel guarda data como número de dias desde 30/12/1899
+const dataExcel = n => { const d = new Date(Math.round((n - 25569) * 86400000)); return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10); };
+const cel = (linhas, i, j) => { const l = linhas[i]; const v = l ? l[j] : undefined; return v === undefined ? "" : v; };
+const perto = (a, b) => Math.abs((Number(a) || 0) - (Number(b) || 0)) < 0.005;
+
+function achaAba(abas, pedaco){
+  return abas.find(a => norm(a.nome).indexOf(pedaco) === 0) || abas.find(a => norm(a.nome).indexOf(pedaco) >= 0) || null;
+}
+// acha as colunas pelo cabeçalho (linha 1), como a Clínica faz com a planilha
+function colunas(linhas, mapa){
+  const cab = {}; (linhas[0] || []).forEach((v, j) => { const t = norm(v); for (const k in mapa) if (cab[k] === undefined && mapa[k](t)) cab[k] = j; });
+  return cab;
+}
+function colunasDosMeses(linha){
+  const m = {}; (linha || []).forEach((v, j) => { const i = MESES_N.indexOf(norm(v)); if (i >= 0 && m[i] === undefined) m[i] = j; });
+  return m;
+}
+// primeira célula com aquele rótulo: devolve [linha, coluna]
+function acha(linhas, pred){
+  for (let i = 0; i < linhas.length; i++){ const l = linhas[i] || []; for (let j = 0; j < l.length; j++){ if (typeof l[j] === "string" && pred(norm(l[j]))) return [i, j]; } }
+  return null;
+}
+const aoLado = (linhas, pos) => { if (!pos) return null; for (let j = pos[1] + 1; j <= pos[1] + 4; j++){ const v = cel(linhas, pos[0], j); if (v !== "") return v; } return null; };
+const abaixo = (linhas, pos) => pos ? cel(linhas, pos[0] + 1, pos[1]) : null;
+
+// ---------- o que o app tem neste aparelho ----------
+function janelaClinica(){
+  try {
+    const f = window.parent.document.getElementById("q-clinica");
+    const w = f && f.contentWindow;
+    if (w && typeof w.numerosDoMes === "function" && w.dados && w.dados.pacientes) return w;
+  } catch(e){}
+  return null;
+}
+function appDados(){
+  return { dinheiro:lerLocal(CH.dinheiro), casa:lerLocal(CH.casa), clinica:lerLocal(CH.clinica) };
+}
+const noMes = l => (l.data || "").slice(0, 7) === chaveMes(ref);
+const valorFixo = (g, k) => g.valores ? (Number(g.valores[k]) || 0) : (Number(g.valor) || 0);
+
+// ---------- ler cada planilha ----------
+function lerFinanceiro(abas){
+  const L = achaAba(abas, "lancamentos"); if (!L) throw new Error("não achei a aba Lançamentos");
+  const c = colunas(L.linhas, { data:t => t === "data", tipo:t => t === "tipo", desc:t => t.indexOf("descri") === 0, cat:t => t.indexOf("categoria") === 0, forma:t => t.indexOf("forma") === 0, valor:t => t.indexOf("valor") === 0 });
+  if (c.data === undefined || c.valor === undefined) throw new Error("a aba Lançamentos está sem as colunas Data e Valor");
+  const lanc = [];
+  L.linhas.forEach((l, i) => {
+    if (i === 0 || !l) return;
+    const d = l[c.data], v = l[c.valor];
+    if (!isNum(d) || !isNum(v)) return;
+    lanc.push({ data:dataExcel(d), tipo:txt(l[c.tipo]), descricao:txt(l[c.desc]), categoria:txt(l[c.cat]), forma:txt(l[c.forma]), valor:round2(v) });
+  });
+  const fixos = {};
+  abas.filter(a => norm(a.nome).indexOf("gastos fixos") === 0).forEach(a => {
+    const ano = (a.nome.match(/\d{4}/) || [])[0]; if (!ano) return;
+    const colMes = colunasDosMeses(a.linhas[0]);
+    a.linhas.forEach((l, i) => {
+      if (i === 0 || !l) return;
+      const desc = txt(l[0]); if (!desc || desc === "-") return;
+      const g = fixos[norm(desc)] || (fixos[norm(desc)] = { descricao:desc, categoria:txt(l[1]), valores:{} });
+      for (const m in colMes){ const v = l[colMes[m]]; if (isNum(v) && v) g.valores[ano + "-" + String(Number(m) + 1).padStart(2, "0")] = round2(v); }
+    });
+  });
+  const C = achaAba(abas, "controle financeiro");
+  let resumo = null;
+  if (C){
+    const colMes = colunasDosMeses(C.linhas[0]);
+    const cats = {}, rec = {}, outros = {}; let secao = "cat";
+    C.linhas.forEach((l, i) => {
+      if (i === 0 || !l) return;
+      const r = norm(l[0]); if (!r) return;
+      if (r === "receitas"){ secao = "rec"; return; }
+      if (r.slice(-1) === ":"){ if (outros[r] === undefined) outros[r] = i; return; }
+      const alvo = secao === "cat" ? cats : rec;
+      if (alvo[r] === undefined) alvo[r] = i;
+    });
+    const painel = {};
+    C.linhas.forEach(l => { if (!l || typeof l[17] !== "string") return; const r = norm(l[17]); if (r && painel[r] === undefined) painel[r] = l[18]; });
+    resumo = { linhas:C.linhas, colMes, cats, rec, outros, painel, chave:txt(cel(C.linhas, 14, 15)), ano:num(cel(C.linhas, 0, 15)) };
+  }
+  return { lanc, fixos:Object.values(fixos), resumo };
+}
+
+function lerCasa(abas){
+  const L = achaAba(abas, "lancamentos"); if (!L) throw new Error("não achei a aba Lançamentos");
+  const c = colunas(L.linhas, { data:t => t === "data", quem:t => t.indexOf("quem") === 0, desc:t => t.indexOf("descri") === 0, cat:t => t.indexOf("categoria") === 0, valor:t => t.indexOf("valor") === 0 });
+  if (c.data === undefined || c.valor === undefined) throw new Error("a aba Lançamentos está sem as colunas Data e Valor");
+  const lanc = [];
+  L.linhas.forEach((l, i) => {
+    if (i === 0 || !l) return;
+    const d = l[c.data], v = l[c.valor];
+    if (!isNum(d) || !isNum(v)) return;
+    lanc.push({ data:dataExcel(d), quem:txt(l[c.quem]), descricao:txt(l[c.desc]), categoria:txt(l[c.cat]), valor:round2(v) });
+  });
+  const R = achaAba(abas, "controle dos gastos");
+  let resumo = null;
+  if (R){
+    const colMes = colunasDosMeses(R.linhas[0]);
+    // grade: uma linha por categoria a partir da linha 2 (rótulo na coluna E); depois o total e a divisão
+    const cats = {}; let iTotal = null;
+    for (let i = 1; i < R.linhas.length; i++){
+      const rot = cel(R.linhas, i, 4);
+      if (typeof rot === "string" && rot && rot !== "-"){ if (iTotal === null) cats[norm(rot)] = i; continue; }
+      if (rot === "" && iTotal === null && i > 1){ iTotal = i; break; }
+    }
+    resumo = { linhas:R.linhas, colMes, cats, iTotal, ano:num(cel(R.linhas, 0, 19)) };
+    if (iTotal !== null){
+      resumo.iMetade = iTotal + 2;
+      resumo.pessoaB = { nome:txt(cel(R.linhas, iTotal + 3, 4)), i:iTotal + 3 };   // linha 15: a outra pessoa
+      resumo.pessoaA = { nome:txt(cel(R.linhas, iTotal + 5, 4)), i:iTotal + 5 };   // linha 17: o que Matheus pagou, que sai para o financeiro
+    }
+  }
+  return { lanc, resumo };
+}
+
+function lerClinica(abas){
+  const Reg = achaAba(abas, "registro"); if (!Reg) throw new Error("não achei a aba Registro de Pacientes");
+  const c = colunas(Reg.linhas, {
+    codigo:t => t.indexOf("prontuario") >= 0, nome:t => t.indexOf("nome") >= 0, status:t => t === "status",
+    inicio:t => t.indexOf("inicio") === 0, fim:t => t.indexOf("fim") === 0 || t.indexOf("final") === 0,
+    modalidade:t => t.indexOf("modalidade") >= 0, valor:t => t.indexOf("valor") === 0 && t.indexOf("pag") < 0,
+    aPagar:t => t.indexOf("valor a pagar") === 0, sessoes:t => t.indexOf("qtd. de sessoes") === 0 || t.indexOf("qtd de sessoes") === 0
+  });
+  if (c.codigo === undefined || c.status === undefined) throw new Error("a aba de Registro está sem as colunas Prontuário e Status");
+  const registro = {};
+  Reg.linhas.forEach((l, i) => {
+    if (i === 0 || !l) return;
+    const codigo = txt(l[c.codigo]); if (!codigo || codigo === "-") return;
+    const status = txt(l[c.status]), ant = registro[codigo];
+    registro[codigo] = {
+      codigo, nome:txt(l[c.nome]), status:(status && status !== "-") ? status : (ant ? ant.status : ""),
+      modalidade:txt(l[c.modalidade]), valor:num(l[c.valor]) || 0,
+      inicio:isNum(l[c.inicio]) ? dataExcel(l[c.inicio]) : (ant ? ant.inicio : ""), fim:isNum(l[c.fim]) ? dataExcel(l[c.fim]) : "",
+      aPagar:num(l[c.aPagar]) || 0, sessoes:(ant ? ant.sessoes : 0) + (num(l[c.sessoes]) || 0)
+    };
+  });
+  const Rec = achaAba(abas, "recebimentos");
+  const recebimentos = [];
+  if (Rec){
+    const r = colunas(Rec.linhas, { nome:t => t.indexOf("nome") >= 0, data:t => t === "data", origem:t => t.indexOf("origem") === 0, tipo:t => t.indexOf("tipo") === 0, valor:t => t.indexOf("valor") === 0, codigo:t => t.indexOf("prontuario") >= 0 });
+    Rec.linhas.forEach((l, i) => {
+      if (i === 0 || !l) return;
+      const d = l[r.data], v = l[r.valor];
+      if (!isNum(d) || !isNum(v) || !v) return;
+      const codigo = txt(l[r.codigo]);
+      recebimentos.push({ codigo:(codigo && codigo !== "-") ? codigo : "", nome:txt(l[r.nome]), data:dataExcel(d), valor:round2(v), origem:txt(l[r.origem]), tipo:txt(l[r.tipo]) });
+    });
+  }
+  const Dash = achaAba(abas, "dashboard");
+  let painel = null;
+  if (Dash){
+    const L = Dash.linhas;
+    const topo = rot => { const p = acha(L, t => t === rot); return p ? num(abaixo(L, p)) : null; };
+    const lado = rot => { const p = acha(L, t => t === rot); return p ? num(aoLado(L, p)) : null; };
+    const cabMes = acha(L, t => t === "jan");
+    const evolucao = rot => {
+      const p = acha(L, t => t === rot); if (!p || !cabMes) return null;
+      const linha = L[cabMes[0]] || [], saida = [];
+      for (let m = 0; m < 12; m++){ const j = linha.findIndex(v => norm(v) === ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][m]); saida.push(j >= 0 ? num(cel(L, p[0], j)) : null); }
+      return saida;
+    };
+    painel = {
+      ano:num(cel(L, 1, 0)),
+      ativos:topo("pacientes ativos:"), projetada:topo("receita projetada/mes:"), receitaMes:topo("receita/mes:"), sessoesProjetadas:topo("sessoes/mes projetadas:"),
+      novos:evolucao("qtd. de novos pacientes:"), encerramentos:evolucao("qtd. de encerramentos:"), altas:evolucao("qtd. de altas clinicas:"), sessoes:evolucao("qtd. de sessoes:"), faturamento:evolucao("faturamento:"),
+      status:{ ativos:lado("ativos:"), triagem:lado("triagem:"), suspensos:lado("suspensos:"), inativos:lado("inativos:"), altas:lado("altas clinicas:") },
+      fin:{ projetada:lado("receita projetada:"), receita:lado("receita/mes:"), pendenteProjetado:lado("pendente projetado:"), pendenteAtivos:lado("pendente ativos:"), pendenteInativos:lado("pendente inativos:") }
+    };
+  }
+  return { registro, recebimentos, painel };
+}
+
+// reconhece a planilha pelas abas que ela tem
+function identificar(abas){
+  const nomes = abas.map(a => norm(a.nome));
+  if (nomes.some(n => n.indexOf("registro de pacientes") === 0)) return "clinica";
+  if (nomes.some(n => n.indexOf("controle dos gastos") === 0)) return "casa";
+  if (nomes.some(n => n.indexOf("gastos fixos") === 0) || nomes.some(n => n.indexOf("controle financeiro") === 0)) return "financeiro";
+  return null;
+}
+async function receberArquivos(lista){
+  const status = document.getElementById("status");
+  let lidas = 0, avisos = [];
+  for (const f of lista){
+    try {
+      status.textContent = "Lendo " + f.name + "…";
+      const abas = await lerXlsx(await f.arrayBuffer());
+      const tipo = identificar(abas);
+      if (!tipo){ avisos.push(f.name + ": não reconheci essa planilha (não é uma das três)."); continue; }
+      const dados = tipo === "financeiro" ? lerFinanceiro(abas) : tipo === "casa" ? lerCasa(abas) : lerClinica(abas);
+      planilhas[tipo] = { nome:f.name, quando:new Date(), modificado:f.lastModified ? new Date(f.lastModified) : null, dados };
+      lidas++;
+    } catch(e){ avisos.push(f.name + ": " + e.message); }
+  }
+  status.textContent = (lidas ? lidas + (lidas === 1 ? " planilha lida." : " planilhas lidas.") : "") + (avisos.length ? " " + avisos.join(" ") : "");
+  desenhar();
+}
+
+// ---------- casar item por item ----------
+// Casa cada linha da planilha com uma do app pela chave exata; o que sobra tenta de novo
+// pelas chaves fracas (primeiro data e valor, depois data e descrição), para mostrar
+// "mesmo lançamento, com um campo diferente" em vez de duas linhas soltas.
+function casar(daPlanilha, doApp, chave, ...fracas){
+  const agrupar = (lista, f) => { const m = new Map(); lista.forEach(x => { const k = f(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); }); return m; };
+  let mapa = agrupar(doApp, chave), sobraram = [], iguais = 0;
+  daPlanilha.forEach(p => { const l = mapa.get(chave(p)); if (l && l.length){ l.shift(); iguais++; } else sobraram.push(p); });
+  let restoApp = [].concat(...[...mapa.values()]);
+  const diferentes = [];
+  fracas.forEach(f => {
+    const m = agrupar(restoApp, f), ainda = [];
+    sobraram.forEach(p => { const l = m.get(f(p)); if (l && l.length) diferentes.push([p, l.shift()]); else ainda.push(p); });
+    sobraram = ainda; restoApp = [].concat(...[...m.values()]);
+  });
+  return { iguais, soPlanilha:sobraram, soApp:restoApp, diferentes };
+}
+function difCampos(p, a, campos){
+  const notas = [];
+  campos.forEach(([campo, rotulo, fmt]) => {
+    const vp = p[campo], va = a[campo];
+    const igual = (typeof vp === "number" || typeof va === "number") ? perto(vp, va) : norm(vp) === norm(va);
+    if (!igual) notas.push(rotulo + ": " + (fmt || String)(vp == null || vp === "" ? "vazio" : vp) + " na planilha, " + (fmt || String)(va == null || va === "" ? "vazio" : va) + " no app");
+  });
+  return notas.join(" · ");
+}
+
+// ---------- Dinheiro ----------
+function conferirDinheiro(app){
+  const P = planilhas.financeiro, itens = [], totais = [], notas = [];
+  const d = app.dinheiro, cl = app.clinica, casa = app.casa;
+  if (!P) return { falta:"planilha", itens, totais, notas };
+  if (!d) return { falta:"app", itens, totais, notas };
+  const km = chaveMes(ref), m = ref.getMonth(), ano = ref.getFullYear();
+
+  // lançamentos do mês, um a um
+  const chave = l => [l.data, norm(l.tipo), norm(l.categoria), round2(l.valor).toFixed(2), norm(l.descricao)].join("|");
+  const fraca = l => l.data + "|" + round2(l.valor).toFixed(2), fraca2 = l => l.data + "|" + norm(l.descricao);
+  const c = casar(P.dados.lanc.filter(noMes), (d.lancamentos || []).filter(noMes), chave, fraca, fraca2);
+  const linhaL = l => ({ data:l.data, desc:l.descricao, extra:[semPonto(l.categoria), semPonto(l.forma), l.tipo !== "Despesa." ? semPonto(l.tipo) : ""].filter(Boolean).join(" · "), valor:l.valor });
+  c.soPlanilha.forEach(l => itens.push({ k:"din|p|" + chave(l), lado:"planilha", ...linhaL(l) }));
+  c.soApp.forEach(l => itens.push({ k:"din|a|" + chave(l), lado:"app", ...linhaL(l) }));
+  c.diferentes.forEach(([p, a]) => itens.push({ k:"din|d|" + chave(p), lado:"dif", ...linhaL(p), nota:difCampos(p, a, [["valor","Valor",dinheiro],["descricao","Descrição"],["categoria","Categoria"],["tipo","Tipo"],["forma","Forma"]]) }));
+
+  // gastos fixos do mês
+  const fixosApp = {}; (d.gastosFixos || []).forEach(g => { fixosApp[norm(g.descricao)] = g; });
+  const fixosPl = {}; P.dados.fixos.forEach(g => { fixosPl[norm(g.descricao)] = g; });
+  const todos = new Set([...Object.keys(fixosApp), ...Object.keys(fixosPl)]);
+  todos.forEach(k => {
+    const gp = fixosPl[k], ga = fixosApp[k];
+    const vp = gp ? (gp.valores[km] || 0) : null, va = ga ? valorFixo(ga, km) : null;
+    if (gp && !ga && vp) itens.push({ k:"fixo|p|" + k + "|" + km, lado:"planilha", data:km + "-01", desc:gp.descricao + " (gasto fixo)", extra:semPonto(gp.categoria), valor:vp });
+    else if (ga && !gp && va) itens.push({ k:"fixo|a|" + k + "|" + km, lado:"app", data:km + "-01", desc:ga.descricao + " (gasto fixo)", extra:semPonto(ga.categoria), valor:va });
+    else if (gp && ga){
+      const dif = [];
+      if (!perto(vp, va)) dif.push("valor em " + MESES[m] + ": " + dinheiro(vp) + " na planilha, " + dinheiro(va) + " no app");
+      if (norm(gp.categoria) !== norm(ga.categoria)) dif.push("categoria: " + semPonto(gp.categoria) + " na planilha, " + semPonto(ga.categoria) + " no app");
+      if (dif.length) itens.push({ k:"fixo|d|" + k + "|" + km, lado:"dif", data:km + "-01", desc:gp.descricao + " (gasto fixo)", extra:semPonto(gp.categoria), valor:vp, nota:dif.join(" · ") });
+    }
+  });
+
+  // totais do mês, lado a lado, na ordem do painel da planilha
+  const R = P.dados.resumo;
+  const fixosDoMes = (d.gastosFixos || []).filter(g => valorFixo(g, km) > 0);
+  const fixosMes = fixosDoMes.reduce((s, g) => s + valorFixo(g, km), 0);
+  const abrir = R ? norm(R.chave) === "abrir." : false;
+  const porCat = {};
+  (d.lancamentos || []).filter(noMes).filter(l => l.tipo === "Despesa." && l.categoria !== "Moradia.").forEach(l => { porCat[norm(l.categoria)] = (porCat[norm(l.categoria)] || 0) + (Number(l.valor) || 0); });
+  if (abrir) fixosDoMes.forEach(g => { porCat[norm(g.categoria)] = (porCat[norm(g.categoria)] || 0) + valorFixo(g, km); });
+  const pessoas = casa ? (casa.pessoas || []) : [];
+  const minhaCasa = casa ? (casa.lancamentos || []).filter(noMes).filter(l => l.quem === pessoas[0]).reduce((s, l) => s + (Number(l.valor) || 0), 0) : null;
+  const totalApp = Object.values(porCat).reduce((s, v) => s + v, 0) + (abrir ? 0 : fixosMes) + (minhaCasa || 0);
+  const pag = cl ? (cl.pagamentos || []).filter(noMes) : [];
+  const porOrigem = { "pratica clinica.":0, "pendencia.":0, "extra.":0 };
+  pag.forEach(g => { const o = norm(g.receita || "Prática Clínica."); porOrigem[o] = (porOrigem[o] || 0) + (Number(g.valor) || 0); });
+  const faturamento = Object.values(porOrigem).reduce((s, v) => s + v, 0);
+  const movReserva = (d.lancamentos || []).filter(l => l.categoria === "Reserva.");
+  const aportes = movReserva.filter(noMes).filter(l => l.tipo === "Aporte.").reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  const resgates = movReserva.filter(noMes).filter(l => l.tipo === "Resgate.").reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  const saldo = faturamento - totalApp, totalMes = saldo - aportes + resgates;
+  const receitaSolta = (d.lancamentos || []).filter(noMes).filter(l => l.tipo === "Receita.").reduce((s, l) => s + (Number(l.valor) || 0), 0);
+
+  if (R && R.colMes[m] !== undefined && (R.ano === null || R.ano === ano)){
+    const j = R.colMes[m];
+    const v = i => num(cel(R.linhas, i, j));
+    Object.keys(R.cats).forEach(k => {
+      if (k === "-") return;
+      const i = R.cats[k], rot = txt(cel(R.linhas, i, 0));
+      let va;
+      if (k === "moradia.") va = minhaCasa;
+      else if (k === "gastos fixos.") va = abrir ? 0 : fixosMes;
+      else va = porCat[k] || 0;
+      totais.push({ rot:semPonto(rot), p:v(i), a:va, obs:k === "moradia." ? (casa ? "o que você pagou na casa" : "abra a aba Casa uma vez") : (k === "gastos fixos." && abrir ? "chave em Abrir: os fixos estão dentro de cada categoria" : "") });
+    });
+    const o = R.outros;
+    const linhaO = (pedaco, va, obs) => { const k = Object.keys(o).find(x => x.indexOf(pedaco) === 0); if (k !== undefined) totais.push({ rot:semPonto(txt(cel(R.linhas, o[k], 0))).replace(/:$/, ""), p:v(o[k]), a:va, obs:obs || "" }); };
+    linhaO("(-) total de despesas", totalApp);
+    Object.keys(R.rec).forEach(k => { totais.push({ rot:"Receita " + semPonto(txt(cel(R.linhas, R.rec[k], 0))), p:v(R.rec[k]), a:porOrigem[k] || 0, obs:cl ? "pagamentos da Clínica com essa origem" : "abra a aba Clínica uma vez" }); });
+    linhaO("faturamento", faturamento);
+    linhaO("saldo apos despesas", saldo);
+    linhaO("(-) total de aportes", aportes);
+    linhaO("(+) total de resgates", resgates);
+    linhaO("total", totalMes, "faturamento menos despesas, menos aportes, mais resgates");
+    if (receitaSolta) notas.push("O app tem " + dinheiro(receitaSolta) + " em receitas lançadas no Dinheiro (tipo Receita.) em " + MESES[m] + ", que a planilha não mostra no painel: ela só lê a aba Recebimentos da clínica.");
+    // painel R:S, que a planilha calcula para o mês de hoje
+    const hojeMes = chaveMes(new Date()) === km;
+    const pn = R.painel;
+    const r = d.reserva || {};
+    const desde = r.dataBase || "0000-00-00";
+    const reservaApp = (Number(r.saldoBase) || 0) + movReserva.filter(l => (l.data || "") >= desde && l.tipo === "Aporte.").reduce((s, l) => s + (Number(l.valor) || 0), 0) - movReserva.filter(l => (l.data || "") >= desde && l.tipo === "Resgate.").reduce((s, l) => s + (Number(l.valor) || 0), 0);
+    if (pn["saldo atual:"] !== undefined) totais.push({ rot:"Reserva: saldo atual", p:num(pn["saldo atual:"]), a:reservaApp, obs:"saldo conferido mais aportes menos resgates" });
+    if (pn["meta de reserva:"] !== undefined) totais.push({ rot:"Reserva: meta", p:num(pn["meta de reserva:"]), a:Number(r.meta) || 0 });
+    if (hojeMes){
+      const w = janelaClinica();
+      const previsto = w ? w.numerosDoMes(new Date(ano, m, 1)).previsto : null;
+      const pacientes = porOrigem["pratica clinica."] || 0;
+      if (pn["receita projetada:"] !== undefined) totais.push({ rot:"Painel: receita projetada", p:num(pn["receita projetada:"]), a:previsto, obs:previsto === null ? "abra a aba Clínica para calcular" : "a planilha soma o cadastro (Semanal ×4); o app conta as sessões que a agenda marca no mês" });
+      if (pn["recebimentos/mes:"] !== undefined) totais.push({ rot:"Painel: recebimentos/mês", p:num(pn["recebimentos/mes:"]), a:faturamento, obs:"tudo o que entrou" });
+      if (pn["faltante:"] !== undefined) totais.push({ rot:"Painel: faltante", p:num(pn["faltante:"]), a:previsto === null ? null : previsto - pacientes, obs:"projetado menos o que os pacientes já pagaram" });
+      if (pn["mensal atual:"] !== undefined) totais.push({ rot:"Painel: mensal atual", p:num(pn["mensal atual:"]), a:totalMes });
+      if (pn["mensal projetado:"] !== undefined) totais.push({ rot:"Painel: mensal projetado", p:num(pn["mensal projetado:"]), a:previsto === null ? null : totalMes + (previsto - pacientes) });
+    } else notas.push("O painel da planilha (Receita Projetada, Faltante, Mensal Atual) é calculado para o mês de hoje, então só entra na conferência do mês corrente.");
+  } else if (R) notas.push("A planilha está no ano " + R.ano + "; o mês aberto é de " + ano + ". Os totais por categoria só comparam no mesmo ano.");
+  return { itens, totais, notas, iguais:c.iguais };
+}
+
+// ---------- Casa ----------
+function conferirCasa(app){
+  const P = planilhas.casa, itens = [], totais = [], notas = [];
+  const casa = app.casa;
+  if (!P) return { falta:"planilha", itens, totais, notas };
+  if (!casa) return { falta:"app", itens, totais, notas };
+  const km = chaveMes(ref), m = ref.getMonth(), ano = ref.getFullYear();
+  const chave = l => [l.data, norm(l.quem), norm(l.categoria), round2(l.valor).toFixed(2), norm(l.descricao === "-" ? "" : l.descricao)].join("|");
+  const fraca = l => l.data + "|" + round2(l.valor).toFixed(2), fraca2 = l => l.data + "|" + norm(l.categoria) + "|" + norm(l.descricao === "-" ? "" : l.descricao);
+  const c = casar(P.dados.lanc.filter(noMes), (casa.lancamentos || []).filter(noMes), chave, fraca, fraca2);
+  const linhaL = l => ({ data:l.data, desc:semPonto(l.categoria) + (l.descricao && l.descricao !== "-" ? " · " + l.descricao : ""), extra:l.quem, valor:l.valor });
+  c.soPlanilha.forEach(l => itens.push({ k:"casa|p|" + chave(l), lado:"planilha", ...linhaL(l) }));
+  c.soApp.forEach(l => itens.push({ k:"casa|a|" + chave(l), lado:"app", ...linhaL(l) }));
+  c.diferentes.forEach(([p, a]) => itens.push({ k:"casa|d|" + chave(p), lado:"dif", ...linhaL(p), nota:difCampos(p, a, [["valor","Valor",dinheiro],["quem","Quem"],["categoria","Categoria"],["descricao","Descrição"]]) }));
+
+  const R = P.dados.resumo;
+  const doMes = (casa.lancamentos || []).filter(noMes);
+  const total = doMes.reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  const porCat = {}; doMes.forEach(l => { porCat[norm(l.categoria)] = (porCat[norm(l.categoria)] || 0) + (Number(l.valor) || 0); });
+  const pagou = q => doMes.filter(l => norm(l.quem) === norm(q)).reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  if (R && R.colMes[m] !== undefined && (R.ano === null || R.ano === ano)){
+    const j = R.colMes[m];
+    const v = i => num(cel(R.linhas, i, j));
+    Object.keys(R.cats).forEach(k => { totais.push({ rot:semPonto(txt(cel(R.linhas, R.cats[k], 4))), p:v(R.cats[k]), a:porCat[k] || 0 }); });
+    if (R.iTotal !== null){
+      totais.push({ rot:"Total do mês", p:v(R.iTotal), a:total });
+      totais.push({ rot:"Metade", p:v(R.iMetade), a:total * (Number(casa.divisao) || 0.5), obs:"a planilha divide sempre por dois; o app usa a parte guardada em Ajustes" });
+      [R.pessoaA, R.pessoaB].forEach(pes => { if (pes.nome) totais.push({ rot:pes.nome + " pagou", p:v(pes.i), a:pagou(pes.nome), obs:(casa.pessoas || []).some(q => norm(q) === norm(pes.nome)) ? "" : "esse nome não está no caderno da Casa (Ajustes)" }); });
+    }
+  } else if (R) notas.push("A planilha está no ano " + R.ano + "; o mês aberto é de " + ano + ". A grade só compara no mesmo ano.");
+  return { itens, totais, notas, iguais:c.iguais };
+}
+
+// ---------- Clínica ----------
+function conferirClinica(app){
+  const P = planilhas.clinica, itens = [], totais = [], notas = [];
+  const cl = app.clinica;
+  if (!P) return { falta:"planilha", itens, totais, notas };
+  if (!cl) return { falta:"app", itens, totais, notas };
+  const km = chaveMes(ref), m = ref.getMonth(), ano = ref.getFullYear();
+  const w = janelaClinica();
+  const pac = {}; (cl.pacientes || []).forEach(p => { pac[p.id] = p; });
+  const codigoDe = g => (pac[g.pacienteId] || {}).codigo || g.codigo || "";
+  const nomeDe = g => (pac[g.pacienteId] || {}).nome || g.nomePlanilha || "sem prontuário";
+
+  // recebimentos do mês, um a um: prontuário (ou nome, quando a planilha não casou) + data + valor + origem
+  const quemP = r => r.codigo || norm(r.nome), quemA = g => codigoDe(g) || norm(g.nomePlanilha || "");
+  const daPl = P.dados.recebimentos.filter(noMes).map(r => ({ ...r, _quem:quemP(r), _rot:(r.codigo ? r.codigo + " · " : "") + (r.nome ? r.nome.split(" ")[0] : "sem nome") }));
+  const doApp = (cl.pagamentos || []).filter(noMes).map(g => ({ ...g, _quem:quemA(g), _rot:(codigoDe(g) ? codigoDe(g) + " · " : "") + nomeDe(g), origem:g.receita || "Prática Clínica." }));
+  const chave = x => [x._quem, x.data, round2(x.valor).toFixed(2), norm(x.origem)].join("|");
+  const c = casar(daPl, doApp, chave, x => x._quem + "|" + x.data + "|" + round2(x.valor).toFixed(2), x => x.data + "|" + round2(x.valor).toFixed(2), x => x._quem + "|" + x.data);
+  const linhaR = r => ({ data:r.data, desc:r._rot, extra:[semPonto(r.origem), semPonto(r.tipo)].filter(Boolean).join(" · "), valor:r.valor });
+  c.soPlanilha.forEach(r => itens.push({ k:"rec|p|" + chave(r), lado:"planilha", ...linhaR(r) }));
+  c.soApp.forEach(g => itens.push({ k:"rec|a|" + chave(g), lado:"app", ...linhaR(g) }));
+  c.diferentes.forEach(([p, a]) => itens.push({ k:"rec|d|" + chave(p), lado:"dif", ...linhaR(p),
+    nota:[p._quem !== a._quem ? "Quem: " + p._rot + " na planilha, " + a._rot + " no app" : "", difCampos(p, a, [["valor","Valor",dinheiro],["origem","Origem",semPonto]])].filter(Boolean).join(" · ") }));
+
+  // cadastro: quem está ativo na planilha contra quem está na agenda do app
+  const reg = P.dados.registro;
+  const naAgenda = {}; (cl.pacientes || []).forEach(p => { if (p.codigo) naAgenda[p.codigo] = p; });
+  const arquivados = {}; (cl.arquivados || []).forEach(a => { if (a.codigo) arquivados[a.codigo] = a; });
+  const ativoPl = s => /^(ativo|triagem)/.test(norm(s));
+  Object.keys(reg).forEach(codigo => {
+    const r = reg[codigo], p = naAgenda[codigo];
+    if (ativoPl(r.status) && !p) itens.push({ k:"reg|p|" + codigo, lado:"planilha", data:"", desc:codigo + " · " + (r.nome.split(" ")[0] || "?"), extra:semPonto(r.status) + " na planilha, fora da agenda do app", valor:null });
+    if (p){
+      const dif = [];
+      if (!perto(r.valor, p.valor)) dif.push("valor: " + dinheiro(r.valor) + " na planilha, " + dinheiro(p.valor) + " no app");
+      const cob = norm(r.modalidade).indexOf("mensal") === 0 ? "mensal" : norm(r.modalidade).indexOf("quinzenal") === 0 ? "quinzenal" : "avulsa";
+      if (cob !== p.cobranca) dif.push("cobrança: " + semPonto(r.modalidade) + " na planilha, " + ({ mensal:"ciclo mensal", quinzenal:"quinzenal", avulsa:"por sessão" }[p.cobranca] || p.cobranca) + " no app");
+      if (!ativoPl(r.status)) dif.push("status: " + semPonto(r.status) + " na planilha, mas continua na agenda do app");
+      if (dif.length) itens.push({ k:"reg|d|" + codigo, lado:"dif", data:"", desc:codigo + " · " + p.nome, extra:"cadastro", valor:null, nota:dif.join(" · ") });
+    }
+  });
+  Object.keys(naAgenda).forEach(codigo => { if (!reg[codigo]) itens.push({ k:"reg|a|" + codigo, lado:"app", data:"", desc:codigo + " · " + naAgenda[codigo].nome, extra:"na agenda do app, sem cadastro na planilha", valor:null }); });
+
+  // totais: o Dashboard da planilha contra o Painel do app
+  const pn = P.dados.painel;
+  const pag = (cl.pagamentos || []).filter(noMes);
+  const dePaciente = g => !g.receita || g.receita === "Prática Clínica.";
+  const recebidoPac = pag.filter(dePaciente).reduce((s, g) => s + (Number(g.valor) || 0), 0);
+  const contaStatus = pedaco => (cl.pacientes || []).filter(p => norm(p.status || "").indexOf(pedaco) === 0).length + (cl.arquivados || []).filter(a => norm(a.status || "").indexOf(pedaco) === 0).length;
+  if (pn && (pn.ano === null || pn.ano === ano)){
+    const nMes = w ? w.numerosDoMes(new Date(ano, m, 1)) : null;
+    const mov = w && typeof w.movimentoDoAno === "function" ? w.movimentoDoAno(ano) : null;
+    const semJanela = "abra a aba Clínica para calcular";
+    if (pn.novos) totais.push({ rot:"Novos pacientes em " + MESES[m], p:pn.novos[m], a:mov ? mov.novos[m] : null, obs:mov ? "pela data de início do Registro" : semJanela, inteiro:true });
+    if (pn.encerramentos) totais.push({ rot:"Encerramentos em " + MESES[m], p:pn.encerramentos[m], a:mov ? mov.encerrados[m] : null, obs:mov ? "pela data de fim" : semJanela, inteiro:true });
+    if (pn.altas) totais.push({ rot:"Altas clínicas em " + MESES[m], p:pn.altas[m], a:mov ? mov.altas[m] : null, obs:mov ? "" : semJanela, inteiro:true });
+    if (pn.sessoes) totais.push({ rot:"Sessões em " + MESES[m], p:pn.sessoes[m], a:nMes ? nMes.sessoes : null, obs:"bases diferentes: a planilha soma as sessões dos tratamentos que terminam no mês; o app conta as sessões da agenda no mês", semDif:true, inteiro:true });
+    if (pn.faturamento) totais.push({ rot:"Faturamento em " + MESES[m], p:pn.faturamento[m], a:recebidoPac, obs:"só pagamentos de pacientes (origem Prática Clínica.)" });
+    // a planilha conta linhas do Registro; o app conta prontuários. Quem voltou e saiu de novo tem duas linhas Inativo.
+    const porLinha = pedaco => Object.values(reg).filter(r => norm(r.status).indexOf(pedaco) === 0).length;
+    const obsStatus = pedaco => porLinha(pedaco) === contaStatus(pedaco) ? "" : "a planilha conta linhas do Registro (quem voltou e saiu de novo conta duas vezes); o app conta prontuários";
+    totais.push({ rot:"Status: ativos", p:pn.status.ativos, a:contaStatus("ativo"), inteiro:true, obs:"pelo status que veio da planilha na última leitura" });
+    totais.push({ rot:"Status: triagem", p:pn.status.triagem, a:contaStatus("triagem"), inteiro:true });
+    totais.push({ rot:"Status: suspensos", p:pn.status.suspensos, a:contaStatus("suspenso"), inteiro:true, obs:obsStatus("suspenso") });
+    totais.push({ rot:"Status: inativos", p:pn.status.inativos, a:contaStatus("inativo"), inteiro:true, obs:obsStatus("inativo") });
+    totais.push({ rot:"Status: altas clínicas", p:pn.status.altas, a:contaStatus("alta"), inteiro:true, obs:obsStatus("alta") });
+    if (chaveMes(new Date()) === km){
+      const previsto = nMes ? nMes.previsto : null;
+      totais.push({ rot:"Pacientes ativos (topo)", p:pn.ativos, a:(cl.pacientes || []).length, inteiro:true, obs:"o app conta quem está na agenda, inclusive triagem" });
+      totais.push({ rot:"Receita projetada/mês", p:pn.projetada, a:previsto, obs:previsto === null ? semJanela : "a planilha soma o cadastro (Semanal ×4); o app conta as sessões que a agenda marca no mês" });
+      totais.push({ rot:"Receita/mês (pacientes)", p:pn.receitaMes, a:recebidoPac });
+      totais.push({ rot:"Sessões/mês projetadas", p:pn.sessoesProjetadas, a:nMes ? nMes.sessoes : null, inteiro:true, obs:"a planilha multiplica o ritmo (Mensal ×4); o app conta a agenda", semDif:true });
+      totais.push({ rot:"Pendente projetado", p:pn.fin.pendenteProjetado, a:previsto === null ? null : Math.max(previsto - recebidoPac, 0), obs:"projetado menos recebido de pacientes" });
+      totais.push({ rot:"Pendente ativos (dívida)", p:pn.fin.pendenteAtivos, a:null, obs:"o app ainda não calcula dívida por paciente: precisa da sessão como registro (decisão 12)" });
+      totais.push({ rot:"Pendente inativos (dívida)", p:pn.fin.pendenteInativos, a:null, obs:"idem" });
+    } else notas.push("Os números do topo do Dashboard (ativos, receita projetada, receita/mês) valem para o mês de hoje, então só entram na conferência do mês corrente.");
+  } else if (pn) notas.push("O Dashboard da planilha é de " + pn.ano + "; o mês aberto é de " + ano + ".");
+  if (!w) notas.push("A Clínica não está aberta nesta janela: os números que dependem da agenda (previsto, sessões, movimento) ficam em branco. Abra pela casca do app.");
+  return { itens, totais, notas, iguais:c.iguais };
+}
+
+// ---------- desenho ----------
+let conferidos = new Set(lerLocal(CH.conferidos) || []);
+function barraMes(){
+  return `<div class="mes"><button class="b redondo" data-mes="-1" aria-label="Mês anterior">‹</button>
+    <h1>${MESES[ref.getMonth()]} <span>${ref.getFullYear()}</span></h1>
+    <button class="b redondo" data-mes="1" aria-label="Próximo mês">›</button></div>`;
+}
+function quandoLida(p){
+  if (!p) return "";
+  const h = p.quando.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
+  const mod = p.modificado ? " · salva em " + p.modificado.toLocaleDateString("pt-BR") + " às " + p.modificado.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" }) : "";
+  return "lida às " + h + mod;
+}
+function desenharArquivos(){
+  const alvo = document.getElementById("arquivos");
+  const def = [["financeiro","Controle Financeiro.xlsx"],["casa","Controle dos Gastos da Casa.xlsx"],["clinica","Prática Clínica.xlsx"]];
+  alvo.innerHTML = def.map(([k, n]) => { const p = planilhas[k];
+    return `<div class="arq ${p ? "ok" : "solta"}"><i aria-hidden="true"></i><div style="min-width:0"><b>${escH(p ? p.nome : n)}</b><span>${p ? escH(quandoLida(p)) : "ainda não escolhida"}</span></div></div>`; }).join("");
+}
+function fmtVal(v, inteiro){ return v === null || v === undefined ? "—" : inteiro ? String(Math.round(v)) : dinheiro(v); }
+function tabelaTotais(totais){
+  if (!totais.length) return "";
+  const linhas = totais.map(t => {
+    const tem = t.p !== null && t.p !== undefined && t.a !== null && t.a !== undefined;
+    const dif = tem ? (t.inteiro ? Math.round(t.a) - Math.round(t.p) : t.a - t.p) : null;
+    const igual = tem && (t.inteiro ? dif === 0 : perto(t.a, t.p));
+    const cls = !tem ? "" : igual ? "igual" : (t.semDif ? "" : "dif");
+    const difTxt = !tem ? "—" : igual ? "igual" : (t.inteiro ? (dif > 0 ? "+" : "") + dif : (dif > 0 ? "+" : "−") + dinheiro(Math.abs(dif)));
+    return `<tr class="${cls}"><td class="c-rot">${escH(t.rot)}</td><td class="dir">${fmtVal(t.p, t.inteiro)}</td><td class="dir">${fmtVal(t.a, t.inteiro)}</td><td class="dir c-dif">${difTxt}</td><td class="c-obs">${escH(t.obs || "")}</td></tr>`;
+  }).join("");
+  return `<h3>Totais de ${MESES[ref.getMonth()]}, lado a lado</h3><div class="tabwrap"><table class="t"><thead><tr><th>Item</th><th class="dir">Planilha</th><th class="dir">App</th><th class="dir">Diferença</th><th>Observação</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+}
+const SELO = { planilha:"só na planilha", app:"só no app", dif:"diferente" };
+function tabelaItens(itens, titulo){
+  if (!itens.length) return "";
+  const feitos = itens.filter(i => conferidos.has(i.k)).length;
+  const linhas = itens.map(i => `<tr class="${conferidos.has(i.k) ? "feito" : ""}">
+    <td class="c-chk"><label class="chk"><input type="checkbox" data-k="${escH(i.k)}" ${conferidos.has(i.k) ? "checked" : ""} aria-label="Conferido: ${escH(i.desc)}"></label></td>
+    <td class="c-lado"><span class="selo ${i.lado}">${SELO[i.lado]}</span></td>
+    <td class="c-data">${i.data ? dataCurta(i.data) : "—"}</td>
+    <td class="c-desc"><b>${escH(i.desc)}</b>${i.extra ? `<span class="nota" style="display:block">${escH(i.extra)}</span>` : ""}${i.nota ? `<span class="nota" style="display:block;color:var(--neg)">${escH(i.nota)}</span>` : ""}</td>
+    <td class="dir">${i.valor === null || i.valor === undefined ? "" : dinheiro(i.valor)}</td></tr>`).join("");
+  return `<details class="lista" open><summary>${escH(titulo)} <span class="q">${itens.length} ${itens.length === 1 ? "item" : "itens"}${feitos ? ", " + feitos + " conferido" + (feitos === 1 ? "" : "s") : ""}</span></summary>
+    <div class="tabwrap"><table class="t itens"><thead><tr><th></th><th>Onde</th><th>Dia</th><th>O quê</th><th class="dir">Valor</th></tr></thead><tbody>${linhas}</tbody></table></div></details>`;
+}
+function secao(titulo, arquivoRotulo, r, tipo){
+  const p = planilhas[tipo];
+  let corpo = "";
+  if (r.falta === "planilha") corpo = `<p class="vazio">Escolha a planilha ${escH(arquivoRotulo)} para conferir.</p>`;
+  else if (r.falta === "app") corpo = `<p class="vazio">O app ainda não tem esse caderno neste aparelho. Abra a aba ${escH(titulo)} uma vez (entre com o Google) e volte aqui.</p>`;
+  else {
+    const soP = r.itens.filter(i => i.lado === "planilha"), soA = r.itens.filter(i => i.lado === "app"), dif = r.itens.filter(i => i.lado === "dif");
+    corpo = tabelaTotais(r.totais) +
+      (r.itens.length ? "" : `<p class="vazio" style="margin-top:12px">Item por item, ${MESES[ref.getMonth()]} está igual nos dois lados${r.iguais ? " (" + r.iguais + " lançamento" + (r.iguais === 1 ? "" : "s") + " conferido" + (r.iguais === 1 ? "" : "s") + ")" : ""}.</p>`) +
+      tabelaItens(dif, "Mesmo lançamento, com algo diferente") + tabelaItens(soP, "Só na planilha (falta no app)") + tabelaItens(soA, "Só no app (falta na planilha)") +
+      (r.notas.length ? `<p class="nota" style="margin-top:12px">${r.notas.map(escH).join("<br>")}</p>` : "");
+  }
+  return `<section class="painel" id="s-${tipo}"><h2>${escH(titulo)}<span class="dir">${p ? escH(p.nome + " · " + quandoLida(p)) : escH(arquivoRotulo)}</span></h2>${corpo}</section>`;
+}
+function chip(nome, r){
+  if (r.falta) return `<span class="chip falta"><i aria-hidden="true"></i>${escH(nome)}: <b>${r.falta === "planilha" ? "sem planilha" : "sem caderno"}</b></span>`;
+  const n = r.itens.filter(i => !conferidos.has(i.k)).length;
+  const tot = r.totais.filter(t => t.p !== null && t.p !== undefined && t.a !== null && t.a !== undefined && !t.semDif && !(t.inteiro ? Math.round(t.a) === Math.round(t.p) : perto(t.a, t.p))).length;
+  const ok = !n && !tot;
+  const partes = [];
+  if (n) partes.push(n + (n === 1 ? " item" : " itens"));
+  if (tot) partes.push(tot + (tot === 1 ? " total diferente" : " totais diferentes"));
+  return `<span class="chip ${ok ? "ok" : "dif"}"><i aria-hidden="true"></i>${escH(nome)}: <b>${ok ? "fecha igual" : partes.join(", ")}</b></span>`;
+}
+let resultado = null;
+function desenhar(){
+  desenharArquivos();
+  const app = appDados();
+  resultado = { dinheiro:conferirDinheiro(app), casa:conferirCasa(app), clinica:conferirClinica(app) };
+  document.getElementById("chips").innerHTML = chip("Dinheiro", resultado.dinheiro) + chip("Casa", resultado.casa) + chip("Clínica", resultado.clinica);
+  document.getElementById("mesbar").innerHTML = barraMes();
+  document.getElementById("telas").innerHTML =
+    secao("Dinheiro", "Controle Financeiro.xlsx", resultado.dinheiro, "financeiro") +
+    secao("Casa", "Controle dos Gastos da Casa.xlsx", resultado.casa, "casa") +
+    secao("Clínica", "Prática Clínica.xlsx", resultado.clinica, "clinica");
+  document.querySelectorAll("[data-mes]").forEach(b => b.onclick = () => { ref.setMonth(ref.getMonth() + Number(b.dataset.mes)); desenhar(); });
+  document.querySelectorAll("input[data-k]").forEach(i => i.onchange = () => {
+    if (i.checked) conferidos.add(i.dataset.k); else conferidos.delete(i.dataset.k);
+    guardar(CH.conferidos, [...conferidos]);
+    const tr = i.closest("tr"); if (tr) tr.classList.toggle("feito", i.checked);
+    document.getElementById("chips").innerHTML = chip("Dinheiro", resultado.dinheiro) + chip("Casa", resultado.casa) + chip("Clínica", resultado.clinica);
+  });
+}
+function textoDaLista(){
+  if (!resultado) return "";
+  const nomeMes = MESES[ref.getMonth()] + " de " + ref.getFullYear();
+  let s = "Conferência do Controle Único, " + nomeMes + "\n";
+  [["Dinheiro", resultado.dinheiro], ["Casa", resultado.casa], ["Clínica", resultado.clinica]].forEach(([n, r]) => {
+    s += "\n== " + n + " ==\n";
+    if (r.falta){ s += (r.falta === "planilha" ? "sem planilha" : "sem caderno no app") + "\n"; return; }
+    r.totais.forEach(t => { const tem = t.p != null && t.a != null; s += "- " + t.rot + ": planilha " + fmtVal(t.p, t.inteiro) + " | app " + fmtVal(t.a, t.inteiro) + (tem ? (t.inteiro ? (Math.round(t.a) === Math.round(t.p)) : perto(t.a, t.p)) ? " | igual" : " | DIFERENTE" : "") + (t.obs ? " (" + t.obs + ")" : "") + "\n"; });
+    if (!r.itens.length) s += "- item por item: igual\n";
+    r.itens.forEach(i => { s += "- [" + (conferidos.has(i.k) ? "x" : " ") + "] " + SELO[i.lado] + ": " + (i.data ? dataCurta(i.data) + " " : "") + i.desc + (i.extra ? " (" + i.extra + ")" : "") + (i.valor != null ? " " + dinheiro(i.valor) : "") + (i.nota ? " — " + i.nota : "") + "\n"; });
+    r.notas.forEach(x => { s += "  obs: " + x + "\n"; });
+  });
+  return s;
+}
+
+// ---------- ligações ----------
+document.getElementById("escolher").onclick = () => document.getElementById("arquivo").click();
+document.getElementById("arquivo").onchange = e => { const l = [...e.target.files]; e.target.value = ""; if (l.length) receberArquivos(l); };
+const zona = document.getElementById("zona");
+zona.addEventListener("dragover", e => { e.preventDefault(); zona.classList.add("sobre"); });
+zona.addEventListener("dragleave", () => zona.classList.remove("sobre"));
+zona.addEventListener("drop", e => { e.preventDefault(); zona.classList.remove("sobre"); const l = [...e.dataTransfer.files].filter(f => /\.xlsx$/i.test(f.name)); if (l.length) receberArquivos(l); });
+document.getElementById("limparConferidos").onclick = () => { if (!conferidos.size || confirm("Desmarcar tudo o que você já marcou como conferido?")) { conferidos = new Set(); guardar(CH.conferidos, []); desenhar(); } };
+document.getElementById("copiar").onclick = async () => {
+  const s = textoDaLista(); const st = document.getElementById("status");
+  try { await navigator.clipboard.writeText(s); st.textContent = "Lista copiada."; }
+  catch(e){ st.textContent = "Não consegui copiar sozinho; a lista abriu numa janela para você copiar."; window.prompt("Copie a lista:", s); }
+};
+document.getElementById("tema").onclick = () => {
+  const r = document.documentElement;
+  r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark";
+  try { localStorage.setItem("cu-tema", r.dataset.theme); } catch(e){}
+};
+try { const t = localStorage.getItem("cu-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+// os cadernos mudam nas outras abas da casca: acompanha
+window.addEventListener("storage", e => { if (e.key === CH.dinheiro || e.key === CH.casa || e.key === CH.clinica) desenhar(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") desenhar(); });
+desenhar();
+</script>
+</body>
+</html>

@@ -68,6 +68,7 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   padding:6px 11px; border-radius:99px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px}
 .bt:hover{color:var(--text)}
 .bt.p{background:var(--text); color:var(--bg); border-color:var(--text)}
+.bt[aria-pressed="true"]{color:var(--text); border-color:var(--text); font-weight:600}
 .bt svg{width:16px; height:16px}
 .nuvem{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); margin:0}
 .nuvem-ponto{width:9px; height:9px; border-radius:50%; background:var(--muted); flex:none}
@@ -85,6 +86,7 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   .bt{border-color:rgba(255,255,255,.35); color:var(--barra-ink); padding:6px 9px}
   .bt .rot{display:none}
   .bt.p{background:#ffffff; color:#5b2a82; border-color:#ffffff}
+  .bt[aria-pressed="true"]{background:rgba(255,255,255,.18); color:var(--barra-ink); border-color:rgba(255,255,255,.7)}
   .nuvem-ponto{box-shadow:0 0 0 2px rgba(255,255,255,.55)}
   nav{
     order:3; flex:none; display:grid; grid-template-columns:repeat(5,1fr); gap:0; overflow:visible;
@@ -108,6 +110,8 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   <div class="dir">
     <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto" title="Estado do Google Drive"></span><span id="nuvem-texto" class="hidden"></span>
       <button class="bt p" id="nuvem-entrar" type="button">Entrar com o Google</button></p>
+    <button class="bt" id="conferir" type="button" title="Conferir o app com as planilhas" aria-label="Conferir o app com as planilhas" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg><span class="rot">Conferir</span></button>
     <button class="bt" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor"/></svg><span class="rot">Tema</span></button>
     <a class="bt" href="privacidade.html" title="Privacidade" aria-label="Privacidade">
@@ -134,9 +138,11 @@ var PAGINAS = {
   dinheiro: { quadro:"app",      src:"app.html#dinheiro" },
   casa:     { quadro:"app",      src:"app.html#casa" },
   clinica:  { quadro:"clinica",  src:"clinica.html" },
-  carteira: { quadro:"carteira", src:"carteira.html" }
+  carteira: { quadro:"carteira", src:"carteira.html" },
+  // o modo conferência: app contra as planilhas, um item por linha (decisão 4). Abre pelo botão do topo, não pelas abas.
+  conferir: { quadro:"conferir", src:"conferir.html" }
 };
-var NOMES = { tudo:"Tudo", dinheiro:"Dinheiro", casa:"Casa", clinica:"Clínica", carteira:"Carteira" };
+var NOMES = { tudo:"Tudo", dinheiro:"Dinheiro", casa:"Casa", clinica:"Clínica", carteira:"Carteira", conferir:"Conferência" };
 
 var palco = document.getElementById("palco");
 var quadros = {};
@@ -166,9 +172,16 @@ function mostrar(p){
   if (!novo) { try { f.contentWindow.Nuvem.aoMostrar(); } catch(e){} }
   var b = document.querySelectorAll("#abas button");
   for (var i = 0; i < b.length; i++) b[i].setAttribute("aria-pressed", String(b[i].dataset.p === p));
-  try { localStorage.setItem("cu-painel-aba", p); } catch(e){}
+  document.getElementById("conferir").setAttribute("aria-pressed", String(p === "conferir"));
+  // a conferência não vira a tela de abertura: ao voltar ao app ele cai no módulo de sempre
+  if (p !== "conferir") { try { localStorage.setItem("cu-painel-aba", p); } catch(e){} }
   try { history.replaceState(null, "", "#" + p); } catch(e){}
 }
+var antesDeConferir = "tudo";
+document.getElementById("conferir").addEventListener("click", function(){
+  if (atual === "conferir") mostrar(antesDeConferir);
+  else { antesDeConferir = atual || "tudo"; mostrar("conferir"); }
+});
 
 document.getElementById("abas").addEventListener("click", function(e){
   var b = e.target.closest("button[data-p]");
