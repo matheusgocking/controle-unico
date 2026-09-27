@@ -408,6 +408,26 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
 .modal .acoes{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
 .foot{margin-top:26px; color:var(--faint); font-size:12px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between}
 .hidden{display:none !important}
+/* ---------- celular ---------- */
+/* na casca, o botão de entrar é o da barra de cima; aqui fica só o aviso, numa linha com o ponto */
+.na-casca #nuvem-entrar{display:none !important}
+#nuvem-texto{flex:1 1 0; min-width:0}
+.na-casca .brand h1{display:none}
+@media (max-width:700px){
+  .wrap{padding:12px 12px 40px}
+  .top{gap:10px; margin-bottom:12px}
+  .tabs{overflow-x:auto; flex-wrap:nowrap; width:100%; scrollbar-width:none}
+  .tab{white-space:nowrap; padding:7px 12px}
+  .stats{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%}
+  .stat{min-width:0}
+  /* a semana mostra 3 dias por vez e desliza para o lado; as horas ficam paradas à esquerda */
+  .gridwrap{scroll-snap-type:x mandatory; scroll-padding-left:44px}
+  .grid{grid-template-columns:44px repeat(7, calc((100vw - 26px - 44px) / 3)); min-width:max-content}
+  .gh{scroll-snap-align:start}
+  .hour{position:sticky; left:0; z-index:2; padding:0 6px}
+  .gh.corner{position:sticky; left:0; z-index:4}
+  input,select,textarea{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
+}
 .nuvem{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
 .nuvem-ponto{width:9px; height:9px; border-radius:50%; background:var(--faint); flex:none}
 .nuvem-ponto.ok{background:#2f9e5b}
@@ -417,6 +437,7 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="nuvem.js"></script>
+<script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
 <body>
 <div class="wrap">
@@ -3010,6 +3031,22 @@ document.getElementById("tema").addEventListener("click", function(){
   document.documentElement.setAttribute("data-theme", escuro ? "light" : "dark");
 });
 
+/* No celular a semana abre no dia de hoje, e redesenhar (marcar falta, pagamento) não perde
+   o lugar para onde ele deslizou. Ao aparecer (a casca abre a Clínica escondida), recalcula. */
+var rolagemSemana = {semana:null, x:0};
+function rolarSemana(){
+  var wrap = document.querySelector(".gridwrap"); if(!wrap) return;
+  var chave = chaveData(semana);
+  if(rolagemSemana.semana === chave){ wrap.scrollLeft = rolagemSemana.x; return; }
+  var hoje = wrap.querySelector(".gh.today");
+  wrap.scrollLeft = 0;
+  if(hoje && window.innerWidth <= 700) wrap.scrollLeft = hoje.getBoundingClientRect().left - wrap.getBoundingClientRect().left - wrap.clientLeft - 44;
+  if(wrap.clientWidth > 0){ rolagemSemana.semana = chave; rolagemSemana.x = wrap.scrollLeft; }
+}
+var renderSemanaSemRolagem = renderSemana;
+renderSemana = function(){ renderSemanaSemRolagem(); rolarSemana(); };
+document.querySelector(".gridwrap").addEventListener("scroll", function(e){ if(rolagemSemana.semana) rolagemSemana.x = e.target.scrollLeft; });
+window.addEventListener("resize", function(){ rolagemSemana.semana = null; rolarSemana(); });
 renderTudo();
 avisoPlanilha();
 var cadernoClinica = Nuvem.caderno({

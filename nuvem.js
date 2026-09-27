@@ -55,7 +55,51 @@ var Nuvem = (function(){
     if(!tinha && temToken()) cadernos.forEach(function(c){ c.conectar(); });
     desenhar();
   }
+  /* No iPhone, o app instalado na tela de início não abre a janela de login do Google: ela
+     nunca aparece. Ali o login vai e volta na própria tela: a página vai até o Google, e o
+     Google devolve a chave de acesso no endereço da casca (#access_token=...). O endereço de
+     volta precisa estar autorizado no cliente do Google Cloud. */
+  function appNoIphone(){ try{ return window.top.navigator.standalone === true; }catch(e){ return false; } }
+  function enderecoDeVolta(){ var t = window.top.location; return t.origin + t.pathname.replace(/[^\/]*$/, ""); }
+  function entrarPorRedirecionamento(silencioso){
+    var estado = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    guarda("controle-unico-oauth-estado", estado);
+    guarda("controle-unico-oauth-aba", window.top.location.hash || "");
+    var p = {client_id:CLIENT_ID, redirect_uri:enderecoDeVolta(), response_type:"token", scope:ESCOPO, state:estado, include_granted_scopes:"true"};
+    if(silencioso) p.prompt = "none";
+    saindo = true;
+    window.top.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams(p).toString();
+  }
+  /* a volta do Google: só a casca lê, antes de tudo, e limpa o endereço */
+  function lerVoltaDoGoogle(){
+    if(window.top !== window) return;
+    var h = (location.hash || "").replace(/^#/, "");
+    if(!/(^|&)(access_token|error)=/.test(h)) return;
+    var p = new URLSearchParams(h);
+    var esperado = le("controle-unico-oauth-estado"), aba = le("controle-unico-oauth-aba") || "";
+    guarda("controle-unico-oauth-estado", null); guarda("controle-unico-oauth-aba", null);
+    try{ history.replaceState(null, "", location.pathname + location.search + aba); }catch(e){}
+    if(!esperado || p.get("state") !== esperado){ aviso = "A resposta do Google não conferiu. Entre de novo."; return; }
+    if(p.get("error")){
+      guarda("controle-unico-auto-falhou", String(Date.now()));
+      if(!/^(interaction|login|consent)_required$/.test(p.get("error"))) aviso = "O Google recusou: " + p.get("error");
+      return;
+    }
+    token = p.get("access_token");
+    expira = Date.now() + (Number(p.get("expires_in")) || 3600) * 1000;
+    try{ sessionStorage.setItem(CH_TOKEN, JSON.stringify({t:token, e:expira})); }catch(e){}
+    guarda("controle-unico-ja-entrou", "1");
+    guarda("controle-unico-auto-falhou", null);
+  }
+  /* ao abrir o app no iPhone: quem já entrou antes entra de novo sem tocar em nada */
+  function entrarSozinho(){
+    if(!appNoIphone() || window.top !== window || temToken() || !le("controle-unico-ja-entrou")) return;
+    if(Date.now() - Number(le("controle-unico-auto-falhou") || 0) < 12 * 3600 * 1000) return;
+    entrarPorRedirecionamento(true);
+  }
+
   function entrar(){
+    if(appNoIphone()){ entrarPorRedirecionamento(false); return; }
     if(!(window.google && google.accounts && google.accounts.oauth2)){ avisoGeral("O Google ainda não carregou. Tente de novo em um segundo."); return; }
     if(!cliente){
       cliente = google.accounts.oauth2.initTokenClient({
@@ -316,8 +360,11 @@ var Nuvem = (function(){
     desenhar();
   }
 
+  lerVoltaDoGoogle();
+
   return {
     caderno: function(op){ var c = new Caderno(op); cadernos.push(c); return c; },
+    entrarSozinho: entrarSozinho,
     iniciar: iniciar, entrar: entrar, receberToken: receberToken, aoMostrar: aoMostrar,
     /* recarrega a página de propósito, sem o aviso de mudança pendente (ela continua marcada) */
     recarregar: function(){ saindo = true; location.reload(); },

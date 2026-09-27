@@ -74,10 +74,29 @@ tr:last-child td{border-bottom:0}
 .pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);background:var(--surface-2);margin-left:6px;vertical-align:1px}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 @media (max-width:560px){ .mes strong{min-width:120px;font-size:15px} }
+/* ---------- celular ---------- */
+/* na casca, o botão de entrar é o da barra de cima; aqui fica só o aviso, numa linha com o ponto */
+.na-casca #nuvem-entrar{display:none !important}
+#nuvem-texto{flex:1 1 0; min-width:0}
+.na-casca .marca, .na-casca #tema, .na-casca nav.abas{display:none}   /* a casca já tem marca, tema e abas */
+@media (max-width:700px){
+  .topo{padding:8px 12px}
+  .wrap{padding:0 12px 48px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{padding:10px 12px}
+  .card .v{font-size:18px}
+  .mes{justify-content:space-between}
+  form.linha{grid-template-columns:repeat(2,minmax(0,1fr))}
+  form.linha > div[style]{grid-column:1 / -1 !important}
+  form.linha button.b{width:100%}
+  input,select{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
+  .pe{justify-content:flex-start}
+}
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="exportar-xlsx.js"></script>
 <script src="nuvem.js"></script>
+<script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
 <body>
 

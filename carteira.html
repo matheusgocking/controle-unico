@@ -273,9 +273,23 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
 .hidden{display:none !important}
 .portao{border:1px solid currentColor;border-radius:12px;padding:14px 16px;margin:12px 0;opacity:.95}
 .portao p{margin:0 0 10px}
+/* ---------- celular ---------- */
+/* na casca, o botão de entrar é o da barra de cima; aqui fica só o aviso, numa linha com o ponto */
+.na-casca #nuvem-entrar{display:none !important}
+#nuvem-texto{flex:1 1 0; min-width:0}
+.na-casca header h1, .na-casca #tema{display:none}
+@media (max-width:700px){
+  .wrap{padding:12px 12px 40px}
+  header{gap:8px; margin-bottom:12px}
+  .acoes{gap:6px}
+  .acoes .btn{padding:6px 10px; font-size:13px}
+  #btnHistorico, #btnCsv{display:none}   /* tarefas de computador: refazer histórico e ler o CSV */
+  input,select,textarea{font-size:16px}
+}
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="nuvem.js"></script>
+<script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
 <body>
 <a class="pular" href="#conteudo">Pular para o conteúdo</a>
