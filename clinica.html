@@ -1,0 +1,3031 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clínica · Controle Único</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&display=swap">
+<style>
+/* As cores da grade seguem a planilha: roxo para o que é clínico, laranja para falta
+   e cinza-chumbo para a sessão que entra por encaixe. Dentro do roxo, o horário divulgado
+   é pintado e o que está guardado sem divulgar é riscado em diagonal, para que os dois
+   nunca se confundam. As cores de estudo, academia, tarefas e almoço continuam aqui
+   só para ler agendas antigas: a grade hoje mostra apenas a clínica. */
+:root{
+  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --surface-3:#e3e8ef;
+  --border:#d3dae3; --border-strong:#97a3b3;
+  --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
+  --accent:#7030a0; --accent-ink:#ffffff; --accent-soft:#f0e5fb; --accent-line:#b98fe0;
+  --ok:#1f6b4f; --ok-soft:#dcefe6;
+  --warn:#8a4b12; --warn-soft:#fbe8d4;
+  --info:#1f4f85; --info-soft:#dde8f6;
+  --neutral-chip:#e3e8ef;
+  --devendo:#a3241f; --devendo-soft:#fbdedd; --devendo-line:#e0908b;
+  /* âmbar da contagem de sessões do mês: quente de propósito, para saltar no calendário */
+  --quente-bg:#fdeccd; --quente-fg:#7d5210; --quente-line:#e9c890;
+  --fds-bg:#e4e9f1; --fds-line:#ccd5e1;
+  /* barras do painel: uma rampa só, do previsto (claro) para o recebido (cheio) */
+  --g-prev:#b98fe0; --g-rec:#7030a0;
+  --head-bg:#2b3646; --head-fg:#ffffff;
+  --hour-bg:#e8edf7; --hour-fg:#3b4553;
+  --t-sessao-bg:#7030a0;   --t-sessao-fg:#ffffff;  --t-sessao-bar:#c8a4f2;
+  --t-divulgado-bg:#c3b5e6;--t-divulgado-fg:#221838;--t-divulgado-bar:#53397f;
+  --t-reservado-bg:#f7f4fb;--t-reservado-fg:#5f4a7a;--t-reservado-bar:#b99ad8; --t-reservado-risca:#e0d1f2;
+  --t-estudo-bg:#d8eaff;   --t-estudo-fg:#10456f;  --t-estudo-bar:#5ea3e8;
+  --t-tarefas-bg:#d9ead0;  --t-tarefas-fg:#2c5320; --t-tarefas-bar:#7cae5e;
+  --t-academia-bg:#eaf3e4; --t-academia-fg:#456b36;--t-academia-bar:#a9cf92;
+  --t-almoco-bg:#eceff2;   --t-almoco-fg:#5b6673;  --t-almoco-bar:#b9c1cb;
+  --t-falta-bg:#fde3cf;    --t-falta-fg:#8a3f0c;   --t-falta-bar:#e08034;
+  --t-remarcada-bg:#faf7fd;--t-remarcada-fg:#6f5490;--t-remarcada-bar:#b193d4;
+  --t-encaixe-bg:#3a4250;  --t-encaixe-fg:#ffffff; --t-encaixe-bar:#c8a4f2;
+  --shadow:0 1px 2px rgba(19,24,32,.06), 0 8px 24px rgba(19,24,32,.08);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --surface-3:#28303b;
+    --border:#303845; --border-strong:#4a5463;
+    --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+    --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140; --accent-line:#7f5faf;
+    --ok:#7fd3ac; --ok-soft:#183a2e;
+    --warn:#efb87c; --warn-soft:#3f2c15;
+    --info:#9dc4f0; --info-soft:#1b2f47;
+    --neutral-chip:#28303b;
+    --devendo:#f2a09b; --devendo-soft:#3d1a18; --devendo-line:#8c3b35;
+    --quente-bg:#3b2d11; --quente-fg:#f3cd83; --quente-line:#66501f;
+    --fds-bg:#232c39; --fds-line:#313c4c;
+    --g-prev:#6a4f8f; --g-rec:#c8a4f2;
+    --head-bg:#232b36; --head-fg:#eef2f7;
+    --hour-bg:#1b222e; --hour-fg:#93a0b2;
+    --t-sessao-bg:#6a2f9c;   --t-sessao-fg:#f8f2ff;  --t-sessao-bar:#c8a4f2;
+    --t-divulgado-bg:#a99bc8;--t-divulgado-fg:#221838;--t-divulgado-bar:#53397f;
+    --t-reservado-bg:#1a1820;--t-reservado-fg:#9d90b4;--t-reservado-bar:#5d4b7a; --t-reservado-risca:#2c2537;
+    --t-estudo-bg:#16304d;   --t-estudo-fg:#a7cdf5;  --t-estudo-bar:#4e8ecb;
+    --t-tarefas-bg:#1c3418;  --t-tarefas-fg:#a9d492; --t-tarefas-bar:#66a04a;
+    --t-academia-bg:#222e1f; --t-academia-fg:#9dbb8c;--t-academia-bar:#597f47;
+    --t-almoco-bg:#1b212a;   --t-almoco-fg:#8b96a6;  --t-almoco-bar:#414b58;
+    --t-falta-bg:#40290f;    --t-falta-fg:#f0b87a;   --t-falta-bar:#cf8535;
+    --t-remarcada-bg:#191622;--t-remarcada-fg:#a78cc4;--t-remarcada-bar:#7a5fa3;
+    --t-encaixe-bg:#39414f;  --t-encaixe-fg:#ffffff; --t-encaixe-bar:#c8a4f2;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --surface-3:#28303b;
+  --border:#303845; --border-strong:#4a5463;
+  --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140; --accent-line:#7f5faf;
+  --ok:#7fd3ac; --ok-soft:#183a2e;
+  --warn:#efb87c; --warn-soft:#3f2c15;
+  --info:#9dc4f0; --info-soft:#1b2f47;
+  --neutral-chip:#28303b;
+  --devendo:#f2a09b; --devendo-soft:#3d1a18; --devendo-line:#8c3b35;
+  --fds-bg:#232c39; --fds-line:#313c4c;
+  --g-prev:#6a4f8f; --g-rec:#c8a4f2;
+  --head-bg:#232b36; --head-fg:#eef2f7;
+  --hour-bg:#1b222e; --hour-fg:#93a0b2;
+  --t-sessao-bg:#6a2f9c;   --t-sessao-fg:#f8f2ff;  --t-sessao-bar:#c8a4f2;
+  --t-divulgado-bg:#a99bc8;--t-divulgado-fg:#221838;--t-divulgado-bar:#53397f;
+  --t-reservado-bg:#1a1820;--t-reservado-fg:#9d90b4;--t-reservado-bar:#5d4b7a; --t-reservado-risca:#2c2537;
+  --t-estudo-bg:#16304d;   --t-estudo-fg:#a7cdf5;  --t-estudo-bar:#4e8ecb;
+  --t-tarefas-bg:#1c3418;  --t-tarefas-fg:#a9d492; --t-tarefas-bar:#66a04a;
+  --t-academia-bg:#222e1f; --t-academia-fg:#9dbb8c;--t-academia-bar:#597f47;
+  --t-almoco-bg:#1b212a;   --t-almoco-fg:#8b96a6;  --t-almoco-bar:#414b58;
+  --t-falta-bg:#40290f;    --t-falta-fg:#f0b87a;   --t-falta-bar:#cf8535;
+  --t-remarcada-bg:#191622;--t-remarcada-fg:#a78cc4;--t-remarcada-bar:#7a5fa3;
+  --t-encaixe-bg:#39414f;  --t-encaixe-fg:#ffffff; --t-encaixe-bar:#c8a4f2;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+h1,h2,h3{font-family:Literata,Georgia,"Times New Roman",serif; font-weight:600; margin:0; text-wrap:balance}
+button,input,select,textarea{font:inherit; color:inherit}
+.wrap{max-width:1180px; margin:0 auto; padding-block:20px 48px; padding-left:16px; padding-right:16px}
+
+/* ---------- topo ---------- */
+.top{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between; margin-bottom:18px}
+.brand h1{font-size:24px; letter-spacing:-.01em}
+.brand p{margin:2px 0 0; color:var(--muted); font-size:12.5px}
+.acoes-topo{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:9px}
+.acoes-topo .hint{max-width:460px}
+/* o resumo do que a leitura vai mudar, antes de aplicar */
+.diff{max-height:46vh; overflow:auto; margin-top:6px}
+.diff h3{font-size:13px; margin:12px 0 4px}
+.diff ul{margin:0; padding-left:18px; font-size:13px; color:var(--muted)}
+.diff li{margin:2px 0}
+.diff .nada{color:var(--faint); font-size:13px; margin:4px 0 0}
+.diff .alerta{border-left:3px solid var(--warn); background:var(--warn-soft); color:var(--warn); border-radius:0 8px 8px 0; padding:8px 10px; margin-top:10px; font-size:12.5px}
+.diff .alerta ul{color:inherit}
+.tabs{display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:var(--radius); border:1px solid var(--border)}
+.tab{border:0; background:transparent; color:var(--muted); padding:7px 14px; border-radius:7px; cursor:pointer}
+.tab[aria-selected="true"]{background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.08); font-weight:600}
+.tab:focus-visible,.btn:focus-visible,.cell:focus-visible,.menu button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.btn{border:1px solid var(--border-strong); background:var(--surface); color:var(--text); padding:7px 12px; border-radius:8px; cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600}
+.btn.ghost{border-color:transparent; background:transparent; color:var(--muted)}
+.btn.ghost:hover{color:var(--text); background:var(--surface-2)}
+.btn.sm{padding:4px 9px; font-size:12.5px}
+
+/* ---------- barra da semana ---------- */
+.bar{display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px}
+.nav{display:flex; align-items:center; gap:8px}
+.range{font-family:Literata,Georgia,serif; font-size:17px}
+.range small{display:block; font-family:inherit; font-size:12px; color:var(--muted); font-family:-apple-system,"Segoe UI",sans-serif}
+
+.stats{display:flex; gap:10px; flex-wrap:wrap}
+.stat{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:8px 12px; min-width:104px}
+.stat b{display:block; font-size:18px; font-family:Literata,Georgia,serif}
+.stat span{color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.06em}
+
+/* ---------- grade ---------- */
+.gridwrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow)}
+.grid{display:grid; grid-template-columns:64px repeat(7, minmax(116px,1fr)); min-width:860px}
+.gh{position:sticky; top:0; z-index:3; background:var(--head-bg); color:var(--head-fg); padding:9px 6px; text-align:center}
+.gh .d{font-size:11px; text-transform:uppercase; letter-spacing:.09em; opacity:.72}
+.gh .n{font-family:Literata,Georgia,serif; font-size:17px}
+.gh.fds .d,.gh.fds .n{opacity:.45}
+.gh.today{background:var(--accent); color:var(--accent-ink)}
+.gh.today .d{opacity:.85}
+.gh.today .n{font-weight:600}
+.gh.corner{background:var(--head-bg)}
+.hour{border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:0 9px; font-size:12px; font-weight:600; color:var(--hour-fg); text-align:right; line-height:52px; background:var(--hour-bg)}
+.cell{position:relative; height:52px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); border-left:4px solid transparent; background:var(--surface); cursor:pointer; text-align:center; padding:0 7px; color:var(--faint); width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.25; overflow:hidden}
+.cell:hover{box-shadow:inset 0 0 0 9999px rgba(128,128,128,.14)}
+.cell:focus-visible{outline:2px solid var(--accent); outline-offset:-3px; z-index:2}
+.cell .nm,.cell .lab,.cell .saiu{max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.cell .nm{font-size:13px; font-weight:600}
+.cell .lab{font-size:11px; font-weight:600; opacity:.95}
+/* quem perdeu a hora para outro paciente: riscado e apagado, embaixo de quem entrou */
+.cell .saiu{font-size:10.5px; font-weight:500; text-decoration:line-through; opacity:.72}
+.cell .lab:only-child{font-size:12px}
+.cell.fds{background:var(--fds-bg)}
+.cell.col-today::after{content:""; position:absolute; inset:0; background:var(--accent); opacity:.07; pointer-events:none}
+.cell.sessao{background:var(--t-sessao-bg); border-left-color:var(--t-sessao-bar); color:var(--t-sessao-fg); cursor:grab}
+.cell.sessao:active{cursor:grabbing}
+/* encaixe: a sessão ENTRA aqui. Cinza-chumbo cheio, com a barra clara do roxo das sessões. */
+.cell.sessao.encaixe{background:var(--t-encaixe-bg); border-left-color:var(--t-encaixe-bar); color:var(--t-encaixe-fg)}
+/* divulgado: pintado, é o que entra na mensagem. Guardado sem divulgar: riscado em diagonal. */
+.cell.divulgado{background:var(--t-divulgado-bg); border-left-color:var(--t-divulgado-bar); color:var(--t-divulgado-fg)}
+.cell.reservado{
+  background-color:var(--t-reservado-bg);
+  background-image:repeating-linear-gradient(135deg, var(--t-reservado-risca) 0 5px, transparent 5px 11px);
+  border-left-color:var(--t-reservado-bar); color:var(--t-reservado-fg);
+}
+.cell.divulgado .nm,.cell.reservado .nm{font-size:12px; font-weight:600}
+.cell.divulgado .lab,.cell.reservado .lab{font-size:11.5px; font-weight:700; opacity:1}
+/* o não divulgado se repete pela semana inteira: ele fala baixo, o divulgado fala alto */
+.cell.reservado .nm{font-weight:500; font-size:11.5px; opacity:.8}
+.cell.reservado .lab{font-weight:600}
+.cell.pessoal{background:var(--surface-2); border-left-color:var(--border-strong); color:var(--muted)}
+.cell.estudo{background:var(--t-estudo-bg); border-left-color:var(--t-estudo-bar); color:var(--t-estudo-fg)}
+.cell.tarefas{background:var(--t-tarefas-bg); border-left-color:var(--t-tarefas-bar); color:var(--t-tarefas-fg)}
+.cell.academia{background:var(--t-academia-bg); border-left-color:var(--t-academia-bar); color:var(--t-academia-fg)}
+.cell.almoco{background:var(--t-almoco-bg); border-left-color:var(--t-almoco-bar); color:var(--t-almoco-fg)}
+.cell.falta{background:var(--t-falta-bg); border-left-color:var(--t-falta-bar); color:var(--t-falta-fg)}
+.cell.falta .nm{text-decoration:line-through}
+/* remarcada: a sessão SAI daqui. Célula fantasma, tracejada dos quatro lados e com o nome riscado,
+   para não parecer com o encaixe, que é cheio e escuro. */
+.cell.remarcada{background:var(--t-remarcada-bg); border:1px dashed var(--t-remarcada-bar); border-left:4px dashed var(--t-remarcada-bar); color:var(--t-remarcada-fg); cursor:grab}
+.cell.remarcada .nm{text-decoration:line-through; font-weight:400; opacity:.8}
+/* paciente com pagamento vencido: uma tarja na borda direita, sem escrever nada na célula */
+.cell.devendo{box-shadow:inset -5px 0 0 var(--devendo)}
+.cell.devendo:hover{box-shadow:inset -5px 0 0 var(--devendo), inset 0 0 0 9999px rgba(128,128,128,.14)}
+/* linha do "agora": horizontal, com o ponto na ponta esquerda, sobre a coluna de hoje */
+.cell .agora-linha{position:absolute; left:0; right:0; height:2px; background:var(--devendo); pointer-events:none; z-index:2}
+.cell .agora-linha::before{content:""; position:absolute; left:-1px; top:-3px; width:8px; height:8px; border-radius:50%; background:var(--devendo)}
+.cell.arrastando{opacity:.4}
+.cell.alvo{outline:2px dashed var(--accent); outline-offset:-3px; background:var(--accent-soft)}
+.cell.proibido{outline:2px dashed var(--warn); outline-offset:-3px}
+
+.legend{display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:12px; color:var(--muted); font-size:12.5px}
+.legend span{display:inline-flex; align-items:center}
+.legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; border:1px solid rgba(128,128,128,.35)}
+.legend .dica{color:var(--faint); flex-basis:100%}
+.avisobar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:var(--radius); padding:10px 12px; margin-bottom:14px; font-size:13px}
+
+/* ---------- menu de célula ---------- */
+.menu{position:absolute; z-index:40; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:var(--shadow); padding:6px; min-width:206px}
+.menu .head{padding:6px 8px 8px; border-bottom:1px solid var(--border); margin-bottom:6px}
+.menu .head b{font-family:Literata,Georgia,serif; font-size:14px}
+.menu .head span{display:block; color:var(--muted); font-size:12px}
+.menu button{display:flex; align-items:center; gap:8px; width:100%; border:0; background:transparent; padding:7px 8px; border-radius:7px; cursor:pointer; text-align:left}
+.menu button:hover{background:var(--surface-2)}
+.menu hr{border:0; border-top:1px solid var(--border); margin:6px 0}
+.menu i{width:9px; height:9px; border-radius:3px; display:inline-block}
+.menu select{width:100%; padding:6px; border-radius:7px; border:1px solid var(--border-strong); background:var(--surface)}
+
+/* ---------- mês ---------- */
+.month{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px}
+.mh{text-align:center; font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; padding:2px 0}
+.mh.fds{color:var(--faint); background:var(--fds-bg); border-radius:6px}
+.day{background:var(--surface); border:1px solid var(--border); border-radius:9px; min-height:88px; padding:7px 8px; display:flex; flex-direction:column; gap:5px}
+/* sábado e domingo: fundo rebaixado e número apagado, para o mês mostrar a semana de trabalho */
+.day.fds{background:var(--fds-bg); border-color:var(--fds-line)}
+.day.fds .num{color:var(--faint); font-weight:400}
+.day.fora{background:transparent; border-style:dashed; opacity:.5}
+.day.hoje{border-color:var(--accent-line); box-shadow:0 0 0 2px var(--accent-soft)}
+.day .num{font-family:Literata,Georgia,serif; font-size:15px}
+.day .linha{font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; gap:6px}
+/* a contagem de sessões é o que ele procura no mês: âmbar cheio, número maior que o resto */
+.day .pill{align-self:flex-start; display:inline-flex; align-items:baseline; gap:5px; background:var(--quente-bg); color:var(--quente-fg);
+  border:1px solid var(--quente-line); border-radius:20px; padding:2px 10px; font-size:11.5px; font-weight:600}
+.day .pill b{font-family:Literata,Georgia,serif; font-size:16px; font-weight:700; line-height:1}
+.day .pill.vazio{background:var(--neutral-chip); border-color:transparent; color:var(--faint); font-weight:400}
+.day .livre{font-size:11px; color:var(--ok)}
+
+/* ---------- painéis / formulários ---------- */
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow)}
+.panel + .panel{margin-top:16px}
+.panel h2{font-size:17px; margin-bottom:4px}
+.panel .sub{color:var(--muted); font-size:12.5px; margin:0 0 14px}
+.cols{display:grid; grid-template-columns:minmax(300px,1fr) minmax(300px,1.1fr); gap:16px; align-items:start}
+.field{display:flex; flex-direction:column; gap:4px; margin-bottom:12px}
+.field label{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+.field input,.field select{padding:8px 10px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2)}
+.field .hint,.hint{font-size:11.5px; color:var(--faint)}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+
+.result{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:16px}
+.result .big{font-family:Literata,Georgia,serif; font-size:26px; line-height:1.2}
+.result .big small{font-size:13px; color:var(--muted); font-family:-apple-system,"Segoe UI",sans-serif}
+.result p{margin:10px 0 0}
+.result .destaque{color:var(--accent); font-weight:600}
+.linhas{margin-top:14px; border-top:1px solid var(--border)}
+.linhas div{display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px}
+.linhas span:first-child{color:var(--muted)}
+.aviso{margin-top:12px; padding:10px 12px; border-left:3px solid var(--warn); background:var(--warn-soft); color:var(--warn); border-radius:0 8px 8px 0; font-size:12.5px}
+
+/* recado do desfazer: aparece no pé da tela e sai sozinho */
+.recado{position:fixed; left:50%; bottom:20px; transform:translate(-50%,8px); z-index:60;
+  background:var(--text); color:var(--bg); padding:9px 14px; border-radius:999px; font-size:13px;
+  box-shadow:0 6px 20px rgba(0,0,0,.25); opacity:0; pointer-events:none; transition:opacity .15s, transform .15s}
+.recado.vendo{opacity:1; transform:translate(-50%,0)}
+@media (prefers-reduced-motion: reduce){ .recado{transition:none} }
+
+table.tab{width:100%; border-collapse:collapse; margin-top:12px; font-size:13px}
+table.tab th{text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border-strong)}
+table.tab td{padding:7px 8px; border-bottom:1px solid var(--border)}
+table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:600}
+.tabwrap{overflow-x:auto}
+
+/* ---------- fichas de paciente ---------- */
+.pgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:10px}
+.pcard{display:flex; align-items:center; gap:11px; width:100%; text-align:left; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:10px 12px; cursor:pointer}
+.pcard:hover{background:var(--surface-3); border-color:var(--accent-line)}
+.ini{flex:0 0 auto; width:38px; height:38px; border-radius:50%; background:var(--t-sessao-bg); color:var(--t-sessao-fg); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; font-family:Literata,Georgia,serif}
+.ini.grande{width:46px; height:46px; font-size:19px}
+.pcard .corpo{display:flex; flex-direction:column; min-width:0; gap:1px}
+.pcard .n{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pcard .sub{font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pcard .cod{font-size:10.5px; color:var(--faint); letter-spacing:.04em}
+/* cada dia é um grupo: o cabeçalho diz o dia, quantos são e quanto o dia rende por semana */
+/* filtros da aba Pacientes: a agenda é o padrão, o resto da carteira vem da planilha */
+.filtros{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px}
+.filtro{display:inline-flex; align-items:center; gap:7px; background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:20px; padding:5px 12px; font-size:12.5px; cursor:pointer}
+.filtro:hover{border-color:var(--accent-line)}
+.filtro .q{color:var(--muted); font-size:11px}
+.filtro.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600}
+.filtro.on .q{color:var(--accent-ink); opacity:.75}
+.pgrid.larga{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.pcard.estatico{cursor:default}
+.pcard.estatico:hover{background:var(--surface-2); border-color:var(--border)}
+.selo{margin-top:4px; align-self:flex-start; border-radius:20px; padding:1px 8px; font-size:10.5px; font-weight:600}
+.selo.ok{background:var(--ok-soft); color:var(--ok)}
+.selo.atencao{background:var(--warn-soft); color:var(--warn)}
+.selo.atraso{background:var(--devendo-soft); color:var(--devendo)}
+.selo.sem{background:var(--neutral-chip); color:var(--faint)}
+.linhas.movs div{font-size:12.5px}
+.pdia + .pdia{margin-top:18px}
+.pdia-cab{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; padding:6px 8px; margin-bottom:9px; border-bottom:1px solid var(--border); border-radius:8px 8px 0 0}
+.pdia-nome{font-family:Literata,Georgia,serif; font-size:15px; font-weight:600}
+.pdia-meta{margin-left:auto; color:var(--muted); font-size:12px}
+/* hoje: fundo e linha do acento, mais a etiqueta escrita, para achar o dia de relance */
+.pdia.hoje .pdia-cab{background:var(--accent-soft); border-bottom-color:var(--accent-line)}
+.pdia.hoje .pdia-nome{color:var(--accent)}
+.pdia-hoje{background:var(--accent); color:var(--accent-ink); border-radius:20px; padding:1px 8px; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.06em}
+.pvazio{margin:0; color:var(--muted); font-size:13px}
+/* tela estreita: a contagem cai para a linha de baixo e volta a alinhar à esquerda */
+@media (max-width:540px){ .pdia-meta{margin-left:0; flex-basis:100%} }
+.fcab{display:flex; align-items:center; gap:12px; margin-bottom:16px}
+.fcab h2{font-size:19px}
+.fcab .sub{color:var(--muted); font-size:12.5px; display:block; margin-top:2px}
+
+/* ---------- painel ---------- */
+/* barras desenhadas em CSS: sem biblioteca, e a altura vem em px calculada no script,
+   para a porcentagem não depender de o pai ter altura definida */
+.graf{margin-top:10px}
+.graf .topo{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; margin-bottom:8px}
+.graf h3{font-size:14px}
+.graf .escala{color:var(--faint); font-size:11.5px; margin-left:auto}
+.barras{display:flex; align-items:flex-end; gap:6px; border-bottom:1px solid var(--border-strong); padding-bottom:0}
+.barras .col{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:default}
+.barras .par{display:flex; align-items:flex-end; justify-content:center; gap:2px; width:100%}
+.barras i{display:block; width:13px; border-radius:4px 4px 0 0; background:var(--g-prev)}
+.barras i.rec{background:var(--g-rec)}
+.barras .col:hover .par i{filter:brightness(1.12)}
+.barras .ml{font-size:11px; color:var(--muted); text-transform:lowercase; padding-bottom:4px}
+.barras .col.agora .ml{color:var(--accent); font-weight:700}
+.barras .rot{font-size:10.5px; color:var(--text); font-weight:600; line-height:1.1; text-align:center; min-height:12px}
+/* gráfico de linha: SVG escrito no script, uma linha por série */
+.linha-graf{width:100%}
+.linha-graf svg{display:block; width:100%; height:auto; overflow:visible}
+.linha-graf .gl{stroke:var(--border); stroke-width:1}
+.linha-graf .gnow{stroke:var(--accent-line); stroke-width:1.5}
+.linha-graf .gy{fill:var(--faint); font-size:11px; text-anchor:end}
+.linha-graf .gx{fill:var(--muted); font-size:11.5px; text-anchor:middle}
+.linha-graf .gx.agora{fill:var(--accent); font-weight:700}
+.linha-graf .gs{fill:none; stroke-width:2.4; stroke-linejoin:round; stroke-linecap:round}
+.linha-graf .gs.tracejada{stroke-dasharray:6 5; stroke-width:2}
+.linha-graf .gp{stroke:var(--surface); stroke-width:1.5}
+.linha-graf .grot{fill:var(--text); font-size:11.5px; font-weight:700}
+.legenda-graf{display:flex; flex-wrap:wrap; gap:6px 16px; color:var(--muted); font-size:12.5px; margin-top:10px}
+.legenda-graf span{display:inline-flex; align-items:center}
+.legenda-graf .nota{color:var(--faint); font-size:11.5px}
+.legenda-graf i{width:11px; height:11px; border-radius:3px; margin-right:6px; background:var(--g-prev)}
+.legenda-graf i.rec{background:var(--g-rec)}
+.legenda-graf i.prev{background:var(--g-prev)}
+.legenda-graf i.sai{background:var(--t-falta-bar)}
+.legenda-graf i.alta{background:var(--ok)}
+table.tab td.projecao{color:var(--faint)}
+details.tabela{margin-top:12px}
+details.tabela summary{cursor:pointer; color:var(--muted); font-size:12.5px}
+details.tabela summary:hover{color:var(--text)}
+.blocos{display:grid; grid-template-columns:repeat(auto-fit,minmax(272px,1fr)); gap:16px; align-items:start}
+/* dentro da grade, o espaçamento é o gap: a margem de painel-depois-de-painel desalinharia */
+.blocos .panel + .panel{margin-top:0}
+.contagem{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px}
+.contagem:last-child{border-bottom:0}
+.contagem .n{font-family:Literata,Georgia,serif; font-size:17px; min-width:34px}
+.contagem .trilho{flex:1; height:8px; border-radius:20px; background:var(--surface-2); overflow:hidden}
+.contagem .trilho span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
+.contagem .lado{color:var(--muted); font-size:12px; white-space:nowrap}
+.espelho{margin-top:12px; padding:10px 12px; border-left:3px solid var(--accent-line); background:var(--accent-soft); border-radius:0 8px 8px 0; font-size:12.5px; color:var(--text)}
+
+/* ---------- pagamentos ---------- */
+/* a situação é uma pastilha escrita, não só uma cor: atraso, vence em breve, em dia */
+.sit{display:inline-block; border-radius:20px; padding:2px 9px; font-size:11.5px; font-weight:600; white-space:nowrap}
+.sit.ok{background:var(--ok-soft); color:var(--ok)}
+.sit.atencao{background:var(--warn-soft); color:var(--warn)}
+/* a linha inteira do atrasado já é rosada: a pastilha ganha contorno para não sumir nela */
+.sit.atraso{background:var(--devendo-soft); color:var(--devendo); box-shadow:inset 0 0 0 1px var(--devendo-line)}
+.sit.sem{background:var(--neutral-chip); color:var(--faint)}
+table.tab tr.linha-atraso td{background:var(--devendo-soft)}
+table.tab td.num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+table.tab td .quem{display:flex; align-items:center; gap:9px}
+table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
+.linknome{border:0; background:transparent; padding:0; color:var(--text); font-weight:600; cursor:pointer; text-align:left}
+.linknome:hover{color:var(--accent); text-decoration:underline}
+.recibo{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px}
+.recibo .q{font-weight:600}
+.recibo .v{margin-left:auto; font-variant-numeric:tabular-nums}
+.recibo .meio{color:var(--muted); font-size:11.5px; background:var(--surface-2); border-radius:20px; padding:1px 8px}
+.recibo .apagar{border:0; background:transparent; color:var(--faint); cursor:pointer; font-size:12px; padding:2px 6px; border-radius:6px}
+.recibo .apagar:hover{background:var(--devendo-soft); color:var(--devendo)}
+.fipag{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin-bottom:14px}
+.fipag .topo{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:6px}
+.fipag h3{font-size:14px}
+.fipag .duas{display:flex; flex-wrap:wrap; gap:4px 22px; font-size:13px; color:var(--muted)}
+.fipag .duas b{color:var(--text); font-weight:600}
+.obsform{margin-top:8px; font-size:12.5px; color:var(--text)}
+.obsform.faint{color:var(--faint); font-size:11.5px}
+
+/* ---------- modal ---------- */
+/* a ficha pode ser mais alta que a tela: o overlay rola e o modal tem teto de altura,
+   senão o fim da ficha fica fora da vista e a roda do mouse não alcança (25/09/2026) */
+.overlay{position:fixed; inset:0; background:rgba(20,16,26,.45); display:flex; align-items:flex-start; justify-content:center; padding:16px; z-index:60; overflow-y:auto; overscroll-behavior:contain}
+.modal{background:var(--surface); border:1px solid var(--border-strong); border-radius:14px; box-shadow:var(--shadow); max-width:620px; width:100%; padding:20px; margin:auto; max-height:calc(100vh - 32px); overflow-y:auto}
+.modal h2{font-size:18px; margin-bottom:6px}
+.modal textarea{width:100%; min-height:260px; padding:12px; border:1px solid var(--border-strong); border-radius:9px; background:var(--surface-2); font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; resize:vertical}
+.modal .acoes{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
+.foot{margin-top:26px; color:var(--faint); font-size:12px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between}
+.hidden{display:none !important}
+.nuvem{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+.nuvem-ponto{width:9px; height:9px; border-radius:50%; background:var(--faint); flex:none}
+.nuvem-ponto.ok{background:#2f9e5b}
+.nuvem-ponto.indo{background:#d49a1c}
+.nuvem-ponto.erro{background:#d0453a}
+@media (prefers-reduced-motion: no-preference){ .cell,.btn,.tab{transition:background-color .12s ease} }
+</style>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="nuvem.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <h1>Agenda Clínica</h1>
+      <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto">Carregando…</span> <button class="btn sm" id="nuvem-entrar">Entrar com o Google</button></p>
+      <div class="acoes-topo">
+        <button class="btn sm" id="ler-planilha">Ler a planilha</button>
+        <input type="file" id="arquivo-planilha" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
+        <span class="hint" id="ler-status"></span>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-view="semana">Semana</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="mes">Mês</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="painel">Painel</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="meta">Meta</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="pacientes">Pacientes</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="pagamentos">Pagamentos</button>
+    </div>
+  </div>
+
+  <div id="aviso-planilha" class="hidden"></div>
+
+  <!-- ============ SEMANA ============ -->
+  <section id="v-semana">
+    <div class="bar">
+      <div class="nav">
+        <button class="btn sm" id="prev" aria-label="Semana anterior">←</button>
+        <button class="btn sm" id="hoje">Hoje</button>
+        <button class="btn sm" id="next" aria-label="Próxima semana">→</button>
+        <div class="range"><span id="range-txt"></span><small id="range-sub"></small></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="s-sessoes">0</b><span>Sessões</span></div>
+        <div class="stat"><b id="s-receita">R$ 0</b><span>Receita da semana</span></div>
+        <div class="stat" title="Horários divulgados que continuam sem paciente nesta semana."><b id="s-divulgados">0</b><span>Divulgados livres</span></div>
+        <div class="stat" title="Sessões da semana divididas pelas horas de atendimento que você aceita (aba Meta)."><b id="s-ocupacao">0%</b><span>Ocupação</span></div>
+      </div>
+      <button class="btn primary" id="msg">Mensagem de divulgação</button>
+    </div>
+
+    <div class="gridwrap"><div class="grid" id="grade"></div></div>
+
+    <div class="legend">
+      <span><i style="background:var(--t-sessao-bg); border-color:var(--t-sessao-bar)"></i>Sessão do horário fixo</span>
+      <span><i style="background:var(--t-divulgado-bg); border-color:var(--t-divulgado-bar)"></i>Atendimento divulgado: pintado, entra na mensagem</span>
+      <span><i style="background-color:var(--t-reservado-bg); background-image:repeating-linear-gradient(135deg,var(--t-reservado-bar) 0 2px,transparent 2px 4px); border-color:var(--t-reservado-bar)"></i>Atendimento não divulgado: riscado, fica fora da mensagem</span>
+      <span><i style="background:var(--t-encaixe-bg); border-color:var(--t-encaixe-bar)"></i>Encaixe: a sessão entra aqui (← veio de)</span>
+      <span><i style="background:var(--t-remarcada-bg); border-color:var(--t-remarcada-bar); border-style:dashed"></i>Remarcada: a sessão sai daqui (→ foi para)</span>
+      <span><i style="background:var(--t-falta-bg); border-color:var(--t-falta-bar)"></i>Faltou</span>
+      <span><i style="background:var(--devendo); border-color:var(--devendo)"></i>Tarja à direita: pagamento vencido</span>
+      <span class="dica">Clique num horário para mudá-lo. Arraste o nome de um paciente para outro horário para remarcar.</span>
+    </div>
+  </section>
+
+  <!-- ============ MÊS ============ -->
+  <section id="v-mes" class="hidden">
+    <div class="bar">
+      <div class="nav">
+        <button class="btn sm" id="m-prev" aria-label="Mês anterior">←</button>
+        <button class="btn sm" id="m-hoje">Mês atual</button>
+        <button class="btn sm" id="m-next" aria-label="Próximo mês">→</button>
+        <div class="range"><span id="m-titulo"></span></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="m-sessoes">0</b><span>Sessões no mês</span></div>
+        <div class="stat"><b id="m-receita">R$ 0</b><span>Receita prevista</span></div>
+        <div class="stat"><b id="m-pacientes">0</b><span>Pacientes ativos</span></div>
+      </div>
+    </div>
+    <div class="month" id="mes-cab"></div>
+    <div class="month" id="mes" style="margin-top:6px"></div>
+    <div class="legend" style="margin-top:10px">
+      <span><i style="background:var(--surface); border-color:var(--border)"></i>Dia de semana</span>
+      <span><i style="background:var(--fds-bg); border-color:var(--fds-line)"></i>Sábado e domingo</span>
+      <span class="dica">A receita do mês segue a regra da planilha: ciclo mensal conta o valor cheio, quinzenal conta o valor do mês e avulsa conta por sessão realizada.</span>
+    </div>
+  </section>
+
+  <!-- ============ PAINEL ============ -->
+  <section id="v-painel" class="hidden">
+    <div class="bar">
+      <div class="nav">
+        <button class="btn sm" id="pn-prev" aria-label="Mês anterior">←</button>
+        <button class="btn sm" id="pn-hoje">Mês atual</button>
+        <button class="btn sm" id="pn-next" aria-label="Próximo mês">→</button>
+        <div class="range"><span id="pn-titulo"></span><small id="pn-sub"></small></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="pn-ativos">0</b><span>Pacientes ativos</span></div>
+        <div class="stat" title="O que a agenda deste mês rende, pela regra de cobrança de cada paciente."><b id="pn-projetada">R$ 0</b><span>Receita projetada</span></div>
+        <div class="stat" title="Pagamentos lançados neste mês."><b id="pn-recebida">R$ 0</b><span>Recebido no mês</span></div>
+        <div class="stat" title="Sessões que a agenda marca neste mês, contando a remarcada no dia em que ela acontece."><b id="pn-sessoes">0</b><span>Sessões no mês</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>O ano em números</h2>
+      <p class="sub" id="pn-ano-sub">Mês a mês, o que a agenda projeta e o que entrou de verdade.</p>
+
+      <div class="graf">
+        <div class="topo"><h3>Dinheiro por mês</h3><span class="escala" id="pn-escala-dinheiro"></span></div>
+        <div class="linha-graf" id="pn-graf-dinheiro"></div>
+        <div class="legenda-graf">
+          <span><i class="rec"></i>Recebido de verdade</span>
+          <span><i class="prev"></i>Previsto pela agenda (deste mês em diante)</span>
+        </div>
+      </div>
+
+      <div class="graf">
+        <div class="topo"><h3>Sessões por mês</h3><span class="escala" id="pn-escala-sessoes"></span></div>
+        <div class="linha-graf" id="pn-graf-sessoes"></div>
+        <div class="legenda-graf">
+          <span><i class="rec"></i>Sessões pela agenda</span>
+          <span class="nota" id="pn-nota-sessoes"></span>
+        </div>
+      </div>
+
+      <div class="graf">
+        <div class="topo"><h3>Movimento da carteira</h3><span class="escala" id="pn-escala-carteira"></span></div>
+        <div class="linha-graf" id="pn-graf-carteira"></div>
+        <div class="legenda-graf">
+          <span><i class="rec"></i>Pacientes novos</span>
+          <span><i class="sai"></i>Encerramentos</span>
+          <span><i class="alta"></i>Altas clínicas</span>
+        </div>
+      </div>
+
+      <details class="tabela">
+        <summary>Ver o ano como tabela</summary>
+        <div class="tabwrap">
+          <table class="tab" id="pn-tabela">
+            <thead><tr><th>Mês</th><th>Novos</th><th>Encerr.</th><th>Altas</th><th>Sessões</th><th>Previsto</th><th>Recebido</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+
+    <div class="blocos" style="margin-top:16px">
+      <div class="panel">
+        <h2>Financeiro do mês</h2>
+        <p class="sub">As duas primeiras linhas são deste mês. A última é dívida acumulada, de qualquer mês.</p>
+        <div class="linhas" id="pn-financeiro"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Situação dos pagamentos</h2>
+        <p class="sub">Onde cada paciente está hoje.</p>
+        <div id="pn-situacao"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Carteira atual</h2>
+        <p class="sub">Como os pacientes de hoje se distribuem.</p>
+        <div id="pn-carteira"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Pacientes por dia</h2>
+        <p class="sub">Quanto cada dia da semana carrega.</p>
+        <div id="pn-dias"></div>
+      </div>
+    </div>
+
+    <div class="espelho" id="pn-espelho"></div>
+  </section>
+
+  <!-- ============ META ============ -->
+  <section id="v-meta" class="hidden">
+    <div class="panel">
+      <h2>Quantos pacientes para o salário que você quer</h2>
+      <p class="sub">A conta vai do que você quer receber até quantos horários precisam estar vendidos.</p>
+      <div class="cols">
+        <div>
+          <div class="field">
+            <label for="f-meta">Quanto você quer receber por mês (líquido)</label>
+            <input type="number" id="f-meta" value="8000" min="0" step="100">
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-custos">Custos fixos por mês</label>
+              <input type="number" id="f-custos" value="0" min="0" step="50">
+              <span class="hint">Contabilidade, plataformas, supervisão.</span>
+            </div>
+            <div class="field">
+              <label for="f-imposto">Imposto sobre o faturamento (%)</label>
+              <input type="number" id="f-imposto" value="0" min="0" max="60" step="0.5">
+              <span class="hint">Zerado até o CNPJ sair.</span>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-falta">Faltas e cancelamentos (%)</label>
+              <input type="number" id="f-falta" value="8" min="0" max="50" step="1">
+              <span class="hint">Quanto da agenda não vira dinheiro.</span>
+            </div>
+            <div class="field">
+              <label for="f-horas">Horas de atendimento por semana</label>
+              <input type="number" id="f-horas" value="20" min="1" max="60" step="1">
+              <span class="hint">O teto que você aceita trabalhar.</span>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-mensal">Ciclo mensal (R$)</label>
+              <input type="number" id="f-mensal" value="700" min="0" step="50">
+            </div>
+            <div class="field">
+              <label for="f-avulsa">Sessão avulsa (R$)</label>
+              <input type="number" id="f-avulsa" value="200" min="0" step="10">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="result">
+            <div class="big" id="r-faturar">R$ 0 <small>de faturamento por mês</small></div>
+            <p id="r-frase">—</p>
+            <div class="linhas" id="r-linhas"></div>
+            <div class="aviso" id="r-aviso"></div>
+          </div>
+          <div class="tabwrap">
+            <table class="tab" id="r-cenarios">
+              <thead><tr><th>Pacientes novos no ciclo mensal</th><th>Faturamento</th><th>Sobra líquida</th><th>Horas/semana</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PACIENTES ============ -->
+  <section id="v-pacientes" class="hidden">
+    <div class="panel">
+      <h2>Pacientes e horários fixos</h2>
+      <p class="sub">Separados por dia da semana, na ordem em que você atende. Clique num paciente para abrir a ficha dele. A agenda repete sozinha: toda semana, ou a cada duas semanas para os quinzenais.</p>
+      <!-- filtros: a agenda é o padrão; o resto da carteira vem da planilha -->
+      <div class="filtros" id="pfiltros" role="tablist" aria-label="O que mostrar"></div>
+      <!-- os grupos de dia entram aqui; a grade de cartões (.pgrid) fica dentro de cada dia -->
+      <div id="plist"></div>
+      <div style="margin-top:14px; display:flex; gap:8px">
+        <button class="btn" id="add-paciente">Adicionar paciente</button>
+        <button class="btn ghost" id="seed">Recarregar da planilha</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PAGAMENTOS ============ -->
+  <section id="v-pagamentos" class="hidden">
+    <div class="bar">
+      <div class="nav">
+        <button class="btn sm" id="pg-prev" aria-label="Mês anterior">←</button>
+        <button class="btn sm" id="pg-hoje">Mês atual</button>
+        <button class="btn sm" id="pg-next" aria-label="Próximo mês">→</button>
+        <div class="range"><span id="pg-titulo"></span><small id="pg-sub"></small></div>
+      </div>
+      <div class="stats">
+        <div class="stat" title="Soma do que entrou neste mês."><b id="pg-recebido">R$ 0</b><span>Recebido no mês</span></div>
+        <div class="stat" title="O que a agenda deste mês deveria render, pela regra de cobrança de cada paciente."><b id="pg-previsto">R$ 0</b><span>Previsto no mês</span></div>
+        <div class="stat" title="Pacientes cujo próximo pagamento já passou da data."><b id="pg-atraso">0</b><span>Em atraso</span></div>
+        <div class="stat" title="Pagamentos que vencem de hoje até daqui a sete dias."><b id="pg-semana">R$ 0</b><span>Vence em 7 dias</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Registrar um pagamento</h2>
+      <p class="sub">Quem pagou, quando pagou e quanto. O próximo vencimento sai daqui: ciclo mensal vale quatro semanas, quinzenal duas, e quem paga por sessão vence na sessão seguinte.</p>
+      <div class="grid2">
+        <div class="field">
+          <label for="pg-paciente">Quem pagou</label>
+          <select id="pg-paciente"></select>
+        </div>
+        <div class="field">
+          <label for="pg-data">Quando pagou</label>
+          <input type="date" id="pg-data">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="pg-valor">Valor (R$)</label>
+          <input type="number" id="pg-valor" min="0" step="10">
+          <span class="hint" id="pg-dica">—</span>
+        </div>
+        <div class="field">
+          <label for="pg-meio">Como pagou</label>
+          <select id="pg-meio">
+            <option value="pix">Pix</option>
+            <option value="transferencia">Transferência</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="cartao">Cartão</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pg-obs">Observação (opcional)</label>
+        <input id="pg-obs" placeholder="ex.: adiantou o ciclo de outubro">
+      </div>
+      <div style="display:flex; gap:8px; align-items:center">
+        <button class="btn primary" id="pg-add">Registrar pagamento</button>
+        <span id="pg-feito" class="hint"></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Situação de cada paciente</h2>
+      <p class="sub">Primeiro quem está atrasado. O botão registra um pagamento de hoje, no valor do ciclo dele.</p>
+      <div class="tabwrap">
+        <table class="tab" id="pg-tabela">
+          <thead><tr>
+            <th>Paciente</th><th>Cobrança</th><th>Último pagamento</th><th>Próximo pagamento</th><th>Situação</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Pagamentos do mês</h2>
+      <p class="sub" id="pg-hist-sub">O que entrou no mês aberto, do mais novo para o mais antigo.</p>
+      <div id="pg-historico"></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>Os dados vão do seu navegador direto para o seu Google Drive, no arquivo "Controle Único - clínica.json". <a href="privacidade.html">Privacidade</a>.</span>
+    <span style="display:flex; gap:8px">
+      <button class="btn sm" id="exportar">Exportar dados</button>
+      <button class="btn sm" id="importar">Importar dados</button>
+      <input type="file" id="arquivo" accept="application/json" class="hidden">
+      <button class="btn sm ghost" id="tema">Tema</button>
+    </span>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------------- dados ---------------- */
+var CHAVE = "controle-unico-clinica-cache";
+var DIAS = ["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+var DIAS_CURTO = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+var TIPOS_PESSOAIS = {estudo:"Estudo", academia:"Academia", almoco:"Almoço", tarefas:"Tarefas domésticas"};
+
+/* Das 8h às 19h, de segunda a sexta, todo horário nasce guardado para atendimento: é a
+   faixa em que ele atende, mesmo que não anuncie. Depois as horas que ele divulga hoje
+   são escritas por cima, então a mensagem de divulgação continua a mesma.
+   A sessão de um paciente e o encaixe sempre ganham do bloco, que fica embaixo. */
+function blocosIniciais(){
+  var b = {};
+  var dia, hora;
+  for(dia=1; dia<=5; dia++){
+    for(hora=8; hora<=19; hora++){
+      b[dia+"-"+hora] = "reservado";
+    }
+  }
+  var divulgados = ["3-13","4-13","5-13","4-14","1-15","5-15","1-16"];
+  for(var i=0; i<divulgados.length; i++){
+    b[divulgados[i]] = "divulgado";
+  }
+  return b;
+}
+
+/* Agenda vazia: este arquivo é público (GitHub Pages), então nenhum paciente mora no código.
+   A agenda chega pelo caderno do Google Drive, pela planilha ("Ler a planilha") ou pelo
+   backup da Agenda antiga ("Importar dados"). */
+function inicial(){
+  return {
+    versao:2,
+    semente:"drive",
+    config:{horaInicio:7, horaFim:20, mensal:700, avulsa:200, meta:8000, custos:0, imposto:0, falta:8, horas:33, semanaRefQuinzenal: isoSegunda(new Date())},
+    pacientes:[],
+    blocos: blocosIniciais(),
+    pagamentos:[],
+    arquivados:[],
+    formulacoes:{},
+    excecoes:{}
+  };
+}
+
+var dados = carregar();
+salvar(); /* grava a agenda inicial já na primeira abertura */
+var semana = isoSegunda(new Date());
+var mesRef = new Date();
+var menuAberto = null;
+
+function carregar(){
+  try{
+    var bruto = localStorage.getItem(CHAVE);
+    if(bruto){
+      var d = JSON.parse(bruto);
+      if(d && d.pacientes){
+        /* só descarta o que está salvo se ainda forem os pacientes de exemplo da primeira versão */
+        var soExemplo = (d.versao||1) < 2 && d.pacientes.every(function(p){ return (p.nome||"").indexOf("(exemplo)") >= 0; });
+        /* quem já usava o site antes dos pagamentos não perde nada: a lista nasce vazia */
+        if(!d.pagamentos) d.pagamentos = [];
+        /* o mesmo vale para o que veio depois: carteira fora da agenda e formulação de caso,
+           que só aparecem depois de ler a planilha */
+        if(!d.arquivados) d.arquivados = [];
+        if(!d.formulacoes) d.formulacoes = {};
+        if(!soExemplo) return d;
+      }
+    }
+  }catch(e){}
+  return inicial();
+}
+function gravar(){
+  try{ localStorage.setItem(CHAVE, JSON.stringify(dados)); }
+  catch(e){ /* navegador sem armazenamento: os dados valem só nesta aba */ }
+  if(window.Nuvem) Nuvem.mudou();
+}
+
+/* ---------------- desfazer e refazer ----------------
+   Cada salvar() guarda como a agenda estava antes. Guardar o estado inteiro é barato
+   (são poucos kB) e desfaz qualquer mudança do site, não só a última célula mexida. */
+/* sem valor inicial aqui de propósito: a primeira gravação acontece antes desta linha
+   (na abertura do site) e quem inicializa é o próprio salvar(); um `= []` aqui apagaria
+   o primeiro instantâneo e a primeira mudança da sessão ficaria sem desfazer */
+var historico, refeitos, instantaneo;
+var LIMITE_HISTORICO = 60;
+
+function salvar(){
+  var agora = JSON.stringify(dados);
+  /* a primeira gravação acontece na abertura, antes destas linhas rodarem: nela só há o que guardar */
+  if(!historico){ historico = []; refeitos = []; }
+  if(instantaneo == null){ instantaneo = agora; }
+  else if(agora !== instantaneo){
+    historico.push(instantaneo);
+    if(historico.length > LIMITE_HISTORICO) historico.shift();
+    refeitos.length = 0; /* mudou alguma coisa nova: o caminho de refazer morre */
+    instantaneo = agora;
+  }
+  gravar();
+}
+function aplicarEstado(json, recadoTexto){
+  dados = JSON.parse(json);
+  instantaneo = json;
+  gravar();
+  fecharMenu();
+  sincronizarCampos();
+  renderTudo();
+  avisoPlanilha();
+  recado(recadoTexto);
+}
+function desfazer(){
+  if(!historico || !historico.length){ recado("Nada para desfazer."); return; }
+  refeitos.push(instantaneo == null ? JSON.stringify(dados) : instantaneo);
+  aplicarEstado(historico.pop(), "Desfeito." + (historico.length ? " Ctrl+Z desfaz mais." : ""));
+}
+function refazer(){
+  if(!refeitos || !refeitos.length){ recado("Nada para refazer."); return; }
+  historico.push(instantaneo == null ? JSON.stringify(dados) : instantaneo);
+  aplicarEstado(refeitos.pop(), "Refeito.");
+}
+/* Ctrl+Z e Ctrl+Y valem para a agenda inteira. Dentro de um campo de texto o Ctrl+Z é
+   do navegador (desfaz o que foi digitado), então a página não se mete. */
+document.addEventListener("keydown", function(e){
+  if(!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  var alvo = e.target;
+  var tag = alvo && alvo.tagName ? alvo.tagName.toLowerCase() : "";
+  if(tag==="input" || tag==="textarea" || tag==="select" || (alvo && alvo.isContentEditable)) return;
+  var k = String(e.key||"").toLowerCase();
+  if(k==="z" && !e.shiftKey){ e.preventDefault(); desfazer(); }
+  else if(k==="y" || (k==="z" && e.shiftKey)){ e.preventDefault(); refazer(); }
+});
+
+/* recado curto no pé da tela: sem ele, o Ctrl+Z desfaz algo fora da vista e parece que nada aconteceu */
+var recadoEl = null, recadoTimer = null;
+function recado(texto){
+  if(!recadoEl){
+    recadoEl = document.createElement("div");
+    recadoEl.className = "recado";
+    recadoEl.setAttribute("role","status");
+    document.body.appendChild(recadoEl);
+  }
+  recadoEl.textContent = texto;
+  recadoEl.classList.add("vendo");
+  clearTimeout(recadoTimer);
+  recadoTimer = setTimeout(function(){ if(recadoEl) recadoEl.classList.remove("vendo"); }, 2400);
+}
+
+/* ---------------- datas ---------------- */
+function isoSegunda(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); var dow = (x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x; }
+function somaDias(d,n){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate()+n); return x; }
+function chaveData(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function mesmoDia(a,b){ return chaveData(a)===chaveData(b); }
+function semanaIndice(d){ return Math.round(isoSegunda(d).getTime()/604800000); }
+function ehSemanaDo(p, data){
+  if(p.freq!=="quinzenal") return true;
+  var ref = dados.config.semanaRefQuinzenal ? new Date(dados.config.semanaRefQuinzenal) : new Date();
+  return (semanaIndice(data)-semanaIndice(ref))%2===0;
+}
+function moeda(v){ return "R$ " + Math.round(v).toLocaleString("pt-BR"); }
+
+/* ---------------- sessões ---------------- */
+function pacienteEm(dia, hora, data){
+  var achado = null;
+  dados.pacientes.forEach(function(p){
+    if(p.dia===dia && p.hora===hora && ehSemanaDo(p, data)) achado = p;
+  });
+  return achado;
+}
+function excecao(data, hora){
+  var e = dados.excecoes[chaveData(data)+"|"+hora];
+  return e || null;
+}
+/* Uma hora pode ter duas coisas ao mesmo tempo: o paciente fixo que não vem (falta,
+   remarcada, não haverá) e outra sessão que entrou no lugar dele. A que entrou fica em
+   `entra`; quando a hora não tem paciente fixo, a própria exceção `extra` é a entrada.
+   Sem isso, encaixar alguém numa hora remarcada apagava a marca de quem saiu. */
+function saiuDaHora(ex){
+  return !!ex && (ex.tipo==="falta" || ex.tipo==="remarcada" || ex.tipo==="cancelada");
+}
+function entradaDa(ex){
+  if(!ex) return null;
+  if(ex.tipo==="extra") return {pacienteId:ex.pacienteId, de:ex.de, remarcada:ex.remarcada};
+  return ex.entra || null;
+}
+/* marca que o paciente fixo saiu da hora sem derrubar a sessão que entrou nela */
+function marcarSaida(k, tipo, para){
+  var atual = dados.excecoes[k];
+  var novo = {tipo:tipo};
+  if(para) novo.para = para;
+  if(atual && atual.tipo!=="extra" && atual.entra) novo.entra = atual.entra;
+  dados.excecoes[k] = novo;
+}
+function porEntrada(k, entrada){
+  var atual = dados.excecoes[k];
+  if(saiuDaHora(atual)) atual.entra = entrada;
+  else dados.excecoes[k] = {tipo:"extra", pacienteId:entrada.pacienteId, remarcada:entrada.remarcada, de:entrada.de};
+}
+function tirarEntrada(k){
+  var atual = dados.excecoes[k];
+  if(!atual) return;
+  if(atual.tipo==="extra") delete dados.excecoes[k];
+  else delete atual.entra;
+}
+function valorSessao(p){
+  if(p.cobranca==="mensal") return p.valor/4;
+  if(p.cobranca==="quinzenal") return p.valor/2;
+  return p.valor;
+}
+function receitaMensal(p, sessoesNoMes){
+  if(p.cobranca==="mensal") return p.valor;
+  if(p.cobranca==="quinzenal") return p.valor;
+  return p.valor*sessoesNoMes;
+}
+function sessoesDoDia(data){
+  var lista = [];
+  var dia = data.getDay();
+  for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++){
+    var p = pacienteEm(dia, h, data);
+    var ex = excecao(data, h);
+    var entra = entradaDa(ex);
+    if(entra){
+      /* sessão que veio de outro horário: conta na hora em que vai acontecer, e é a única
+         que conta ali, porque quem era fixo naquela hora não vem */
+      var pe = acharPaciente(entra.pacienteId);
+      if(pe) lista.push({paciente:pe, hora:h, estado:"sessao"});
+    } else if(p){
+      var estado = ex ? ex.tipo : "sessao";
+      if(estado==="cancelada") continue;
+      lista.push({paciente:p, hora:h, estado:estado});
+    }
+  }
+  return lista;
+}
+
+/* ---------------- render: semana ---------------- */
+function renderSemana(){
+  var grade = document.getElementById("grade");
+  grade.innerHTML = "";
+  var hoje = new Date();
+  var fim = somaDias(semana,6);
+  var fmt = {day:"numeric", month:"long"};
+  document.getElementById("range-txt").textContent =
+    semana.toLocaleDateString("pt-BR",fmt) + " a " + fim.toLocaleDateString("pt-BR",fmt);
+  document.getElementById("range-sub").textContent = "semana " + (mesmoDia(isoSegunda(hoje),semana) ? "atual" : "de " + fim.getFullYear());
+
+  var canto = document.createElement("div");
+  canto.className = "gh corner";
+  grade.appendChild(canto);
+
+  for(var i=0;i<7;i++){
+    var d = somaDias(semana,i);
+    var h = document.createElement("div");
+    h.className = "gh" + (mesmoDia(d,hoje) ? " today" : (d.getDay()===0||d.getDay()===6 ? " fds" : ""));
+    h.innerHTML = '<div class="d">'+DIAS_CURTO[d.getDay()]+'</div><div class="n">'+d.getDate()+'</div>';
+    grade.appendChild(h);
+  }
+
+  var sessoes=0, receita=0, divulgadosLivres=0;
+
+  for(var hora=dados.config.horaInicio; hora<=dados.config.horaFim; hora++){
+    var lab = document.createElement("div");
+    lab.className = "hour";
+    lab.textContent = String(hora).padStart(2,"0")+"h";
+    grade.appendChild(lab);
+
+    for(var j=0;j<7;j++){
+      var data = somaDias(semana,j);
+      var dia = data.getDay();
+      var info = estadoCelula(dia, hora, data);
+      var b = document.createElement("button");
+      b.className = "cell " + info.classe + (info.extra ? " encaixe" : "") +
+        (mesmoDia(data,hoje) ? " col-today" : ((dia===0||dia===6) ? " fds" : ""));
+      b.innerHTML = (info.nome ? '<span class="nm">'+esc(info.nome)+'</span>' : "") +
+                    (info.saiu ? '<span class="saiu">'+esc(info.saiu)+'</span>' : "") +
+                    (info.etiqueta ? '<span class="lab">'+esc(info.etiqueta)+'</span>' : "");
+      /* tarja na borda direita quando o paciente daquela sessão está com pagamento vencido */
+      if(info.classe==="sessao" && info.paciente && mapaDeAtraso()[info.paciente.id]) b.classList.add("devendo");
+      if(info.aria) b.title = info.aria;
+      b.setAttribute("aria-label", DIAS[dia]+" "+hora+"h: "+(info.aria || (info.nome+" "+(info.saiu ? "no lugar de "+info.saiu+", " : "")+info.etiqueta).trim() || "livre") +
+        (info.paciente && mapaDeAtraso()[info.paciente.id] ? " (pagamento vencido)" : ""));
+      b.dataset.dia = dia; b.dataset.hora = hora; b.dataset.data = chaveData(data);
+      b.addEventListener("click", abrirMenu);
+      if(info.classe==="sessao" && info.paciente){
+        b.draggable = true;
+        b.dataset.pacienteId = info.paciente.id;
+        b.dataset.origem = info.origem;
+        b.title = "Arraste para outro horário para remarcar.";
+        b.addEventListener("dragstart", aoArrastar);
+        b.addEventListener("dragend", function(){ document.querySelectorAll(".cell").forEach(function(c){ c.classList.remove("arrastando","alvo","proibido"); }); });
+      }
+      b.addEventListener("dragover", aoSobrevoar);
+      b.addEventListener("dragleave", function(ev){ ev.currentTarget.classList.remove("alvo","proibido"); });
+      b.addEventListener("drop", aoSoltar);
+      /* a linha de "agora", como em qualquer agenda: diz onde o dia está sem precisar procurar */
+      if(mesmoDia(data, hoje) && hora === hoje.getHours()){
+        b.insertAdjacentHTML("beforeend",
+          '<span class="agora-linha" style="top:'+Math.round(hoje.getMinutes()/60*100)+'%"></span>');
+      }
+      grade.appendChild(b);
+
+      if(info.classe==="sessao"){ sessoes++; receita += valorSessao(info.paciente); }
+      if(info.classe==="divulgado") divulgadosLivres++;
+    }
+  }
+
+  document.getElementById("s-sessoes").textContent = sessoes;
+  document.getElementById("s-receita").textContent = moeda(receita);
+  document.getElementById("s-divulgados").textContent = divulgadosLivres;
+  var teto = Number(dados.config.horas)||0;
+  document.getElementById("s-ocupacao").textContent = teto ? Math.round(sessoes/teto*100)+"%" : "—";
+}
+
+function estadoCelula(dia, hora, data){
+  var p = pacienteEm(dia, hora, data);
+  var ex = excecao(data, hora);
+  var entra = entradaDa(ex);
+  /* a sessão que entrou na hora é a que vai acontecer: é ela que a célula mostra,
+     mesmo quando a hora é o horário fixo de alguém que não vem */
+  if(entra){
+    var pv = acharPaciente(entra.pacienteId);
+    if(pv) return {classe:"sessao", extra:true, nome:nomeCurto(pv),
+      etiqueta:(entra.de ? "← Veio de "+quando(entra.de) : "Encaixe nesta data"),
+      /* quem perdeu a hora continua escrito, riscado: a célula conta a troca inteira */
+      saiu: (p && saiuDaHora(ex)) ? nomeCurto(p) : "",
+      saiuPara: (p && ex && ex.para) ? quando(ex.para) : "",
+      paciente:pv, origem:"extra"};
+  }
+  if(p){
+    var estado = ex ? ex.tipo : "sessao";
+    if(estado==="falta")     return {classe:"falta", nome:nomeCurto(p), etiqueta:"Faltou", paciente:p, origem:"fixo"};
+    if(estado==="remarcada") return {classe:"remarcada", nome:nomeCurto(p),
+      etiqueta:(ex && ex.para ? "→ Foi para "+quando(ex.para) : "→ Remarcada"), paciente:p, origem:"fixo"};
+    /* "não haverá sessão nesta data" não deixa a hora em branco: ela volta a ser o
+       horário de atendimento que já era, em vez de virar um buraco no meio do bloco */
+    if(estado!=="cancelada")
+      return {classe:"sessao", nome:nomeCurto(p), etiqueta:"", paciente:p, origem:"fixo"};
+  }
+  /* as duas linhas da célula dizem o estado inteiro: "Atendimento" em cima, divulgado ou não embaixo */
+  var bloco = dados.blocos[dia+"-"+hora];
+  if(bloco==="divulgado") return {classe:"divulgado", nome:"Atendimento", etiqueta:"Divulgado", paciente:null};
+  /* o não divulgado ocupa quase toda a grade: repetir "Atendimento / Não divulgado" em
+     cada hora virava ruído e abafava as sessões. Fica a hachura, uma palavra só, e a
+     frase inteira no aria-label e no title, para quem lê por leitor de tela ou passa o mouse. */
+  if(bloco==="reservado") return {classe:"reservado", nome:"Atendimento", etiqueta:"", aria:"Atendimento não divulgado", paciente:null};
+  if(bloco) return {classe:"pessoal "+bloco, nome:"", etiqueta:TIPOS_PESSOAIS[bloco]||bloco, paciente:null};
+  return {classe:"", nome:"", etiqueta:"", paciente:null};
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+/* "sex 14h": para a célula dizer de onde a sessão veio ou para onde ela foi */
+function quando(q){
+  if(!q || !q.data) return "";
+  var d = new Date(q.data+"T00:00:00");
+  return DIAS_CURTO[d.getDay()].toLowerCase()+" "+String(q.hora).padStart(2,"0")+"h";
+}
+/* na grade cabe o nome como ele aparece na planilha: um nome, ou dois quando precisa distinguir */
+function nomeCurto(p){
+  var partes = (p.nome||"").trim().split(/\s+/);
+  return partes.length<=2 ? partes.join(" ") : partes[0]+" "+partes[1];
+}
+
+/* ---------------- menu da célula ---------------- */
+function fecharMenu(){ if(menuAberto){ menuAberto.remove(); menuAberto=null; } }
+document.addEventListener("click", function(e){
+  var cls = e.target && e.target.classList;
+  if(menuAberto && !menuAberto.contains(e.target) && !(cls && cls.contains("cell"))) fecharMenu();
+});
+document.addEventListener("keydown", function(e){ if(e.key==="Escape") fecharMenu(); });
+
+function abrirMenu(e){
+  e.stopPropagation();
+  fecharMenu();
+  var cel = e.currentTarget;
+  var dia = Number(cel.dataset.dia), hora = Number(cel.dataset.hora);
+  var data = new Date(cel.dataset.data+"T00:00:00");
+  var info = estadoCelula(dia, hora, data);
+
+  var m = document.createElement("div");
+  m.className = "menu";
+  var cab = '<div class="head"><b>'+DIAS[dia]+', '+String(hora).padStart(2,"0")+'h</b><span>'+data.toLocaleDateString("pt-BR")+'</span></div>';
+  var corpo = "";
+
+  var ex = excecao(data, hora);
+  var fixoDaHora = pacienteEm(dia, hora, data);
+  /* a hora aceita encaixe quando ninguém vai ser atendido nela: ou está vazia,
+     ou o paciente fixo saiu (falta, remarcada, não haverá) e ninguém entrou ainda */
+  var aceitaEncaixe = !info.paciente || (info.origem==="fixo" && saiuDaHora(ex));
+
+  if(info.paciente){
+    if(info.origem==="extra"){
+      /* aqui o que está marcado é a sessão que veio de outro horário */
+      corpo += botao("tirar-entrada", (ex && ex.entra ? "Tirar esta sessão daqui (volta a marca de "+nomeCurto(fixoDaHora)+")" : "Tirar esta sessão daqui"), "var(--faint)");
+    } else {
+      corpo += botao("falta","Marcar falta","var(--t-falta-bar)");
+      corpo += botao("remarcada","Marcar como remarcada","var(--t-remarcada-bar)");
+      corpo += botao("cancelada","Não haverá sessão nesta data","var(--border-strong)");
+      if(ex) corpo += botao("limpar-excecao","Voltar ao normal","var(--accent)");
+    }
+    corpo += "<hr>";
+    corpo += botao("editar","Abrir ficha de "+nomeCurto(info.paciente),"var(--accent)");
+    if(info.paciente.meet) corpo += botao("meet","Abrir sala do Meet","var(--ok)");
+  } else {
+    var blocoAtual = dados.blocos[dia+"-"+hora];
+    if(blocoAtual!=="divulgado") corpo += botao("divulgado","Atendimento divulgado","var(--t-divulgado-bar)");
+    if(blocoAtual!=="reservado") corpo += botao("reservado","Atendimento não divulgado","var(--t-reservado-bar)");
+    if(blocoAtual) corpo += botao("limpar-bloco","Deixar livre","var(--faint)");
+  }
+  if(aceitaEncaixe){
+    corpo += "<hr>";
+    corpo += '<div style="padding:4px 8px 8px"><label style="font-size:12px;color:var(--muted)">Encaixe nesta data</label><select id="sel-extra"><option value="">escolher paciente…</option>'+
+      dados.pacientes.map(function(p){ return '<option value="'+p.id+'">'+esc(p.nome)+'</option>'; }).join("")+'</select></div>';
+  }
+
+  m.innerHTML = cab + corpo;
+  document.body.appendChild(m);
+  var r = cel.getBoundingClientRect();
+  var topo = window.scrollY + r.bottom + 4;
+  var esq = Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 220);
+  m.style.top = topo+"px"; m.style.left = Math.max(8,esq)+"px";
+  menuAberto = m;
+
+  var sel = m.querySelector("#sel-extra");
+  if(sel) sel.addEventListener("change", function(){
+    if(!sel.value) return;
+    porEntrada(chaveData(data)+"|"+hora, {pacienteId:sel.value});
+    salvar(); fecharMenu(); renderTudo();
+  });
+
+  m.querySelectorAll("button[data-acao]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var a = b.dataset.acao;
+      var kData = chaveData(data)+"|"+hora, kBloco = dia+"-"+hora;
+      if(a==="falta"||a==="remarcada"||a==="cancelada") marcarSaida(kData, a);
+      else if(a==="limpar-excecao") delete dados.excecoes[kData];
+      else if(a==="tirar-entrada") tirarEntrada(kData);
+      else if(a==="limpar-bloco") delete dados.blocos[kBloco];
+      else if(a==="divulgado"||a==="reservado"||TIPOS_PESSOAIS[a]) dados.blocos[kBloco] = a;
+      else if(a==="editar"){ abrirFicha(info.paciente); return; }
+      else if(a==="meet"){ window.open(info.paciente.meet,"_blank","noopener"); fecharMenu(); return; }
+      salvar(); fecharMenu(); renderTudo();
+    });
+  });
+}
+function botao(acao, texto, cor){
+  return '<button data-acao="'+acao+'"><i style="background:'+cor+'"></i>'+texto+'</button>';
+}
+
+/* ---------------- arrastar para remarcar ---------------- */
+function aoArrastar(e){
+  var c = e.currentTarget;
+  fecharMenu();
+  var carga = {
+    pacienteId: c.dataset.pacienteId,
+    origem: c.dataset.origem,
+    data: c.dataset.data,
+    hora: Number(c.dataset.hora)
+  };
+  e.dataTransfer.setData("text/plain", JSON.stringify(carga));
+  e.dataTransfer.effectAllowed = "move";
+  c.classList.add("arrastando");
+}
+function aoSobrevoar(e){
+  var c = e.currentTarget;
+  if(c.classList.contains("arrastando")) return;
+  /* só uma sessão que vai acontecer barra o horário. Falta, remarcada e "não haverá"
+     deixam a hora vaga, e é justamente para essas que ele quer arrastar alguém. */
+  var livre = !c.classList.contains("sessao");
+  if(livre){
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    c.classList.add("alvo");
+  } else {
+    c.classList.add("proibido");
+  }
+}
+function aoSoltar(e){
+  e.preventDefault();
+  var c = e.currentTarget;
+  c.classList.remove("alvo","proibido");
+  var carga;
+  try{ carga = JSON.parse(e.dataTransfer.getData("text/plain")); }catch(err){ return; }
+  if(!carga || !carga.pacienteId) return;
+  var destino = {data:c.dataset.data, hora:Number(c.dataset.hora), dia:Number(c.dataset.dia)};
+  if(carga.data===destino.data && carga.hora===destino.hora) return;
+  escolherRemarcacao(carga, destino, c);
+}
+function escolherRemarcacao(carga, destino, celula){
+  var p = dados.pacientes.filter(function(x){ return x.id===carga.pacienteId; })[0];
+  if(!p) return;
+  fecharMenu();
+  var dDest = new Date(destino.data+"T00:00:00");
+  /* o destino pode ser o horário fixo de outra pessoa que não vem nesta data: cabe a sessão
+     desta data, mas não cabe mudar o horário fixo para lá, senão dois pacientes ficariam
+     no mesmo horário toda semana */
+  var dono = pacienteEm(destino.dia, destino.hora, dDest);
+  var m = document.createElement("div");
+  m.className = "menu";
+  m.innerHTML = '<div class="head"><b>'+nomeCurto(p)+' → '+DIAS_CURTO[destino.dia]+', '+String(destino.hora).padStart(2,"0")+'h</b>' +
+    '<span>'+dDest.toLocaleDateString("pt-BR")+'</span></div>' +
+    botao("so-hoje","Remarcar só nesta data","var(--info)") +
+    (carga.origem==="fixo" && !dono ? botao("fixo","Mudar o horário fixo dele","var(--accent)") : "") +
+    (carga.origem==="fixo" && dono ? '<div style="padding:4px 10px 8px; font-size:12px; color:var(--muted)">Só nesta data: esse horário é o fixo de '+esc(nomeCurto(dono))+'.</div>' : "") +
+    '<hr>' + botao("cancelar","Deixar como estava","var(--faint)");
+  document.body.appendChild(m);
+  var r = celula.getBoundingClientRect();
+  m.style.top = (window.scrollY + r.bottom + 4)+"px";
+  m.style.left = Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 230))+"px";
+  menuAberto = m;
+
+  m.querySelectorAll("button[data-acao]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var a = b.dataset.acao;
+      var kOrig = carga.data+"|"+carga.hora, kDest = destino.data+"|"+destino.hora;
+      if(a==="so-hoje"){
+        if(carga.origem==="extra") tirarEntrada(kOrig);
+        else marcarSaida(kOrig, "remarcada", {data:destino.data, hora:destino.hora});
+        porEntrada(kDest, {pacienteId:p.id, remarcada:true, de:{data:carga.data, hora:carga.hora}});
+      } else if(a==="fixo"){
+        if(carga.origem==="extra") tirarEntrada(kOrig);
+        p.dia = destino.dia; p.hora = destino.hora;
+      }
+      salvar(); fecharMenu(); renderTudo();
+    });
+  });
+}
+
+/* ---------------- render: mês ---------------- */
+function renderMes(){
+  var cab = document.getElementById("mes-cab");
+  cab.innerHTML = DIAS_CURTO.map(function(d,i){
+    return '<div class="mh'+((i===0||i===6) ? " fds" : "")+'">'+d+'</div>';
+  }).join("");
+
+  var alvo = document.getElementById("mes");
+  alvo.innerHTML = "";
+  var primeiro = new Date(mesRef.getFullYear(), mesRef.getMonth(), 1);
+  var inicio = somaDias(primeiro, -primeiro.getDay());
+  var hoje = new Date();
+  document.getElementById("m-titulo").textContent =
+    primeiro.toLocaleDateString("pt-BR",{month:"long", year:"numeric"});
+
+  var totalSessoes=0, contagemPorPaciente={};
+  for(var i=0;i<42;i++){
+    var d = somaDias(inicio,i);
+    var noMes = d.getMonth()===mesRef.getMonth();
+    var ss = sessoesDoDia(d).filter(function(s){ return s.estado!=="remarcada"; });
+    if(noMes){
+      totalSessoes += ss.length;
+      ss.forEach(function(s){
+        if(s.estado==="falta") return;
+        contagemPorPaciente[s.paciente.id] = (contagemPorPaciente[s.paciente.id]||0)+1;
+      });
+    }
+    var cel = document.createElement("div");
+    var fimDeSemana = (d.getDay()===0 || d.getDay()===6);
+    cel.className = "day" + (fimDeSemana ? " fds" : "") + (noMes ? "" : " fora") + (mesmoDia(d,hoje) ? " hoje" : "");
+    cel.innerHTML = '<div class="num">'+d.getDate()+'</div>' +
+      '<span class="pill'+(ss.length?"":" vazio")+'">'+(ss.length ? '<b>'+ss.length+'</b>'+(ss.length>1?"sessões":"sessão") : "livre")+'</span>' +
+      (ss.length ? '<div class="linha"><span>'+ss.map(function(s){ return String(s.hora)+"h"; }).join(" · ")+'</span></div>' : "");
+    cel.addEventListener("click", function(dd){ return function(){ semana = isoSegunda(dd); mostrarView("semana"); renderTudo(); }; }(d));
+    alvo.appendChild(cel);
+  }
+
+  var receita = 0, ativos = 0;
+  dados.pacientes.forEach(function(p){
+    var n = contagemPorPaciente[p.id]||0;
+    if(n>0){ ativos++; receita += receitaMensal(p, n); }
+  });
+  document.getElementById("m-sessoes").textContent = totalSessoes;
+  document.getElementById("m-receita").textContent = moeda(receita);
+  document.getElementById("m-pacientes").textContent = ativos;
+}
+
+/* ---------------- render: meta ---------------- */
+/* a mesma conta que a aba Pagamentos usa para o previsto do mês */
+function receitaAtualMensal(){ return previstoDoMes(new Date(mesRef.getFullYear(), mesRef.getMonth(), 1)); }
+function renderMeta(){
+  var c = dados.config;
+  var meta=+c.meta, custos=+c.custos, imposto=+c.imposto/100, falta=+c.falta/100, horas=+c.horas;
+  var bruto = (meta + custos) / Math.max(0.01, 1-imposto);
+  var contratado = bruto / Math.max(0.01, 1-falta);
+  var atual = receitaAtualMensal();
+  var faltam = Math.max(0, contratado - atual);
+  var novosMensais = c.mensal>0 ? Math.ceil(faltam / c.mensal) : 0;
+  var sessoesAvulsas = c.avulsa>0 ? Math.ceil(faltam / c.avulsa) : 0;
+  var sessoesSemana = sessoesAvulsas/4.33;
+
+  document.getElementById("r-faturar").innerHTML = moeda(contratado) + ' <small>de agenda vendida por mês</small>';
+  document.getElementById("r-frase").innerHTML = faltam<=0
+    ? 'Os pacientes de hoje já cobrem a meta. Sobra de <span class="destaque">'+moeda(atual-contratado)+'</span> por mês.'
+    : 'Hoje sua agenda soma <span class="destaque">'+moeda(atual)+'</span>. Faltam <span class="destaque">'+moeda(faltam)+'</span>, o equivalente a <span class="destaque">'+novosMensais+'</span> paciente'+(novosMensais>1?"s":"")+' no ciclo mensal ou <span class="destaque">'+sessoesSemana.toFixed(1).replace(".",",")+'</span> sessões avulsas por semana.';
+
+  document.getElementById("r-linhas").innerHTML =
+    linha("Você quer receber", moeda(meta)) +
+    linha("Custos fixos", moeda(custos)) +
+    linha("Imposto sobre o faturamento", (c.imposto||0)+"%") +
+    linha("Perda com faltas e cancelamentos", (c.falta||0)+"%") +
+    linha("Precisa faturar", moeda(bruto)) +
+    linha("Precisa ter vendido em agenda", moeda(contratado)) +
+    linha("Agenda de hoje", moeda(atual));
+
+  var cabem = horasDivulgadasSemana();
+  var aviso = document.getElementById("r-aviso");
+  if(faltam<=0){
+    aviso.textContent = "Meta coberta pelos pacientes atuais. Os horários divulgados viram folga ou lista de espera.";
+  } else if(novosMensais*1 <= cabem){
+    aviso.textContent = "Cabe na sua semana: hoje há " + cabem + " horário(s) divulgado(s) sem paciente e a meta precisa de cerca de " + Math.ceil(novosMensais) + ".";
+  } else {
+    aviso.textContent = "Não cabe no que está divulgado: a meta pede cerca de " + Math.ceil(novosMensais) + " horários e só há " + cabem + " divulgado(s) sem paciente. Ou divulga mais horário, ou revisa o valor.";
+  }
+
+  var tb = document.querySelector("#r-cenarios tbody");
+  tb.innerHTML = "";
+  for(var n=0;n<=6;n++){
+    var fat = (atual + n*c.mensal) * (1-falta);
+    var liquido = fat*(1-imposto) - custos;
+    var hs = horasUsadas() + n*1;
+    var tr = document.createElement("tr");
+    if(liquido>=meta){ tr.className = "meta-ok"; }
+    tr.innerHTML = "<td>"+n+"</td><td>"+moeda(fat)+"</td><td>"+moeda(liquido)+"</td><td>"+hs.toFixed(0)+"</td>";
+    tb.appendChild(tr);
+    if(liquido>=meta) break;
+  }
+}
+function linha(a,b){ return '<div><span>'+a+'</span><span>'+b+'</span></div>'; }
+function horasUsadas(){
+  var n=0;
+  dados.pacientes.forEach(function(p){ n += p.freq==="quinzenal" ? 0.5 : 1; });
+  return n;
+}
+/* conta o que está divulgado e ainda sem paciente: "livre" ficaria ambíguo agora que
+   o horário comercial inteiro aparece como atendimento */
+function horasDivulgadasSemana(){
+  var n=0, base = isoSegunda(new Date());
+  for(var j=0;j<7;j++){
+    var d = somaDias(base,j);
+    for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++){
+      var info = estadoCelula(d.getDay(), h, d);
+      if(info.classe==="divulgado") n++;
+    }
+  }
+  return n;
+}
+
+/* ---------------- render: pacientes ---------------- */
+/* Agrupado por dia porque o que ele precisa enxergar aqui é quem cai em cada dia da semana.
+   A ordem começa na segunda, igual à grade, e o domingo fecha a lista. */
+/* ---------------- carteira: filtros da aba Pacientes ---------------- */
+var filtroPacientes = "agenda";
+
+/* a formulação de caso vem da planilha e é só leitura aqui: a planilha continua dona */
+function formulacaoDe(codigo){ return (dados.formulacoes || {})[codigo] || null; }
+function classeFormulacao(f){
+  if(!f || !f.situacao) return "sem";
+  var s = semAcento(f.situacao);
+  if(s.indexOf("atualizada") === 0) return "ok";
+  if(s.indexOf("pendente") === 0) return "atencao";
+  return "atraso";
+}
+function selo(f){
+  if(!f || !f.situacao) return "";
+  return '<span class="selo '+classeFormulacao(f)+'">Formulação: '+esc(f.situacao)+'</span>';
+}
+function arquivadosPorStatus(pedaco){
+  return (dados.arquivados || []).filter(function(a){ return semAcento(a.status).indexOf(pedaco) === 0; });
+}
+/* remarcações, faltas e encaixes que o site marcou, do mais recente para o mais antigo */
+function movimentosDaSemana(){
+  var lista = [];
+  Object.keys(dados.excecoes || {}).forEach(function(k){
+    var partes = k.split("|");
+    if(partes.length !== 2) return;
+    var data = partes[0], hora = Number(partes[1]);
+    var ex = dados.excecoes[k];
+    var d = deISO(data);
+    if(!d || isNaN(d.getTime())) return;
+    var fixo = pacienteEm(d.getDay(), hora, d);
+    if(ex.tipo === "falta" || ex.tipo === "remarcada" || ex.tipo === "cancelada"){
+      lista.push({data:data, hora:hora, tipo:ex.tipo, paciente:fixo,
+        detalhe: ex.para ? "foi para "+quando(ex.para) : ""});
+    }
+    var entra = entradaDa(ex);
+    if(entra){
+      var pe = acharPaciente(entra.pacienteId);
+      if(pe) lista.push({data:data, hora:hora, tipo:"entrou", paciente:pe,
+        detalhe: entra.de ? "veio de "+quando(entra.de) : "encaixe nesta data"});
+    }
+  });
+  return lista.sort(function(a,b){ return b.data.localeCompare(a.data) || b.hora-a.hora; });
+}
+
+function renderPacientes(){
+  var naAgenda = dados.pacientes.length;
+  var emTriagem = dados.pacientes.filter(function(p){ return semAcento(p.status||"").indexOf("triagem") === 0; }).length;
+  var altas = arquivadosPorStatus("alta").length;
+  var inativos = arquivadosPorStatus("inativo").length;
+  var suspensos = arquivadosPorStatus("suspenso").length;
+  var movimentos = movimentosDaSemana();
+
+  var abas = [{k:"agenda", r:"Na agenda", n:naAgenda}];
+  if(emTriagem) abas.push({k:"triagem", r:"Em triagem", n:emTriagem});
+  if(altas) abas.push({k:"alta", r:"Alta clínica", n:altas});
+  if(inativos) abas.push({k:"inativo", r:"Inativos", n:inativos});
+  if(suspensos) abas.push({k:"suspenso", r:"Suspensos", n:suspensos});
+  abas.push({k:"remarcados", r:"Remarcados e faltas", n:movimentos.length});
+  if(!abas.filter(function(a){ return a.k === filtroPacientes; }).length) filtroPacientes = "agenda";
+
+  var barra = document.getElementById("pfiltros");
+  barra.innerHTML = abas.map(function(a){
+    return '<button class="filtro'+(a.k===filtroPacientes ? " on" : "")+'" data-f="'+a.k+'" role="tab" aria-selected="'+
+      (a.k===filtroPacientes)+'">'+esc(a.r)+'<span class="q">'+a.n+'</span></button>';
+  }).join("");
+  barra.querySelectorAll("button[data-f]").forEach(function(b){
+    b.addEventListener("click", function(){ filtroPacientes = b.dataset.f; renderPacientes(); });
+  });
+
+  if(filtroPacientes === "remarcados") return desenharMovimentos(movimentos);
+  if(filtroPacientes !== "agenda" && filtroPacientes !== "triagem") return desenharCarteira(filtroPacientes);
+  desenharAgendaPacientes(filtroPacientes === "triagem");
+}
+
+/* quem não está na agenda: veio da planilha e não tem ficha aqui, só o histórico */
+function desenharCarteira(pedaco){
+  var alvo = document.getElementById("plist");
+  var lista = arquivadosPorStatus(pedaco);
+  if(!lista.length){
+    alvo.innerHTML = '<p class="pvazio">Ninguém aqui. Use "Ler a planilha" no alto da página para trazer a carteira inteira.</p>';
+    return;
+  }
+  var h = '<div class="pgrid larga">';
+  lista.forEach(function(a){
+    var f = formulacaoDe(a.codigo);
+    var periodo = (a.inicio ? dataLonga(deISO(a.inicio)) : "?") + " → " + (a.fim ? dataLonga(deISO(a.fim)) : "sem data de fim");
+    h += '<div class="pcard estatico">' +
+      '<span class="ini">'+esc((a.nome||"?").charAt(0).toUpperCase())+'</span>' +
+      '<span class="corpo">' +
+        '<span class="n">'+esc(a.nome)+'</span>' +
+        '<span class="sub">'+esc(periodo)+' · '+a.sessoes+(a.sessoes===1?" sessão":" sessões")+
+          (a.ciclos>1 ? " · "+a.ciclos+" ciclos" : "")+'</span>' +
+        '<span class="cod">'+esc(a.codigo)+' · '+esc(a.status.replace(/\.$/,""))+'</span>' +
+        (f ? selo(f) : "") +
+      '</span></div>';
+  });
+  h += "</div>";
+  alvo.innerHTML = h;
+}
+
+function desenharMovimentos(lista){
+  var alvo = document.getElementById("plist");
+  if(!lista.length){
+    alvo.innerHTML = '<p class="pvazio">Nenhuma falta, remarcação ou encaixe marcado até agora.</p>';
+    return;
+  }
+  var rotulo = {falta:"Faltou", remarcada:"Remarcada", cancelada:"Não haverá sessão", entrou:"Entrou nesta data"};
+  var h = '<div class="linhas movs">';
+  lista.forEach(function(m){
+    var d = deISO(m.data);
+    h += '<div><span><b>'+esc(m.paciente ? nomeCurto(m.paciente) : "horário sem paciente fixo")+'</b> · '+
+      esc(rotulo[m.tipo]||m.tipo)+(m.detalhe ? " ("+esc(m.detalhe)+")" : "")+'</span>' +
+      '<span>'+esc(DIAS_CURTO[d.getDay()])+", "+dataCurta(d)+" · "+String(m.hora).padStart(2,"0")+'h</span></div>';
+  });
+  h += "</div>";
+  alvo.innerHTML = h;
+}
+
+function desenharAgendaPacientes(soTriagem){
+  var alvo = document.getElementById("plist");
+  alvo.innerHTML = "";
+  var ordemDias = [1,2,3,4,5,6,0];
+  var hojeDia = new Date().getDay();
+
+  ordemDias.forEach(function(dia){
+    var doDia = dados.pacientes.filter(function(p){
+      if(p.dia!==dia) return false;
+      return soTriagem ? semAcento(p.status||"").indexOf("triagem") === 0 : true;
+    }).sort(function(a,b){ return a.hora-b.hora; });
+    /* dia sem ninguém não vira grupo: sábado e domingo ficariam vazios toda semana */
+    if(!doDia.length) return;
+
+    /* quinzenal entra pela metade: numa semana ele vem, na outra não */
+    var soma = 0;
+    doDia.forEach(function(p){
+      soma += (p.freq==="quinzenal") ? valorSessao(p)/2 : valorSessao(p);
+    });
+
+    var grupo = document.createElement("section");
+    grupo.className = "pdia" + (dia===hojeDia ? " hoje" : "");
+
+    var cab = document.createElement("div");
+    cab.className = "pdia-cab";
+    cab.innerHTML =
+      '<span class="pdia-nome">'+DIAS[dia]+'</span>' +
+      /* etiqueta escrita além da cor, para "hoje" não depender só do fundo */
+      (dia===hojeDia ? '<span class="pdia-hoje">hoje</span>' : '') +
+      '<span class="pdia-meta">'+doDia.length+(doDia.length>1 ? " pacientes" : " paciente")+
+        ' · '+moeda(soma)+' por semana</span>';
+    grupo.appendChild(cab);
+
+    var grade = document.createElement("div");
+    grade.className = "pgrid";
+    doDia.forEach(function(p){
+      var c = document.createElement("button");
+      c.className = "pcard";
+      c.innerHTML =
+        '<span class="ini">'+esc(inicial1(p))+'</span>' +
+        '<span class="corpo">' +
+          '<span class="n">'+esc(p.nome)+'</span>' +
+          /* o dia já está no cabeçalho do grupo; no cartão sobra a hora e o valor */
+          '<span class="sub">'+String(p.hora).padStart(2,"0")+'h · '+moeda(valorSessao(p))+' por sessão</span>' +
+          '<span class="cod">'+esc(p.codigo)+(p.freq==="quinzenal" ? " · quinzenal" : "")+'</span>' +
+          selo(formulacaoDe(p.codigo)) +
+        '</span>';
+      c.addEventListener("click", function(){ abrirFicha(p); });
+      grade.appendChild(c);
+    });
+    grupo.appendChild(grade);
+
+    grupo.setAttribute("aria-label", DIAS[dia]+": "+doDia.length+" paciente(s)");
+    alvo.appendChild(grupo);
+  });
+
+  /* agenda vazia: sem isso a aba mostraria só os dois botões, sem explicar o vazio */
+  if(!alvo.children.length){
+    alvo.innerHTML = '<p class="pvazio">Nenhum paciente na agenda. Use o botão abaixo para adicionar o primeiro.</p>';
+  }
+}
+function inicial1(p){ var n=(p.nome||"?").trim(); return n ? n.charAt(0).toUpperCase() : "?"; }
+
+/* ---------------- ficha do paciente ---------------- */
+function abrirFicha(p){
+  fecharMenu();
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  fundo.innerHTML =
+    '<div class="modal">' +
+      '<div class="fcab"><span class="ini grande" id="fi-ini"></span>' +
+        '<div><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span></div></div>' +
+      '<div class="fipag" id="fi-pag"></div>' +
+      '<div class="fipag" id="fi-form"></div>' +
+      '<div class="grid2">' +
+        '<div class="field"><label for="fi-nome">Nome na agenda</label>' +
+          '<input id="fi-nome" data-campo="nome" value="'+esc(p.nome)+'"><span class="hint">É o que aparece na grade.</span></div>' +
+        '<div class="field"><label for="fi-codigo">Prontuário</label>' +
+          '<input id="fi-codigo" data-campo="codigo" value="'+esc(p.codigo)+'"><span class="hint">Liga com a planilha.</span></div>' +
+      '</div>' +
+      '<div class="grid2">' +
+        '<div class="field"><label for="fi-freq">Frequência</label><select id="fi-freq" data-campo="freq">' +
+          opc("semanal","Toda semana",p.freq)+opc("quinzenal","A cada duas semanas",p.freq)+'</select></div>' +
+        '<div class="field"><label for="fi-cobranca">Cobrança</label><select id="fi-cobranca" data-campo="cobranca">' +
+          opc("mensal","Ciclo mensal",p.cobranca)+opc("quinzenal","Quinzenal",p.cobranca)+opc("avulsa","Por sessão",p.cobranca)+'</select></div>' +
+      '</div>' +
+      '<div class="grid2">' +
+        '<div class="field"><label for="fi-valor">Valor (R$)</label>' +
+          '<input type="number" id="fi-valor" data-campo="valor" value="'+p.valor+'" min="0" step="10"><span class="hint" id="fi-sessao"></span></div>' +
+        '<div class="field"><label for="fi-dia">Horário fixo</label>' +
+          '<span style="display:flex; gap:8px">' +
+            '<select id="fi-dia" data-campo="dia">'+DIAS.map(function(d,i){ return opc(i,d,p.dia); }).join("")+'</select>' +
+            '<select id="fi-hora" data-campo="hora" aria-label="Hora">'+horasOpcoes(p.hora)+'</select>' +
+          '</span><span class="hint">Mudar aqui vale para as próximas semanas.</span></div>' +
+      '</div>' +
+      '<div class="field"><label for="fi-meet">Link do Meet</label>' +
+        '<input id="fi-meet" data-campo="meet" value="'+esc(p.meet||"")+'" placeholder="cole aqui a sala fixa dele"></div>' +
+      '<div class="acoes"><button class="btn ghost" id="fi-remover">Remover da agenda</button>' +
+        '<button class="btn primary" id="fi-fechar">Pronto</button></div>' +
+    '</div>';
+  document.body.appendChild(fundo);
+
+  function resumo(){
+    document.getElementById("fi-ini").textContent = inicial1(p);
+    document.getElementById("fi-titulo").textContent = p.nome;
+    document.getElementById("fi-sub").textContent = p.codigo+" · "+DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h";
+    document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
+    pintarPagamentos();
+    pintarFormulacao();
+  }
+  /* espelho da aba Formulação de Caso: só leitura, porque a planilha é dona do conteúdo */
+  function pintarFormulacao(){
+    var el = document.getElementById("fi-form");
+    var f = formulacaoDe(p.codigo);
+    if(!f){
+      el.innerHTML = '<div class="topo"><h3>Formulação de caso</h3>' +
+        '<span class="sit sem">sem registro na planilha</span></div>' +
+        '<div class="duas"><span>Use "Ler a planilha" para trazer a aba Formulação de Caso.</span></div>';
+      return;
+    }
+    var dias = f.atualizacao ? Math.round((hoje0() - deISO(f.atualizacao))/86400000) : null;
+    el.innerHTML = '<div class="topo"><h3>Formulação de caso</h3>' +
+      '<span class="sit '+classeFormulacao(f)+'">'+esc(f.situacao || "sem prazo")+'</span></div>' +
+      '<div class="duas">' +
+        '<span>Última atualização: <b>'+(f.atualizacao ? dataLonga(deISO(f.atualizacao)) + (dias!==null ? " · há "+dias+(dias===1?" dia":" dias") : "") : "nunca")+'</b></span>' +
+        '<span>CQFC: <b>'+(f.nota ? esc(f.nota) + (f.qualidade ? " · "+esc(f.qualidade) : "") : "sem nota")+'</b></span>' +
+        (f.dataNota ? '<span>Data do CQFC: <b>'+dataLonga(deISO(f.dataNota))+'</b></span>' : "") +
+      '</div>' +
+      (f.obs ? '<p class="obsform">'+esc(f.obs)+'</p>' : "") +
+      '<p class="obsform faint">A planilha continua dona deste conteúdo; aqui é só espelho.</p>';
+  }
+  /* o histórico do dinheiro dele fica na ficha, junto com o botão de registrar */
+  function pintarPagamentos(){
+    var s = situacaoPagamento(p);
+    var lista = pagamentosDe(p.id).slice(0,5);
+    var h = '<div class="topo"><h3>Pagamentos</h3><span class="sit '+s.classe+'">'+esc(s.texto)+'</span>' +
+      '<button class="btn sm" id="fi-pagar" style="margin-left:auto">Recebi hoje</button></div>' +
+      '<div class="duas">' +
+        '<span>Último: <b>'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+" · "+moeda(s.ultimo.valor) : "nenhum")+'</b></span>' +
+        '<span>Próximo: <b>'+(s.venc ? dataLonga(s.venc) : "—")+'</b></span>' +
+        '<span>'+rotuloCobranca(p)+': <b>'+moeda(p.valor)+'</b></span>' +
+      '</div>';
+    if(lista.length){
+      h += '<div style="margin-top:8px">';
+      lista.forEach(function(g){
+        h += '<div class="recibo"><span>'+dataLonga(deISO(g.data))+'</span>' +
+             '<span class="meio">'+esc(MEIOS[g.meio]||g.meio||"")+'</span>' +
+             (g.obs ? '<span class="hint">'+esc(g.obs)+'</span>' : "") +
+             '<span class="v">'+moeda(g.valor)+'</span></div>';
+      });
+      h += '</div>';
+    }
+    var caixa = document.getElementById("fi-pag");
+    caixa.innerHTML = h;
+    document.getElementById("fi-pagar").addEventListener("click", function(){
+      registrarPagamento(p.id, chaveData(hoje0()), p.valor, "pix", "");
+      pintarPagamentos();
+    });
+  }
+  resumo();
+
+  fundo.querySelectorAll("[data-campo]").forEach(function(el){
+    el.addEventListener("input", function(){
+      var campo = el.dataset.campo;
+      p[campo] = (campo==="valor"||campo==="dia"||campo==="hora") ? Number(el.value) : el.value;
+      salvar(); renderTudo(); resumo();
+    });
+  });
+
+  function fechar(){ fundo.remove(); document.removeEventListener("keydown", aoTeclar); }
+  function aoTeclar(e){ if(e.key==="Escape") fechar(); }
+  document.addEventListener("keydown", aoTeclar);
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
+  document.getElementById("fi-fechar").addEventListener("click", fechar);
+  document.getElementById("fi-remover").addEventListener("click", function(){
+    if(!confirm("Tirar "+p.nome+" da agenda? A ficha na planilha continua lá.")) return;
+    dados.pacientes = dados.pacientes.filter(function(x){ return x.id!==p.id; });
+    salvar(); renderTudo(); fechar();
+  });
+}
+function opc(v,t,atual){ return '<option value="'+v+'"'+(String(atual)===String(v)?" selected":"")+'>'+t+'</option>'; }
+function horasOpcoes(atual){
+  var s="";
+  for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++) s += opc(h, String(h).padStart(2,"0")+"h", atual);
+  return s;
+}
+
+/* ---------------- mensagem ---------------- */
+function textoDivulgacao(){
+  var c = dados.config;
+  var linhas = [];
+  for(var j=0;j<7;j++){
+    var d = somaDias(semana,j);
+    var horas = [];
+    for(var h=c.horaInicio; h<=c.horaFim; h++){
+      var info = estadoCelula(d.getDay(), h, d);
+      if(info.classe==="divulgado") horas.push(String(h).padStart(2,"0")+":00h");
+    }
+    if(horas.length) linhas.push("* *"+DIAS[d.getDay()]+":* "+horas.join(" | ")+".");
+  }
+  var t = "*COMO FUNCIONA OS ATENDIMENTOS?*\n\n"+
+    "* *Modalidade:* Online, via Google Meet. O link será enviado antecipadamente.\n"+
+    "* *Duração:* 50min-60min.\n"+
+    "* *Pagamento:* Realizado antecipadamente.\n\n"+
+    "*VALOR DOS ATENDIMENTOS* 💰\n\n"+
+    "* *Sessão avulsa:* R$"+Number(c.avulsa).toFixed(2).replace(".",",")+".\n"+
+    "* *Ciclo mensal:* R$"+Number(c.mensal).toFixed(2).replace(".",",")+" - inclui 4 sessões.\n\n"+
+    "*HORÁRIOS DISPONÍVEIS* ⏰\n\n"+
+    (linhas.length ? linhas.join("\n") : "* Nenhum horário divulgado nesta semana.")+"\n\n"+
+    "_Caso você precise de algum horário que não está na tabela, me avise para que possamos alinhar um horário que fique bom para os dois!_ 😉";
+  return t;
+}
+function abrirMensagem(){
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal"><h2>Mensagem de divulgação</h2>'+
+    '<p class="sub">Monta a partir dos horários divulgados que continuam livres na semana aberta.</p>'+
+    '<textarea id="msg-txt" spellcheck="false"></textarea>'+
+    '<div class="acoes"><button class="btn" id="msg-fechar">Fechar</button><button class="btn" id="msg-salvar">Salvar .txt</button><button class="btn primary" id="msg-copiar">Copiar</button></div></div>';
+  document.body.appendChild(fundo);
+  document.getElementById("msg-txt").value = textoDivulgacao();
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fundo.remove(); });
+  document.getElementById("msg-fechar").addEventListener("click", function(){ fundo.remove(); });
+  /* Salva a mensagem num .txt na pasta de downloads, para a IA ler sem ele copiar e colar.
+     Sempre o mesmo nome; o Chrome numera as repetições, então a IA pega a mais recente. */
+  document.getElementById("msg-salvar").addEventListener("click", function(){
+    var ta = document.getElementById("msg-txt");
+    var blob = new Blob(["﻿" + ta.value], {type:"text/plain;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "mensagem-divulgacao.txt";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    var bs = document.getElementById("msg-salvar");
+    bs.textContent = "Salvo";
+    setTimeout(function(){ bs.textContent = "Salvar .txt"; }, 1600);
+  });
+  document.getElementById("msg-copiar").addEventListener("click", function(){
+    var ta = document.getElementById("msg-txt");
+    ta.select();
+    try{ document.execCommand("copy"); }catch(e){}
+    if(navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(function(){});
+    var b = document.getElementById("msg-copiar");
+    b.textContent = "Copiado";
+    setTimeout(function(){ b.textContent = "Copiar"; }, 1600);
+  });
+}
+
+/* ---------------- pagamentos ---------------- */
+/* Um pagamento é um recibo: quem pagou, quando, quanto e como. O próximo vencimento não
+   é digitado, ele nasce da cobrança do paciente, porque o pagamento é adiantado: o ciclo
+   mensal cobre quatro semanas, o quinzenal duas, e quem paga por sessão vence na sessão
+   seguinte. Assim o site sabe quem está devendo sem que ele precise controlar data. */
+var MEIOS = {pix:"Pix", transferencia:"Transferência", dinheiro:"Dinheiro", cartao:"Cartão", outro:"Outro"};
+var mesPag = new Date();
+var atrasoCache = null;
+
+function hoje0(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function deISO(s){ return new Date(s+"T00:00:00"); }
+function dataCurta(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
+function dataLonga(d){ return dataCurta(d)+"/"+d.getFullYear(); }
+function acharPaciente(id){ return dados.pacientes.filter(function(x){ return x.id===id; })[0] || null; }
+function rotuloCobranca(p){
+  if(p.cobranca==="mensal") return "Ciclo mensal";
+  if(p.cobranca==="quinzenal") return "Quinzenal";
+  return "Por sessão";
+}
+
+function pagamentosDe(id){
+  return dados.pagamentos.filter(function(g){ return g.pacienteId===id; })
+    .sort(function(a,b){ return a.data < b.data ? 1 : (a.data > b.data ? -1 : 0); });
+}
+function ultimoPagamento(p){ var l = pagamentosDe(p.id); return l.length ? l[0] : null; }
+
+/* quantos dias um pagamento cobre; zero quer dizer "vence a cada sessão" */
+function diasDoCiclo(p){
+  if(p.cobranca==="mensal") return 28;
+  if(p.cobranca==="quinzenal") return 14;
+  return 0;
+}
+/* a primeira sessão depois de uma data, já respeitando quinzenal, remarcação e encaixe */
+function proximaSessaoApos(p, base){
+  for(var i=1; i<=42; i++){
+    var d = somaDias(base, i);
+    var achou = sessoesDoDia(d).filter(function(s){
+      return s.paciente.id===p.id && (s.estado==="sessao" || s.estado==="falta");
+    });
+    if(achou.length) return d;
+  }
+  return null;
+}
+function proximoVencimento(p){
+  var u = ultimoPagamento(p);
+  if(!u) return proximaSessaoApos(p, somaDias(hoje0(),-1)); /* nunca pagou: vence na próxima sessão */
+  var ciclo = diasDoCiclo(p);
+  if(ciclo) return somaDias(deISO(u.data), ciclo);
+  return proximaSessaoApos(p, deISO(u.data));
+}
+/* peso ordena a tabela: atraso na frente, em dia no fim */
+function situacaoPagamento(p){
+  var u = ultimoPagamento(p);
+  var v = proximoVencimento(p);
+  if(!v) return {chave:"sem", classe:"sem", texto:"Sem sessão marcada", venc:null, dias:null, ultimo:u, peso:4};
+  var dias = Math.round((v - hoje0())/86400000);
+  if(dias < 0) return {chave:"atraso", classe:"atraso", texto:"Atrasado "+(-dias)+(-dias>1?" dias":" dia"), venc:v, dias:dias, ultimo:u, peso:0};
+  if(!u)       return {chave:"sem-registro", classe:"sem", texto:"Sem pagamento registrado", venc:v, dias:dias, ultimo:u, peso:1};
+  if(dias===0) return {chave:"hoje", classe:"atencao", texto:"Vence hoje", venc:v, dias:0, ultimo:u, peso:2};
+  if(dias<=3)  return {chave:"atencao", classe:"atencao", texto:"Vence em "+dias+(dias>1?" dias":" dia"), venc:v, dias:dias, ultimo:u, peso:2};
+  return {chave:"ok", classe:"ok", texto:"Em dia", venc:v, dias:dias, ultimo:u, peso:3};
+}
+/* a grade pergunta isso célula por célula: calcula uma vez por desenho, não vinte */
+function mapaDeAtraso(){
+  if(atrasoCache) return atrasoCache;
+  var m = {};
+  dados.pacientes.forEach(function(p){ if(situacaoPagamento(p).chave==="atraso") m[p.id] = true; });
+  atrasoCache = m;
+  return m;
+}
+
+/* devolve false quando ele desiste: "Recebi hoje" é um clique só, e clicar duas vezes
+   sem querer lançaria o mesmo dinheiro de novo */
+function registrarPagamento(pacienteId, dataISO, valor, meio, obs){
+  var repetido = dados.pagamentos.filter(function(g){
+    return g.pacienteId===pacienteId && g.data===dataISO;
+  })[0];
+  if(repetido){
+    var p = acharPaciente(pacienteId);
+    if(!confirm("Já existe um pagamento de " + (p ? p.nome : "alguém") + " em " +
+                dataLonga(deISO(dataISO)) + ", de " + moeda(repetido.valor) +
+                ". Registrar outro nessa mesma data?")) return false;
+  }
+  dados.pagamentos.push({
+    id: "g"+Date.now()+Math.floor(Math.random()*1000),
+    pacienteId: pacienteId,
+    data: dataISO,
+    valor: Number(valor)||0,
+    meio: meio||"pix",
+    obs: obs||""
+  });
+  salvar(); renderTudo();
+  return true;
+}
+function pagamentosDoMes(ref){
+  var alvo = ref.getFullYear()+"-"+String(ref.getMonth()+1).padStart(2,"0");
+  return dados.pagamentos.filter(function(g){ return String(g.data||"").indexOf(alvo)===0; })
+    .sort(function(a,b){ return a.data < b.data ? 1 : (a.data > b.data ? -1 : 0); });
+}
+/* o que a agenda de um mês deve render, pela regra de cobrança de cada paciente */
+function previstoDoMes(ref){ return numerosDoMes(ref).previsto; }
+
+function avisarPagamento(txt){
+  var el = document.getElementById("pg-feito");
+  el.textContent = txt;
+  setTimeout(function(){ if(el.textContent===txt) el.textContent = ""; }, 4000);
+}
+
+function renderPagamentos(){
+  var ref = new Date(mesPag.getFullYear(), mesPag.getMonth(), 1);
+  document.getElementById("pg-titulo").textContent = ref.toLocaleDateString("pt-BR",{month:"long", year:"numeric"});
+
+  var recebidos = pagamentosDoMes(ref);
+  var somaRecebida = 0;
+  recebidos.forEach(function(g){ somaRecebida += Number(g.valor)||0; });
+  document.getElementById("pg-recebido").textContent = moeda(somaRecebida);
+  document.getElementById("pg-previsto").textContent = moeda(previstoDoMes(ref));
+  document.getElementById("pg-sub").textContent =
+    recebidos.length + (recebidos.length===1 ? " pagamento registrado" : " pagamentos registrados");
+
+  var linhas = dados.pacientes.map(function(p){ return {p:p, s:situacaoPagamento(p)}; });
+  linhas.sort(function(a,b){
+    if(a.s.peso!==b.s.peso) return a.s.peso - b.s.peso;
+    if(a.s.venc && b.s.venc && (a.s.venc - b.s.venc)) return a.s.venc - b.s.venc;
+    return (a.p.dia - b.p.dia) || (a.p.hora - b.p.hora);
+  });
+
+  var emAtraso = 0, valorAtraso = 0, seteDias = 0;
+  linhas.forEach(function(l){
+    if(l.s.chave==="atraso"){ emAtraso++; valorAtraso += Number(l.p.valor)||0; }
+    if(l.s.dias!==null && l.s.dias>=0 && l.s.dias<=7) seteDias += Number(l.p.valor)||0;
+  });
+  document.getElementById("pg-atraso").textContent = emAtraso;
+  document.getElementById("pg-atraso").parentNode.title = emAtraso
+    ? "Somam " + moeda(valorAtraso) + " em ciclos vencidos."
+    : "Ninguém com pagamento vencido.";
+  document.getElementById("pg-semana").textContent = moeda(seteDias);
+
+  var tb = document.querySelector("#pg-tabela tbody");
+  tb.innerHTML = "";
+  linhas.forEach(function(l){
+    var p = l.p, s = l.s;
+    var tr = document.createElement("tr");
+    if(s.chave==="atraso") tr.className = "linha-atraso";
+    tr.innerHTML =
+      '<td><span class="quem"><span class="ini">'+esc(inicial1(p))+'</span>' +
+        '<button class="linknome" data-ficha="'+p.id+'">'+esc(p.nome)+'</button></span></td>' +
+      '<td>'+rotuloCobranca(p)+'<br><span class="hint">'+moeda(p.valor)+' por ciclo</span></td>' +
+      '<td>'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio||"")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
+      '<td>'+(s.venc ? dataLonga(s.venc)+'<br><span class="hint">'+DIAS_CURTO[s.venc.getDay()].toLowerCase()+'</span>' : "—")+'</td>' +
+      '<td><span class="sit '+s.classe+'">'+esc(s.texto)+'</span></td>' +
+      '<td class="num"><button class="btn sm" data-recebi="'+p.id+'">Recebi hoje</button></td>';
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("[data-ficha]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var p = acharPaciente(b.dataset.ficha);
+      if(p) abrirFicha(p);
+    });
+  });
+  tb.querySelectorAll("[data-recebi]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var p = acharPaciente(b.dataset.recebi);
+      if(!p) return;
+      if(!registrarPagamento(p.id, chaveData(hoje0()), p.valor, "pix", "")) return;
+      avisarPagamento(p.nome + " pagou " + moeda(p.valor) + " hoje. Dá para trocar o meio ou apagar na lista do mês.");
+    });
+  });
+
+  /* quem pode pagar: a mesma ordem da agenda, para ele achar pelo dia */
+  var sel = document.getElementById("pg-paciente");
+  var escolhido = sel.value;
+  sel.innerHTML = dados.pacientes.slice()
+    .sort(function(a,b){ return (a.dia-b.dia) || (a.hora-b.hora); })
+    .map(function(p){
+      return '<option value="'+p.id+'">'+esc(p.nome)+' · '+DIAS_CURTO[p.dia]+' '+String(p.hora).padStart(2,"0")+'h</option>';
+    }).join("");
+  if(escolhido) sel.value = escolhido;
+  if(!document.getElementById("pg-data").value) document.getElementById("pg-data").value = chaveData(hoje0());
+  dicaPagamento(false);
+
+  var hist = document.getElementById("pg-historico");
+  hist.innerHTML = "";
+  if(!recebidos.length){
+    hist.innerHTML = '<p class="pvazio">Nenhum pagamento registrado neste mês.</p>';
+    return;
+  }
+  recebidos.forEach(function(g){
+    var p = acharPaciente(g.pacienteId);
+    var div = document.createElement("div");
+    div.className = "recibo";
+    div.innerHTML =
+      '<span class="q">'+esc(p ? p.nome : "Paciente fora da agenda")+'</span>' +
+      '<span>'+dataLonga(deISO(g.data))+'</span>' +
+      '<span class="meio">'+esc(MEIOS[g.meio]||g.meio||"")+'</span>' +
+      (g.obs ? '<span class="hint">'+esc(g.obs)+'</span>' : "") +
+      '<span class="v">'+moeda(g.valor)+'</span>' +
+      '<button class="apagar" data-apagar="'+g.id+'" title="Apagar este registro">apagar</button>';
+    hist.appendChild(div);
+  });
+  hist.querySelectorAll("[data-apagar]").forEach(function(b){
+    b.addEventListener("click", function(){
+      if(!confirm("Apagar este pagamento? Ele sai da conta do mês e o vencimento volta ao que era antes.")) return;
+      dados.pagamentos = dados.pagamentos.filter(function(g){ return g.id!==b.dataset.apagar; });
+      salvar(); renderTudo();
+    });
+  });
+}
+
+/* preenche o valor sugerido e conta a situação de quem está selecionado no formulário */
+function dicaPagamento(trocouPaciente){
+  var sel = document.getElementById("pg-paciente");
+  var campo = document.getElementById("pg-valor");
+  var dica = document.getElementById("pg-dica");
+  var p = acharPaciente(sel.value);
+  if(!p){ dica.textContent = ""; return; }
+  if(trocouPaciente || !campo.value) campo.value = p.valor;
+  var s = situacaoPagamento(p);
+  dica.textContent = rotuloCobranca(p) + " · " + moeda(p.valor) + " por ciclo · " +
+    (s.ultimo ? "último em " + dataLonga(deISO(s.ultimo.data)) : "sem pagamento registrado");
+}
+
+/* ---------------- painel ---------------- */
+/* Espelha o Dashboard da planilha, com as contas refeitas: a sessão é contada no dia em
+   que acontece, e não no mês em que o tratamento termina; a receita projetada usa a regra
+   de cobrança de cada um, em vez do valor cru; e o que falta no mês não se mistura com a
+   dívida acumulada, que tem outra base. O que depende de data de início e de fim, como
+   novos pacientes, encerramentos e altas, fica de fora: isso o site não guarda. */
+var MESES_CURTO = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+var ALTURA_GRAF = 132;
+var cacheMes = {};
+
+function numerosDoMes(ref){
+  var chave = ref.getFullYear()+"-"+ref.getMonth();
+  if(cacheMes[chave]) return cacheMes[chave];
+  var cont = {}, sessoes = 0;
+  for(var i=0;i<31;i++){
+    var d = new Date(ref.getFullYear(), ref.getMonth(), 1+i);
+    if(d.getMonth()!==ref.getMonth()) break;
+    sessoesDoDia(d).forEach(function(s){
+      if(s.estado==="remarcada") return;
+      sessoes++; /* falta continua sendo hora ocupada, igual à aba Mês */
+      if(s.estado!=="falta") cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
+    });
+  }
+  var previsto = 0;
+  dados.pacientes.forEach(function(p){ var n = cont[p.id]||0; if(n>0) previsto += receitaMensal(p, n); });
+  var recebido = 0;
+  pagamentosDoMes(ref).forEach(function(g){ recebido += Number(g.valor)||0; });
+  cacheMes[chave] = {sessoes:sessoes, previsto:previsto, recebido:recebido};
+  return cacheMes[chave];
+}
+/* altura em pixel: assim a barra não depende de o pai ter altura definida */
+function alturaBarra(v, max){ return max > 0 ? Math.round((Number(v)||0)/max*ALTURA_GRAF) : 0; }
+
+/* ---------------- gráfico de linha ----------------
+   Doze meses no eixo de baixo, uma linha por série. É SVG escrito à mão, sem biblioteca,
+   como o resto do site. Cada ponto carrega o valor em <title>, e o mês corrente fica
+   marcado, porque cor sozinha não conta a história em preto e branco. */
+function escalaBonita(max){
+  if(max <= 0) return {topo:1, passo:1};
+  var bruto = max/4;
+  var ordem = Math.pow(10, Math.floor(Math.log(bruto)/Math.LN10));
+  var passo = ordem;
+  [1,2,2.5,5,10].some(function(m){ if(ordem*m >= bruto){ passo = ordem*m; return true; } return false; });
+  return {topo: Math.ceil(max/passo)*passo, passo: passo};
+}
+function graficoDeLinhas(alvo, series, opcoes){
+  opcoes = opcoes || {};
+  var L = 52, R = 10, T = 12, B = 26, W = 760, H = 210;
+  var largura = W - L - R, altura = H - T - B;
+  var max = 0;
+  series.forEach(function(s){ s.valores.forEach(function(v){ if(v !== null && v > max) max = v; }); });
+  var esc = escalaBonita(max);
+  var x = function(i){ return L + (largura * i / 11); };
+  var y = function(v){ return T + altura - (esc.topo ? (v/esc.topo)*altura : 0); };
+  var fmt = opcoes.formato || function(v){ return String(Math.round(v)); };
+
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+escHtml(opcoes.titulo||"gráfico")+'">';
+  /* linhas de apoio e a escala do eixo */
+  for(var v = 0; v <= esc.topo + 0.001; v += esc.passo){
+    var yy = y(v);
+    svg += '<line x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+'" class="gl"/>' +
+           '<text x="'+(L-8)+'" y="'+(yy+4)+'" class="gy">'+escHtml(fmt(v))+'</text>';
+  }
+  /* coluna do mês corrente, para o olho achar o "hoje" sem contar meses */
+  if(opcoes.destaque >= 0){
+    svg += '<line x1="'+x(opcoes.destaque)+'" y1="'+T+'" x2="'+x(opcoes.destaque)+'" y2="'+(T+altura)+'" class="gnow"/>';
+  }
+  for(var m=0;m<12;m++){
+    svg += '<text x="'+x(m)+'" y="'+(H-8)+'" class="gx'+(m===opcoes.destaque ? " agora" : "")+'">'+MESES_CURTO[m]+'</text>';
+  }
+  series.forEach(function(s){
+    var d = "", aberto = false;
+    s.valores.forEach(function(val, i){
+      if(val === null){ aberto = false; return; }
+      d += (aberto ? " L" : " M") + x(i) + " " + y(val);
+      aberto = true;
+    });
+    if(d) svg += '<path d="'+d.trim()+'" class="gs'+(s.tracejada ? " tracejada" : "")+'" style="stroke:'+s.cor+'"/>';
+    s.valores.forEach(function(val, i){
+      if(val === null) return;
+      svg += '<circle cx="'+x(i)+'" cy="'+y(val)+'" r="'+(i===opcoes.destaque ? 5 : 3.2)+'" class="gp" style="fill:'+s.cor+'">' +
+        '<title>'+escHtml(MESES_CURTO[i]+" · "+s.nome+": "+fmt(val))+'</title></circle>';
+    });
+    /* o valor do mês corrente escrito, porque a skill de visualização não deixa
+       a cor sozinha carregar a informação */
+    if(opcoes.destaque >= 0 && s.valores[opcoes.destaque] !== null && s.rotular !== false){
+      var vv = s.valores[opcoes.destaque];
+      svg += '<text x="'+(x(opcoes.destaque) + (opcoes.destaque > 9 ? -8 : 8))+'" y="'+(y(vv)-9)+'" class="grot" style="text-anchor:'+(opcoes.destaque > 9 ? "end" : "start")+'">'+escHtml(fmt(vv))+'</text>';
+    }
+  });
+  svg += '</svg>';
+  alvo.innerHTML = svg;
+}
+function escHtml(s){ return esc(s); }
+
+/* novos, encerramentos e altas por mês, pelas datas de início e fim da planilha */
+function movimentoDoAno(ano){
+  var novos = [], encerrados = [], altas = [];
+  for(var i=0;i<12;i++){ novos.push(0); encerrados.push(0); altas.push(0); }
+  var todos = dados.pacientes.concat(dados.arquivados || []);
+  var visto = {};
+  todos.forEach(function(p){
+    if(!p.codigo || visto[p.codigo]) return;
+    visto[p.codigo] = true;
+    if(p.inicio && p.inicio.slice(0,4) === String(ano)) novos[Number(p.inicio.slice(5,7))-1]++;
+    if(p.fim && p.fim.slice(0,4) === String(ano)){
+      var m = Number(p.fim.slice(5,7))-1;
+      encerrados[m]++;
+      if(semAcento(p.status||"").indexOf("alta") === 0) altas[m]++;
+    }
+  });
+  return {novos:novos, encerrados:encerrados, altas:altas};
+}
+function contagem(n, rotulo, total){
+  n = n || 0;
+  return '<div class="contagem"><span class="n">'+n+'</span>' +
+         '<span class="trilho"><span style="width:'+(total ? Math.round(n/total*100) : 0)+'%"></span></span>' +
+         '<span class="lado">'+esc(rotulo)+'</span></div>';
+}
+
+function renderPainel(){
+  var ref = new Date(mesRef.getFullYear(), mesRef.getMonth(), 1);
+  var ano = ref.getFullYear();
+  var agora = numerosDoMes(ref);
+  var total = dados.pacientes.length;
+
+  document.getElementById("pn-titulo").textContent = ref.toLocaleDateString("pt-BR",{month:"long", year:"numeric"});
+  document.getElementById("pn-sub").textContent = "o mês aberto também na aba Mês";
+  document.getElementById("pn-ativos").textContent = total;
+  document.getElementById("pn-projetada").textContent = moeda(agora.previsto);
+  document.getElementById("pn-recebida").textContent = moeda(agora.recebido);
+  document.getElementById("pn-sessoes").textContent = agora.sessoes;
+
+  var anoTodo = [];
+  for(var m=0;m<12;m++){
+    var n = numerosDoMes(new Date(ano, m, 1));
+    anoTodo.push({mes:m, sessoes:n.sessoes, previsto:n.previsto, recebido:n.recebido});
+  }
+  var hoje = new Date();
+  var mesAtual = (hoje.getFullYear()===ano) ? hoje.getMonth() : (ano < hoje.getFullYear() ? 11 : -1);
+  var recebidoAno = 0;
+  anoTodo.forEach(function(x){ recebidoAno += x.recebido; });
+  var mov = movimentoDoAno(ano);
+  var somaMov = function(a){ return a.reduce(function(s,n){ return s+n; }, 0); };
+
+  document.getElementById("pn-ano-sub").innerHTML =
+    "Em " + ano + " entraram <b>" + moeda(recebidoAno) + "</b> pela aba Recebimentos da planilha, com <b>" +
+    somaMov(mov.novos) + "</b> paciente(s) novo(s), <b>" + somaMov(mov.encerrados) + "</b> encerramento(s) e <b>" +
+    somaMov(mov.altas) + "</b> alta(s) clínica(s). " +
+    "O dinheiro recebido e o movimento da carteira são dados seus; o previsto e as sessões são projeção da agenda de hoje.";
+
+  /* o previsto só vale daqui para a frente: projetar a agenda de hoje sobre janeiro
+     passado era o que fazia este painel parecer genérico */
+  /* o recebido para de existir depois do mês corrente: zero ali não é "não entrou nada",
+     é "ainda não aconteceu" */
+  var serieRecebido = anoTodo.map(function(x){ return (mesAtual >= 0 && x.mes > mesAtual) ? null : x.recebido; });
+  var seriePrevista = anoTodo.map(function(x){ return (mesAtual >= 0 && x.mes < mesAtual) ? null : x.previsto; });
+  var serieSessoes = anoTodo.map(function(x){ return (mesAtual >= 0 && x.mes < mesAtual) ? null : x.sessoes; });
+
+  graficoDeLinhas(document.getElementById("pn-graf-dinheiro"), [
+    {nome:"recebido", valores:serieRecebido, cor:"var(--g-rec)"},
+    {nome:"previsto", valores:seriePrevista, cor:"var(--g-prev)", tracejada:true}
+  ], {destaque:mesAtual, formato:moeda, titulo:"dinheiro mês a mês em "+ano});
+
+  graficoDeLinhas(document.getElementById("pn-graf-sessoes"), [
+    {nome:"sessões", valores:serieSessoes, cor:"var(--g-rec)"}
+  ], {destaque:mesAtual, titulo:"sessões mês a mês em "+ano});
+  document.getElementById("pn-nota-sessoes").textContent =
+    "Meses já passados ficam de fora: o site não guarda sessão realizada, só o que a agenda marca.";
+
+  var soAtePassado = function(a){ return a.map(function(v,i){ return (mesAtual >= 0 && i > mesAtual) ? null : v; }); };
+  graficoDeLinhas(document.getElementById("pn-graf-carteira"), [
+    {nome:"novos", valores:soAtePassado(mov.novos), cor:"var(--g-rec)"},
+    {nome:"encerramentos", valores:soAtePassado(mov.encerrados), cor:"var(--t-falta-bar)"},
+    {nome:"altas", valores:soAtePassado(mov.altas), cor:"var(--ok)", rotular:false}
+  ], {destaque:mesAtual, titulo:"movimento da carteira em "+ano});
+
+  document.getElementById("pn-escala-dinheiro").textContent = "linha cheia: o que entrou · tracejada: projeção";
+  document.getElementById("pn-escala-sessoes").textContent = "projeção da agenda de hoje";
+  document.getElementById("pn-escala-carteira").textContent = "por data de início e de fim do tratamento";
+
+  var tb = document.querySelector("#pn-tabela tbody");
+  tb.innerHTML = "";
+  anoTodo.forEach(function(x){
+    var passado = (mesAtual >= 0 && x.mes < mesAtual);
+    var tr = document.createElement("tr");
+    if(x.mes===mesAtual) tr.className = "meta-ok";
+    tr.innerHTML = "<td>"+MESES_CURTO[x.mes]+"</td>" +
+      '<td class="num">'+(mov.novos[x.mes]||"—")+"</td>" +
+      '<td class="num">'+(mov.encerrados[x.mes]||"—")+"</td>" +
+      '<td class="num">'+(mov.altas[x.mes]||"—")+"</td>" +
+      '<td class="num'+(passado ? " projecao" : "")+'">'+(passado ? "—" : x.sessoes)+"</td>" +
+      '<td class="num'+(passado ? " projecao" : "")+'">'+(passado ? "—" : moeda(x.previsto))+"</td>" +
+      '<td class="num">'+(x.recebido ? moeda(x.recebido) : "—")+"</td>";
+    tb.appendChild(tr);
+  });
+
+  /* situação de pagamento de cada um, que é o bloco de status da planilha */
+  var situ = {}, dividaVencida = 0;
+  dados.pacientes.forEach(function(p){
+    var s = situacaoPagamento(p);
+    situ[s.chave] = (situ[s.chave]||0) + 1;
+    if(s.chave==="atraso") dividaVencida += Number(p.valor)||0;
+  });
+
+  document.getElementById("pn-financeiro").innerHTML =
+    linha("Receita projetada no mês", moeda(agora.previsto)) +
+    linha("Recebido no mês", moeda(agora.recebido)) +
+    linha("Falta receber neste mês", moeda(Math.max(0, agora.previsto - agora.recebido))) +
+    linha("Dívida vencida acumulada", moeda(dividaVencida));
+
+  var ordem = [
+    ["atraso","Atrasado","atraso"],
+    ["sem-registro","Sem pagamento registrado","sem"],
+    ["hoje","Vence hoje","atencao"],
+    ["atencao","Vence em até 3 dias","atencao"],
+    ["ok","Em dia","ok"],
+    ["sem","Sem sessão marcada","sem"]
+  ];
+  var hs = "";
+  ordem.forEach(function(o){
+    var n = situ[o[0]] || 0;
+    if(!n) return;
+    hs += '<div class="contagem"><span class="n">'+n+'</span>' +
+          '<span class="trilho"><span style="width:'+(total ? Math.round(n/total*100) : 0)+'%"></span></span>' +
+          '<span class="sit '+o[2]+'">'+esc(o[1])+'</span></div>';
+  });
+  document.getElementById("pn-situacao").innerHTML = hs || '<p class="pvazio">Sem pacientes na agenda.</p>';
+
+  var porCobranca = {}, porFreq = {};
+  dados.pacientes.forEach(function(p){
+    porCobranca[p.cobranca] = (porCobranca[p.cobranca]||0) + 1;
+    porFreq[p.freq] = (porFreq[p.freq]||0) + 1;
+  });
+  var horas = Number(dados.config.horas) || 0;
+  var usadas = horasUsadas();
+  document.getElementById("pn-carteira").innerHTML =
+    contagem(porCobranca.mensal, "Ciclo mensal", total) +
+    contagem(porCobranca.quinzenal, "Cobrança quinzenal", total) +
+    contagem(porCobranca.avulsa, "Por sessão", total) +
+    '<div class="linhas">' +
+      linha("Semanais e quinzenais", (porFreq.semanal||0) + " e " + (porFreq.quinzenal||0)) +
+      linha("Horas ocupadas por semana", usadas.toFixed(0) + " de " + horas) +
+      linha("Ocupação", horas ? Math.round(usadas/horas*100)+"%" : "—") +
+    '</div>';
+
+  var porDia = [0,0,0,0,0,0,0], valorDia = [0,0,0,0,0,0,0];
+  dados.pacientes.forEach(function(p){
+    porDia[p.dia]++;
+    valorDia[p.dia] += (p.freq==="quinzenal" ? valorSessao(p)/2 : valorSessao(p));
+  });
+  var maxDia = Math.max.apply(null, porDia) || 1;
+  var hd = "";
+  [1,2,3,4,5,6,0].forEach(function(d){
+    if(!porDia[d]) return;
+    hd += '<div class="contagem"><span class="n">'+porDia[d]+'</span>' +
+          '<span class="trilho"><span style="width:'+Math.round(porDia[d]/maxDia*100)+'%"></span></span>' +
+          '<span class="lado">'+DIAS[d]+' · '+moeda(valorDia[d])+'</span></div>';
+  });
+  document.getElementById("pn-dias").innerHTML = hd || '<p class="pvazio">Sem pacientes na agenda.</p>';
+
+  document.getElementById("pn-espelho").innerHTML =
+    "Este painel espelha o <b>Dashboard</b> da planilha, com três contas refeitas: a sessão é contada no dia em que acontece, " +
+    "e não no mês em que o tratamento termina; a receita projetada segue a regra de cobrança de cada paciente, em vez de somar o valor cru; " +
+    "e o que falta receber no mês fica separado da dívida vencida, porque as duas têm bases diferentes. " +
+    "Novos pacientes, encerramentos e altas clínicas não entram aqui: dependem de data de início e de fim, que continuam no Registro da planilha.";
+}
+
+/* ---------------- ler a planilha ---------------- */
+/* O navegador não abre um caminho do disco sozinho, por segurança: o botão abre a janela
+   de escolher arquivo e daí para frente é tudo aqui dentro. Um .xlsx é um ZIP de XMLs; o
+   Chrome descompacta com DecompressionStream e o DOMParser lê o XML. A planilha é só
+   lida, nunca escrita, e nada sai do computador. */
+
+var TEXTO_LIVRE = ["-", "", "–", "—"];
+/* as cores que ele pinta à mão na grade (ver a regra da planilha, seção 5) */
+var COR_SESSAO = "7030A0", COR_DIVULGADO = "CC99FF", COR_RESERVADO = "DEBDFF";
+
+function lerZip(buffer){
+  var dv = new DataView(buffer), u8 = new Uint8Array(buffer);
+  var fim = -1;
+  for(var i = u8.length - 22; i >= 0 && i > u8.length - 66000; i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ fim = i; break; }
+  }
+  if(fim < 0) throw new Error("esse arquivo não parece um .xlsx");
+  var qtd = dv.getUint16(fim + 10, true), p = dv.getUint32(fim + 16, true);
+  var entradas = {}, dec = new TextDecoder();
+  for(var n = 0; n < qtd; n++){
+    if(dv.getUint32(p, true) !== 0x02014b50) break;
+    var nomeLen = dv.getUint16(p + 28, true);
+    entradas[dec.decode(u8.subarray(p + 46, p + 46 + nomeLen))] = {
+      metodo: dv.getUint16(p + 10, true),
+      tamanho: dv.getUint32(p + 20, true),
+      desloc: dv.getUint32(p + 42, true)
+    };
+    p += 46 + nomeLen + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+  }
+  return {u8:u8, dv:dv, entradas:entradas};
+}
+function extrair(zip, nome){
+  var e = zip.entradas[nome];
+  if(!e) return Promise.resolve(null);
+  var p = e.desloc;
+  if(zip.dv.getUint32(p, true) !== 0x04034b50) return Promise.reject(new Error("arquivo danificado: " + nome));
+  var ini = p + 30 + zip.dv.getUint16(p + 26, true) + zip.dv.getUint16(p + 28, true);
+  var bruto = zip.u8.subarray(ini, ini + e.tamanho);
+  if(e.metodo === 0) return Promise.resolve(new TextDecoder().decode(bruto));
+  var fluxo = new Blob([bruto]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Response(fluxo).text();
+}
+function xmlDe(texto){ return new DOMParser().parseFromString(texto, "application/xml"); }
+function colunaDe(ref){
+  var letras = String(ref).match(/^[A-Z]+/);
+  var s = letras ? letras[0] : "A", n = 0;
+  for(var i=0;i<s.length;i++) n = n*26 + (s.charCodeAt(i) - 64);
+  return n;
+}
+function linhaDe(ref){ var m = String(ref).match(/\d+/); return m ? Number(m[0]) : 0; }
+
+/* o índice do tema não segue a ordem do XML: lt1 e dk1 trocam de lugar, lt2 e dk2 também */
+function lerTema(texto){
+  var cores = [];
+  if(!texto) return cores;
+  var esquema = xmlDe(texto).getElementsByTagNameNS("*","clrScheme")[0];
+  if(!esquema) return cores;
+  var brutas = [];
+  for(var i=0;i<esquema.childNodes.length;i++){
+    var no = esquema.childNodes[i];
+    if(no.nodeType !== 1) continue;
+    var srgb = no.getElementsByTagNameNS("*","srgbClr")[0];
+    var sys = no.getElementsByTagNameNS("*","sysClr")[0];
+    brutas.push(srgb ? srgb.getAttribute("val") : (sys ? sys.getAttribute("lastClr") : null));
+  }
+  var ordem = [1,0,3,2,4,5,6,7,8,9];
+  for(var k=0;k<ordem.length;k++) cores.push(brutas[ordem[k]] || null);
+  return cores;
+}
+function aplicarTint(hex, t){
+  if(!hex || !t) return hex;
+  var saida = "";
+  for(var i=0;i<3;i++){
+    var c = parseInt(hex.substr(i*2,2),16);
+    var novo = t > 0 ? Math.round(c + (255-c)*t) : Math.round(c*(1+t));
+    saida += ("0" + Math.max(0, Math.min(255, novo)).toString(16)).slice(-2);
+  }
+  return saida.toUpperCase();
+}
+function corDoNo(no, tema){
+  if(!no) return null;
+  var rgb = no.getAttribute("rgb");
+  if(rgb) return (rgb.length === 8 ? rgb.slice(2) : rgb).toUpperCase();
+  var idx = no.getAttribute("theme");
+  if(idx === null) return null;
+  return aplicarTint(tema[Number(idx)], Number(no.getAttribute("tint") || 0));
+}
+/* devolve, por índice de estilo, a cor do preenchimento da célula */
+function lerPreenchimentos(texto, tema){
+  var doc = xmlDe(texto);
+  var blocoFills = doc.getElementsByTagName("fills")[0];
+  var fills = blocoFills ? blocoFills.getElementsByTagName("fill") : [];
+  var cores = [];
+  for(var i=0;i<fills.length;i++){
+    var pf = fills[i].getElementsByTagName("patternFill")[0];
+    var tipo = pf ? pf.getAttribute("patternType") : null;
+    cores.push((pf && tipo && tipo !== "none") ? corDoNo(pf.getElementsByTagName("fgColor")[0], tema) : null);
+  }
+  var blocoXfs = doc.getElementsByTagName("cellXfs")[0];
+  var xfs = blocoXfs ? blocoXfs.getElementsByTagName("xf") : [];
+  var porEstilo = [];
+  for(var k=0;k<xfs.length;k++) porEstilo.push(cores[Number(xfs[k].getAttribute("fillId") || 0)] || null);
+  return porEstilo;
+}
+function lerTextos(texto){
+  var saida = [];
+  if(!texto) return saida;
+  var sis = xmlDe(texto).getElementsByTagName("si");
+  for(var i=0;i<sis.length;i++){
+    var ts = sis[i].getElementsByTagName("t"), junto = "";
+    for(var j=0;j<ts.length;j++) junto += ts[j].textContent;
+    saida.push(junto);
+  }
+  return saida;
+}
+function lerAba(texto, textos){
+  var celulas = {}, cs = xmlDe(texto).getElementsByTagName("c");
+  for(var i=0;i<cs.length;i++){
+    var c = cs[i], ref = c.getAttribute("r"), tipo = c.getAttribute("t"), valor = "";
+    if(tipo === "s"){
+      var iv = c.getElementsByTagName("v")[0];
+      if(iv) valor = textos[Number(iv.textContent)] || "";
+    } else if(tipo === "inlineStr"){
+      var it = c.getElementsByTagName("t")[0];
+      if(it) valor = it.textContent;
+    } else {
+      var vv = c.getElementsByTagName("v")[0];
+      if(vv) valor = vv.textContent;
+    }
+    celulas[ref] = {v: String(valor).trim(), s: Number(c.getAttribute("s") || 0)};
+  }
+  return celulas;
+}
+/* o Excel guarda quebra de linha e espaço duro dentro da célula: sem juntar tudo num
+   espaço só, "Nome Sobrenome" da grade não casa com o do Registro */
+function semAcento(s){
+  return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/ /g," ").replace(/\s+/g," ").toLowerCase().trim();
+}
+function perto(a, b){
+  if(!a || !b) return false;
+  for(var i=0;i<3;i++){
+    if(Math.abs(parseInt(a.substr(i*2,2),16) - parseInt(b.substr(i*2,2),16)) > 26) return false;
+  }
+  return true;
+}
+
+/* junta tudo: devolve os pacientes e os blocos que a planilha está dizendo hoje */
+function interpretarPlanilha(buffer){
+  var zip = lerZip(buffer);
+  return Promise.all([
+    extrair(zip, "xl/workbook.xml"),
+    extrair(zip, "xl/_rels/workbook.xml.rels"),
+    extrair(zip, "xl/sharedStrings.xml"),
+    extrair(zip, "xl/styles.xml"),
+    extrair(zip, "xl/theme/theme1.xml")
+  ]).then(function(partes){
+    if(!partes[0]) throw new Error("não achei a estrutura do arquivo");
+    var textos = lerTextos(partes[2]);
+    var preenchimentos = lerPreenchimentos(partes[3], lerTema(partes[4]));
+    var alvos = {};
+    var rels = partes[1] ? xmlDe(partes[1]).getElementsByTagName("Relationship") : [];
+    for(var r=0;r<rels.length;r++) alvos[rels[r].getAttribute("Id")] = rels[r].getAttribute("Target");
+    var abas = {}, lista = xmlDe(partes[0]).getElementsByTagName("sheet");
+    for(var s=0;s<lista.length;s++){
+      var alvo = alvos[lista[s].getAttribute("r:id")] || "";
+      abas[lista[s].getAttribute("name")] = "xl/" + alvo.replace(/^\/?xl\//, "");
+    }
+    var nomeGrade = acharAba(abas, "agendamentos"), nomeRegistro = acharAba(abas, "registro");
+    /* estas duas são opcionais: sem elas o site continua lendo a agenda como antes */
+    var nomeRecebimentos = acharAba(abas, "recebimentos"), nomeFormulacao = acharAba(abas, "formulacao");
+    if(!nomeGrade) throw new Error("não achei a aba Agendamentos nesse arquivo");
+    if(!nomeRegistro) throw new Error("não achei a aba de Registro de Pacientes nesse arquivo");
+    return Promise.all([
+      extrair(zip, abas[nomeGrade]),
+      extrair(zip, abas[nomeRegistro]),
+      nomeRecebimentos ? extrair(zip, abas[nomeRecebimentos]) : Promise.resolve(null),
+      nomeFormulacao ? extrair(zip, abas[nomeFormulacao]) : Promise.resolve(null)
+    ]).then(function(folhas){
+        var registro = lerRegistro(lerAba(folhas[1], textos));
+        var recebimentos = folhas[2] ? lerRecebimentos(lerAba(folhas[2], textos)) : [];
+        var formulacoes = folhas[3] ? lerFormulacoes(lerAba(folhas[3], textos)) : {};
+        var leitura = montarLeitura(lerAba(folhas[0], textos), preenchimentos, registro);
+        leitura.recebimentos = recebimentos;
+        leitura.formulacoes = formulacoes;
+        leitura.registro = registro;
+        return leitura;
+      });
+  });
+}
+function acharAba(abas, pedaco){
+  for(var nome in abas){ if(semAcento(nome).indexOf(pedaco) === 0) return nome; }
+  for(var n2 in abas){ if(semAcento(n2).indexOf(pedaco) >= 0) return n2; }
+  return null;
+}
+
+/* o Excel guarda data como número de dias desde 30/12/1899 */
+function dataDoExcel(bruto){
+  var n = Number(String(bruto||"").replace(",", "."));
+  if(!n || n < 1) return "";
+  var d = new Date(Math.round((n - 25569) * 86400000));
+  if(isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0,10);
+}
+/* devolve as linhas da aba como {numero da linha: {coluna: valor}} */
+function linhasDaAba(celulas){
+  var linhas = {};
+  for(var ref in celulas){
+    var n = linhaDe(ref);
+    if(n < 2) continue;
+    if(!linhas[n]) linhas[n] = {};
+    linhas[n][colunaDe(ref)] = celulas[ref].v;
+  }
+  return linhas;
+}
+/* acha as colunas pelo cabeçalho, que é escrito com quebra de linha dentro da célula */
+function cabecalhoDaAba(celulas, mapa){
+  var cab = {};
+  for(var ref in celulas){
+    if(linhaDe(ref) !== 1) continue;
+    var t = semAcento(celulas[ref].v);
+    for(var chave in mapa){
+      if(cab[chave]) continue;
+      if(mapa[chave](t)) cab[chave] = colunaDe(ref);
+    }
+  }
+  return cab;
+}
+
+/* Registro: uma linha por ciclo, então vale a última de cada prontuário */
+function lerRegistro(celulas){
+  var cabecalho = cabecalhoDaAba(celulas, {
+    codigo:     function(t){ return t.indexOf("prontuario") >= 0; },
+    status:     function(t){ return t === "status"; },
+    modalidade: function(t){ return t.indexOf("modalidade") >= 0; },
+    /* "Valor (R$)" é o do ciclo; "Valor Pago" e "Valor a Pagar" são saldo, não servem aqui */
+    valor:      function(t){ return t.indexOf("valor") === 0 && t.indexOf("pago") < 0 && t.indexOf("pagar") < 0; },
+    nome:       function(t){ return t.indexOf("nome") >= 0; },
+    inicio:     function(t){ return t.indexOf("inicio") === 0; },
+    fim:        function(t){ return t.indexOf("final") === 0 || t.indexOf("fim") === 0; },
+    sessoes:    function(t){ return t.indexOf("qtd. de sessoes") === 0 || t.indexOf("qtd de sessoes") === 0; },
+    remarcacoes:function(t){ return t.indexOf("remarcac") === 0; }
+  });
+  var faltando = [];
+  ["codigo","nome","status","modalidade","valor"].forEach(function(k){ if(!cabecalho[k]) faltando.push(k); });
+  if(faltando.length) throw new Error("a aba de Registro está com colunas diferentes do esperado (" + faltando.join(", ") + ")");
+
+  var linhas = linhasDaAba(celulas);
+  var porCodigo = {};
+  function numero(v){ return Number(String(v||"").replace(/[^\d,.-]/g,"").replace(",", ".")) || 0; }
+  Object.keys(linhas).sort(function(a,b){ return a-b; }).forEach(function(n){
+    var l = linhas[n], codigo = (l[cabecalho.codigo]||"").trim();
+    if(!codigo || codigo === "-") return;
+    var status = (l[cabecalho.status]||"").trim();
+    var anterior = porCodigo[codigo];
+    /* uma linha por ciclo de tratamento: a mais recente manda, mas o status vigente é o
+       da linha que tem status de verdade (os ciclos antigos ficam com "-") */
+    var ciclo = {
+      codigo: codigo,
+      nome: (l[cabecalho.nome]||"").trim(),
+      status: (status && status !== "-") ? status : (anterior ? anterior.status : ""),
+      modalidade: (l[cabecalho.modalidade]||"").trim(),
+      valor: numero(l[cabecalho.valor]),
+      inicio: cabecalho.inicio ? dataDoExcel(l[cabecalho.inicio]) : "",
+      fim: cabecalho.fim ? dataDoExcel(l[cabecalho.fim]) : "",
+      sessoes: cabecalho.sessoes ? numero(l[cabecalho.sessoes]) : 0,
+      remarcacoes: cabecalho.remarcacoes ? numero(l[cabecalho.remarcacoes]) : 0
+    };
+    /* o primeiro início e a soma das sessões valem para o paciente, não só para o ciclo */
+    if(anterior){
+      ciclo.primeiroInicio = anterior.primeiroInicio || anterior.inicio || ciclo.inicio;
+      ciclo.sessoesTotais = (anterior.sessoesTotais || anterior.sessoes || 0) + ciclo.sessoes;
+      ciclo.ciclos = (anterior.ciclos || 1) + 1;
+    } else {
+      ciclo.primeiroInicio = ciclo.inicio;
+      ciclo.sessoesTotais = ciclo.sessoes;
+      ciclo.ciclos = 1;
+    }
+    porCodigo[codigo] = ciclo;
+  });
+  return porCodigo;
+}
+
+/* Recebimentos: uma linha por pagamento, com o prontuário já calculado pela planilha */
+function lerRecebimentos(celulas){
+  if(!celulas) return [];
+  var cab = cabecalhoDaAba(celulas, {
+    nome:   function(t){ return t.indexOf("nome") >= 0; },
+    data:   function(t){ return t === "data"; },
+    origem: function(t){ return t.indexOf("origem") >= 0; },
+    tipo:   function(t){ return t.indexOf("tipo de pagamento") >= 0; },
+    valor:  function(t){ return t.indexOf("valor") === 0; },
+    codigo: function(t){ return t.indexOf("prontuario") >= 0; }
+  });
+  if(!cab.data || !cab.valor) return [];
+  var linhas = linhasDaAba(celulas), saida = [];
+  Object.keys(linhas).sort(function(a,b){ return a-b; }).forEach(function(n){
+    var l = linhas[n];
+    var data = dataDoExcel(l[cab.data]);
+    var valor = Number(String(l[cab.valor]||"").replace(",", ".")) || 0;
+    if(!data || !valor) return;
+    var codigo = cab.codigo ? (l[cab.codigo]||"").trim() : "";
+    saida.push({
+      codigo: (codigo && codigo !== "-") ? codigo : "",
+      nome: cab.nome ? (l[cab.nome]||"").trim() : "",
+      data: data, valor: valor,
+      origem: cab.origem ? (l[cab.origem]||"").trim() : "",
+      tipo: cab.tipo ? (l[cab.tipo]||"").trim() : ""
+    });
+  });
+  return saida;
+}
+
+/* Formulação de Caso: uma linha por prontuário. A planilha continua dona do conteúdo;
+   o site só mostra em que pé está a formulação de cada paciente. */
+function lerFormulacoes(celulas){
+  if(!celulas) return {};
+  var cab = cabecalhoDaAba(celulas, {
+    codigo:      function(t){ return t.indexOf("prontuario") >= 0; },
+    nome:        function(t){ return t.indexOf("nome") >= 0; },
+    atualizacao: function(t){ return t.indexOf("ultima") >= 0 && t.indexOf("atualizacao") >= 0; },
+    situacao:    function(t){ return t.indexOf("status") >= 0 && t.indexOf("formulacao") >= 0; },
+    nota:        function(t){ return t === "cqfc" || t === "cfqs"; },
+    dataNota:    function(t){ return (t.indexOf("data") === 0) && (t.indexOf("cqfc") >= 0 || t.indexOf("cfqs") >= 0); },
+    qualidade:   function(t){ return t.indexOf("qualidade") >= 0; },
+    obs:         function(t){ return t.indexOf("observac") >= 0; }
+  });
+  if(!cab.codigo) return {};
+  var linhas = linhasDaAba(celulas), saida = {};
+  function limpo(v){ var s = String(v||"").trim(); return (s === "-" ? "" : s); }
+  Object.keys(linhas).forEach(function(n){
+    var l = linhas[n], codigo = limpo(l[cab.codigo]);
+    if(!codigo) return;
+    saida[codigo] = {
+      atualizacao: cab.atualizacao ? dataDoExcel(l[cab.atualizacao]) : "",
+      situacao: cab.situacao ? limpo(l[cab.situacao]).replace(/\.$/,"") : "",
+      nota: cab.nota ? limpo(l[cab.nota]) : "",
+      dataNota: cab.dataNota ? dataDoExcel(l[cab.dataNota]) : "",
+      qualidade: cab.qualidade ? limpo(l[cab.qualidade]).replace(/\.$/,"") : "",
+      obs: cab.obs ? limpo(l[cab.obs]) : ""
+    };
+  });
+  return saida;
+}
+
+/* Agendamentos: a linha 1 diz os dias, a coluna das horas guarda fração do dia */
+function montarLeitura(celulas, preenchimentos, registro){
+  var colunaDoDia = {}, colunaHora = null, ref;
+  var nomesDias = DIAS.map(semAcento);
+  for(ref in celulas){
+    if(linhaDe(ref) !== 1) continue;
+    var cabeca = semAcento(celulas[ref].v);
+    var dia = nomesDias.indexOf(cabeca);
+    if(dia >= 0) colunaDoDia[colunaDe(ref)] = dia;
+    else if(cabeca.indexOf("horario") === 0) colunaHora = colunaDe(ref); /* a coluna se chama "Horários" */
+  }
+  if(!Object.keys(colunaDoDia).length) throw new Error("não achei os dias da semana na primeira linha da grade");
+
+  var horaDaLinha = {};
+  for(ref in celulas){
+    var n = linhaDe(ref);
+    if(n < 2) continue;
+    var bruto = celulas[ref].v;
+    if(!/^0?\.\d+$|^0$/.test(bruto)) continue;
+    var col = colunaDe(ref);
+    if(colunaDoDia[col] !== undefined) continue;
+    if(colunaHora === null) colunaHora = col;
+    if(col !== colunaHora) continue;
+    horaDaLinha[n] = Math.round(Number(bruto) * 24);
+  }
+  if(!Object.keys(horaDaLinha).length) throw new Error("não achei a coluna das horas na grade");
+
+  /* ativos e em triagem, pelo primeiro nome, que é como ele escreve na grade */
+  var porPrimeiroNome = {};
+  Object.keys(registro).forEach(function(codigo){
+    var r = registro[codigo];
+    if(r.status.indexOf("Ativo") !== 0 && r.status.indexOf("Triagem") !== 0) return;
+    var partes = semAcento(r.nome).split(/\s+/);
+    [partes[0], partes.slice(0,2).join(" ")].forEach(function(chave){
+      if(!chave) return;
+      if(!porPrimeiroNome[chave]) porPrimeiroNome[chave] = [];
+      if(porPrimeiroNome[chave].indexOf(codigo) < 0) porPrimeiroNome[chave].push(codigo);
+    });
+  });
+
+  /* o horário comercial inteiro nasce guardado para atendimento, como ele pediu; a planilha
+     por cima diz o que é divulgado e onde ele faz outra coisa */
+  var blocos = {}, achados = [], avisos = [];
+  for(var d=1; d<=5; d++){ for(var h=8; h<=19; h++){ blocos[d+"-"+h] = "reservado"; } }
+
+  for(ref in celulas){
+    var linha = linhaDe(ref), coluna = colunaDe(ref);
+    var diaSemana = colunaDoDia[coluna], hora = horaDaLinha[linha];
+    if(diaSemana === undefined || hora === undefined) continue;
+    var texto = celulas[ref].v, cor = preenchimentos[celulas[ref].s] || null;
+    var chave = diaSemana + "-" + hora;
+    if(TEXTO_LIVRE.indexOf(texto) >= 0) continue;
+    if(texto.indexOf("Atendimento (Divulgado)") === 0 || perto(cor, COR_DIVULGADO)){ blocos[chave] = "divulgado"; continue; }
+    if(texto.indexOf("Atendimento") === 0 || perto(cor, COR_RESERVADO)){ blocos[chave] = "reservado"; continue; }
+    /* rotina pessoal: não é da clínica, então essa hora sai do bloco */
+    if(/^(estudo|academia|almoco|tarefas)/.test(semAcento(texto))){ delete blocos[chave]; continue; }
+    /* sobrou nome de gente */
+    achados.push({nome: texto.replace(/\.$/, "").trim(), dia:diaSemana, hora:hora, fixo: perto(cor, COR_SESSAO)});
+  }
+
+  /* o mesmo nome em duas células é remarcação: a fixa é a roxa escura */
+  var porNome = {};
+  achados.forEach(function(a){
+    var k = semAcento(a.nome);
+    if(!porNome[k]) porNome[k] = [];
+    porNome[k].push(a);
+  });
+  /* do nome mais específico para o mais genérico, sem repetir prontuário: assim
+     "Ana Maria" fica com o dele e "Ana" não leva o prontuário errado */
+  var pacientes = [], usados = {};
+  Object.keys(porNome).sort(function(a,b){ return b.split(" ").length - a.split(" ").length; }).forEach(function(k){
+    var ocorrencias = porNome[k];
+    var escolhida = ocorrencias.filter(function(o){ return o.fixo; })[0];
+    if(!escolhida && ocorrencias.length > 1){
+      var atual = dados.pacientes.filter(function(p){ return semAcento(nomeCurto(p)) === k; })[0];
+      if(atual) escolhida = ocorrencias.filter(function(o){ return o.dia===atual.dia && o.hora===atual.hora; })[0];
+      if(!escolhida){
+        escolhida = ocorrencias[0];
+        avisos.push(ocorrencias[0].nome + " aparece em " + ocorrencias.length + " horários e nenhum está na cor de sessão; usei " +
+          DIAS_CURTO[escolhida.dia] + " " + escolhida.hora + "h.");
+      }
+    }
+    if(!escolhida) escolhida = ocorrencias[0];
+
+    var todos = porPrimeiroNome[k] || [];
+    var codigos = todos.filter(function(c){ return !usados[c]; });
+    if(!codigos.length){
+      avisos.push(escolhida.nome + (todos.length
+        ? " casa com um prontuário que já foi de outro nome da grade; deixei de fora."
+        : " está na grade mas não achei ninguém com esse nome ativo no Registro."));
+      return;
+    }
+    if(codigos.length > 1){
+      avisos.push(escolhida.nome + " combina com mais de um prontuário (" + codigos.join(", ") + "); usei o primeiro.");
+    }
+    usados[codigos[0]] = true;
+    var r = registro[codigos[0]];
+    var cobranca = "avulsa", freq = "semanal";
+    if(r.modalidade.indexOf("Mensal") === 0) cobranca = "mensal";
+    else if(r.modalidade.indexOf("Quinzenal") === 0){ cobranca = "quinzenal"; freq = "quinzenal"; }
+    pacientes.push({
+      codigo: r.codigo, nome: escolhida.nome, freq: freq, cobranca: cobranca,
+      valor: r.valor, dia: escolhida.dia, hora: escolhida.hora,
+      status: r.status, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || ""
+    });
+  });
+
+  pacientes.sort(function(a,b){ return (a.dia-b.dia) || (a.hora-b.hora); });
+
+  /* quem não está na grade: alta clínica, inativo, suspenso e os que a grade não tem.
+     Não entram na agenda; existem para ele poder olhar a carteira inteira. */
+  var naGrade = {};
+  pacientes.forEach(function(p){ naGrade[p.codigo] = true; });
+  var arquivados = [];
+  Object.keys(registro).forEach(function(codigo){
+    if(naGrade[codigo]) return;
+    var r = registro[codigo];
+    if(!r.nome) return;
+    arquivados.push({
+      codigo: codigo, nome: r.nome, status: r.status || "", valor: r.valor,
+      modalidade: r.modalidade, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || "",
+      sessoes: r.sessoesTotais || 0, ciclos: r.ciclos || 1
+    });
+  });
+  arquivados.sort(function(a,b){ return (b.fim||"").localeCompare(a.fim||"") || a.nome.localeCompare(b.nome); });
+
+  return {pacientes:pacientes, blocos:blocos, avisos:avisos, arquivados:arquivados};
+}
+
+/* O histórico de pagamentos mora na aba Recebimentos, e é ele que faz o ano do painel ser
+   o ano dele, e não uma projeção da agenda de hoje. Relê sem duplicar: cada recibo da
+   planilha é reconhecido por prontuário + data + valor, e o que foi lançado no site fica. */
+function importarRecebimentos(lista){
+  var porCodigo = {};
+  dados.pacientes.forEach(function(p){ if(p.codigo) porCodigo[p.codigo] = p.id; });
+  var jaTem = {};
+  dados.pagamentos.forEach(function(g){ if(g.chavePlanilha) jaTem[g.chavePlanilha] = true; });
+  var novos = 0;
+  lista.forEach(function(r){
+    var chave = (r.codigo || semAcento(r.nome)) + "|" + r.data + "|" + r.valor;
+    if(jaTem[chave]) return;
+    jaTem[chave] = true;
+    novos++;
+    dados.pagamentos.push({
+      id: "g" + Date.now() + Math.floor(Math.random()*100000),
+      /* sem prontuário casado na planilha, o recibo entra assim mesmo: conta no mês,
+         mas não gruda em ninguém (são os que a planilha mostra com "-") */
+      pacienteId: porCodigo[r.codigo] || "",
+      codigo: r.codigo || "",
+      nomePlanilha: r.nome || "",
+      data: r.data, valor: r.valor,
+      meio: "", obs: "",
+      origem: "planilha", tipo: r.tipo || "", receita: r.origem || "",
+      chavePlanilha: chave
+    });
+  });
+  return novos;
+}
+/* quantos recibos da planilha ainda não estão aqui: entra no resumo antes de aplicar */
+function recibosNovos(lista){
+  if(!lista || !lista.length) return 0;
+  var jaTem = {};
+  dados.pagamentos.forEach(function(g){ if(g.chavePlanilha) jaTem[g.chavePlanilha] = true; });
+  var n = 0, vistos = {};
+  lista.forEach(function(r){
+    var chave = (r.codigo || semAcento(r.nome)) + "|" + r.data + "|" + r.valor;
+    if(jaTem[chave] || vistos[chave]) return;
+    vistos[chave] = true; n++;
+  });
+  return n;
+}
+
+/* o que muda se ele aplicar, em linguagem de gente */
+function compararLeitura(leitura){
+  var atuais = {}, vindos = {};
+  dados.pacientes.forEach(function(p){ atuais[p.codigo] = p; });
+  leitura.pacientes.forEach(function(p){ vindos[p.codigo] = p; });
+  var novos = [], sairam = [], mudaram = [];
+  leitura.pacientes.forEach(function(p){
+    var a = atuais[p.codigo];
+    if(!a){ novos.push(p.nome + " · " + DIAS_CURTO[p.dia] + " " + p.hora + "h"); return; }
+    var notas = [];
+    if(a.dia !== p.dia || a.hora !== p.hora)
+      notas.push("de " + DIAS_CURTO[a.dia] + " " + a.hora + "h para " + DIAS_CURTO[p.dia] + " " + p.hora + "h");
+    if(Number(a.valor) !== Number(p.valor)) notas.push("valor " + moeda(a.valor) + " para " + moeda(p.valor));
+    if(a.cobranca !== p.cobranca) notas.push("cobrança " + a.cobranca + " para " + p.cobranca);
+    if(notas.length) mudaram.push(p.nome + ": " + notas.join(", "));
+  });
+  dados.pacientes.forEach(function(p){ if(!vindos[p.codigo]) sairam.push(p.nome + " (" + p.codigo + ")"); });
+
+  var divulgados = 0, reservados = 0;
+  for(var k in leitura.blocos){ if(leitura.blocos[k] === "divulgado") divulgados++; else reservados++; }
+  return {novos:novos, sairam:sairam, mudaram:mudaram, divulgados:divulgados, reservados:reservados};
+}
+
+/* aplica mantendo o que é do site: id, link do Meet, pagamentos e as marcas da semana */
+function aplicarLeitura(leitura){
+  var porCodigo = {};
+  dados.pacientes.forEach(function(p){ porCodigo[p.codigo] = p; });
+  dados.pacientes = leitura.pacientes.map(function(p){
+    var antigo = porCodigo[p.codigo];
+    return {
+      id: antigo ? antigo.id : ("p" + Date.now() + Math.floor(Math.random()*1000)),
+      codigo: p.codigo, nome: p.nome, freq: p.freq, cobranca: p.cobranca,
+      valor: p.valor, dia: p.dia, hora: p.hora,
+      status: p.status || "", inicio: p.inicio || "", fim: p.fim || "",
+      meet: antigo ? (antigo.meet || "") : ""
+    };
+  });
+  if(leitura.arquivados) dados.arquivados = leitura.arquivados;
+  if(leitura.formulacoes) dados.formulacoes = leitura.formulacoes;
+  if(leitura.recebimentos) importarRecebimentos(leitura.recebimentos);
+  dados.blocos = leitura.blocos;
+  dados.semente = inicial().semente; /* já está pelo menos tão novo quanto o arquivo */
+  salvar(); renderTudo(); avisoPlanilha();
+}
+
+function mostrarLeitura(leitura){
+  var d = compararLeitura(leitura);
+  var bloco = function(titulo, itens){
+    if(!itens.length) return "";
+    return "<h3>" + titulo + " (" + itens.length + ")</h3><ul><li>" +
+      itens.map(function(x){ return esc(x); }).join("</li><li>") + "</li></ul>";
+  };
+  var corpo = bloco("Entram na agenda", d.novos) + bloco("Saem da agenda", d.sairam) + bloco("Mudam", d.mudaram);
+  if(!corpo) corpo = '<p class="nada">A agenda do site já está igual à da planilha. Só os horários divulgados e guardados serão reescritos.</p>';
+  if(leitura.avisos.length){
+    corpo += '<div class="alerta"><b>Confira antes:</b><ul><li>' +
+      leitura.avisos.map(function(x){ return esc(x); }).join("</li><li>") + "</li></ul></div>";
+  }
+
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  var extras = [];
+  var qtdRecibos = recibosNovos(leitura.recebimentos);
+  if(qtdRecibos) extras.push(qtdRecibos + " pagamento(s) do histórico da aba Recebimentos");
+  if(leitura.arquivados && leitura.arquivados.length) extras.push(leitura.arquivados.length + " paciente(s) fora da agenda (alta, inativo, suspenso)");
+  if(leitura.formulacoes && Object.keys(leitura.formulacoes).length) extras.push("a formulação de caso de " + Object.keys(leitura.formulacoes).length + " prontuário(s)");
+  fundo.innerHTML = '<div class="modal"><h2>O que a planilha está dizendo</h2>' +
+    '<p class="sub">' + leitura.pacientes.length + ' paciente(s) ativos, ' + d.divulgados +
+    ' horário(s) divulgado(s) e ' + d.reservados + ' guardado(s) para atendimento. ' +
+    (extras.length ? "Também entram " + extras.join(", ") + ". " : "") +
+    'Seus pagamentos lançados aqui, links do Meet e as marcas desta semana continuam como estão.</p>' +
+    '<div class="diff">' + corpo + '</div>' +
+    '<div class="acoes"><button class="btn" id="lp-cancelar">Cancelar</button>' +
+    '<button class="btn primary" id="lp-aplicar">Atualizar o site</button></div></div>';
+  document.body.appendChild(fundo);
+  function fechar(){ fundo.remove(); }
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
+  document.getElementById("lp-cancelar").addEventListener("click", fechar);
+  document.getElementById("lp-aplicar").addEventListener("click", function(){
+    aplicarLeitura(leitura);
+    fechar();
+    avisarLeitura("Pronto: a agenda agora é a da planilha.");
+  });
+}
+function avisarLeitura(txt){
+  var el = document.getElementById("ler-status");
+  el.textContent = txt;
+  setTimeout(function(){ if(el.textContent===txt) el.textContent = ""; }, 8000);
+}
+
+/* ---------------- navegação e utilidades ---------------- */
+function mostrarView(v){
+  ["semana","mes","painel","meta","pacientes","pagamentos"].forEach(function(x){
+    document.getElementById("v-"+x).classList.toggle("hidden", x!==v);
+  });
+  document.querySelectorAll(".tab").forEach(function(t){
+    t.setAttribute("aria-selected", t.dataset.view===v ? "true" : "false");
+  });
+}
+function renderTudo(){
+  /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
+  atrasoCache = null; cacheMes = {};
+  renderSemana(); renderMes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos();
+}
+
+/* A planilha continua mudando enquanto as duas existirem: se a agenda deste arquivo
+   for mais nova do que a que está salva no navegador, pergunta antes de substituir. */
+function avisoPlanilha(){
+  var el = document.getElementById("aviso-planilha");
+  el.className = "hidden"; el.innerHTML = ""; return;
+  var nova = inicial();
+  if(dados.semente === nova.semente){ el.className = "hidden"; el.innerHTML = ""; return; }
+  el.className = "avisobar";
+  el.innerHTML = '<span>Este arquivo traz uma leitura mais nova da planilha. Quer trazer essa agenda para cá? Substitui o que estiver salvo no site.</span>' +
+    '<span style="display:flex; gap:8px"><button class="btn sm" id="av-sim">Trazer da planilha</button>' +
+    '<button class="btn sm ghost" id="av-nao">Manter o que está aqui</button></span>';
+  document.getElementById("av-sim").addEventListener("click", function(){
+    /* a planilha manda na agenda, não no dinheiro: os recibos ficam */
+    var recibos = dados.pagamentos || [];
+    dados = inicial(); dados.pagamentos = recibos;
+    salvar(); renderTudo(); avisoPlanilha();
+  });
+  document.getElementById("av-nao").addEventListener("click", function(){
+    dados.semente = nova.semente; salvar(); avisoPlanilha();
+  });
+}
+
+document.querySelectorAll(".tab").forEach(function(t){
+  t.addEventListener("click", function(){ mostrarView(t.dataset.view); });
+});
+document.getElementById("prev").addEventListener("click", function(){ semana = somaDias(semana,-7); renderTudo(); });
+document.getElementById("next").addEventListener("click", function(){ semana = somaDias(semana,7); renderTudo(); });
+document.getElementById("hoje").addEventListener("click", function(){ semana = isoSegunda(new Date()); renderTudo(); });
+document.getElementById("m-prev").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()-1, 1); renderTudo(); });
+document.getElementById("m-next").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()+1, 1); renderTudo(); });
+document.getElementById("m-hoje").addEventListener("click", function(){ mesRef = new Date(); renderTudo(); });
+/* o painel anda junto com a aba Mês: é o mesmo mês visto de outro jeito */
+document.getElementById("pn-prev").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()-1, 1); renderTudo(); });
+document.getElementById("pn-next").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()+1, 1); renderTudo(); });
+document.getElementById("pn-hoje").addEventListener("click", function(){ mesRef = new Date(); renderTudo(); });
+document.getElementById("msg").addEventListener("click", abrirMensagem);
+
+document.getElementById("ler-planilha").addEventListener("click", function(){
+  document.getElementById("arquivo-planilha").click();
+});
+document.getElementById("arquivo-planilha").addEventListener("change", function(e){
+  var arquivo = e.target.files[0];
+  if(!arquivo) return;
+  e.target.value = ""; /* deixa escolher o mesmo arquivo de novo depois */
+  if(typeof DecompressionStream === "undefined"){
+    avisarLeitura("Este navegador não descompacta o .xlsx sozinho. Abra o site no Chrome.");
+    return;
+  }
+  avisarLeitura("Lendo " + arquivo.name + "…");
+  arquivo.arrayBuffer()
+    .then(function(buffer){ return interpretarPlanilha(buffer); })
+    .then(function(leitura){
+      if(!leitura.pacientes.length) throw new Error("não achei nenhum paciente ativo na grade");
+      avisarLeitura("");
+      mostrarLeitura(leitura);
+    })
+    .catch(function(err){ avisarLeitura("Não consegui ler: " + err.message); });
+});
+
+document.getElementById("pg-prev").addEventListener("click", function(){ mesPag = new Date(mesPag.getFullYear(), mesPag.getMonth()-1, 1); renderPagamentos(); });
+document.getElementById("pg-next").addEventListener("click", function(){ mesPag = new Date(mesPag.getFullYear(), mesPag.getMonth()+1, 1); renderPagamentos(); });
+document.getElementById("pg-hoje").addEventListener("click", function(){ mesPag = new Date(); renderPagamentos(); });
+document.getElementById("pg-paciente").addEventListener("change", function(){ dicaPagamento(true); });
+document.getElementById("pg-add").addEventListener("click", function(){
+  var p = acharPaciente(document.getElementById("pg-paciente").value);
+  var data = document.getElementById("pg-data").value;
+  var valor = Number(document.getElementById("pg-valor").value);
+  if(!p){ avisarPagamento("Escolha quem pagou."); return; }
+  if(!data){ avisarPagamento("Falta a data do pagamento."); return; }
+  if(!(valor > 0)){ avisarPagamento("Falta o valor."); return; }
+  if(!registrarPagamento(p.id, data, valor, document.getElementById("pg-meio").value, document.getElementById("pg-obs").value.trim())) return;
+  document.getElementById("pg-obs").value = "";
+  mesPag = deISO(data); /* abre o mês do pagamento que ele acabou de lançar */
+  renderPagamentos();
+  var venc = proximoVencimento(p);
+  avisarPagamento(p.nome + " · " + moeda(valor) + " em " + dataLonga(deISO(data)) +
+    (venc ? ". Próximo vencimento: " + dataLonga(venc) + "." : "."));
+});
+
+var CAMPOS_CONFIG = [["f-meta","meta"],["f-custos","custos"],["f-imposto","imposto"],["f-falta","falta"],["f-horas","horas"],["f-mensal","mensal"],["f-avulsa","avulsa"]];
+/* o desfazer troca os dados por baixo: os campos precisam mostrar o valor que voltou */
+function sincronizarCampos(){
+  CAMPOS_CONFIG.forEach(function(par){
+    var el = document.getElementById(par[0]);
+    if(el) el.value = dados.config[par[1]];
+  });
+}
+CAMPOS_CONFIG.forEach(function(par){
+  var el = document.getElementById(par[0]);
+  el.value = dados.config[par[1]];
+  el.addEventListener("input", function(){ dados.config[par[1]] = Number(el.value)||0; salvar(); renderMeta(); renderSemana(); });
+});
+
+document.getElementById("add-paciente").addEventListener("click", function(){
+  var novo = {id:"p"+Date.now(), codigo:"MGOQ00", nome:"Novo paciente", freq:"semanal", cobranca:"mensal", valor:dados.config.mensal, dia:1, hora:14, meet:""};
+  dados.pacientes.push(novo);
+  salvar(); renderTudo(); abrirFicha(novo);
+});
+document.getElementById("seed").addEventListener("click", function(){
+  document.getElementById("arquivo-planilha").click();
+});
+document.getElementById("exportar").addEventListener("click", function(){
+  var blob = new Blob([JSON.stringify(dados,null,2)], {type:"application/json"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "agenda-" + chaveData(new Date()) + ".json";
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+});
+document.getElementById("importar").addEventListener("click", function(){ document.getElementById("arquivo").click(); });
+document.getElementById("arquivo").addEventListener("change", function(e){
+  var f = e.target.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    try{
+      var d = JSON.parse(r.result);
+      if(!d.pacientes) throw new Error("arquivo sem pacientes");
+      if(!d.pagamentos) d.pagamentos = []; /* arquivo exportado antes dos pagamentos */
+      dados = d; salvar(); renderTudo();
+    }catch(err){ alert("Não consegui ler esse arquivo: "+err.message); }
+  };
+  r.readAsText(f);
+});
+document.getElementById("tema").addEventListener("click", function(){
+  var atual = document.documentElement.getAttribute("data-theme");
+  var escuro = atual ? atual==="dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.setAttribute("data-theme", escuro ? "light" : "dark");
+});
+
+renderTudo();
+avisoPlanilha();
+Nuvem.iniciar({
+  obter: function(){ return dados; },
+  aplicar: function(d){
+    dados = d;
+    if(!dados.pagamentos) dados.pagamentos = [];
+    if(!dados.arquivados) dados.arquivados = [];
+    if(!dados.formulacoes) dados.formulacoes = {};
+    if(!dados.excecoes) dados.excecoes = {};
+    instantaneo = JSON.stringify(dados); historico = []; refeitos = [];
+    try{ localStorage.setItem(CHAVE, instantaneo); }catch(e){}
+    fecharMenu(); sincronizarCampos(); renderTudo();
+  },
+  temDados: function(d){ return !!(d && d.pacientes && d.pacientes.length); }
+});
+</script>
+</body>
+</html>
