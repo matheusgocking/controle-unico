@@ -381,9 +381,13 @@ function contasDinheiro(){
     + soma(movReserva.filter(l => l.tipo === "Aporte."), l => l.valor)
     - soma(movReserva.filter(l => l.tipo === "Resgate."), l => l.valor);
 
-  const sobra = entrou - saiu;
+  // Como na linha Total do painel da planilha: o que foi para a reserva saiu do caixa do mês,
+  // o que voltou dela entrou. Assim, tirar da reserva e gastar deixa o saldo do mês no lugar.
+  const aportesMes = soma(doMes.filter(l => l.categoria === "Reserva." && l.tipo === "Aporte."), l => l.valor);
+  const resgatesMes = soma(doMes.filter(l => l.categoria === "Reserva." && l.tipo === "Resgate."), l => l.valor);
+  const sobra = entrou - saiu - aportesMes + resgatesMes;
   return { entrou, receitaSolta, recebidoClinica: cl.recebido, dePacientes: cl.pacientes, saiu, minhaCasa, fixosMes, faltaSair, semDia, reserva,
-           sobra, falta: cl.falta, clinicaOk: cl.ok, fimDoMes: sobra + (cl.falta || 0) - (faltaSair || 0) };
+           aportesMes, resgatesMes, sobra, falta: cl.falta, clinicaOk: cl.ok, fimDoMes: sobra + (cl.falta || 0) - (faltaSair || 0) };
 }
 
 // ---------- telas ----------
@@ -487,7 +491,7 @@ function telaTudo(){
       <div class="linha-k">
         <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes${outros > 0.005 ? ` e ${dinheiro(outros)} de outras entradas` : ""}</small></div>
         <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b><small>${dinheiro(lancado)} lançados, ${dinheiro(d.fixosMes)} de fixos e ${dinheiro(d.minhaCasa)} da casa</small></div>
-        <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei</small></div>
+        <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
       </div>
       <div class="linha-k">
         <div class="k"><span>Ainda vou receber</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>previsto da agenda menos o que os pacientes já pagaram</small>`}</div>
@@ -518,7 +522,8 @@ function telaTudo(){
   <details class="origem"><summary>De onde vem cada número</summary>
     Recebi: receitas soltas do Dinheiro mais os pagamentos da Clínica (pacientes e acertos). Gastei: despesas lançadas no mês,
     sem a categoria moradia, mais os gastos fixos do mês e o que você pagou na casa, como manda o sistema Ciclo do Dinheiro
-    do Mês. Ainda vou receber: a mesma conta do Painel da Clínica, pela agenda e pela cobrança de cada paciente, menos o que
+    do Mês. Saldo agora: recebi menos gastei, menos o que foi para a reserva (aporte) e mais o que saiu dela (resgate), como a linha Total
+    da planilha; o gasto feito com o dinheiro resgatado entra normalmente em Gastei. Ainda vou receber: a mesma conta do Painel da Clínica, pela agenda e pela cobrança de cada paciente, menos o que
     os pacientes já pagaram. Ainda vai sair: gastos fixos com dia depois de hoje. A seta compara o fim do mês com zero.
     Carteira: o total da última vez que a aba Carteira abriu neste aparelho.
   </details>`;

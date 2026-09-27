@@ -15,7 +15,8 @@ var Nuvem = (function(){
   var ESCOPO = "https://www.googleapis.com/auth/drive.file";
   var PROJETO = "185782688251";   // número do projeto no Google Cloud: o Picker exige
   var CHAVE_PICKER = "AIzaSyC81ALE3SlR_FcJlTwgF8f7kTYqrf-k9vQ";   // chave de navegador do Picker: só a API do Picker, só neste site e no localhost:8000
-  var CH_TOKEN = "controle-unico-token";   // só na sessão da aba
+  var CH_TOKEN = "controle-unico-token";   // guardada neste aparelho até vencer (1 hora): no iPhone, fechar o app
+                                            // apagava a chave da sessão e obrigava a passar pelo Google de novo
 
   var token = null, expira = 0, cliente = null, iniciado = false, saindo = false;
   var cadernos = [], estados = {};
@@ -28,11 +29,11 @@ var Nuvem = (function(){
   /* ---------------- chave de acesso, uma para todas as páginas ---------------- */
   function temToken(){
     if(token && Date.now() < expira - 60000) return true;
-    if(token){ token = null; try{ sessionStorage.removeItem(CH_TOKEN); }catch(e){} }
+    if(token){ token = null; try{ localStorage.removeItem(CH_TOKEN); }catch(e){} }
     return false;
   }
   function lerTokenGuardado(){
-    try{ var s = JSON.parse(sessionStorage.getItem(CH_TOKEN)); if(s && s.e > Date.now() + 60000){ token = s.t; expira = s.e; } }catch(e){}
+    try{ var s = JSON.parse(localStorage.getItem(CH_TOKEN)); if(s && s.e > Date.now() + 60000){ token = s.t; expira = s.e; } }catch(e){}
   }
   /* as outras páginas do Controle Único abertas nesta janela (a casca e os quadros dela) */
   function outrasJanelas(){
@@ -87,7 +88,7 @@ var Nuvem = (function(){
     }
     token = p.get("access_token");
     expira = Date.now() + (Number(p.get("expires_in")) || 3600) * 1000;
-    try{ sessionStorage.setItem(CH_TOKEN, JSON.stringify({t:token, e:expira})); }catch(e){}
+    try{ localStorage.setItem(CH_TOKEN, JSON.stringify({t:token, e:expira})); }catch(e){}
     guarda("controle-unico-ja-entrou", "1");
     guarda("controle-unico-auto-falhou", null);
   }
@@ -108,7 +109,7 @@ var Nuvem = (function(){
           if(resp.error){ avisoGeral("O Google recusou: " + resp.error); return; }
           token = resp.access_token;
           expira = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
-          try{ sessionStorage.setItem(CH_TOKEN, JSON.stringify({t:token, e:expira})); }catch(e){}
+          try{ localStorage.setItem(CH_TOKEN, JSON.stringify({t:token, e:expira})); }catch(e){}
           guarda("controle-unico-ja-entrou", "1");
           espalhar();
           cadernos.forEach(function(c){ c.conectar(); });
