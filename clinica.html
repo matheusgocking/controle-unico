@@ -190,6 +190,8 @@ button,input,select,textarea{font:inherit; color:inherit}
 .cell.tarefas{background:var(--t-tarefas-bg); border-left-color:var(--t-tarefas-bar); color:var(--t-tarefas-fg)}
 .cell.academia{background:var(--t-academia-bg); border-left-color:var(--t-academia-bar); color:var(--t-academia-fg)}
 .cell.almoco{background:var(--t-almoco-bg); border-left-color:var(--t-almoco-bar); color:var(--t-almoco-fg)}
+.cell.realizada{border-left-color:var(--ok); border-left-width:6px}
+.cell.realizada .et{color:var(--ok-soft); font-weight:600}
 .cell.falta{background:var(--t-falta-bg); border-left-color:var(--t-falta-bar); color:var(--t-falta-fg)}
 .cell.falta .nm{text-decoration:line-through}
 /* remarcada: a sessão SAI daqui. Célula fantasma, tracejada dos quatro lados e com o nome riscado,
@@ -590,7 +592,7 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
         <div class="stat"><b id="pn-ativos">0</b><span>Pacientes ativos</span></div>
         <div class="stat" title="O que a agenda deste mês rende, pela regra de cobrança de cada paciente."><b id="pn-projetada">R$ 0</b><span>Receita projetada</span></div>
         <div class="stat" title="Pagamentos lançados neste mês."><b id="pn-recebida">R$ 0</b><span>Recebido no mês</span></div>
-        <div class="stat" title="Sessões que a agenda marca neste mês, contando a remarcada no dia em que ela acontece."><b id="pn-sessoes">0</b><span>Sessões no mês</span></div>
+        <div class="stat" title="Sessões que você confirmou como realizadas neste mês. As passadas sem confirmação aparecem como a confirmar."><b id="pn-sessoes">0</b><span>Sessões confirmadas no mês</span></div>
       </div>
     </div>
 
@@ -1067,7 +1069,10 @@ function receitaMensal(p, sessoesNoMes){
    24 horas: cobra), "remarcada" (avisou: não cobra), "cancelada" (não haverá: não cobra) e
    "cortesia" (acontece, mas não cobra). Com comCanceladas, a lista traz também as "não haverá",
    para a aba Sessões mostrar o mês inteiro. */
-function cobraSessao(estado){ return estado==="sessao" || estado==="falta"; }
+/* "realizada" é a sessão que Matheus confirmou (o check): só ela conta como sessão feita.
+   A "sessao" passada sem check fica "a confirmar": cobra e entra no previsto, mas não é contada. */
+function cobraSessao(estado){ return estado==="sessao" || estado==="realizada" || estado==="falta"; }
+function confirmada(estado){ return estado==="realizada"; }
 function sessoesDoDia(data, comCanceladas){
   var lista = [];
   var dia = data.getDay();
@@ -1079,7 +1084,7 @@ function sessoesDoDia(data, comCanceladas){
       /* sessão que veio de outro horário: conta na hora em que vai acontecer, e é a única
          que conta ali, porque quem era fixo naquela hora não vem */
       var pe = acharPaciente(entra.pacienteId);
-      if(pe) lista.push({paciente:pe, hora:h, estado:"sessao", origem:"extra"});
+      if(pe) lista.push({paciente:pe, hora:h, estado:(entra.realizada ? "realizada" : "sessao"), origem:"extra"});
     } else if(p){
       var estado = ex ? ex.tipo : "sessao";
       if(estado==="cancelada" && !comCanceladas) continue;
@@ -1176,8 +1181,8 @@ function estadoCelula(dia, hora, data){
      mesmo quando a hora é o horário fixo de alguém que não vem */
   if(entra){
     var pv = acharPaciente(entra.pacienteId);
-    if(pv) return {classe:"sessao", extra:true, nome:nomeGrade(pv),
-      etiqueta:(entra.de ? "← Veio de "+quando(entra.de) : "Encaixe nesta data"),
+    if(pv) return {classe:"sessao"+(entra.realizada ? " realizada" : ""), extra:true, nome:nomeGrade(pv),
+      etiqueta:(entra.realizada ? "✓ Realizada" : entra.de ? "← Veio de "+quando(entra.de) : "Encaixe nesta data"),
       /* quem perdeu a hora continua escrito, riscado: a célula conta a troca inteira */
       saiu: (p && saiuDaHora(ex)) ? nomeGrade(p) : "",
       saiuPara: (p && ex && ex.para) ? quando(ex.para) : "",
@@ -1185,6 +1190,7 @@ function estadoCelula(dia, hora, data){
   }
   if(p){
     var estado = ex ? ex.tipo : "sessao";
+    if(estado==="realizada") return {classe:"sessao realizada", nome:nomeGrade(p), etiqueta:"✓ Realizada", aria:nomeGrade(p)+", sessão realizada, confirmada", paciente:p, origem:"fixo"};
     if(estado==="falta")     return {classe:"falta", nome:nomeGrade(p), etiqueta:"Faltou", paciente:p, origem:"fixo"};
     if(estado==="remarcada") return {classe:"remarcada", nome:nomeGrade(p),
       etiqueta:(ex && ex.para ? "→ Foi para "+quando(ex.para) : "→ Remarcada"), paciente:p, origem:"fixo"};
@@ -1192,7 +1198,7 @@ function estadoCelula(dia, hora, data){
     /* "não haverá sessão nesta data" não deixa a hora em branco: ela volta a ser o
        horário de atendimento que já era, em vez de virar um buraco no meio do bloco */
     if(estado!=="cancelada")
-      return {classe:"sessao", nome:nomeGrade(p), etiqueta:"", paciente:p, origem:"fixo"};
+      return {classe:"sessao", nome:nomeGrade(p), etiqueta:(data < hoje0() ? "a confirmar" : ""), paciente:p, origem:"fixo"};
   }
   /* as duas linhas da célula dizem o estado inteiro: "Atendimento" em cima, divulgado ou não embaixo */
   var bloco = dados.blocos[dia+"-"+hora];
@@ -1263,8 +1269,13 @@ function abrirMenu(e){
   if(info.paciente){
     if(info.origem==="extra"){
       /* aqui o que está marcado é a sessão que veio de outro horário */
+      if(data <= hoje0()){
+        var entrou = entradaDa(ex);
+        corpo += botao(entrou && entrou.realizada ? "desconfirmar-extra" : "realizada-extra", entrou && entrou.realizada ? "Tirar a confirmação" : "Confirmar: sessão realizada", "var(--ok)");
+      }
       corpo += botao("tirar-entrada", (ex && ex.entra ? "Tirar esta sessão daqui (volta a marca de "+nomeCurto(fixoDaHora)+")" : "Tirar esta sessão daqui"), "var(--faint)");
     } else {
+      if(data <= hoje0() && !(ex && ex.tipo==="realizada")) corpo += botao("realizada","Confirmar: sessão realizada","var(--ok)");
       corpo += botao("falta","Marcar falta","var(--t-falta-bar)");
       corpo += botao("remarcada","Marcar como remarcada","var(--t-remarcada-bar)");
       corpo += botao("cancelada","Não haverá sessão nesta data","var(--border-strong)");
@@ -1305,7 +1316,8 @@ function abrirMenu(e){
     b.addEventListener("click", function(){
       var a = b.dataset.acao;
       var kData = chaveData(data)+"|"+hora, kBloco = dia+"-"+hora;
-      if(a==="falta"||a==="remarcada"||a==="cancelada"||a==="cortesia") marcarSaida(kData, a);
+      if(a==="falta"||a==="remarcada"||a==="cancelada"||a==="cortesia"||a==="realizada") marcarSaida(kData, a);
+      else if(a==="realizada-extra"||a==="desconfirmar-extra"){ var en = dados.excecoes[kData]; var alvo = en && en.tipo==="extra" ? en : (en && en.entra); if(alvo){ if(a==="realizada-extra") alvo.realizada = true; else delete alvo.realizada; } }
       else if(a==="limpar-excecao") delete dados.excecoes[kData];
       else if(a==="tirar-entrada") tirarEntrada(kData);
       else if(a==="limpar-bloco") delete dados.blocos[kBloco];
@@ -1761,6 +1773,7 @@ function abrirFicha(p){
     el.innerHTML = '<div class="topo"><h3>Sessões</h3><span class="hint">desde '+dataLonga(desde)+', pela agenda</span></div>' +
       '<div class="duas">' +
         '<span>Realizadas: <b>'+c.realizadas+'</b></span>' +
+        '<span>A confirmar: <b>'+c.aConfirmar+'</b></span>' +
         '<span>Não compareceu (cobradas): <b>'+c.faltas+'</b></span>' +
         '<span>Remarcadas: <b>'+c.remarcadas+'</b></span>' +
         '<span>Cortesias: <b>'+c.cortesias+'</b></span>' +
@@ -1943,7 +1956,7 @@ function proximaSessaoApos(p, base){
   for(var i=1; i<=42; i++){
     var d = somaDias(base, i);
     var achou = sessoesDoDia(d).filter(function(s){
-      return s.paciente.id===p.id && (s.estado==="sessao" || s.estado==="falta");
+      return s.paciente.id===p.id && (s.estado==="sessao" || s.estado==="realizada" || s.estado==="falta");
     });
     if(achou.length) return d;
   }
@@ -2151,13 +2164,15 @@ var cacheMes = {};
 function numerosDoMes(ref){
   var chave = ref.getFullYear()+"-"+ref.getMonth();
   if(cacheMes[chave]) return cacheMes[chave];
-  var cont = {}, sessoes = 0;
+  var cont = {}, sessoes = 0, aConfirmar = 0, previstas = 0, hojeN = hoje0();
   for(var i=0;i<31;i++){
     var d = new Date(ref.getFullYear(), ref.getMonth(), 1+i);
     if(d.getMonth()!==ref.getMonth()) break;
     sessoesDoDia(d).forEach(function(s){
       if(s.estado==="remarcada") return;
-      sessoes++; /* falta e cortesia continuam sendo hora ocupada, igual à aba Mês */
+      /* Matheus, 27/09/2026: sessão só conta quando ele confirma (check) */
+      if(confirmada(s.estado)) sessoes++;
+      else if(s.estado==="sessao"){ if(d > hojeN) previstas++; else aConfirmar++; }
       /* a receita segue a cobrança: falta sem aviso cobra, cortesia não (regra das 24 horas) */
       if(cobraSessao(s.estado)) cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
     });
@@ -2172,13 +2187,13 @@ function numerosDoMes(ref){
   /* o que entrou é tudo; o que falta receber compara só pacientes com pacientes (regra dele, 27/09/2026) */
   var recebido = 0, recebidoPacientes = 0;
   pagamentosDoMes(ref).forEach(function(g){ var v = Number(g.valor)||0; recebido += v; if(dePaciente(g)) recebidoPacientes += v; });
-  cacheMes[chave] = {sessoes:sessoes, previsto:previsto, previstoTriagem:previstoTriagem, recebido:recebido, recebidoPacientes:recebidoPacientes};
+  cacheMes[chave] = {sessoes:sessoes, aConfirmar:aConfirmar, previstas:previstas, previsto:previsto, previstoTriagem:previstoTriagem, recebido:recebido, recebidoPacientes:recebidoPacientes};
   return cacheMes[chave];
 }
 function dePaciente(g){ return !g.receita || g.receita === "Prática Clínica."; }
 
 /* ---------------- sessões: uma linha por sessão ---------------- */
-var ROTULO_SITUACAO = {sessao:"Realizada", falta:"Não compareceu (cobra)", remarcada:"Remarcada (não cobra)", cancelada:"Não haverá sessão", cortesia:"Cortesia (não cobra)"};
+var ROTULO_SITUACAO = {sessao:"A confirmar", realizada:"Realizada ✓", falta:"Não compareceu (cobra)", remarcada:"Remarcada (não cobra)", cancelada:"Não haverá sessão", cortesia:"Cortesia (não cobra)"};
 /* a partir de quando a agenda registra o que aconteceu: o que ele guardou em Contando desde,
    ou o mês da primeira marca da grade, ou o mês de hoje */
 function mesDesde(){
@@ -2203,12 +2218,13 @@ function sessoesDoMes(ref){
 }
 /* conta as sessões de um paciente entre duas datas, pelo que a agenda registra */
 function contarSessoesDe(p, de, ate){
-  var c = {realizadas:0, previstas:0, faltas:0, remarcadas:0, canceladas:0, cortesias:0, naoCobrado:0};
+  var c = {realizadas:0, aConfirmar:0, previstas:0, faltas:0, remarcadas:0, canceladas:0, cortesias:0, naoCobrado:0};
   var hoje = hoje0();
   for(var d = new Date(de.getFullYear(), de.getMonth(), de.getDate()); d <= ate; d = somaDias(d, 1)){
     sessoesDoDia(d, true).forEach(function(s){
       if(s.paciente.id !== p.id) return;
-      if(s.estado==="sessao"){ if(d > hoje) c.previstas++; else c.realizadas++; }
+      if(s.estado==="realizada") c.realizadas++;
+      else if(s.estado==="sessao"){ if(d > hoje) c.previstas++; else c.aConfirmar++; }
       else if(s.estado==="falta") c.faltas++;
       else if(s.estado==="remarcada"){ c.remarcadas++; c.naoCobrado += valorSessao(p); }
       else if(s.estado==="cancelada"){ c.canceladas++; c.naoCobrado += valorSessao(p); }
@@ -2225,16 +2241,17 @@ function renderSessoes(){
   if(document.activeElement !== desde) desde.value = chaveData(mesDesde());
 
   var lista = sessoesDoMes(ref);
-  var realizadas = 0, previstas = 0, faltas = 0, desmarcadas = 0, cortesias = 0, naoCobrado = 0;
+  var realizadas = 0, aConfirmar = 0, previstas = 0, faltas = 0, desmarcadas = 0, cortesias = 0, naoCobrado = 0;
   lista.forEach(function(s){
     var v = valorSessao(s.paciente);
-    if(s.estado==="sessao"){ if(s.data > hoje) previstas++; else realizadas++; }
+    if(s.estado==="realizada") realizadas++;
+    else if(s.estado==="sessao"){ if(s.data > hoje) previstas++; else aConfirmar++; }
     else if(s.estado==="falta") faltas++;
     else if(s.estado==="remarcada" || s.estado==="cancelada"){ desmarcadas++; naoCobrado += v; }
     else if(s.estado==="cortesia"){ cortesias++; naoCobrado += v; }
   });
   document.getElementById("ss-realizadas").textContent = realizadas;
-  document.getElementById("ss-realizadas-rot").textContent = previstas ? "Realizadas · " + previstas + " prevista" + (previstas>1 ? "s" : "") : "Realizadas";
+  document.getElementById("ss-realizadas-rot").textContent = "Realizadas" + (aConfirmar ? " · " + aConfirmar + " a confirmar" : "") + (previstas ? " · " + previstas + " prevista" + (previstas>1 ? "s" : "") : "");
   document.getElementById("ss-faltas").textContent = faltas;
   document.getElementById("ss-desmarcadas").textContent = desmarcadas;
   document.getElementById("ss-cortesias").textContent = cortesias;
@@ -2254,10 +2271,13 @@ function renderSessoes(){
     var tr = document.createElement("tr");
     if(s.estado==="falta") tr.className = "linha-atraso";
     var situacao;
-    if(s.origem==="extra") situacao = '<span class="sit ok">Encaixe · '+(futuro ? "prevista" : "realizada")+'</span>';
+    if(s.origem==="extra") situacao = s.estado==="realizada" ? '<span class="sit ok">Encaixe · realizada ✓</span>'
+      : futuro ? '<span class="sit ok">Encaixe · prevista</span>'
+      : '<span class="sit">Encaixe · a confirmar</span> <button class="linknome" data-confirmar-extra="'+k+'">confirmar</button>';
     else {
       situacao = '<select class="situacao" data-sessao="'+k+'" aria-label="Situação da sessão de '+esc(nomeCurto(s.paciente))+' em '+dataCurta(s.data)+'">' +
         Object.keys(ROTULO_SITUACAO).map(function(e){
+          if(e==="realizada" && futuro) return "";
           var rot = (e==="sessao" && futuro) ? "Prevista" : ROTULO_SITUACAO[e];
           return '<option value="'+e+'"'+(s.estado===e ? " selected" : "")+'>'+rot+'</option>';
         }).join("") + '</select>';
@@ -2272,6 +2292,12 @@ function renderSessoes(){
   });
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
     b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.ficha); if(p) abrirFicha(p); });
+  });
+  tb.querySelectorAll("[data-confirmar-extra]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var en = dados.excecoes[b.dataset.confirmarExtra]; var alvo = en && en.tipo==="extra" ? en : (en && en.entra);
+      if(alvo){ alvo.realizada = true; salvar(); renderTudo(); }
+    });
   });
   tb.querySelectorAll("select[data-sessao]").forEach(function(sel){
     sel.addEventListener("change", function(){
@@ -2386,7 +2412,7 @@ function renderPainel(){
   document.getElementById("pn-ativos").textContent = total;
   document.getElementById("pn-projetada").textContent = moeda(agora.previsto) + (agora.previstoTriagem > 0 ? " + " + moeda(agora.previstoTriagem) + " em triagem" : "");
   document.getElementById("pn-recebida").textContent = moeda(agora.recebido);
-  document.getElementById("pn-sessoes").textContent = agora.sessoes;
+  document.getElementById("pn-sessoes").textContent = agora.sessoes + (agora.aConfirmar ? " + " + agora.aConfirmar + " a confirmar" : "") + (agora.previstas ? " + " + agora.previstas + " prevista" + (agora.previstas>1 ? "s" : "") : "");
 
   var anoTodo = [];
   for(var m=0;m<12;m++){

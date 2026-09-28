@@ -590,7 +590,7 @@ function conferirClinica(app){
     if (pn.novos) totais.push({ rot:"Novos pacientes em " + MESES[m], p:pn.novos[m], a:mov ? mov.novos[m] : null, obs:mov ? "pela data de início do Registro" : semJanela, inteiro:true });
     if (pn.encerramentos) totais.push({ rot:"Encerramentos em " + MESES[m], p:pn.encerramentos[m], a:mov ? mov.encerrados[m] : null, obs:mov ? "pela data de fim" : semJanela, inteiro:true });
     if (pn.altas) totais.push({ rot:"Altas clínicas em " + MESES[m], p:pn.altas[m], a:mov ? mov.altas[m] : null, obs:mov ? "" : semJanela, inteiro:true });
-    if (pn.sessoes) totais.push({ rot:"Sessões em " + MESES[m], p:pn.sessoes[m], a:nMes ? nMes.sessoes : null, obs:"bases diferentes: a planilha soma as sessões dos tratamentos que terminam no mês; o app conta as sessões da agenda no mês", semDif:true, inteiro:true });
+    // Matheus, 27/09/2026: a contagem de sessões da planilha não é comparável; no app só as confirmadas contam. Fora da conferência.
     if (pn.faturamento) totais.push({ rot:"Faturamento em " + MESES[m], p:pn.faturamento[m], a:recebidoPac, obs:"só pagamentos de pacientes (origem Prática Clínica.)" });
     // a planilha conta linhas do Registro; o app conta prontuários. Quem voltou e saiu de novo tem duas linhas Inativo.
     const porLinha = pedaco => Object.values(reg).filter(r => norm(r.status).indexOf(pedaco) === 0).length;
@@ -605,7 +605,7 @@ function conferirClinica(app){
       totais.push({ rot:"Pacientes ativos (topo)", p:pn.ativos, a:(cl.pacientes || []).length, inteiro:true, obs:"o app conta quem está na agenda, inclusive triagem" });
       totais.push({ rot:"Receita projetada/mês", p:pn.projetada, a:previsto, obs:previsto === null ? semJanela : "só ativos nos dois; a planilha estima pelo cadastro e o app pela agenda do mês" });
       totais.push({ rot:"Receita/mês (pacientes)", p:pn.receitaMes, a:recebidoPac });
-      totais.push({ rot:"Sessões/mês projetadas", p:pn.sessoesProjetadas, a:nMes ? nMes.sessoes : null, inteiro:true, obs:"a planilha multiplica o ritmo (Mensal ×4); o app conta a agenda", semDif:true });
+      // idem: sessões projetadas ficam fora da conferência (decisão dele, 27/09/2026)
       totais.push({ rot:"Pendente projetado", p:pn.fin.pendenteProjetado, a:previsto === null ? null : Math.max(previsto - recebidoPac, 0), obs:"projetado menos recebido de pacientes" });
       totais.push({ rot:"Pendente ativos (dívida)", p:pn.fin.pendenteAtivos, a:null, obs:"o app ainda não calcula dívida por paciente: precisa da sessão como registro (decisão 12)" });
       totais.push({ rot:"Pendente inativos (dívida)", p:pn.fin.pendenteInativos, a:null, obs:"idem" });
