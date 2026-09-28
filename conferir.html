@@ -491,7 +491,7 @@ function conferirDinheiro(app){
       const w = janelaClinica();
       const previsto = w ? w.numerosDoMes(new Date(ano, m, 1)).previsto : null;
       const pacientes = porOrigem["pratica clinica."] || 0;
-      if (pn["receita projetada:"] !== undefined) totais.push({ rot:"Painel: receita projetada", p:num(pn["receita projetada:"]), a:previsto, obs:previsto === null ? "abra a aba Clínica para calcular" : "a planilha soma o cadastro (Semanal ×4); o app conta as sessões que a agenda marca no mês" });
+      if (pn["receita projetada:"] !== undefined) totais.push({ rot:"Painel: receita projetada", p:num(pn["receita projetada:"]), a:previsto, obs:previsto === null ? "abra a aba Clínica para calcular" : "só ativos nos dois; a planilha estima pelo cadastro e o app pela agenda do mês" });
       if (pn["recebimentos/mes:"] !== undefined) totais.push({ rot:"Painel: recebimentos/mês", p:num(pn["recebimentos/mes:"]), a:faturamento, obs:"tudo o que entrou" });
       if (pn["faltante:"] !== undefined) totais.push({ rot:"Painel: faltante", p:num(pn["faltante:"]), a:previsto === null ? null : previsto - pacientes, obs:"projetado menos o que os pacientes já pagaram" });
       if (pn["mensal atual:"] !== undefined) totais.push({ rot:"Painel: mensal atual", p:num(pn["mensal atual:"]), a:totalMes });
@@ -603,7 +603,7 @@ function conferirClinica(app){
     if (chaveMes(new Date()) === km){
       const previsto = nMes ? nMes.previsto : null;
       totais.push({ rot:"Pacientes ativos (topo)", p:pn.ativos, a:(cl.pacientes || []).length, inteiro:true, obs:"o app conta quem está na agenda, inclusive triagem" });
-      totais.push({ rot:"Receita projetada/mês", p:pn.projetada, a:previsto, obs:previsto === null ? semJanela : "a planilha soma o cadastro (Semanal ×4); o app conta as sessões que a agenda marca no mês" });
+      totais.push({ rot:"Receita projetada/mês", p:pn.projetada, a:previsto, obs:previsto === null ? semJanela : "só ativos nos dois; a planilha estima pelo cadastro e o app pela agenda do mês" });
       totais.push({ rot:"Receita/mês (pacientes)", p:pn.receitaMes, a:recebidoPac });
       totais.push({ rot:"Sessões/mês projetadas", p:pn.sessoesProjetadas, a:nMes ? nMes.sessoes : null, inteiro:true, obs:"a planilha multiplica o ritmo (Mensal ×4); o app conta a agenda", semDif:true });
       totais.push({ rot:"Pendente projetado", p:pn.fin.pendenteProjetado, a:previsto === null ? null : Math.max(previsto - recebidoPac, 0), obs:"projetado menos recebido de pacientes" });

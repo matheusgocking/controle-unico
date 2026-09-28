@@ -2028,7 +2028,8 @@ function renderPagamentos(){
   var somaRecebida = 0;
   recebidos.forEach(function(g){ somaRecebida += Number(g.valor)||0; });
   document.getElementById("pg-recebido").textContent = moeda(somaRecebida);
-  document.getElementById("pg-previsto").textContent = moeda(previstoDoMes(ref));
+  var nPg = numerosDoMes(ref);
+  document.getElementById("pg-previsto").textContent = moeda(nPg.previsto) + (nPg.previstoTriagem > 0 ? " + " + moeda(nPg.previstoTriagem) + " em triagem" : "");
   document.getElementById("pg-sub").textContent =
     recebidos.length + (recebidos.length===1 ? " pagamento registrado" : " pagamentos registrados");
 
@@ -2161,12 +2162,17 @@ function numerosDoMes(ref){
       if(cobraSessao(s.estado)) cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
     });
   }
-  var previsto = 0;
-  dados.pacientes.forEach(function(p){ var n = cont[p.id]||0; if(n>0) previsto += receitaMensal(p, n); });
+  /* Matheus, 27/09/2026: o projetado geral é só de quem está ativo, como na planilha;
+     quem está em triagem aparece ao lado, sem entrar no número principal */
+  var previsto = 0, previstoTriagem = 0;
+  dados.pacientes.forEach(function(p){
+    var n = cont[p.id]||0; if(n<=0) return;
+    if(p.status === "Triagem.") previstoTriagem += receitaMensal(p, n); else previsto += receitaMensal(p, n);
+  });
   /* o que entrou é tudo; o que falta receber compara só pacientes com pacientes (regra dele, 27/09/2026) */
   var recebido = 0, recebidoPacientes = 0;
   pagamentosDoMes(ref).forEach(function(g){ var v = Number(g.valor)||0; recebido += v; if(dePaciente(g)) recebidoPacientes += v; });
-  cacheMes[chave] = {sessoes:sessoes, previsto:previsto, recebido:recebido, recebidoPacientes:recebidoPacientes};
+  cacheMes[chave] = {sessoes:sessoes, previsto:previsto, previstoTriagem:previstoTriagem, recebido:recebido, recebidoPacientes:recebidoPacientes};
   return cacheMes[chave];
 }
 function dePaciente(g){ return !g.receita || g.receita === "Prática Clínica."; }
@@ -2378,7 +2384,7 @@ function renderPainel(){
   document.getElementById("pn-titulo").textContent = ref.toLocaleDateString("pt-BR",{month:"long", year:"numeric"});
   document.getElementById("pn-sub").textContent = "o mês aberto também na aba Mês";
   document.getElementById("pn-ativos").textContent = total;
-  document.getElementById("pn-projetada").textContent = moeda(agora.previsto);
+  document.getElementById("pn-projetada").textContent = moeda(agora.previsto) + (agora.previstoTriagem > 0 ? " + " + moeda(agora.previstoTriagem) + " em triagem" : "");
   document.getElementById("pn-recebida").textContent = moeda(agora.recebido);
   document.getElementById("pn-sessoes").textContent = agora.sessoes;
 
@@ -2456,7 +2462,7 @@ function renderPainel(){
   });
 
   document.getElementById("pn-financeiro").innerHTML =
-    linha("Receita projetada no mês", moeda(agora.previsto)) +
+    linha("Receita projetada no mês", moeda(agora.previsto) + (agora.previstoTriagem > 0 ? ' <span class="hint">(+ '+moeda(agora.previstoTriagem)+' em triagem)</span>' : "")) +
     linha("Recebido no mês", moeda(agora.recebido) + (Math.abs(agora.recebido - agora.recebidoPacientes) > 0.005 ? ' <span class="hint">('+moeda(agora.recebidoPacientes)+' de pacientes)</span>' : "")) +
     linha("Falta receber neste mês", moeda(Math.max(0, agora.previsto - agora.recebidoPacientes))) +
     linha("Dívida vencida acumulada", moeda(dividaVencida));
