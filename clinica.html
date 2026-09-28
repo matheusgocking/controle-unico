@@ -466,6 +466,62 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
 .nuvem-ponto.ok{background:#2f9e5b}
 .nuvem-ponto.indo{background:#d49a1c}
 .nuvem-ponto.erro{background:#d0453a}
+/* ---------- redesenho aprovado no quadro de Design (28/09/2026) ---------- */
+/* feriado: faixa azul em cima do dia, com o nome escrito */
+.day.feriado{border-color:var(--info); box-shadow:inset 0 3px 0 var(--info)}
+.day .fer{font-size:11px; font-weight:600; color:var(--info); line-height:1.25}
+.chip-fer{display:inline-block; margin-left:6px; border-radius:20px; padding:0 7px; font-size:10.5px; font-weight:600; background:var(--info-soft); color:var(--info)}
+/* cada situação da aba Sessões com a sua cor, as mesmas da grade */
+select.situacao.s-realizada{background:var(--ok-soft); color:var(--ok); border-color:var(--ok); font-weight:600}
+select.situacao.s-confirmar{background:var(--quente-bg); color:var(--quente-fg); border-color:var(--quente-line); font-weight:600}
+select.situacao.s-prevista{background:var(--surface-2); color:var(--muted); border-color:var(--border)}
+select.situacao.s-falta{background:var(--t-falta-bg); color:var(--t-falta-fg); border-color:var(--t-falta-bar); font-weight:600}
+select.situacao.s-remarcada{background:var(--t-remarcada-bg); color:var(--t-remarcada-fg); border:1px dashed var(--t-remarcada-bar)}
+select.situacao.s-cancelada{background:var(--neutral-chip); color:var(--faint); border-color:var(--border); text-decoration:line-through}
+select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-fg); border:1px dashed var(--t-sessao-bar); font-weight:600}
+.leg-sit{display:flex; flex-wrap:wrap; gap:6px 14px; margin:0 0 6px; font-size:12px; color:var(--muted)}
+.leg-sit span{display:inline-flex; align-items:center; gap:6px}
+.leg-sit i{display:inline-block; width:12px; height:12px; border-radius:4px; border:1px solid var(--border)}
+/* faixa "Hoje" em cima da grade da semana */
+.hoje-cab{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-bottom:12px}
+.hoje-cab .sub{margin:0}
+.pcard .pr{font-size:11px; color:var(--muted)}
+/* ficha: bloco do prontuário, com o resumo e os pedidos ao Claude */
+.fipag.pront{border-color:var(--accent-line); background:var(--accent-soft)}
+.pront .resumo{margin-top:10px; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:10px 12px; font-size:13px; white-space:pre-line}
+.pront .cmds{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+.pront .pedido{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:8px; font-size:12.5px; color:var(--muted)}
+.pront .pedido .apagar{border:0; background:transparent; color:var(--faint); cursor:pointer; font-size:12px; padding:2px 6px; border-radius:6px}
+.pront .pedido .apagar:hover{background:var(--devendo-soft); color:var(--devendo)}
+/* painel: o mês em dinheiro, quem deve, faltas, horários livres e o ano com a meta */
+.trilho-grande{height:14px; border-radius:20px; background:var(--surface-3); overflow:hidden}
+.trilho-grande span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
+.prog-legenda{display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; margin-top:8px; font-size:13px; color:var(--muted)}
+.prog-legenda b{color:var(--text); font-family:Literata,Georgia,serif; font-size:18px}
+.cifras{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:16px}
+.cifras .result{padding:12px 14px}
+.cifras .big{font-size:22px}
+.cifras .rotulo{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+.cifras .hint{margin:4px 0 0}
+.cifras .result.bateu{background:var(--ok-soft); border-color:var(--ok)}
+.cifras .result.bateu .big,.cifras .result.bateu .rotulo{color:var(--ok)}
+.horarios{display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 12px}
+.horarios span{background:var(--t-divulgado-bg); color:var(--t-divulgado-fg); border-left:4px solid var(--t-divulgado-bar); border-radius:8px; padding:5px 10px; font-size:12.5px; font-weight:600}
+.falt h3{font-size:13px; margin:10px 0 2px; color:var(--muted); font-family:inherit; text-transform:uppercase; letter-spacing:.05em; font-weight:500}
+.falt .contagem .quem{flex:1; min-width:0}
+.plot{position:relative; height:190px; display:flex; align-items:flex-end; gap:6px; border-bottom:1px solid var(--border-strong); margin-top:18px}
+.plot .col{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px}
+.plot .par{display:flex; align-items:flex-end; justify-content:center; gap:2px; width:100%}
+.plot i{display:block; width:16px; max-width:40%; border-radius:4px 4px 0 0; background:var(--g-prev)}
+.plot i.rec{background:var(--g-rec)}
+.plot .rot{font-size:10.5px; font-weight:600; color:var(--text); white-space:nowrap}
+.plot .meta-linha{position:absolute; left:0; right:0; border-top:2px dashed var(--ok); pointer-events:none}
+.plot .meta-linha span{position:absolute; left:0; top:-19px; font-size:11px; font-weight:600; color:var(--ok)}
+.meses{display:flex; gap:6px}
+.meses span{flex:1 1 0; text-align:center; font-size:11px; color:var(--muted); padding-top:4px}
+.meses span.agora{color:var(--accent); font-weight:700}
+.legenda-graf i.meta{background:transparent; border-top:2px dashed var(--ok); border-radius:0; height:0; width:16px}
+@media (max-width:700px){ .plot .rot{font-size:8.5px} .plot i{width:8px} }
 @media (prefers-reduced-motion: no-preference){ .cell,.btn,.tab{transition:background-color .12s ease} }
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
@@ -519,6 +575,12 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
       <button class="btn primary" id="msg">Mensagem de divulgação</button>
     </div>
 
+    <!-- os pacientes de hoje em cartões, iguais aos da aba Pacientes (28/09/2026) -->
+    <div class="panel hidden" id="hoje-faixa" style="margin-bottom:14px">
+      <div class="hoje-cab"><h2 id="hoje-titulo">Hoje</h2><p class="sub" id="hoje-sub"></p></div>
+      <div class="pgrid" id="hoje-cartoes"></div>
+    </div>
+
     <div class="gridwrap"><div class="grid" id="grade"></div></div>
 
     <div class="legend">
@@ -554,6 +616,7 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
     <div class="legend" style="margin-top:10px">
       <span><i style="background:var(--surface); border-color:var(--border)"></i>Dia de semana</span>
       <span><i style="background:var(--fds-bg); border-color:var(--fds-line)"></i>Sábado e domingo</span>
+      <span><i style="background:var(--info-soft); border-color:var(--info)"></i>Feriado nacional ou do Espírito Santo</span>
       <span class="dica">A receita do mês segue a cobrança de cada paciente: ciclo mensal conta o valor cheio, quinzenal conta o valor do mês e avulsa conta por sessão cobrada (realizada, ou falta sem aviso de 24 horas). Remarcada, cortesia e "não haverá" não cobram.</span>
     </div>
   </section>
@@ -581,6 +644,15 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
     <div class="panel">
       <h2>Uma linha por sessão</h2>
       <p class="sub">O que aconteceu com cada sessão do mês. A linha nasce do horário fixo do paciente e a situação é a que você deu na grade da semana; mudar aqui muda lá também. Quem faltou sem avisar 24 horas antes é cobrado; remarcada, cortesia e "não haverá" não cobram.</p>
+      <div class="leg-sit">
+        <span><i style="background:var(--ok-soft); border-color:var(--ok)"></i>Realizada</span>
+        <span><i style="background:var(--quente-bg); border-color:var(--quente-line)"></i>A confirmar</span>
+        <span><i style="background:var(--surface-2); border-color:var(--border)"></i>Prevista</span>
+        <span><i style="background:var(--t-falta-bg); border-color:var(--t-falta-bar)"></i>Não compareceu</span>
+        <span><i style="background:var(--t-remarcada-bg); border-color:var(--t-remarcada-bar); border-style:dashed"></i>Remarcada</span>
+        <span><i style="background:var(--neutral-chip); border-color:var(--border)"></i>Não haverá</span>
+        <span><i style="background:var(--t-sessao-bg); border-color:var(--t-sessao-bar); border-style:dashed"></i>Cortesia</span>
+      </div>
       <div class="tabwrap">
         <table class="tab" id="ss-tabela">
           <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
@@ -600,70 +672,51 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
         <button class="btn sm" id="pn-next" aria-label="Próximo mês">→</button>
         <div class="range"><span id="pn-titulo"></span><small id="pn-sub"></small></div>
       </div>
-      <div class="stats">
-        <div class="stat"><b id="pn-ativos">0</b><span>Pacientes ativos</span></div>
-        <div class="stat" title="O que a agenda deste mês rende, pela regra de cobrança de cada paciente."><b id="pn-projetada">R$ 0</b><span>Receita projetada</span></div>
-        <div class="stat" title="Pagamentos lançados neste mês."><b id="pn-recebida">R$ 0</b><span>Recebido no mês</span></div>
-        <div class="stat" title="Sessões que você confirmou como realizadas neste mês. As passadas sem confirmação aparecem como a confirmar."><b id="pn-sessoes">0</b><span>Sessões confirmadas no mês</span></div>
-      </div>
     </div>
 
+    <!-- Painel refeito (28/09/2026, as cinco mudanças aprovadas por ele): primeiro o mês em
+         dinheiro, depois quem deve e quem falta, os horários livres e o ano contra a meta -->
     <div class="panel">
-      <h2>O ano em números</h2>
-      <p class="sub" id="pn-ano-sub">Mês a mês, o que a agenda projeta e o que entrou de verdade.</p>
-
-      <div class="graf">
-        <div class="topo"><h3>Dinheiro por mês</h3><span class="escala" id="pn-escala-dinheiro"></span></div>
-        <div class="linha-graf" id="pn-graf-dinheiro"></div>
-        <div class="legenda-graf">
-          <span><i class="rec"></i>Recebido de verdade</span>
-          <span><i class="prev"></i>Previsto pela agenda (deste mês em diante)</span>
-        </div>
+      <h2 id="pn-din-titulo">O mês em dinheiro</h2>
+      <p class="sub">Quanto já entrou do que a agenda do mês prevê.</p>
+      <div class="trilho-grande" role="img" id="pn-trilho"><span id="pn-barra" style="width:0%"></span></div>
+      <div class="prog-legenda"><span><b id="pn-recebido">R$ 0</b> recebidos</span><span id="pn-de"></span></div>
+      <div class="cifras">
+        <div class="result"><div class="rotulo">Falta receber neste mês</div><div class="big" id="pn-falta">R$ 0</div><p class="hint" id="pn-falta-sub"></p></div>
+        <div class="result"><div class="rotulo">Dívida vencida, de qualquer mês</div><div class="big" id="pn-divida">R$ 0</div><p class="hint" id="pn-divida-sub"></p></div>
+        <div class="result" id="pn-meta-caixa"><div class="rotulo">Meta do mês (aba Meta)</div><div class="big" id="pn-meta">R$ 0</div><p class="hint" id="pn-meta-sub"></p></div>
       </div>
-
-      <div class="graf">
-        <div class="topo"><h3>Sessões por mês</h3><span class="escala" id="pn-escala-sessoes"></span></div>
-        <div class="linha-graf" id="pn-graf-sessoes"></div>
-        <div class="legenda-graf">
-          <span><i class="rec"></i>Sessões pela agenda</span>
-          <span class="nota" id="pn-nota-sessoes"></span>
-        </div>
-      </div>
-
-      <div class="graf">
-        <div class="topo"><h3>Movimento da carteira</h3><span class="escala" id="pn-escala-carteira"></span></div>
-        <div class="linha-graf" id="pn-graf-carteira"></div>
-        <div class="legenda-graf">
-          <span><i class="rec"></i>Pacientes novos</span>
-          <span><i class="sai"></i>Encerramentos</span>
-          <span><i class="alta"></i>Altas clínicas</span>
-        </div>
-      </div>
-
-      <details class="tabela">
-        <summary>Ver o ano como tabela</summary>
-        <div class="tabwrap">
-          <table class="tab" id="pn-tabela">
-            <thead><tr><th>Mês</th><th>Novos</th><th>Encerr.</th><th>Altas</th><th>Sessões</th><th>Previsto</th><th>Recebido</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </details>
     </div>
 
     <div class="blocos" style="margin-top:16px">
       <div class="panel">
-        <h2>Financeiro do mês</h2>
-        <p class="sub">As duas primeiras linhas são deste mês. A última é dívida acumulada, de qualquer mês.</p>
-        <div class="linhas" id="pn-financeiro"></div>
+        <h2>Quem está devendo</h2>
+        <p class="sub">Do atraso maior para o menor. O nome abre a ficha.</p>
+        <div id="pn-devendo"></div>
       </div>
-
-      <div class="panel">
-        <h2>Situação dos pagamentos</h2>
-        <p class="sub">Onde cada paciente está hoje.</p>
-        <div id="pn-situacao"></div>
+      <div class="panel falt">
+        <h2 id="pn-falt-titulo">Faltas e remarcações do mês</h2>
+        <p class="sub">Quem está saindo do combinado. A etiqueta vermelha diz que a pessoa também está devendo.</p>
+        <div id="pn-faltas"></div>
       </div>
+    </div>
 
+    <div class="panel" style="margin-top:16px">
+      <h2>Horários divulgados ainda livres</h2>
+      <p class="sub">O que a mensagem de divulgação está oferecendo nesta semana.</p>
+      <div class="horarios" id="pn-horarios"></div>
+      <div class="linhas" id="pn-horarios-conta"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h2 id="pn-ano-titulo">O ano mês a mês</h2>
+      <p class="sub" id="pn-ano-sub"></p>
+      <div class="plot" id="pn-plot"></div>
+      <div class="meses" id="pn-meses"></div>
+      <div class="legenda-graf"><span><i class="rec"></i>Recebido</span><span><i class="prev"></i>Previsto pela agenda (deste mês em diante)</span><span><i class="meta"></i>Meta do mês</span></div>
+    </div>
+
+    <div class="blocos" style="margin-top:16px">
       <div class="panel">
         <h2>Carteira atual</h2>
         <p class="sub">Como os pacientes de hoje se distribuem.</p>
@@ -1184,6 +1237,39 @@ function renderSemana(){
   document.getElementById("s-divulgados").textContent = divulgadosLivres;
   var teto = Number(dados.config.horas)||0;
   document.getElementById("s-ocupacao").textContent = teto ? Math.round(sessoes/teto*100)+"%" : "—";
+  renderHoje();
+}
+
+/* faixa "Hoje" em cima da grade (28/09/2026): os pacientes do dia em cartões, com a situação
+   da sessão, até quando o prontuário está registrado e o pagamento. Só aparece na semana de hoje. */
+function renderHoje(){
+  var caixa = document.getElementById("hoje-faixa");
+  var hoje = hoje0();
+  var lista = mesmoDia(inicioSemana(hoje), semana)
+    ? sessoesDoDia(hoje).filter(function(s){ return s.estado!=="remarcada"; }) : [];
+  caixa.classList.toggle("hidden", !lista.length);
+  if(!lista.length) return;
+  var rot = {realizada:"realizada ✓", falta:"faltou", cortesia:"cortesia"};
+  document.getElementById("hoje-titulo").textContent = "Hoje · " + DIAS[hoje.getDay()].toLowerCase() + ", " + dataCurta(hoje);
+  document.getElementById("hoje-sub").textContent = lista.length + (lista.length>1 ? " sessões" : " sessão") + " · toque no cartão para abrir a ficha";
+  var alvo = document.getElementById("hoje-cartoes");
+  alvo.innerHTML = "";
+  lista.forEach(function(s){
+    var p = s.paciente, pg = situacaoPagamento(p), pr = p.prontuario || {};
+    var estado = rot[s.estado] || (jaPassou(hoje, s.hora) ? "a confirmar" : "prevista");
+    var c = document.createElement("button");
+    c.className = "pcard";
+    c.innerHTML =
+      '<span class="ini">'+esc(inicial1(p))+'</span>' +
+      '<span class="corpo">' +
+        '<span class="n">'+esc(p.nome)+'</span>' +
+        '<span class="sub">'+String(s.hora).padStart(2,"0")+'h · '+estado+'</span>' +
+        '<span class="pr">'+(pr.ultima ? "Prontuário até "+dataCurta(deISO(pr.ultima)) : esc(p.codigo||""))+'</span>' +
+        '<span class="selo '+pg.classe+'">'+esc(pg.texto)+'</span>' +
+      '</span>';
+    c.addEventListener("click", function(){ abrirFicha(p); });
+    alvo.appendChild(c);
+  });
 }
 
 function estadoCelula(dia, hora, data){
@@ -1456,8 +1542,10 @@ function renderMes(){
     }
     var cel = document.createElement("div");
     var fimDeSemana = (d.getDay()===0 || d.getDay()===6);
-    cel.className = "day" + (fimDeSemana ? " fds" : "") + (noMes ? "" : " fora") + (mesmoDia(d,hoje) ? " hoje" : "");
+    var feriado = feriadoEm(d);
+    cel.className = "day" + (fimDeSemana ? " fds" : "") + (noMes ? "" : " fora") + (mesmoDia(d,hoje) ? " hoje" : "") + (feriado ? " feriado" : "");
     cel.innerHTML = '<div class="num">'+d.getDate()+'</div>' +
+      (feriado ? '<span class="fer">Feriado · '+esc(feriado)+'</span>' : "") +
       '<span class="pill'+(ss.length?"":" vazio")+'">'+(ss.length ? '<b>'+ss.length+'</b>'+(ss.length>1?"sessões":"sessão") : "livre")+'</span>' +
       (ss.length ? '<div class="linha"><span>'+ss.map(function(s){ return String(s.hora)+"h"; }).join(" · ")+'</span></div>' : "");
     cel.addEventListener("click", function(dd){ return function(){ semana = inicioSemana(dd); mostrarView("semana"); renderTudo(); }; }(d));
@@ -1729,6 +1817,15 @@ function desenharAgendaPacientes(soTriagem){
 }
 function inicial1(p){ var n=(p.nome||"?").trim(); return n ? n.charAt(0).toUpperCase() : "?"; }
 
+/* os pedidos que a ficha deixa para o Claude, na ordem dos botões */
+var PEDIDOS = {atualizar:"Buscar e atualizar o resumo", registrar:"Registrar a sessão de hoje",
+  falta:"Registrar falta", remarcar:"Registrar remarcação"};
+function quandoPedido(iso){
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return "";
+  return (mesmoDia(d, new Date()) ? "hoje" : dataCurta(d)) + ", " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+
 /* ---------------- ficha do paciente ---------------- */
 function abrirFicha(p){
   fecharMenu();
@@ -1738,6 +1835,7 @@ function abrirFicha(p){
     '<div class="modal">' +
       '<div class="fcab"><span class="ini grande" id="fi-ini"></span>' +
         '<div><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span></div></div>' +
+      '<div class="fipag pront" id="fi-pront"></div>' +
       '<div class="fipag" id="fi-pag"></div>' +
       '<div class="fipag" id="fi-sess"></div>' +
       '<div class="fipag" id="fi-form"></div>' +
@@ -1774,6 +1872,7 @@ function abrirFicha(p){
     document.getElementById("fi-titulo").textContent = p.nome;
     document.getElementById("fi-sub").textContent = p.codigo+" · "+DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h";
     document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
+    pintarProntuario();
     pintarPagamentos();
     pintarSessoes();
     pintarFormulacao();
@@ -1794,6 +1893,47 @@ function abrirFicha(p){
         '<span>Cortesias: <b>'+c.cortesias+'</b></span>' +
         '<span>Não cobrado: <b>'+moeda(c.naoCobrado)+'</b></span>' +
       '</div>';
+  }
+  /* prontuário (28/09/2026): o resumo da última sessão registrada e os pedidos ao Claude.
+     O prontuário mora no computador dele; o app só guarda o pedido (tipo, paciente e hora,
+     nada clínico) em dados.pedidos, e o resumo em p.prontuario quando o Claude devolver. */
+  function pintarProntuario(){
+    var el = document.getElementById("fi-pront");
+    var pr = p.prontuario || {};
+    var pedidos = (dados.pedidos || []).filter(function(x){ return x.pacienteId===p.id; }).slice(-3).reverse();
+    var h = '<div class="topo"><h3>Prontuário</h3>' +
+      (pr.ultima ? '<span class="sit ok">registrado até '+dataCurta(deISO(pr.ultima))+'</span>' : '<span class="sit sem">sem resumo ainda</span>') +
+      (pr.atualizadoEm ? '<span class="hint" style="margin-left:auto">resumo do Claude · '+quandoPedido(pr.atualizadoEm)+'</span>' : "") + '</div>';
+    if(pr.ultima) h += '<div class="duas"><span>Última sessão registrada: <b>'+dataLonga(deISO(pr.ultima))+(pr.sessao ? " · sessão "+esc(pr.sessao) : "")+'</b></span></div>';
+    h += pr.resumo ? '<div class="resumo">'+esc(pr.resumo)+'</div>'
+      : '<div class="duas"><span>Peça "Buscar e atualizar o resumo" para o Claude ler o prontuário e trazer a última sessão para cá.</span></div>';
+    h += '<div class="cmds">' + Object.keys(PEDIDOS).map(function(t, i){
+      return '<button class="btn'+(i===0 ? " primary" : "")+'" data-pedir="'+t+'">'+PEDIDOS[t]+'</button>';
+    }).join("") + '</div>';
+    pedidos.forEach(function(x){
+      var ponto = x.estado==="feito" ? "ok" : (x.estado==="erro" ? "erro" : "indo");
+      h += '<div class="pedido"><span class="nuvem-ponto '+ponto+'"></span>Pedido de '+quandoPedido(x.criadoEm)+' · '+esc(PEDIDOS[x.tipo]||x.tipo)+' · ' +
+        (x.estado==="feito" ? "feito" : (x.estado==="erro" ? "não deu certo" + (x.obs ? ": "+esc(x.obs) : "") : "esperando o Claude")) +
+        (x.estado==="esperando" ? '<button class="apagar" data-cancelar="'+x.id+'">cancelar</button>' : "") + '</div>';
+    });
+    h += '<p class="hint" style="margin:8px 0 0">Cada botão deixa um pedido anotado aqui. A parte do Claude que busca os pedidos no seu computador ainda não está ligada.</p>';
+    el.innerHTML = h;
+    el.querySelectorAll("[data-pedir]").forEach(function(b){
+      b.addEventListener("click", function(){
+        dados.pedidos = dados.pedidos || [];
+        var igual = dados.pedidos.filter(function(x){ return x.pacienteId===p.id && x.tipo===b.dataset.pedir && x.estado==="esperando"; })[0];
+        if(igual){ recado("Esse pedido já está esperando o Claude."); return; }
+        dados.pedidos.push({id:"q"+Date.now(), pacienteId:p.id, codigo:p.codigo||"", tipo:b.dataset.pedir,
+          criadoEm:new Date().toISOString(), estado:"esperando"});
+        salvar(); pintarProntuario();
+      });
+    });
+    el.querySelectorAll("[data-cancelar]").forEach(function(b){
+      b.addEventListener("click", function(){
+        dados.pedidos = (dados.pedidos || []).filter(function(x){ return x.id!==b.dataset.cancelar; });
+        salvar(); pintarProntuario();
+      });
+    });
   }
   /* espelho da aba Formulação de Caso: só leitura, porque a planilha é dona do conteúdo */
   function pintarFormulacao(){
@@ -1951,6 +2091,34 @@ function jaPassou(data, hora){ var t = new Date(data.getFullYear(), data.getMont
 function deISO(s){ return new Date(s+"T00:00:00"); }
 function dataCurta(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
 function dataLonga(d){ return dataCurta(d)+"/"+d.getFullYear(); }
+
+/* ---------------- feriados ----------------
+   Nacionais e do Espírito Santo, sem os municipais e sem ponto facultativo (28/09/2026).
+   Conferidos no Decreto estadual 124-S, de 22/01/2026 (página do DER-ES). Os de data fixa valem
+   todo ano; Paixão de Cristo (dois dias antes da Páscoa) e Nossa Senhora da Penha (oito dias
+   depois) andam com a Páscoa, que é calculada: em 2026 a conta dá 3/4 e 13/4, como no decreto. */
+var FERIADOS_FIXOS = {"01-01":"Confraternização Universal", "04-21":"Tiradentes", "05-01":"Dia do Trabalho",
+  "09-07":"Independência do Brasil", "10-12":"Nossa Senhora Aparecida", "11-02":"Finados",
+  "11-15":"Proclamação da República", "11-20":"Consciência Negra", "12-25":"Natal"};
+var feriadosCache = {};
+function pascoa(ano){
+  var a = ano%19, b = Math.floor(ano/100), c = ano%100, d = Math.floor(b/4), e = b%4;
+  var f = Math.floor((b+8)/25), g = Math.floor((b-f+1)/3), h = (19*a+b-d-g+15)%30;
+  var i = Math.floor(c/4), k = c%4, l = (32+2*e+2*i-h-k)%7, m = Math.floor((a+11*h+22*l)/451);
+  var n = h+l-7*m+114;
+  return new Date(ano, Math.floor(n/31)-1, (n%31)+1);
+}
+function feriadosDoAno(ano){
+  if(feriadosCache[ano]) return feriadosCache[ano];
+  var lista = {};
+  Object.keys(FERIADOS_FIXOS).forEach(function(md){ lista[ano+"-"+md] = FERIADOS_FIXOS[md]; });
+  var p = pascoa(ano);
+  lista[chaveData(somaDias(p,-2))] = "Paixão de Cristo";
+  lista[chaveData(somaDias(p,8))] = "Nossa Senhora da Penha (ES)";
+  feriadosCache[ano] = lista;
+  return lista;
+}
+function feriadoEm(d){ return feriadosDoAno(d.getFullYear())[chaveData(d)] || ""; }
 function acharPaciente(id){ return dados.pacientes.filter(function(x){ return x.id===id; })[0] || null; }
 function rotuloCobranca(p){
   if(p.cobranca==="mensal") return "Ciclo mensal";
@@ -2177,7 +2345,6 @@ function dicaPagamento(trocouPaciente){
    dívida acumulada, que tem outra base. O que depende de data de início e de fim, como
    novos pacientes, encerramentos e altas, fica de fora: isso o site não guarda. */
 var MESES_CURTO = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-var ALTURA_GRAF = 132;
 var cacheMes = {};
 
 function numerosDoMes(ref){
@@ -2294,7 +2461,9 @@ function renderSessoes(){
       : futuro ? '<span class="sit ok">Encaixe · prevista</span>'
       : '<span class="sit">Encaixe · a confirmar</span> <button class="linknome" data-confirmar-extra="'+k+'">confirmar</button>';
     else {
-      situacao = '<select class="situacao" data-sessao="'+k+'" aria-label="Situação da sessão de '+esc(nomeCurto(s.paciente))+' em '+dataCurta(s.data)+'">' +
+      /* a cor segue a situação; "sessao" é a confirmar depois da hora e prevista antes */
+      var cor = s.estado==="sessao" ? (futuro ? "prevista" : "confirmar") : s.estado;
+      situacao = '<select class="situacao s-'+cor+'" data-sessao="'+k+'" aria-label="Situação da sessão de '+esc(nomeCurto(s.paciente))+' em '+dataCurta(s.data)+'">' +
         Object.keys(ROTULO_SITUACAO).map(function(e){
           if(e==="realizada" && futuro) return "";
           var rot = (e==="sessao" && futuro) ? "Prevista" : ROTULO_SITUACAO[e];
@@ -2302,7 +2471,7 @@ function renderSessoes(){
         }).join("") + '</select>';
     }
     tr.innerHTML =
-      '<td>'+DIAS_CURTO[s.data.getDay()]+', '+dataCurta(s.data)+'</td>' +
+      '<td>'+DIAS_CURTO[s.data.getDay()]+', '+dataCurta(s.data)+(feriadoEm(s.data) ? '<span class="chip-fer" title="'+esc(feriadoEm(s.data))+'">feriado</span>' : "")+'</td>' +
       '<td>'+String(s.hora).padStart(2,"0")+'h</td>' +
       '<td><button class="linknome" data-ficha="'+s.paciente.id+'">'+esc(nomeCurto(s.paciente))+'</button></td>' +
       '<td>'+situacao+'</td>' +
@@ -2330,13 +2499,7 @@ function renderSessoes(){
     });
   });
 }
-/* altura em pixel: assim a barra não depende de o pai ter altura definida */
-function alturaBarra(v, max){ return max > 0 ? Math.round((Number(v)||0)/max*ALTURA_GRAF) : 0; }
-
-/* ---------------- gráfico de linha ----------------
-   Doze meses no eixo de baixo, uma linha por série. É SVG escrito à mão, sem biblioteca,
-   como o resto do site. Cada ponto carrega o valor em <title>, e o mês corrente fica
-   marcado, porque cor sozinha não conta a história em preto e branco. */
+/* escala redonda para o eixo: o topo do gráfico cai num número limpo (5 mil, 10 mil, 15 mil) */
 function escalaBonita(max){
   if(max <= 0) return {topo:1, passo:1};
   var bruto = max/4;
@@ -2344,74 +2507,6 @@ function escalaBonita(max){
   var passo = ordem;
   [1,2,2.5,5,10].some(function(m){ if(ordem*m >= bruto){ passo = ordem*m; return true; } return false; });
   return {topo: Math.ceil(max/passo)*passo, passo: passo};
-}
-function graficoDeLinhas(alvo, series, opcoes){
-  opcoes = opcoes || {};
-  var L = 52, R = 10, T = 12, B = 26, W = 760, H = 210;
-  var largura = W - L - R, altura = H - T - B;
-  var max = 0;
-  series.forEach(function(s){ s.valores.forEach(function(v){ if(v !== null && v > max) max = v; }); });
-  var esc = escalaBonita(max);
-  var x = function(i){ return L + (largura * i / 11); };
-  var y = function(v){ return T + altura - (esc.topo ? (v/esc.topo)*altura : 0); };
-  var fmt = opcoes.formato || function(v){ return String(Math.round(v)); };
-
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+escHtml(opcoes.titulo||"gráfico")+'">';
-  /* linhas de apoio e a escala do eixo */
-  for(var v = 0; v <= esc.topo + 0.001; v += esc.passo){
-    var yy = y(v);
-    svg += '<line x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+'" class="gl"/>' +
-           '<text x="'+(L-8)+'" y="'+(yy+4)+'" class="gy">'+escHtml(fmt(v))+'</text>';
-  }
-  /* coluna do mês corrente, para o olho achar o "hoje" sem contar meses */
-  if(opcoes.destaque >= 0){
-    svg += '<line x1="'+x(opcoes.destaque)+'" y1="'+T+'" x2="'+x(opcoes.destaque)+'" y2="'+(T+altura)+'" class="gnow"/>';
-  }
-  for(var m=0;m<12;m++){
-    svg += '<text x="'+x(m)+'" y="'+(H-8)+'" class="gx'+(m===opcoes.destaque ? " agora" : "")+'">'+MESES_CURTO[m]+'</text>';
-  }
-  series.forEach(function(s){
-    var d = "", aberto = false;
-    s.valores.forEach(function(val, i){
-      if(val === null){ aberto = false; return; }
-      d += (aberto ? " L" : " M") + x(i) + " " + y(val);
-      aberto = true;
-    });
-    if(d) svg += '<path d="'+d.trim()+'" class="gs'+(s.tracejada ? " tracejada" : "")+'" style="stroke:'+s.cor+'"/>';
-    s.valores.forEach(function(val, i){
-      if(val === null) return;
-      svg += '<circle cx="'+x(i)+'" cy="'+y(val)+'" r="'+(i===opcoes.destaque ? 5 : 3.2)+'" class="gp" style="fill:'+s.cor+'">' +
-        '<title>'+escHtml(MESES_CURTO[i]+" · "+s.nome+": "+fmt(val))+'</title></circle>';
-    });
-    /* o valor do mês corrente escrito, porque a skill de visualização não deixa
-       a cor sozinha carregar a informação */
-    if(opcoes.destaque >= 0 && s.valores[opcoes.destaque] !== null && s.rotular !== false){
-      var vv = s.valores[opcoes.destaque];
-      svg += '<text x="'+(x(opcoes.destaque) + (opcoes.destaque > 9 ? -8 : 8))+'" y="'+(y(vv)-9)+'" class="grot" style="text-anchor:'+(opcoes.destaque > 9 ? "end" : "start")+'">'+escHtml(fmt(vv))+'</text>';
-    }
-  });
-  svg += '</svg>';
-  alvo.innerHTML = svg;
-}
-function escHtml(s){ return esc(s); }
-
-/* novos, encerramentos e altas por mês, pelas datas de início e fim da planilha */
-function movimentoDoAno(ano){
-  var novos = [], encerrados = [], altas = [];
-  for(var i=0;i<12;i++){ novos.push(0); encerrados.push(0); altas.push(0); }
-  var todos = dados.pacientes.concat(dados.arquivados || []);
-  var visto = {};
-  todos.forEach(function(p){
-    if(!p.codigo || visto[p.codigo]) return;
-    visto[p.codigo] = true;
-    if(p.inicio && p.inicio.slice(0,4) === String(ano)) novos[Number(p.inicio.slice(5,7))-1]++;
-    if(p.fim && p.fim.slice(0,4) === String(ano)){
-      var m = Number(p.fim.slice(5,7))-1;
-      encerrados[m]++;
-      if(semAcento(p.status||"").indexOf("alta") === 0) altas[m]++;
-    }
-  });
-  return {novos:novos, encerrados:encerrados, altas:altas};
 }
 function contagem(n, rotulo, total){
   n = n || 0;
@@ -2425,110 +2520,119 @@ function renderPainel(){
   var ano = ref.getFullYear();
   var agora = numerosDoMes(ref);
   var total = dados.pacientes.length;
+  var nomeMes = ref.toLocaleDateString("pt-BR",{month:"long"});
+  var c = dados.config;
 
   document.getElementById("pn-titulo").textContent = ref.toLocaleDateString("pt-BR",{month:"long", year:"numeric"});
-  document.getElementById("pn-sub").textContent = "o mês aberto também na aba Mês";
-  document.getElementById("pn-ativos").textContent = total;
-  document.getElementById("pn-projetada").textContent = moeda(agora.previsto) + (agora.previstoTriagem > 0 ? " + " + moeda(agora.previstoTriagem) + " em triagem" : "");
-  document.getElementById("pn-recebida").textContent = moeda(agora.recebido);
-  document.getElementById("pn-sessoes").textContent = agora.sessoes + (agora.aConfirmar ? " + " + agora.aConfirmar + " a confirmar" : "") + (agora.previstas ? " + " + agora.previstas + " prevista" + (agora.previstas>1 ? "s" : "") : "");
+  document.getElementById("pn-sub").textContent = total + (total===1 ? " paciente na agenda" : " pacientes na agenda");
 
-  var anoTodo = [];
-  for(var m=0;m<12;m++){
-    var n = numerosDoMes(new Date(ano, m, 1));
-    anoTodo.push({mes:m, sessoes:n.sessoes, previsto:n.previsto, recebido:n.recebido});
+  /* 1. o mês em dinheiro: o recebido de pacientes contra o previsto pela agenda, a mesma base
+     do "falta receber" (pendências e extras entram no recebido total, não no previsto) */
+  var previsto = agora.previsto, recebido = agora.recebidoPacientes;
+  var pct = previsto > 0 ? Math.min(100, Math.round(recebido/previsto*100)) : 0;
+  document.getElementById("pn-din-titulo").textContent = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) + " em dinheiro";
+  document.getElementById("pn-barra").style.width = pct + "%";
+  document.getElementById("pn-trilho").setAttribute("aria-label", moeda(recebido)+" recebidos de "+moeda(previsto)+" previstos");
+  document.getElementById("pn-recebido").textContent = moeda(recebido);
+  document.getElementById("pn-de").innerHTML = "de <b>"+moeda(previsto)+"</b> previstos pela agenda · "+pct+"%" +
+    (agora.previstoTriagem > 0 ? ' <span class="hint">(+ '+moeda(agora.previstoTriagem)+' em triagem)</span>' : "");
+  document.getElementById("pn-falta").textContent = moeda(Math.max(0, previsto - recebido));
+  document.getElementById("pn-falta-sub").textContent = agora.recebido - recebido > 0.005
+    ? "fora isso, entraram "+moeda(agora.recebido - recebido)+" de pendências e extras" : "";
+
+  /* 2. quem deve: a dívida vencida soma um ciclo de cada paciente em atraso, de qualquer mês */
+  var devendo = [];
+  dados.pacientes.forEach(function(p){ var s = situacaoPagamento(p); if(s.chave==="atraso") devendo.push({p:p, dias:-s.dias}); });
+  devendo.sort(function(a,b){ return b.dias - a.dias; });
+  var divida = devendo.reduce(function(t,x){ return t + (Number(x.p.valor)||0); }, 0);
+  document.getElementById("pn-divida").textContent = moeda(divida);
+  document.getElementById("pn-divida-sub").textContent = devendo.length
+    ? devendo.length + (devendo.length===1 ? " paciente, na lista abaixo" : " pacientes, na lista abaixo") : "ninguém em atraso";
+  document.getElementById("pn-devendo").innerHTML = devendo.length
+    ? '<table class="tab"><thead><tr><th>Paciente</th><th>Atraso</th><th class="num">Valor</th></tr></thead><tbody>' +
+      devendo.map(function(x){
+        return '<tr class="linha-atraso"><td><div class="quem"><span class="ini">'+esc(inicial1(x.p))+'</span>' +
+          '<button class="linknome" data-ficha="'+x.p.id+'">'+esc(x.p.nome)+'</button></div></td>' +
+          '<td><span class="sit atraso">'+x.dias+(x.dias===1 ? " dia" : " dias")+'</span></td>' +
+          '<td class="num">'+moeda(Number(x.p.valor)||0)+'</td></tr>';
+      }).join("") +
+      '<tr><td><b>Total</b></td><td></td><td class="num"><b>'+moeda(divida)+'</b></td></tr></tbody></table>'
+    : '<p class="pvazio">Ninguém em atraso.</p>';
+
+  /* a meta é a da aba Meta: o que ele quer receber mais os custos, antes do imposto */
+  var metaFat = ((+c.meta||0) + (+c.custos||0)) / Math.max(0.01, 1 - (+c.imposto||0)/100);
+  var bateu = metaFat > 0 && agora.recebido >= metaFat;
+  document.getElementById("pn-meta-caixa").classList.toggle("bateu", bateu);
+  document.getElementById("pn-meta").textContent = moeda(metaFat) + (bateu ? " · batida" : "");
+  document.getElementById("pn-meta-sub").textContent = bateu ? "o recebido já passou da meta"
+    : "faltam " + moeda(Math.max(0, metaFat - agora.recebido)) + " para a meta";
+
+  /* 3. faltas e remarcações do mês, por paciente, com o aviso de quem também deve */
+  var grupos = {falta:{}, remarcada:{}};
+  sessoesDoMes(ref).forEach(function(s){
+    if(!grupos[s.estado]) return;
+    var g = grupos[s.estado][s.paciente.id] = grupos[s.estado][s.paciente.id] || {p:s.paciente, datas:[]};
+    g.datas.push(dataCurta(s.data));
+  });
+  var atraso = mapaDeAtraso();
+  var hf = "";
+  [["falta","Não compareceu"],["remarcada","Remarcou"]].forEach(function(t){
+    var lista = Object.keys(grupos[t[0]]).map(function(k){ return grupos[t[0]][k]; })
+      .sort(function(a,b){ return b.datas.length - a.datas.length; });
+    if(!lista.length) return;
+    hf += '<h3>'+t[1]+'</h3>' + lista.map(function(g){
+      return '<div class="contagem"><span class="n">'+g.datas.length+'</span>' +
+        '<span class="quem"><button class="linknome" data-ficha="'+g.p.id+'">'+esc(g.p.nome)+'</button> <span class="hint">· '+g.datas.join(", ")+'</span></span>' +
+        (atraso[g.p.id] ? '<span class="sit atraso">também devendo</span>' : "") + '</div>';
+    }).join("");
+  });
+  document.getElementById("pn-falt-titulo").textContent = "Faltas e remarcações de " + nomeMes;
+  document.getElementById("pn-faltas").innerHTML = hf || '<p class="pvazio">Nenhuma falta nem remarcação neste mês.</p>';
+
+  /* 4. horários divulgados ainda livres nesta semana, e quanto renderiam no ciclo mensal */
+  var livres = [], base = inicioSemana(new Date());
+  for(var j=0;j<7;j++){
+    var d = somaDias(base,j);
+    for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++){
+      if(estadoCelula(d.getDay(), h, d).classe==="divulgado") livres.push(DIAS_CURTO[d.getDay()]+" "+h+"h");
+    }
   }
+  var mensal = +c.mensal || 0, renda = livres.length * mensal;
+  document.getElementById("pn-horarios").innerHTML = livres.length
+    ? livres.map(function(x){ return '<span>'+x+'</span>'; }).join("")
+    : '<p class="pvazio">Nenhum horário divulgado livre nesta semana.</p>';
+  document.getElementById("pn-horarios-conta").innerHTML = livres.length
+    ? linha(livres.length + (livres.length===1 ? " horário" : " horários") + " no ciclo mensal (" + moeda(mensal) + ")", "<b>"+moeda(renda)+" por mês</b>") +
+      linha("O mês previsto iria de " + moeda(previsto) + " para", "<b>"+moeda(previsto + renda)+"</b>")
+    : "";
+
+  /* 5. o ano: o recebido até o mês de hoje, o previsto dele em diante e a linha da meta */
   var hoje = new Date();
-  var mesAtual = (hoje.getFullYear()===ano) ? hoje.getMonth() : (ano < hoje.getFullYear() ? 11 : -1);
-  var recebidoAno = 0;
-  anoTodo.forEach(function(x){ recebidoAno += x.recebido; });
-  var mov = movimentoDoAno(ano);
-  var somaMov = function(a){ return a.reduce(function(s,n){ return s+n; }, 0); };
-
-  document.getElementById("pn-ano-sub").innerHTML =
-    "Em " + ano + " entraram <b>" + moeda(recebidoAno) + "</b> pela aba Recebimentos da planilha, com <b>" +
-    somaMov(mov.novos) + "</b> paciente(s) novo(s), <b>" + somaMov(mov.encerrados) + "</b> encerramento(s) e <b>" +
-    somaMov(mov.altas) + "</b> alta(s) clínica(s). " +
-    "O dinheiro recebido e o movimento da carteira são dados seus; o previsto e as sessões são projeção da agenda de hoje.";
-
-  /* o previsto só vale daqui para a frente: projetar a agenda de hoje sobre janeiro
-     passado era o que fazia este painel parecer genérico */
-  /* o recebido para de existir depois do mês corrente: zero ali não é "não entrou nada",
-     é "ainda não aconteceu" */
-  /* desde a aba Sessões, os meses já registrados (a partir de Contando desde) também entram */
-  var serieRecebido = anoTodo.map(function(x){ return (mesAtual >= 0 && x.mes > mesAtual) ? null : x.recebido; });
-  var seriePrevista = anoTodo.map(function(x){ return foraDoRegistro(ano, x.mes) ? null : x.previsto; });
-  var serieSessoes = anoTodo.map(function(x){ return foraDoRegistro(ano, x.mes) ? null : x.sessoes; });
-
-  graficoDeLinhas(document.getElementById("pn-graf-dinheiro"), [
-    {nome:"recebido", valores:serieRecebido, cor:"var(--g-rec)"},
-    {nome:"previsto", valores:seriePrevista, cor:"var(--g-prev)", tracejada:true}
-  ], {destaque:mesAtual, formato:moeda, titulo:"dinheiro mês a mês em "+ano});
-
-  graficoDeLinhas(document.getElementById("pn-graf-sessoes"), [
-    {nome:"sessões", valores:serieSessoes, cor:"var(--g-rec)"}
-  ], {destaque:mesAtual, titulo:"sessões mês a mês em "+ano});
-  document.getElementById("pn-nota-sessoes").textContent =
-    "Conta a agenda com as situações da aba Sessões, desde " + dataLonga(mesDesde()) + "; meses anteriores ficam de fora.";
-
-  var soAtePassado = function(a){ return a.map(function(v,i){ return (mesAtual >= 0 && i > mesAtual) ? null : v; }); };
-  graficoDeLinhas(document.getElementById("pn-graf-carteira"), [
-    {nome:"novos", valores:soAtePassado(mov.novos), cor:"var(--g-rec)"},
-    {nome:"encerramentos", valores:soAtePassado(mov.encerrados), cor:"var(--t-falta-bar)"},
-    {nome:"altas", valores:soAtePassado(mov.altas), cor:"var(--ok)", rotular:false}
-  ], {destaque:mesAtual, titulo:"movimento da carteira em "+ano});
-
-  document.getElementById("pn-escala-dinheiro").textContent = "linha cheia: o que entrou · tracejada: projeção";
-  document.getElementById("pn-escala-sessoes").textContent = "projeção da agenda de hoje";
-  document.getElementById("pn-escala-carteira").textContent = "por data de início e de fim do tratamento";
-
-  var tb = document.querySelector("#pn-tabela tbody");
-  tb.innerHTML = "";
-  anoTodo.forEach(function(x){
-    var passado = foraDoRegistro(ano, x.mes);
-    var tr = document.createElement("tr");
-    if(x.mes===mesAtual) tr.className = "meta-ok";
-    tr.innerHTML = "<td>"+MESES_CURTO[x.mes]+"</td>" +
-      '<td class="num">'+(mov.novos[x.mes]||"—")+"</td>" +
-      '<td class="num">'+(mov.encerrados[x.mes]||"—")+"</td>" +
-      '<td class="num">'+(mov.altas[x.mes]||"—")+"</td>" +
-      '<td class="num'+(passado ? " projecao" : "")+'">'+(passado ? "—" : x.sessoes)+"</td>" +
-      '<td class="num'+(passado ? " projecao" : "")+'">'+(passado ? "—" : moeda(x.previsto))+"</td>" +
-      '<td class="num">'+(x.recebido ? moeda(x.recebido) : "—")+"</td>";
-    tb.appendChild(tr);
-  });
-
-  /* situação de pagamento de cada um, que é o bloco de status da planilha */
-  var situ = {}, dividaVencida = 0;
-  dados.pacientes.forEach(function(p){
-    var s = situacaoPagamento(p);
-    situ[s.chave] = (situ[s.chave]||0) + 1;
-    if(s.chave==="atraso") dividaVencida += Number(p.valor)||0;
-  });
-
-  document.getElementById("pn-financeiro").innerHTML =
-    linha("Receita projetada no mês", moeda(agora.previsto) + (agora.previstoTriagem > 0 ? ' <span class="hint">(+ '+moeda(agora.previstoTriagem)+' em triagem)</span>' : "")) +
-    linha("Recebido no mês", moeda(agora.recebido) + (Math.abs(agora.recebido - agora.recebidoPacientes) > 0.005 ? ' <span class="hint">('+moeda(agora.recebidoPacientes)+' de pacientes)</span>' : "")) +
-    linha("Falta receber neste mês", moeda(Math.max(0, agora.previsto - agora.recebidoPacientes))) +
-    linha("Dívida vencida acumulada", moeda(dividaVencida));
-
-  var ordem = [
-    ["atraso","Atrasado","atraso"],
-    ["sem-registro","Sem pagamento registrado","sem"],
-    ["hoje","Vence hoje","atencao"],
-    ["atencao","Vence em até 3 dias","atencao"],
-    ["ok","Em dia","ok"],
-    ["sem","Sem sessão marcada","sem"]
-  ];
-  var hs = "";
-  ordem.forEach(function(o){
-    var n = situ[o[0]] || 0;
-    if(!n) return;
-    hs += '<div class="contagem"><span class="n">'+n+'</span>' +
-          '<span class="trilho"><span style="width:'+(total ? Math.round(n/total*100) : 0)+'%"></span></span>' +
-          '<span class="sit '+o[2]+'">'+esc(o[1])+'</span></div>';
-  });
-  document.getElementById("pn-situacao").innerHTML = hs || '<p class="pvazio">Sem pacientes na agenda.</p>';
+  var esteMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var anoTodo = [], recebidoAno = 0, maxV = metaFat;
+  for(var m=0;m<12;m++){
+    var n = numerosDoMes(new Date(ano, m, 1)), mesD = new Date(ano, m, 1);
+    var rec = mesD <= esteMes ? n.recebido : null;
+    var prev = (mesD >= esteMes && !foraDoRegistro(ano, m)) ? n.previsto : null;
+    recebidoAno += rec || 0;
+    anoTodo.push({rec:rec, prev:prev});
+    maxV = Math.max(maxV, rec || 0, prev || 0);
+  }
+  var topo = escalaBonita(maxV).topo, ALTURA = 165;
+  var px = function(v){ return Math.round((v||0)/topo*ALTURA); };
+  var curto = function(v){ return v >= 1000 ? (Math.round(v/100)/10).toLocaleString("pt-BR")+" mil" : moeda(v); };
+  document.getElementById("pn-ano-titulo").textContent = ano + " mês a mês";
+  document.getElementById("pn-ano-sub").innerHTML = "Em " + ano + " entraram <b>" + moeda(recebidoAno) + "</b>. Barra cheia: o que entrou. Barra clara: o que a agenda prevê. Linha verde: a meta.";
+  document.getElementById("pn-plot").innerHTML = anoTodo.map(function(x, i){
+    var v = x.rec || x.prev;
+    return '<div class="col" title="'+MESES_CURTO[i]+(x.rec!==null ? " · recebido "+moeda(x.rec) : "")+(x.prev!==null ? " · previsto "+moeda(x.prev) : "")+'">' +
+      '<span class="rot">'+(v ? curto(v) : "—")+'</span><div class="par">' +
+      (x.prev!==null ? '<i style="height:'+px(x.prev)+'px"></i>' : "") +
+      (x.rec!==null ? '<i class="rec" style="height:'+px(x.rec)+'px"></i>' : "") + '</div></div>';
+  }).join("") + (metaFat > 0 ? '<div class="meta-linha" style="bottom:'+px(metaFat)+'px"><span>meta '+moeda(metaFat)+'</span></div>' : "");
+  document.getElementById("pn-meses").innerHTML = MESES_CURTO.map(function(nm, i){
+    return '<span'+(ano===hoje.getFullYear() && i===hoje.getMonth() ? ' class="agora"' : "")+'>'+nm+'</span>';
+  }).join("");
 
   var porCobranca = {}, porFreq = {};
   dados.pacientes.forEach(function(p){
@@ -2567,7 +2671,10 @@ function renderPainel(){
     "e não no mês em que o tratamento termina; a receita projetada segue a regra de cobrança de cada paciente, em vez de somar o valor cru; " +
     "e o que falta receber no mês fica separado da dívida vencida, porque as duas têm bases diferentes. " +
     "O que falta receber compara só pacientes com pacientes: pendências e acertos entram no recebido, não no previsto. " +
-    "Novos pacientes, encerramentos e altas clínicas vêm das datas de início e de fim do Registro da planilha, trazidas pelo botão Ler a planilha.";
+    "A meta é a da aba Meta: o que você quer receber, mais os custos, antes do imposto.";
+  document.querySelectorAll("#v-painel [data-ficha]").forEach(function(b){
+    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.ficha); if(p) abrirFicha(p); });
+  });
 }
 
 /* ---------------- ler a planilha ---------------- */
@@ -3121,7 +3228,9 @@ function aplicarLeitura(leitura){
       codigo: p.codigo, nome: p.nome, freq: p.freq, cobranca: p.cobranca,
       valor: p.valor, dia: p.dia, hora: p.hora,
       status: p.status || "", inicio: p.inicio || "", fim: p.fim || "",
-      meet: antigo ? (antigo.meet || "") : ""
+      meet: antigo ? (antigo.meet || "") : "",
+      /* o resumo do prontuário vem do Claude, não da planilha: ler a planilha não pode apagá-lo */
+      prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined
     };
   });
   if(leitura.arquivados) dados.arquivados = leitura.arquivados;
