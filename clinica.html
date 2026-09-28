@@ -1368,15 +1368,14 @@ function abrirMenu(e){
   if(info.paciente){
     if(info.origem==="extra"){
       /* aqui o que está marcado é a sessão que veio de outro horário */
-      if(jaComecou(data, hora)){
-        var entrou = entradaDa(ex);
-        corpo += botao(entrou && entrou.realizada ? "desconfirmar-extra" : "realizada-extra", entrou && entrou.realizada ? "Tirar a confirmação" : "✓ Sessão realizada", "var(--t-realizada-bg)");
-      }
+      var entrou = entradaDa(ex);
+      corpo += botao(entrou && entrou.realizada ? "desconfirmar-extra" : "realizada-extra", entrou && entrou.realizada ? "Tirar a confirmação" : "✓ Sessão realizada", "var(--t-realizada-bg)");
       corpo += botao("tirar-entrada", (ex && ex.entra ? "Tirar esta sessão daqui (volta a marca de "+nomeCurto(fixoDaHora)+")" : "Tirar esta sessão daqui"), "var(--faint)");
     } else {
-      /* o check abre desde o começo da sessão: ele confirma assim que termina de atender */
+      /* o check fica sempre no menu, a qualquer hora (pedido dele, 28/09/2026): antes só abria
+         quando a sessão começava, e de manhã ele não achava a opção */
       if(ex && ex.tipo==="realizada") corpo += botao("limpar-excecao","Tirar a confirmação","var(--faint)");
-      else if(jaComecou(data, hora)) corpo += botao("realizada","✓ Sessão realizada","var(--t-realizada-bg)");
+      else corpo += botao("realizada","✓ Sessão realizada","var(--t-realizada-bg)");
       corpo += botao("falta","Marcar falta","var(--t-falta-bar)");
       corpo += botao("remarcada","Marcar como remarcada","var(--t-remarcada-bar)");
       corpo += botao("cancelada","Não haverá sessão nesta data","var(--border-strong)");
@@ -2086,7 +2085,6 @@ var atrasoCache = null;
 function hoje0(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 /* a sessão já aconteceu quando a hora dela terminou (dia + hora + 1): antes disso é prevista, não "a confirmar" */
 /* a sessão começou: dali em diante ele já pode confirmar que ela aconteceu */
-function jaComecou(data, hora){ var t = new Date(data.getFullYear(), data.getMonth(), data.getDate(), Number(hora)||0); return t <= new Date(); }
 function jaPassou(data, hora){ var t = new Date(data.getFullYear(), data.getMonth(), data.getDate(), (Number(hora)||0) + 1); return t <= new Date(); }
 function deISO(s){ return new Date(s+"T00:00:00"); }
 function dataCurta(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
@@ -2458,14 +2456,13 @@ function renderSessoes(){
     if(s.estado==="falta") tr.className = "linha-atraso";
     var situacao;
     if(s.origem==="extra") situacao = s.estado==="realizada" ? '<span class="sit ok">Encaixe · realizada ✓</span>'
-      : futuro ? '<span class="sit ok">Encaixe · prevista</span>'
-      : '<span class="sit">Encaixe · a confirmar</span> <button class="linknome" data-confirmar-extra="'+k+'">confirmar</button>';
+      : (futuro ? '<span class="sit ok">Encaixe · prevista</span>' : '<span class="sit">Encaixe · a confirmar</span>') +
+        ' <button class="linknome" data-confirmar-extra="'+k+'">confirmar</button>';
     else {
       /* a cor segue a situação; "sessao" é a confirmar depois da hora e prevista antes */
       var cor = s.estado==="sessao" ? (futuro ? "prevista" : "confirmar") : s.estado;
       situacao = '<select class="situacao s-'+cor+'" data-sessao="'+k+'" aria-label="Situação da sessão de '+esc(nomeCurto(s.paciente))+' em '+dataCurta(s.data)+'">' +
         Object.keys(ROTULO_SITUACAO).map(function(e){
-          if(e==="realizada" && futuro) return "";
           var rot = (e==="sessao" && futuro) ? "Prevista" : ROTULO_SITUACAO[e];
           return '<option value="'+e+'"'+(s.estado===e ? " selected" : "")+'>'+rot+'</option>';
         }).join("") + '</select>';
