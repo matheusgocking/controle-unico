@@ -1198,7 +1198,7 @@ function estadoCelula(dia, hora, data){
     /* "não haverá sessão nesta data" não deixa a hora em branco: ela volta a ser o
        horário de atendimento que já era, em vez de virar um buraco no meio do bloco */
     if(estado!=="cancelada")
-      return {classe:"sessao", nome:nomeGrade(p), etiqueta:(data < hoje0() ? "a confirmar" : ""), paciente:p, origem:"fixo"};
+      return {classe:"sessao", nome:nomeGrade(p), etiqueta:(jaPassou(data, hora) ? "a confirmar" : ""), paciente:p, origem:"fixo"};
   }
   /* as duas linhas da célula dizem o estado inteiro: "Atendimento" em cima, divulgado ou não embaixo */
   var bloco = dados.blocos[dia+"-"+hora];
@@ -1269,13 +1269,13 @@ function abrirMenu(e){
   if(info.paciente){
     if(info.origem==="extra"){
       /* aqui o que está marcado é a sessão que veio de outro horário */
-      if(data <= hoje0()){
+      if(jaPassou(data, hora)){
         var entrou = entradaDa(ex);
         corpo += botao(entrou && entrou.realizada ? "desconfirmar-extra" : "realizada-extra", entrou && entrou.realizada ? "Tirar a confirmação" : "Confirmar: sessão realizada", "var(--ok)");
       }
       corpo += botao("tirar-entrada", (ex && ex.entra ? "Tirar esta sessão daqui (volta a marca de "+nomeCurto(fixoDaHora)+")" : "Tirar esta sessão daqui"), "var(--faint)");
     } else {
-      if(data <= hoje0() && !(ex && ex.tipo==="realizada")) corpo += botao("realizada","Confirmar: sessão realizada","var(--ok)");
+      if(jaPassou(data, hora) && !(ex && ex.tipo==="realizada")) corpo += botao("realizada","Confirmar: sessão realizada","var(--ok)");
       corpo += botao("falta","Marcar falta","var(--t-falta-bar)");
       corpo += botao("remarcada","Marcar como remarcada","var(--t-remarcada-bar)");
       corpo += botao("cancelada","Não haverá sessão nesta data","var(--border-strong)");
@@ -1929,6 +1929,8 @@ var mesPag = new Date();
 var atrasoCache = null;
 
 function hoje0(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+/* a sessão já aconteceu quando a hora dela terminou (dia + hora + 1): antes disso é prevista, não "a confirmar" */
+function jaPassou(data, hora){ var t = new Date(data.getFullYear(), data.getMonth(), data.getDate(), (Number(hora)||0) + 1); return t <= new Date(); }
 function deISO(s){ return new Date(s+"T00:00:00"); }
 function dataCurta(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
 function dataLonga(d){ return dataCurta(d)+"/"+d.getFullYear(); }
@@ -2172,7 +2174,7 @@ function numerosDoMes(ref){
       if(s.estado==="remarcada") return;
       /* Matheus, 27/09/2026: sessão só conta quando ele confirma (check) */
       if(confirmada(s.estado)) sessoes++;
-      else if(s.estado==="sessao"){ if(d > hojeN) previstas++; else aConfirmar++; }
+      else if(s.estado==="sessao"){ if(jaPassou(d, s.hora)) aConfirmar++; else previstas++; }
       /* a receita segue a cobrança: falta sem aviso cobra, cortesia não (regra das 24 horas) */
       if(cobraSessao(s.estado)) cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
     });
@@ -2224,7 +2226,7 @@ function contarSessoesDe(p, de, ate){
     sessoesDoDia(d, true).forEach(function(s){
       if(s.paciente.id !== p.id) return;
       if(s.estado==="realizada") c.realizadas++;
-      else if(s.estado==="sessao"){ if(d > hoje) c.previstas++; else c.aConfirmar++; }
+      else if(s.estado==="sessao"){ if(jaPassou(d, s.hora)) c.aConfirmar++; else c.previstas++; }
       else if(s.estado==="falta") c.faltas++;
       else if(s.estado==="remarcada"){ c.remarcadas++; c.naoCobrado += valorSessao(p); }
       else if(s.estado==="cancelada"){ c.canceladas++; c.naoCobrado += valorSessao(p); }
@@ -2245,7 +2247,7 @@ function renderSessoes(){
   lista.forEach(function(s){
     var v = valorSessao(s.paciente);
     if(s.estado==="realizada") realizadas++;
-    else if(s.estado==="sessao"){ if(s.data > hoje) previstas++; else aConfirmar++; }
+    else if(s.estado==="sessao"){ if(jaPassou(s.data, s.hora)) aConfirmar++; else previstas++; }
     else if(s.estado==="falta") faltas++;
     else if(s.estado==="remarcada" || s.estado==="cancelada"){ desmarcadas++; naoCobrado += v; }
     else if(s.estado==="cortesia"){ cortesias++; naoCobrado += v; }
@@ -2267,7 +2269,7 @@ function renderSessoes(){
   }
   lista.forEach(function(s){
     var k = chaveData(s.data)+"|"+s.hora;
-    var futuro = s.data > hoje;
+    var futuro = !jaPassou(s.data, s.hora);
     var tr = document.createElement("tr");
     if(s.estado==="falta") tr.className = "linha-atraso";
     var situacao;
