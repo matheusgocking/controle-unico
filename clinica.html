@@ -40,6 +40,7 @@
   --t-falta-bg:#fde3cf;    --t-falta-fg:#8a3f0c;   --t-falta-bar:#e08034;
   --t-remarcada-bg:#faf7fd;--t-remarcada-fg:#6f5490;--t-remarcada-bar:#b193d4;
   --t-encaixe-bg:#3a4250;  --t-encaixe-fg:#ffffff; --t-encaixe-bar:#c8a4f2;
+  --t-realizada-bg:#1f6b4f; --t-realizada-fg:#ffffff; --t-realizada-bar:#7fd3ac;
   --shadow:0 1px 2px rgba(19,24,32,.06), 0 8px 24px rgba(19,24,32,.08);
   --radius:10px;
 }
@@ -69,6 +70,7 @@
     --t-falta-bg:#40290f;    --t-falta-fg:#f0b87a;   --t-falta-bar:#cf8535;
     --t-remarcada-bg:#191622;--t-remarcada-fg:#a78cc4;--t-remarcada-bar:#7a5fa3;
     --t-encaixe-bg:#39414f;  --t-encaixe-fg:#ffffff; --t-encaixe-bar:#c8a4f2;
+    --t-realizada-bg:#1d5a43; --t-realizada-fg:#eafff4; --t-realizada-bar:#7fd3ac;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
   }
 }
@@ -96,6 +98,7 @@
   --t-falta-bg:#40290f;    --t-falta-fg:#f0b87a;   --t-falta-bar:#cf8535;
   --t-remarcada-bg:#191622;--t-remarcada-fg:#a78cc4;--t-remarcada-bar:#7a5fa3;
   --t-encaixe-bg:#39414f;  --t-encaixe-fg:#ffffff; --t-encaixe-bar:#c8a4f2;
+  --t-realizada-bg:#1d5a43; --t-realizada-fg:#eafff4; --t-realizada-bar:#7fd3ac;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
@@ -126,6 +129,9 @@ button,input,select,textarea{font:inherit; color:inherit}
 .tabs{display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:var(--radius); border:1px solid var(--border)}
 .tab{border:0; background:transparent; color:var(--muted); padding:7px 14px; border-radius:7px; cursor:pointer}
 .tab[aria-selected="true"]{background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.08); font-weight:600}
+/* Sessões: a chave entre ver a semana e ver o mês (28/09/2026) */
+.subvista{display:flex; margin:0 0 12px}
+.subvista .tabs{display:inline-flex}
 .tab:focus-visible,.btn:focus-visible,.cell:focus-visible,.menu button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 
 .btn{border:1px solid var(--border-strong); background:var(--surface); color:var(--text); padding:7px 12px; border-radius:8px; cursor:pointer}
@@ -190,8 +196,10 @@ button,input,select,textarea{font:inherit; color:inherit}
 .cell.tarefas{background:var(--t-tarefas-bg); border-left-color:var(--t-tarefas-bar); color:var(--t-tarefas-fg)}
 .cell.academia{background:var(--t-academia-bg); border-left-color:var(--t-academia-bar); color:var(--t-academia-fg)}
 .cell.almoco{background:var(--t-almoco-bg); border-left-color:var(--t-almoco-bar); color:var(--t-almoco-fg)}
-.cell.realizada{border-left-color:var(--ok); border-left-width:6px}
-.cell.realizada .et{color:var(--ok-soft); font-weight:600}
+/* realizada (confirmada por ele): a célula inteira fica verde (pedido dele, 28/09/2026) */
+.cell.sessao.realizada{background:var(--t-realizada-bg); border-left-color:var(--t-realizada-bar); color:var(--t-realizada-fg); cursor:pointer}
+/* código do paciente no canto de cima da célula, pequeno, para achar o prontuário */
+.cell .cod{position:absolute; top:2px; right:8px; font-size:9px; line-height:1; font-weight:600; letter-spacing:.02em; opacity:.7; pointer-events:none}
 .cell.falta{background:var(--t-falta-bg); border-left-color:var(--t-falta-bar); color:var(--t-falta-fg)}
 .cell.falta .nm{text-decoration:line-through}
 /* remarcada: a sessão SAI daqui. Célula fantasma, tracejada dos quatro lados e com o nome riscado,
@@ -478,9 +486,7 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
       </div>
     </div>
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true" data-view="semana">Semana</button>
-      <button class="tab" role="tab" aria-selected="false" data-view="mes">Mês</button>
-      <button class="tab" role="tab" aria-selected="false" data-view="sessoes">Sessões</button>
+      <button class="tab" role="tab" aria-selected="true" data-view="sessoes">Sessões</button>
       <button class="tab" role="tab" aria-selected="false" data-view="painel">Painel</button>
       <button class="tab" role="tab" aria-selected="false" data-view="meta">Meta</button>
       <button class="tab" role="tab" aria-selected="false" data-view="pacientes">Pacientes</button>
@@ -489,6 +495,11 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
   </div>
 
   <div id="aviso-planilha" class="hidden"></div>
+
+  <!-- Sessões (28/09/2026): em cima a semana ou o mês, pela chave; embaixo, uma linha por sessão -->
+  <div class="subvista" id="subvista"><div class="tabs" role="group" aria-label="Ver a semana ou o mês">
+    <button class="tab" type="button" aria-selected="true" data-sub="semana">Semana</button>
+    <button class="tab" type="button" aria-selected="false" data-sub="mes">Mês</button></div></div>
 
   <!-- ============ SEMANA ============ -->
   <section id="v-semana">
@@ -516,9 +527,10 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
       <span><i style="background-color:var(--t-reservado-bg); background-image:repeating-linear-gradient(135deg,var(--t-reservado-bar) 0 2px,transparent 2px 4px); border-color:var(--t-reservado-bar)"></i>Atendimento não divulgado: riscado, fica fora da mensagem</span>
       <span><i style="background:var(--t-encaixe-bg); border-color:var(--t-encaixe-bar)"></i>Encaixe: a sessão entra aqui (← veio de)</span>
       <span><i style="background:var(--t-remarcada-bg); border-color:var(--t-remarcada-bar); border-style:dashed"></i>Remarcada: a sessão sai daqui (→ foi para)</span>
+      <span><i style="background:var(--t-realizada-bg); border-color:var(--t-realizada-bar)"></i>Realizada (você confirmou)</span>
       <span><i style="background:var(--t-falta-bg); border-color:var(--t-falta-bar)"></i>Faltou</span>
       <span><i style="background:var(--devendo); border-color:var(--devendo)"></i>Tarja à direita: pagamento vencido</span>
-      <span class="dica">Clique num horário para mudá-lo. Arraste o nome de um paciente para outro horário para remarcar.</span>
+      <span class="dica">Clique no paciente para marcar a sessão como realizada, falta ou remarcada. Arraste o nome de um paciente para outro horário para remarcar. No canto, o código do prontuário.</span>
     </div>
   </section>
 
@@ -1134,7 +1146,8 @@ function renderSemana(){
         (mesmoDia(data,hoje) ? " col-today" : ((dia===0||dia===6) ? " fds" : ""));
       b.innerHTML = (info.nome ? '<span class="nm">'+esc(info.nome)+'</span>' : "") +
                     (info.saiu ? '<span class="saiu">'+esc(info.saiu)+'</span>' : "") +
-                    (info.etiqueta ? '<span class="lab">'+esc(info.etiqueta)+'</span>' : "");
+                    (info.etiqueta ? '<span class="lab">'+esc(info.etiqueta)+'</span>' : "") +
+                    (info.paciente && info.paciente.codigo ? '<span class="cod">'+esc(info.paciente.codigo)+'</span>' : "");
       /* tarja na borda direita quando o paciente daquela sessão está com pagamento vencido */
       if(info.classe==="sessao" && info.paciente && mapaDeAtraso()[info.paciente.id]) b.classList.add("devendo");
       if(info.aria) b.title = info.aria;
@@ -1160,7 +1173,7 @@ function renderSemana(){
       }
       grade.appendChild(b);
 
-      if(info.classe==="sessao"){ sessoes++; receita += valorSessao(info.paciente); }
+      if(info.classe==="sessao" || info.classe==="sessao realizada"){ sessoes++; receita += valorSessao(info.paciente); }
       if(info.classe==="cortesia") sessoes++; /* acontece, ocupa a hora, mas não entra na receita */
       if(info.classe==="divulgado") divulgadosLivres++;
     }
@@ -1269,18 +1282,20 @@ function abrirMenu(e){
   if(info.paciente){
     if(info.origem==="extra"){
       /* aqui o que está marcado é a sessão que veio de outro horário */
-      if(jaPassou(data, hora)){
+      if(jaComecou(data, hora)){
         var entrou = entradaDa(ex);
-        corpo += botao(entrou && entrou.realizada ? "desconfirmar-extra" : "realizada-extra", entrou && entrou.realizada ? "Tirar a confirmação" : "Confirmar: sessão realizada", "var(--ok)");
+        corpo += botao(entrou && entrou.realizada ? "desconfirmar-extra" : "realizada-extra", entrou && entrou.realizada ? "Tirar a confirmação" : "✓ Sessão realizada", "var(--t-realizada-bg)");
       }
       corpo += botao("tirar-entrada", (ex && ex.entra ? "Tirar esta sessão daqui (volta a marca de "+nomeCurto(fixoDaHora)+")" : "Tirar esta sessão daqui"), "var(--faint)");
     } else {
-      if(jaPassou(data, hora) && !(ex && ex.tipo==="realizada")) corpo += botao("realizada","Confirmar: sessão realizada","var(--ok)");
+      /* o check abre desde o começo da sessão: ele confirma assim que termina de atender */
+      if(ex && ex.tipo==="realizada") corpo += botao("limpar-excecao","Tirar a confirmação","var(--faint)");
+      else if(jaComecou(data, hora)) corpo += botao("realizada","✓ Sessão realizada","var(--t-realizada-bg)");
       corpo += botao("falta","Marcar falta","var(--t-falta-bar)");
       corpo += botao("remarcada","Marcar como remarcada","var(--t-remarcada-bar)");
       corpo += botao("cancelada","Não haverá sessão nesta data","var(--border-strong)");
       corpo += botao("cortesia","Sessão cortesia (não cobrada)","var(--t-sessao-bar)");
-      if(ex) corpo += botao("limpar-excecao","Voltar ao normal","var(--accent)");
+      if(ex && ex.tipo!=="realizada") corpo += botao("limpar-excecao","Voltar ao normal","var(--accent)");
     }
     corpo += "<hr>";
     corpo += botao("editar","Abrir ficha de "+nomeCurto(info.paciente),"var(--accent)");
@@ -1930,6 +1945,8 @@ var atrasoCache = null;
 
 function hoje0(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 /* a sessão já aconteceu quando a hora dela terminou (dia + hora + 1): antes disso é prevista, não "a confirmar" */
+/* a sessão começou: dali em diante ele já pode confirmar que ela aconteceu */
+function jaComecou(data, hora){ var t = new Date(data.getFullYear(), data.getMonth(), data.getDate(), Number(hora)||0); return t <= new Date(); }
 function jaPassou(data, hora){ var t = new Date(data.getFullYear(), data.getMonth(), data.getDate(), (Number(hora)||0) + 1); return t <= new Date(); }
 function deISO(s){ return new Date(s+"T00:00:00"); }
 function dataCurta(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
@@ -3161,14 +3178,28 @@ function avisarLeitura(txt){
 }
 
 /* ---------------- navegação e utilidades ---------------- */
+/* Semana e Mês não são mais abas: são as duas vistas de cima da aba Sessões (28/09/2026).
+   Pedir "semana" ou "mes" abre Sessões com aquela vista. */
+var subSessoes = "semana";
+try{ if(localStorage.getItem("cu-clinica-sub")==="mes") subSessoes = "mes"; }catch(e){}
 function mostrarView(v){
-  ["semana","mes","sessoes","painel","meta","pacientes","pagamentos"].forEach(function(x){
+  if(v==="semana" || v==="mes"){ subSessoes = v; try{ localStorage.setItem("cu-clinica-sub", v); }catch(e){} v = "sessoes"; }
+  var naSessao = v==="sessoes";
+  document.getElementById("subvista").classList.toggle("hidden", !naSessao);
+  document.getElementById("v-semana").classList.toggle("hidden", !(naSessao && subSessoes==="semana"));
+  document.getElementById("v-mes").classList.toggle("hidden", !(naSessao && subSessoes==="mes"));
+  ["sessoes","painel","meta","pacientes","pagamentos"].forEach(function(x){
     document.getElementById("v-"+x).classList.toggle("hidden", x!==v);
   });
-  document.querySelectorAll(".tab").forEach(function(t){
+  document.querySelectorAll(".tabs .tab[data-view]").forEach(function(t){
     t.setAttribute("aria-selected", t.dataset.view===v ? "true" : "false");
   });
+  document.querySelectorAll("#subvista .tab").forEach(function(t){
+    t.setAttribute("aria-selected", t.dataset.sub===subSessoes ? "true" : "false");
+  });
 }
+/* na semana, a lista de baixo mostra o mês em que a semana cai (pela quarta-feira dela) */
+function mesDaSemana(){ var q = somaDias(semana, 3); mesRef = new Date(q.getFullYear(), q.getMonth(), 1); }
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
   atrasoCache = null; cacheMes = {}; cacheNomes = null;
@@ -3197,12 +3228,15 @@ function avisoPlanilha(){
   });
 }
 
-document.querySelectorAll(".tab").forEach(function(t){
+document.querySelectorAll(".tabs .tab[data-view]").forEach(function(t){
   t.addEventListener("click", function(){ mostrarView(t.dataset.view); });
 });
-document.getElementById("prev").addEventListener("click", function(){ semana = somaDias(semana,-7); renderTudo(); });
-document.getElementById("next").addEventListener("click", function(){ semana = somaDias(semana,7); renderTudo(); });
-document.getElementById("hoje").addEventListener("click", function(){ semana = inicioSemana(new Date()); renderTudo(); });
+document.querySelectorAll("#subvista .tab").forEach(function(t){
+  t.addEventListener("click", function(){ if(t.dataset.sub==="semana") mesDaSemana(); mostrarView(t.dataset.sub); renderTudo(); });
+});
+document.getElementById("prev").addEventListener("click", function(){ semana = somaDias(semana,-7); mesDaSemana(); renderTudo(); });
+document.getElementById("next").addEventListener("click", function(){ semana = somaDias(semana,7); mesDaSemana(); renderTudo(); });
+document.getElementById("hoje").addEventListener("click", function(){ semana = inicioSemana(new Date()); mesDaSemana(); renderTudo(); });
 document.getElementById("m-prev").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()-1, 1); renderTudo(); });
 document.getElementById("m-next").addEventListener("click", function(){ mesRef = new Date(mesRef.getFullYear(), mesRef.getMonth()+1, 1); renderTudo(); });
 document.getElementById("m-hoje").addEventListener("click", function(){ mesRef = new Date(); renderTudo(); });
@@ -3338,6 +3372,7 @@ var renderSemanaSemRolagem = renderSemana;
 renderSemana = function(){ renderSemanaSemRolagem(); rolarSemana(); };
 document.querySelector(".gridwrap").addEventListener("scroll", function(e){ if(rolagemSemana.semana) rolagemSemana.x = e.target.scrollLeft; });
 window.addEventListener("resize", function(){ rolagemSemana.semana = null; rolarSemana(); });
+mostrarView("sessoes");
 renderTudo();
 avisoPlanilha();
 var cadernoClinica = Nuvem.caderno({
