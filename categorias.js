@@ -21,7 +21,7 @@ var Categorias = (function(){
   function categoriaDinheiro(cat, desc){
     var c = chave(cat), d = chave(desc);
     if (c === "entretenimento"){
-      if (tem(/alianca|notebook|computador|mouse|teclado|monitor|ssd|sdd|home.?studio|microfone|fone|headset|interface|celular/, d)) return "Compras";
+      if (tem(/joia|anel|alianca|relogio|notebook|computador|mouse|teclado|monitor|ssd|sdd|home.?studio|microfone|fone|headset|interface|celular/, d)) return "Compras";
       if (tem(/passage|estadia|hotel|hospedagem/, d)) return "Viagens";
       return "Lazer";
     }

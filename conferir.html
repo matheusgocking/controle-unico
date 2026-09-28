@@ -117,6 +117,7 @@ details.lista > summary .q{font-weight:400;color:var(--faint);font-size:13px}
 @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
 </style>
 <script src="ler-xlsx.js"></script>
+<script src="categorias.js"></script>
 <script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
 <body>
@@ -212,7 +213,8 @@ function janelaClinica(){
   return null;
 }
 function appDados(){
-  return { dinheiro:lerLocal(CH.dinheiro), casa:lerLocal(CH.casa), clinica:lerLocal(CH.clinica) };
+  // os dois lados passam pela mesma troca de nomes do app (categorias.js), para comparar igual com igual
+  return { dinheiro:Categorias.cadernoDinheiro(lerLocal(CH.dinheiro)), casa:Categorias.cadernoCasa(lerLocal(CH.casa)), clinica:lerLocal(CH.clinica) };
 }
 const noMes = l => (l.data || "").slice(0, 7) === chaveMes(ref);
 const valorFixo = (g, k) => g.valores ? (Number(g.valores[k]) || 0) : (Number(g.valor) || 0);
@@ -409,19 +411,20 @@ function conferirDinheiro(app){
   if (!P) return { falta:"planilha", itens, totais, notas };
   if (!d) return { falta:"app", itens, totais, notas };
   const km = chaveMes(ref), m = ref.getMonth(), ano = ref.getFullYear();
+  const lancPl = P.dados.lanc.map(Categorias.lancDinheiro), fixosPlanilha = P.dados.fixos.map(Categorias.fixo);
 
   // lançamentos do mês, um a um
   const chave = l => [l.data, norm(l.tipo), norm(l.categoria), round2(l.valor).toFixed(2), norm(l.descricao)].join("|");
   const fraca = l => l.data + "|" + round2(l.valor).toFixed(2), fraca2 = l => l.data + "|" + norm(l.descricao);
-  const c = casar(P.dados.lanc.filter(noMes), (d.lancamentos || []).filter(noMes), chave, fraca, fraca2);
-  const linhaL = l => ({ data:l.data, desc:l.descricao, extra:[semPonto(l.categoria), semPonto(l.forma), l.tipo !== "Despesa." ? semPonto(l.tipo) : ""].filter(Boolean).join(" · "), valor:l.valor });
+  const c = casar(lancPl.filter(noMes), (d.lancamentos || []).filter(noMes), chave, fraca, fraca2);
+  const linhaL = l => ({ data:l.data, desc:l.descricao, extra:[semPonto(l.categoria), semPonto(l.forma), l.tipo !== "Despesa" ? semPonto(l.tipo) : ""].filter(Boolean).join(" · "), valor:l.valor });
   c.soPlanilha.forEach(l => itens.push({ k:"din|p|" + chave(l), lado:"planilha", ...linhaL(l) }));
   c.soApp.forEach(l => itens.push({ k:"din|a|" + chave(l), lado:"app", ...linhaL(l) }));
   c.diferentes.forEach(([p, a]) => itens.push({ k:"din|d|" + chave(p), lado:"dif", ...linhaL(p), nota:difCampos(p, a, [["valor","Valor",dinheiro],["descricao","Descrição"],["categoria","Categoria"],["tipo","Tipo"],["forma","Forma"]]) }));
 
   // gastos fixos do mês
   const fixosApp = {}; (d.gastosFixos || []).forEach(g => { fixosApp[norm(g.descricao)] = g; });
-  const fixosPl = {}; P.dados.fixos.forEach(g => { fixosPl[norm(g.descricao)] = g; });
+  const fixosPl = {}; fixosPlanilha.forEach(g => { fixosPl[norm(g.descricao)] = g; });
   const todos = new Set([...Object.keys(fixosApp), ...Object.keys(fixosPl)]);
   todos.forEach(k => {
     const gp = fixosPl[k], ga = fixosApp[k];
@@ -441,9 +444,15 @@ function conferirDinheiro(app){
   const fixosDoMes = (d.gastosFixos || []).filter(g => valorFixo(g, km) > 0);
   const fixosMes = fixosDoMes.reduce((s, g) => s + valorFixo(g, km), 0);
   const abrir = R ? norm(R.chave) === "abrir." : false;
-  const porCat = {};
-  (d.lancamentos || []).filter(noMes).filter(l => l.tipo === "Despesa." && l.categoria !== "Moradia.").forEach(l => { porCat[norm(l.categoria)] = (porCat[norm(l.categoria)] || 0) + (Number(l.valor) || 0); });
-  if (abrir) fixosDoMes.forEach(g => { porCat[norm(g.categoria)] = (porCat[norm(g.categoria)] || 0) + valorFixo(g, km); });
+  // despesas por categoria com os nomes do app; do lado da planilha, somadas da aba Lançamentos
+  const porCategoria = (lancs, fixos) => {
+    const s = {};
+    lancs.filter(noMes).filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia").forEach(l => { s[l.categoria] = (s[l.categoria] || 0) + (Number(l.valor) || 0); });
+    if (abrir) fixos.filter(g => valorFixo(g, km) > 0).forEach(g => { s[g.categoria] = (s[g.categoria] || 0) + valorFixo(g, km); });
+    return s;
+  };
+  const porCat = porCategoria(d.lancamentos || [], d.gastosFixos || []);
+  const porCatPl = porCategoria(lancPl, fixosPlanilha);
   const pessoas = casa ? (casa.pessoas || []) : [];
   const minhaCasa = casa ? (casa.lancamentos || []).filter(noMes).filter(l => l.quem === pessoas[0]).reduce((s, l) => s + (Number(l.valor) || 0), 0) : null;
   const totalApp = Object.values(porCat).reduce((s, v) => s + v, 0) + (abrir ? 0 : fixosMes) + (minhaCasa || 0);
@@ -451,24 +460,22 @@ function conferirDinheiro(app){
   const porOrigem = { "pratica clinica.":0, "pendencia.":0, "extra.":0 };
   pag.forEach(g => { const o = norm(g.receita || "Prática Clínica."); porOrigem[o] = (porOrigem[o] || 0) + (Number(g.valor) || 0); });
   const faturamento = Object.values(porOrigem).reduce((s, v) => s + v, 0);
-  const movReserva = (d.lancamentos || []).filter(l => l.categoria === "Reserva.");
-  const aportes = movReserva.filter(noMes).filter(l => l.tipo === "Aporte.").reduce((s, l) => s + (Number(l.valor) || 0), 0);
-  const resgates = movReserva.filter(noMes).filter(l => l.tipo === "Resgate.").reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  const movReserva = (d.lancamentos || []).filter(l => l.categoria === "Reserva");
+  const aportes = movReserva.filter(noMes).filter(l => l.tipo === "Aporte").reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  const resgates = movReserva.filter(noMes).filter(l => l.tipo === "Resgate").reduce((s, l) => s + (Number(l.valor) || 0), 0);
   const saldo = faturamento - totalApp, totalMes = saldo - aportes + resgates;
-  const receitaSolta = (d.lancamentos || []).filter(noMes).filter(l => l.tipo === "Receita.").reduce((s, l) => s + (Number(l.valor) || 0), 0);
+  const receitaSolta = (d.lancamentos || []).filter(noMes).filter(l => l.tipo === "Receita").reduce((s, l) => s + (Number(l.valor) || 0), 0);
 
   if (R && R.colMes[m] !== undefined && (R.ano === null || R.ano === ano)){
     const j = R.colMes[m];
     const v = i => num(cel(R.linhas, i, j));
-    Object.keys(R.cats).forEach(k => {
-      if (k === "-") return;
-      const i = R.cats[k], rot = txt(cel(R.linhas, i, 0));
-      let va;
-      if (k === "moradia.") va = minhaCasa;
-      else if (k === "gastos fixos.") va = abrir ? 0 : fixosMes;
-      else va = porCat[k] || 0;
-      totais.push({ rot:semPonto(rot), p:v(i), a:va, obs:k === "moradia." ? (casa ? "o que você pagou na casa" : "abra a aba Casa uma vez") : (k === "gastos fixos." && abrir ? "chave em Abrir: os fixos estão dentro de cada categoria" : "") });
-    });
+    // Desde 28/09/2026 o app tem categorias próprias: moradia e fixos vêm do painel da planilha;
+    // as outras, da aba Lançamentos passada pela troca de nomes. O total abaixo continua sendo o do painel.
+    if (R.cats["moradia."] !== undefined) totais.push({ rot:"Moradia", p:v(R.cats["moradia."]), a:minhaCasa, obs:casa ? "o que você pagou na casa" : "abra a aba Casa uma vez" });
+    if (!abrir && R.cats["gastos fixos."] !== undefined) totais.push({ rot:"Gastos fixos", p:v(R.cats["gastos fixos."]), a:fixosMes });
+    Categorias.DINHEIRO.concat(Object.keys(porCat), Object.keys(porCatPl))
+      .filter((k, i, a) => a.indexOf(k) === i && k !== "Moradia" && k !== "Reserva")
+      .forEach(k => { const p = porCatPl[k] || 0, a = porCat[k] || 0; if (p || a) totais.push({ rot:k, p, a, obs:"planilha somada pelos lançamentos" }); });
     const o = R.outros;
     const linhaO = (pedaco, va, obs) => { const k = Object.keys(o).find(x => x.indexOf(pedaco) === 0); if (k !== undefined) totais.push({ rot:semPonto(txt(cel(R.linhas, o[k], 0))).replace(/:$/, ""), p:v(o[k]), a:va, obs:obs || "" }); };
     linhaO("(-) total de despesas", totalApp);
@@ -478,13 +485,13 @@ function conferirDinheiro(app){
     linhaO("(-) total de aportes", aportes);
     linhaO("(+) total de resgates", resgates);
     linhaO("total", totalMes, "faturamento menos despesas, menos aportes, mais resgates");
-    if (receitaSolta) notas.push("O app tem " + dinheiro(receitaSolta) + " em receitas lançadas no Dinheiro (tipo Receita.) em " + MESES[m] + ", que a planilha não mostra no painel: ela só lê a aba Recebimentos da clínica.");
+    if (receitaSolta) notas.push("O app tem " + dinheiro(receitaSolta) + " em receitas lançadas no Dinheiro (tipo Receita) em " + MESES[m] + ", que a planilha não mostra no painel: ela só lê a aba Recebimentos da clínica.");
     // painel R:S, que a planilha calcula para o mês de hoje
     const hojeMes = chaveMes(new Date()) === km;
     const pn = R.painel;
     const r = d.reserva || {};
     const desde = r.dataBase || "0000-00-00";
-    const reservaApp = (Number(r.saldoBase) || 0) + movReserva.filter(l => (l.data || "") >= desde && l.tipo === "Aporte.").reduce((s, l) => s + (Number(l.valor) || 0), 0) - movReserva.filter(l => (l.data || "") >= desde && l.tipo === "Resgate.").reduce((s, l) => s + (Number(l.valor) || 0), 0);
+    const reservaApp = (Number(r.saldoBase) || 0) + movReserva.filter(l => (l.data || "") >= desde && l.tipo === "Aporte").reduce((s, l) => s + (Number(l.valor) || 0), 0) - movReserva.filter(l => (l.data || "") >= desde && l.tipo === "Resgate").reduce((s, l) => s + (Number(l.valor) || 0), 0);
     if (pn["saldo atual:"] !== undefined) totais.push({ rot:"Reserva: saldo atual", p:num(pn["saldo atual:"]), a:reservaApp, obs:"saldo conferido mais aportes menos resgates" });
     if (pn["meta de reserva:"] !== undefined) totais.push({ rot:"Reserva: meta", p:num(pn["meta de reserva:"]), a:Number(r.meta) || 0 });
     if (hojeMes){
@@ -510,7 +517,8 @@ function conferirCasa(app){
   const km = chaveMes(ref), m = ref.getMonth(), ano = ref.getFullYear();
   const chave = l => [l.data, norm(l.quem), norm(l.categoria), round2(l.valor).toFixed(2), norm(l.descricao === "-" ? "" : l.descricao)].join("|");
   const fraca = l => l.data + "|" + round2(l.valor).toFixed(2), fraca2 = l => l.data + "|" + norm(l.categoria) + "|" + norm(l.descricao === "-" ? "" : l.descricao);
-  const c = casar(P.dados.lanc.filter(noMes), (casa.lancamentos || []).filter(noMes), chave, fraca, fraca2);
+  const lancPl = P.dados.lanc.map(Categorias.lancCasa);
+  const c = casar(lancPl.filter(noMes), (casa.lancamentos || []).filter(noMes), chave, fraca, fraca2);
   const linhaL = l => ({ data:l.data, desc:semPonto(l.categoria) + (l.descricao && l.descricao !== "-" ? " · " + l.descricao : ""), extra:l.quem, valor:l.valor });
   c.soPlanilha.forEach(l => itens.push({ k:"casa|p|" + chave(l), lado:"planilha", ...linhaL(l) }));
   c.soApp.forEach(l => itens.push({ k:"casa|a|" + chave(l), lado:"app", ...linhaL(l) }));
@@ -524,7 +532,9 @@ function conferirCasa(app){
   if (R && R.colMes[m] !== undefined && (R.ano === null || R.ano === ano)){
     const j = R.colMes[m];
     const v = i => num(cel(R.linhas, i, j));
-    Object.keys(R.cats).forEach(k => { totais.push({ rot:semPonto(txt(cel(R.linhas, R.cats[k], 4))), p:v(R.cats[k]), a:porCat[k] || 0 }); });
+    // por categoria com os nomes do app: a planilha somada pela aba Lançamentos (o total do mês continua o do painel)
+    const porCatPl = {}; lancPl.filter(noMes).forEach(l => { porCatPl[norm(l.categoria)] = (porCatPl[norm(l.categoria)] || 0) + (Number(l.valor) || 0); });
+    Categorias.CASA.forEach(k => { const p = porCatPl[norm(k)] || 0, a = porCat[norm(k)] || 0; if (p || a) totais.push({ rot:k, p, a, obs:"planilha somada pelos lançamentos" }); });
     if (R.iTotal !== null){
       totais.push({ rot:"Total do mês", p:v(R.iTotal), a:total });
       totais.push({ rot:"Metade", p:v(R.iMetade), a:total * (Number(casa.divisao) || 0.5), obs:"a planilha divide sempre por dois; o app usa a parte guardada em Ajustes" });

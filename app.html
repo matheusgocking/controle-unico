@@ -203,6 +203,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="exportar-xlsx.js"></script>
+<script src="categorias.js"></script>
 <script src="nuvem.js"></script>
 <script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
@@ -241,10 +242,13 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 // Fora da casca, esta página não tem a Clínica ao lado para a aba Tudo: abre pela casca.
 if (window.top === window.self) location.replace("index.html" + (location.hash || "#tudo"));
 
-const CATEGORIAS = ["Moradia.","Alimentação.","Ifood.","Transporte.","Saúde.","Viagens.","Entretenimento.","Comunicação.","Prática Clínica.","Contabilidade.","Assinaturas.","Gastos Mãe.","Reserva.","Gastos Fixos."];
-const CAT_CASA   = ["Serviços Domésticos.","Mercado.","Fumo.","IPTU.","Internet.","Gás.","Energia.","Condomínio.","Ifood."];
-const TIPOS      = ["Despesa.","Receita.","Aporte.","Resgate."];
-const FORMAS     = ["PIX.","Crédito.","Débito.","Dinheiro."];
+// As listas e a troca dos nomes antigos (com ponto final, como nas planilhas) moram em categorias.js.
+const CATEGORIAS = Categorias.DINHEIRO;
+const CAT_CASA   = Categorias.CASA;
+const TIPOS      = Categorias.TIPOS;
+const FORMAS     = Categorias.FORMAS;
+// todo caderno que chega (do aparelho, do Drive ou de um arquivo) passa pela troca de nomes
+const arrumar = { matheus: Categorias.cadernoDinheiro, casa: Categorias.cadernoCasa };
 
 const VAZIO = {
   matheus: () => ({ versao:1, caderno:"dinheiro", atualizadoEm:null, lancamentos:[], gastosFixos:[],
@@ -264,7 +268,7 @@ const armazem = {
 };
 
 const livro = {};
-for (const c of Object.keys(VAZIO)) livro[c] = Object.assign(VAZIO[c](), armazem.ler(c) || {});
+for (const c of Object.keys(VAZIO)) livro[c] = arrumar[c](Object.assign(VAZIO[c](), armazem.ler(c) || {}));
 function salvar(c){ armazem.gravar(c, livro[c]); desenhar(); }
 
 const nuvem = {};
@@ -273,7 +277,7 @@ for (const c of Object.keys(VAZIO)) {
     id: ID_NUVEM[c], nome: NOME_DRIVE[c], rotulo: c === "casa" ? "o caderno da Casa" : "o caderno do Dinheiro",
     compartilhado: c === "casa",
     obter: () => livro[c],
-    aplicar: d => { livro[c] = Object.assign(VAZIO[c](), d); try { localStorage.setItem(chaveCache(c), JSON.stringify(livro[c])); } catch(e){} desenhar(); },
+    aplicar: d => { livro[c] = arrumar[c](Object.assign(VAZIO[c](), d)); try { localStorage.setItem(chaveCache(c), JSON.stringify(livro[c])); } catch(e){} desenhar(); },
     temDados: d => !!(d && ((d.lancamentos && d.lancamentos.length) || (d.gastosFixos && d.gastosFixos.length)))
   });
 }
@@ -361,13 +365,13 @@ function contasDinheiro(){
   const casa = contasCasa();
   const minhaCasa = casa.pagou[livro.casa.pessoas[0]] || 0;
 
-  const receitaSolta = soma(doMes.filter(l => l.tipo === "Receita."), l => l.valor);
+  const receitaSolta = soma(doMes.filter(l => l.tipo === "Receita"), l => l.valor);
   const entrou = receitaSolta + cl.recebido;
   // Moradia fica de fora para não contar duas vezes: ela vem da casa.
   // Os gastos fixos do mês contam como despesa do mês, como na planilha.
   const fixosDoMes = livro.matheus.gastosFixos.filter(g => valorFixo(g, chaveMes(ref)) > 0);
   const fixosMes = soma(fixosDoMes, g => valorFixo(g, chaveMes(ref)));
-  const saiu = soma(doMes.filter(l => l.tipo === "Despesa." && l.categoria !== "Moradia."), l => l.valor) + fixosMes + minhaCasa;
+  const saiu = soma(doMes.filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor) + fixosMes + minhaCasa;
 
   const agora = new Date();
   const faltaSair = chaveMes(ref) === chaveMes(agora)
@@ -376,22 +380,23 @@ function contasDinheiro(){
 
   const r = livro.matheus.reserva;
   const desde = r.dataBase || "0000-00-00";
-  const movReserva = livro.matheus.lancamentos.filter(l => l.categoria === "Reserva." && (l.data || "") >= desde);
+  const movReserva = livro.matheus.lancamentos.filter(l => l.categoria === "Reserva" && (l.data || "") >= desde);
   const reserva = (Number(r.saldoBase) || 0)
-    + soma(movReserva.filter(l => l.tipo === "Aporte."), l => l.valor)
-    - soma(movReserva.filter(l => l.tipo === "Resgate."), l => l.valor);
+    + soma(movReserva.filter(l => l.tipo === "Aporte"), l => l.valor)
+    - soma(movReserva.filter(l => l.tipo === "Resgate"), l => l.valor);
 
   // Como na linha Total do painel da planilha: o que foi para a reserva saiu do caixa do mês,
   // o que voltou dela entrou. Assim, tirar da reserva e gastar deixa o saldo do mês no lugar.
-  const aportesMes = soma(doMes.filter(l => l.categoria === "Reserva." && l.tipo === "Aporte."), l => l.valor);
-  const resgatesMes = soma(doMes.filter(l => l.categoria === "Reserva." && l.tipo === "Resgate."), l => l.valor);
+  const aportesMes = soma(doMes.filter(l => l.categoria === "Reserva" && l.tipo === "Aporte"), l => l.valor);
+  const resgatesMes = soma(doMes.filter(l => l.categoria === "Reserva" && l.tipo === "Resgate"), l => l.valor);
   const sobra = entrou - saiu - aportesMes + resgatesMes;
   return { entrou, receitaSolta, recebidoClinica: cl.recebido, dePacientes: cl.pacientes, saiu, minhaCasa, fixosMes, faltaSair, semDia, reserva,
            aportesMes, resgatesMes, sobra, falta: cl.falta, clinicaOk: cl.ok, fimDoMes: sobra + (cl.falta || 0) - (faltaSair || 0) };
 }
 
 // ---------- telas ----------
-const ABAS = [["tudo","Tudo"],["dinheiro","Dinheiro"],["casa","Casa"]];
+// A Carteira juntou Dinheiro e cripto (28/09/2026): aqui ela é a visão do dinheiro; a cripto é outra página.
+const ABAS = [["tudo","Tudo"],["carteira","Carteira"],["casa","Casa"]];
 
 const pct = (a, b) => b > 0 ? Math.max(0, Math.min(100, (Number(a) || 0) / b * 100)) : 0;
 const pctTxt = (a, b) => (b > 0 ? (a / b * 100) : 0).toLocaleString("pt-BR", { maximumFractionDigits:1 }) + "%";
@@ -432,11 +437,11 @@ function rosca(itens, centro, aria){
 // Sete fatias com cor e o resto junto em "Outros", para a rosca continuar legível.
 function porCategoria(){
   const km = chaveMes(ref), s = {};
-  livro.matheus.lancamentos.filter(noMes).filter(l => l.tipo === "Despesa." && l.categoria !== "Moradia.")
+  livro.matheus.lancamentos.filter(noMes).filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia")
     .forEach(l => s[l.categoria] = (s[l.categoria] || 0) + (Number(l.valor) || 0));
   livro.matheus.gastosFixos.forEach(g => { const v = valorFixo(g, km); if (v) s[g.categoria] = (s[g.categoria] || 0) + v; });
   const casa = contasCasa().pagou[livro.casa.pessoas[0]] || 0;
-  if (casa) s["Moradia. (casa)"] = (s["Moradia. (casa)"] || 0) + casa;
+  if (casa) s["Moradia (casa)"] = (s["Moradia (casa)"] || 0) + casa;
   return Object.entries(s).filter(e => e[1] > 0.005).sort((a, b) => b[1] - a[1]);
 }
 function roscaCategorias(){
@@ -473,19 +478,12 @@ function veredito(d){
   return caixa("pos", true, "Pode gastar", `Até ${dinheiro(fim)} sem fechar ${nome} no vermelho${semPrevisto}.`);
 }
 
-function telaTudo(){
-  const d = contasDinheiro(), c = contasCasa(), cl = contasClinica(), cart = carteiraAgora();
-  const r = livro.matheus.reserva;
-  const [p1, p2] = livro.casa.pessoas;
+// O card do alto da aba Tudo: o que entrou e saiu, o que ainda vem e a seta. Também fica no alto da Carteira.
+function cardSituacao(d){
   const outros = d.entrou - d.dePacientes;
   const lancado = d.saiu - d.fixosMes - d.minhaCasa;
   const corrente = chaveMes(ref) === chaveMes(new Date());
-
-  const patrimonio = rosca([["Reserva", d.reserva, "var(--c3)", r.meta ? `${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}` : ""],
-                            ["Carteira", cart ? cart.total : 0, "var(--c4)", cart ? "lida em " + new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : ""]],
-                           "patrimônio", "Patrimônio: reserva e carteira");
-
-  return barraMes() + `
+  return `
   <section class="painel"><h2>Situação do mês<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
     <div class="situ"><div>
       <div class="linha-k">
@@ -500,11 +498,23 @@ function telaTudo(){
       </div>
     </div>${veredito(d)}</div>
   </section>
+`;
+}
+
+function telaTudo(){
+  const d = contasDinheiro(), c = contasCasa(), cl = contasClinica(), cart = carteiraAgora();
+  const r = livro.matheus.reserva;
+  const [p1, p2] = livro.casa.pessoas;
+  const patrimonio = rosca([["Reserva", d.reserva, "var(--c3)", r.meta ? `${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}` : ""],
+                            ["Cripto", cart ? cart.total : 0, "var(--c4)", cart ? "lida em " + new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : ""]],
+                           "patrimônio", "Patrimônio: reserva e cripto");
+
+  return barraMes() + cardSituacao(d) + `
 
   <div class="duas">
     <section class="painel"><h2>Para onde foi</h2>${roscaCategorias()}</section>
     <section class="painel"><h2>Patrimônio</h2>${patrimonio}
-      ${cart ? "" : `<p class="nota">Abra a aba Carteira uma vez neste aparelho para o total dela entrar aqui.</p>`}</section>
+      ${cart ? "" : `<p class="nota">Abra a Carteira cripto uma vez neste aparelho para o total dela entrar aqui.</p>`}</section>
   </div>
 
   <div class="duas igual">
@@ -525,14 +535,14 @@ function telaTudo(){
     do Mês. Saldo agora: recebi menos gastei, menos o que foi para a reserva (aporte) e mais o que saiu dela (resgate), como a linha Total
     da planilha; o gasto feito com o dinheiro resgatado entra normalmente em Gastei. Ainda vou receber: a mesma conta do Painel da Clínica, pela agenda e pela cobrança de cada paciente, menos o que
     os pacientes já pagaram. Ainda vai sair: gastos fixos com dia depois de hoje. A seta compara o fim do mês com zero.
-    Carteira: o total da última vez que a aba Carteira abriu neste aparelho.
+    Cripto: o total da última vez que a Carteira cripto abriu neste aparelho.
   </details>`;
 }
 
 function linhaLanc(l){
-  const cls = l.tipo === "Receita." || l.tipo === "Resgate." ? "pos" : "";
-  const sinal = cls ? "+ " : l.tipo === "Despesa." ? "− " : "";
-  const tipo = l.tipo !== "Despesa." ? ` · ${semPonto(l.tipo)}` : "";
+  const cls = l.tipo === "Receita" || l.tipo === "Resgate" ? "pos" : "";
+  const sinal = cls ? "+ " : l.tipo === "Despesa" ? "− " : "";
+  const tipo = l.tipo !== "Despesa" ? ` · ${semPonto(l.tipo)}` : "";
   return `<tr><td class="c-data">${dataCurta(l.data)}</td>
     <td class="c-desc"><b>${escH(l.descricao)}</b><span class="so-cel">${escH(semPonto(l.categoria))} · ${escH(semPonto(l.forma))}${tipo}</span></td>
     <td class="c-cat">${escH(semPonto(l.categoria))}${tipo}</td><td class="c-forma">${escH(semPonto(l.forma))}</td>
@@ -547,12 +557,6 @@ function telaDinheiro(){
   const km = chaveMes(ref);
   const fixosMes = livro.matheus.gastosFixos.slice().sort((a, b) => valorFixo(b, km) - valorFixo(a, km));
 
-  const stats = `<div class="stats">
-    <div class="stat"><span>Despesas do mês</span><b>${dinheiro(d.saiu - d.minhaCasa)}</b><small>sem a casa</small></div>
-    <div class="stat"><span>Gastos fixos</span><b>${dinheiro(d.fixosMes)}</b><small>${d.faltaSair === null ? "do mês" : dinheiro(d.faltaSair) + " ainda vão sair"}</small></div>
-    <div class="stat"><span>Receitas fora a clínica</span><b class="pos">${dinheiro(d.receitaSolta)}</b><small>lançadas aqui</small></div>
-    <div class="stat"><span>Reserva</span><b>${dinheiro(d.reserva)}</b>${r.meta ? `<div class="trilho"><i style="width:${pct(d.reserva, r.meta)}%"></i></div><small>${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}</small>` : `<small>sem meta</small>`}</div>
-  </div>`;
 
   const form = `<details class="novo"><summary>+ Novo lançamento</summary><form class="linha" id="fLanc">
     <div><label>Data</label><input type="date" name="data" value="${hojeISO()}" required></div>
@@ -592,7 +596,7 @@ function telaDinheiro(){
     <div><button class="b p" type="submit">Guardar</button></div>
   </form></details>`;
 
-  return barraMes() + stats + `
+  return barraMes() + cardSituacao(d) + `
   <div class="duas larga">
     <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
     <div class="coluna">
@@ -606,6 +610,51 @@ function telaDinheiro(){
     </div>
   </div>
   <section class="painel" style="margin-top:18px"><h2>Gastos fixos<span class="dir">dia e valor em ${MESES[ref.getMonth()]}</span></h2>${formFixo}${fixos}</section>`;
+}
+
+// O card do alto da Casa, no mesmo desenho do card da aba Tudo (pedido dele, 28/09/2026):
+// quem pagou quanto, o mês contra o anterior e a média, e a caixa dizendo se o mês está acima da média.
+function totalCasaDoMes(d){
+  const k = chaveMes(d);
+  return soma(livro.casa.lancamentos.filter(l => (l.data || "").slice(0, 7) === k), l => l.valor);
+}
+function cardCasa(c){
+  const [p1, p2] = livro.casa.pessoas;
+  const parte = Number(livro.casa.divisao) || 0.5;
+  const agora = new Date(), corrente = chaveMes(ref) === chaveMes(agora);
+  const nome = MESES[ref.getMonth()], Nome = nome[0].toUpperCase() + nome.slice(1);
+  const doMes = livro.casa.lancamentos.filter(noMes).length;
+  const antes = totalCasaDoMes(new Date(ref.getFullYear(), ref.getMonth() - 1, 1));
+  // média dos meses fechados do ano que tiveram compra (o mês aberto e o corrente ficam de fora)
+  const meses = [];
+  for (let m = 0; m < ref.getMonth(); m++){ const v = totalCasaDoMes(new Date(ref.getFullYear(), m, 1)); if (v > 0.005) meses.push(v); }
+  const media = meses.length ? soma(meses) / meses.length : null;
+  const dif = c.total - antes;
+  const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
+  const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}</b></div><p>${texto}</p></div>`;
+  let v;
+  if (media === null) v = `<div class="veredito"><div class="topo-v"><b>Sem média ainda</b></div><p>A média aparece quando houver um mês fechado com compras neste ano.</p></div>`;
+  else if (c.total > media + 0.005) v = caixa("warn", true, corrente ? "Já passou da média" : "Acima da média",
+    `${corrente ? "Até hoje" : Nome} ${corrente ? "a casa gastou" : "gastou"} ${dinheiro(c.total - media)} a mais que a média de ${dinheiro(media)}.`);
+  else v = caixa("pos", false, corrente ? "Dentro da média" : "Abaixo da média",
+    corrente ? `Faltam ${dinheiro(media - c.total)} para chegar à média de ${dinheiro(media)}.`
+             : `${Nome} ficou ${dinheiro(media - c.total)} abaixo da média de ${dinheiro(media)}.`);
+  return `
+  <section class="painel"><h2>Situação da casa<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
+    <div class="situ"><div>
+      <div class="linha-k">
+        <div class="k"><span>${escH(primeiro(p1))} pagou</span><b>${dinheiro(c.pagou[p1])}</b><small>parte: ${dinheiro(c.total * parte)}</small></div>
+        <div class="k"><span>${escH(primeiro(p2))} pagou</span><b>${dinheiro(c.pagou[p2])}</b><small>parte: ${dinheiro(c.total * (1 - parte))}</small></div>
+        <div class="k destaque"><span>Total no mês</span><b>${dinheiro(c.total)}</b><small>${doMes} compra${doMes === 1 ? "" : "s"}</small></div>
+      </div>
+      <div class="linha-k">
+        <div class="k"><span>Balança</span><b style="font-size:18px;white-space:normal">${escH(balanca(c, p1, p2))}</b><small>quem pagou mais no mês</small></div>
+        <div class="k"><span>Mês passado</span><b>${dinheiro(antes)}</b><small>${antes > 0.005 ? (dif >= 0 ? dinheiro(dif) + " a menos que agora" : dinheiro(-dif) + " a mais que agora") : "sem compras"}</small></div>
+        <div class="k destaque"><span>Média por mês</span>${media === null ? nd("nenhum mês fechado neste ano") : `<b>${dinheiro(media)}</b><small>${meses.length} ${meses.length === 1 ? "mês fechado" : "meses fechados"} de ${ref.getFullYear()}</small>`}</div>
+      </div>
+    </div>${v}</div>
+  </section>
+`;
 }
 
 function telaCasa(){
@@ -622,21 +671,15 @@ function telaCasa(){
   const itensCat = cats.slice(0, cabem).map(([k, v], i) => [semPonto(k), v, `var(--c${i + 1})`]);
   if (cats.length > cabem) itensCat.push(["Outros", soma(cats.slice(cabem), e => e[1]), "var(--c8)", cats.slice(cabem).map(e => semPonto(e[0])).join(", ")]);
 
-  const stats = `<div class="stats">
-    <div class="stat"><span>Total da casa no mês</span><b>${dinheiro(c.total)}</b><small>${doMes.length} compra${doMes.length === 1 ? "" : "s"}</small></div>
-    <div class="stat"><span>${escH(primeiro(p1))} pagou</span><b>${dinheiro(c.pagou[p1])}</b><small>parte: ${dinheiro(c.total * parte)}</small></div>
-    <div class="stat"><span>${escH(primeiro(p2))} pagou</span><b>${dinheiro(c.pagou[p2])}</b><small>parte: ${dinheiro(c.total * (1 - parte))}</small></div>
-    <div class="stat"><span>Balança</span><b style="font-size:16px;white-space:normal">${escH(balanca(c, p1, p2))}</b><small>quem pagou mais no mês</small></div>
-  </div>`;
 
   const form = `<details class="novo"><summary>+ Nova compra</summary><form class="linha" id="fCasa">
     <div><label>Data</label><input type="date" name="data" value="${hojeISO()}" required></div>
     <div><label>Quem comprou</label><select name="quem">${livro.casa.pessoas.map(p => `<option>${escH(p)}</option>`).join("")}</select></div>
     <div style="grid-column:span 2"><label>Descrição</label><input name="descricao" placeholder="opcional"></div>
-    <div><label>Categoria</label><select name="categoria">${CAT_CASA.map(t => `<option>${t}</option>`).join("")}</select></div>
+    <div><label>Categoria</label><select name="categoria" title="iFood para os dois vai aqui; só seu, na Carteira">${CAT_CASA.map(t => `<option>${t}</option>`).join("")}</select></div>
     <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
     <div><button class="b p" type="submit">Lançar</button></div>
-  </form></details>`;
+  </form><p class="nota">iFood pedido para os dois entra aqui; pedido só seu entra na Carteira.</p></details>`;
 
   const quem = q => `<span class="quem"><i style="background:${cor(q)}"></i>${escH(primeiro(q))}</span>`;
   const lista = doMes.length ? `<table class="t"><thead><tr><th>Dia</th><th>Compra</th><th>Quem</th><th class="dir">Valor</th><th></th></tr></thead><tbody>
@@ -659,7 +702,7 @@ function telaCasa(){
       <div><button class="b p" type="submit">Guardar</button></div>
     </form><p class="nota">Os nomes ficam só no caderno da casa, no Drive.</p></details>`;
 
-  return barraMes() + stats + `
+  return barraMes() + cardCasa(c) + `
   <div class="duas larga">
     <section class="painel"><h2>Compras<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
     <div class="coluna">
@@ -678,7 +721,7 @@ function desenhar(){
   // redesenhar não fecha o formulário aberto na mesma tela (a Clínica pode mudar enquanto ele digita)
   const abertos = [...t.querySelectorAll("details")].map(x => x.open);
   const mesma = t.dataset.aba === aba;
-  t.innerHTML = aba === "tudo" ? telaTudo() : aba === "dinheiro" ? telaDinheiro() : telaCasa();
+  t.innerHTML = aba === "tudo" ? telaTudo() : aba === "carteira" ? telaDinheiro() : telaCasa();
   t.dataset.aba = aba;
   if (mesma) t.querySelectorAll("details").forEach((x, i) => { if (abertos[i] && !x.querySelector("form.enviado")) x.open = true; });
   ligar();
@@ -741,7 +784,8 @@ document.getElementById("abas").onclick = e => {
 };
 // A casca (index.html) troca de aba mudando o endereço: app.html#casa.
 function abaDoEndereco(){
-  const k = (location.hash || "").replace("#", "");
+  let k = (location.hash || "").replace("#", "");
+  if (k === "dinheiro") k = "carteira";   // endereço antigo
   return ABAS.some(([c]) => c === k) ? k : null;
 }
 window.addEventListener("hashchange", () => {
@@ -799,7 +843,7 @@ function importarCadernos(j){
   if (j.casa && Array.isArray(j.casa.lancamentos)) vem.push(["casa", j.casa, `${j.casa.lancamentos.length} compras da casa`]);
   if (!vem.length) throw new Error("o arquivo não tem caderno de dinheiro nem de casa");
   if (!confirm("Isto substitui o que está no app por: " + vem.map(v => v[2]).join(" e ") + ". Seguir?")) return;
-  vem.forEach(([c, d]) => { livro[c] = Object.assign(VAZIO[c](), d); armazem.gravar(c, livro[c]); });
+  vem.forEach(([c, d]) => { livro[c] = arrumar[c](Object.assign(VAZIO[c](), d)); armazem.gravar(c, livro[c]); });
   desenhar();
 }
 
