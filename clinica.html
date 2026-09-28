@@ -1033,7 +1033,7 @@ function saiuDaHora(ex){
 }
 function entradaDa(ex){
   if(!ex) return null;
-  if(ex.tipo==="extra") return {pacienteId:ex.pacienteId, de:ex.de, remarcada:ex.remarcada};
+  if(ex.tipo==="extra") return {pacienteId:ex.pacienteId, de:ex.de, remarcada:ex.remarcada, realizada:ex.realizada};
   return ex.entra || null;
 }
 /* marca que o paciente fixo saiu da hora sem derrubar a sessão que entrou nela */
