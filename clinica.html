@@ -268,7 +268,9 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 .field label{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
 .field input,.field select{padding:8px 10px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2)}
 .field .hint,.hint{font-size:11.5px; color:var(--faint)}
-.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.grid2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px}
+/* no celular a ficha sobrava para o lado (29/09/2026): os campos descem um embaixo do outro */
+@media (max-width:700px){ .grid2{grid-template-columns:minmax(0,1fr)} .field input,.field select{min-width:0; width:100%} }
 
 .result{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:16px}
 .result .big{font-family:Literata,Georgia,serif; font-size:26px; line-height:1.2}
@@ -486,13 +488,43 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .hoje-cab{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-bottom:12px}
 .hoje-cab .sub{margin:0}
 .pcard .pr{font-size:11px; color:var(--muted)}
-/* ficha: bloco do prontuário, com o resumo e os pedidos ao Claude */
+/* ficha: bloco do prontuário, com as sessões que ainda não estão no Word (29/09/2026) */
 .fipag.pront{border-color:var(--accent-line); background:var(--accent-soft)}
-.pront .resumo{margin-top:10px; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:10px 12px; font-size:13px; white-space:pre-line}
-.pront .cmds{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
-.pront .pedido{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:8px; font-size:12.5px; color:var(--muted)}
-.pront .pedido .apagar{border:0; background:transparent; color:var(--faint); cursor:pointer; font-size:12px; padding:2px 6px; border-radius:6px}
-.pront .pedido .apagar:hover{background:var(--devendo-soft); color:var(--devendo)}
+.pront .pgen{margin-left:auto; display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted)}
+.pront .pgen select{padding:3px 6px; border:1px solid var(--border-strong); border-radius:7px; background:var(--surface)}
+.plista{display:flex; flex-direction:column; gap:6px; margin-top:10px}
+.pitem{background:var(--surface); border:1px solid var(--border); border-radius:9px}
+.pitem.aberto{border-color:var(--accent-line)}
+.pitem-cab{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; width:100%; border:0; background:transparent; padding:9px 12px; cursor:pointer; text-align:left; border-radius:9px}
+.pitem-cab:hover{background:var(--surface-2)}
+.pitem-cab .quando{font-weight:600; font-size:13px}
+.pitem-cab .est{margin-left:auto; font-size:12px; color:var(--muted)}
+.pitem-cab .est.ok{color:var(--ok); font-weight:600}
+.sit.s-realizada{background:var(--ok-soft); color:var(--ok)}
+.sit.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-fg)}
+.sit.s-falta{background:var(--t-falta-bg); color:var(--t-falta-fg)}
+.sit.s-remarcada{background:var(--t-remarcada-bg); color:var(--t-remarcada-fg); box-shadow:inset 0 0 0 1px var(--t-remarcada-bar)}
+.sit.s-cancelada{background:var(--neutral-chip); color:var(--faint)}
+.sit.s-confirmar{background:var(--quente-bg); color:var(--quente-fg)}
+.peditor{padding:4px 12px 12px; border-top:1px solid var(--border)}
+.peditor .aviso{border-left:3px solid var(--warn); background:var(--warn-soft); color:var(--warn); border-radius:0 8px 8px 0; padding:7px 10px; font-size:12.5px; margin:10px 0 0}
+.pcampo{display:flex; flex-direction:column; gap:5px; margin-top:10px}
+.pcampo .rot{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+.pchips{display:flex; flex-wrap:wrap; gap:6px}
+.chip-sit{border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:20px; padding:5px 12px; font-size:13px; cursor:pointer}
+.chip-sit:hover{background:var(--surface-2)}
+.chip-sit[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600}
+.chip-sit.s-realizada[aria-pressed="true"]{background:var(--t-realizada-bg); border-color:var(--t-realizada-bg); color:var(--t-realizada-fg)}
+.chip-sit:disabled{opacity:.6; cursor:default}
+.pcampos{display:flex; flex-direction:column; gap:8px; margin-top:10px}
+.pf{display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:var(--muted)}
+.pf span:first-letter{text-transform:uppercase}
+/* ".modal textarea" é a caixa grande de colar texto: aqui as caixas são pequenas e em letra comum */
+.modal .pf textarea,.pf input,.pf select{min-height:0; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); padding:7px 9px; color:var(--text); font-size:13.5px; line-height:1.45; font-family:inherit; resize:vertical}
+.pchk{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text); margin-top:4px; cursor:pointer}
+.modal .ptexto{min-height:120px; width:100%; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); padding:9px 11px; font:13.5px/1.55 Literata,Georgia,serif; color:var(--text); resize:vertical}
+.modal .ptexto[readonly]{background:var(--surface); border-style:dashed}
+.peditor .acoes{display:flex; gap:8px; justify-content:flex-end; margin-top:10px}
 /* painel: o mês em dinheiro, quem deve, faltas, horários livres e o ano com a meta */
 .trilho-grande{height:14px; border-radius:20px; background:var(--surface-3); overflow:hidden}
 .trilho-grande span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
@@ -526,6 +558,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="nuvem.js"></script>
+<script src="modelos-prontuario.js"></script>
 <script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
 <body>
@@ -1383,6 +1416,7 @@ function abrirMenu(e){
       if(ex && ex.tipo!=="realizada") corpo += botao("limpar-excecao","Voltar ao normal","var(--accent)");
     }
     corpo += "<hr>";
+    corpo += botao("prontuario","Prontuário desta sessão","var(--ok)");
     corpo += botao("editar","Abrir ficha de "+nomeCurto(info.paciente),"var(--accent)");
     if(info.paciente.meet) corpo += botao("meet","Abrir sala do Meet","var(--ok)");
   } else {
@@ -1423,6 +1457,7 @@ function abrirMenu(e){
       else if(a==="limpar-bloco") delete dados.blocos[kBloco];
       else if(a==="divulgado"||a==="reservado"||TIPOS_PESSOAIS[a]) dados.blocos[kBloco] = a;
       else if(a==="editar"){ abrirFicha(info.paciente); return; }
+      else if(a==="prontuario"){ abrirFicha(info.paciente, chaveRegistro(data, hora, info.paciente)); return; }
       else if(a==="meet"){ window.open(info.paciente.meet,"_blank","noopener"); fecharMenu(); return; }
       salvar(); fecharMenu(); renderTudo();
     });
@@ -1816,17 +1851,135 @@ function desenharAgendaPacientes(soTriagem){
 }
 function inicial1(p){ var n=(p.nome||"?").trim(); return n ? n.charAt(0).toUpperCase() : "?"; }
 
-/* os pedidos que a ficha deixa para o Claude, na ordem dos botões */
-var PEDIDOS = {atualizar:"Buscar e atualizar o resumo", registrar:"Registrar a sessão de hoje",
-  falta:"Registrar falta", remarcar:"Registrar remarcação"};
-function quandoPedido(iso){
-  var d = new Date(iso);
-  if(isNaN(d.getTime())) return "";
-  return (mesmoDia(d, new Date()) ? "hoje" : dataCurta(d)) + ", " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+/* ---------------- prontuário ligado à agenda (29/09/2026) ----------------
+   Toda marca na grade vira um registro de prontuário a escrever. O app monta o texto pelos
+   modelos (modelos-prontuario.js), ele completa e aprova, e o Claude do computador passa os
+   aprovados para o Word quando ele pedir. Aprovar aqui é a autorização dele para escrever
+   direto no original. Depois de passar, o Claude apaga o texto daqui e deixa só a situação.
+   dados.registros["aaaa-mm-dd|hora|idDoPaciente"] = {estado:"rascunho"|"aprovado"|"feito",
+   situacao, motivo, campos, sem, editado, textoManual, e, ao aprovar, codigo, genero,
+   evolucao, complementar, dataBloco, proximaData}. */
+var PRONT_DESDE = "2026-09-29";   /* o que aconteceu antes disso já foi escrito no Word pela skill */
+var SITUACAO_PRONT = {realizada:"Realizada", cortesia:"Cortesia", falta:"Não compareceu",
+  remarcada:"Remarcada", cancelada:"Não haverá sessão"};
+
+/* a situação de uma sessão de um paciente numa data e hora, ou null se ele não está ali.
+   Ao contrário de sessoesDoDia, a falta ou remarcada continua aparecendo mesmo quando
+   outro paciente entrou no lugar. */
+function estadoSessaoDe(p, data, hora){
+  var ex = excecao(data, hora);
+  var entra = entradaDa(ex);
+  if(entra && entra.pacienteId===p.id) return {estado:(entra.realizada ? "realizada" : "sessao"), origem:"extra", de:entra.de};
+  var fixo = pacienteEm(data.getDay(), hora, data);
+  if(fixo && fixo.id===p.id) return {estado:(ex && ex.tipo!=="extra" ? ex.tipo : "sessao"), origem:"fixo", para:(ex && ex.para) || null};
+  return null;
+}
+function sessoesDoPaciente(p, de, ate){
+  var lista = [];
+  for(var d = new Date(de); d <= ate; d = somaDias(d, 1)){
+    for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++){
+      var st = estadoSessaoDe(p, d, h);
+      if(st){ st.data = new Date(d); st.hora = h; lista.push(st); }
+    }
+  }
+  return lista;
+}
+function chaveRegistro(data, hora, p){ return chaveData(data)+"|"+hora+"|"+p.id; }
+/* "sessao" é a que ainda não recebeu marca: sem situação, não há texto a escrever */
+function situacaoPront(estado){ return SITUACAO_PRONT[estado] ? estado : ""; }
+
+/* o que falta registrar deste paciente: sessões desde PRONT_DESDE que já passaram ou que já
+   têm marca (remarcada e "não haverá" dá para escrever antes), menos as que já estão no Word.
+   A que foi para o Word e depois mudou de situação na grade volta, para ele conferir. */
+function pendenciasDe(p){
+  var desde = deISO(PRONT_DESDE);
+  if(p.inicio && deISO(p.inicio) > desde) desde = deISO(p.inicio);
+  var regs = dados.registros || {};
+  return sessoesDoPaciente(p, desde, somaDias(hoje0(), 90)).filter(function(s){
+    var r = regs[chaveRegistro(s.data, s.hora, p)];
+    if(r && r.estado==="feito") return r.situacao && r.situacao !== situacaoPront(s.estado);
+    if(s.estado==="sessao" && !jaPassou(s.data, s.hora)) return !!r;
+    return true;
+  });
+}
+function totalPendencias(){
+  var n = 0;
+  dados.pacientes.forEach(function(p){ n += pendenciasDe(p).length; });
+  return n;
+}
+/* a próxima sessão depois desta, seja qual for a marca: é a data em que o Word abre o bloco
+   seguinte (uma remarcação depois muda a data desse bloco, como no papel) */
+function proximaSessaoDe(p, data){
+  var lista = sessoesDoPaciente(p, somaDias(data, 1), somaDias(data, 70));
+  return lista.length ? lista[0] : null;
+}
+function nomeNoProntuario(p){ return (p.nome||"").trim().split(/\s+/)[0] || "[FULANO]"; }
+function dataBR(iso){ return iso ? dataLonga(deISO(iso)) : ""; }
+/* troca cada {campo} pelo valor; o que ficou vazio volta entre colchetes, como no Word */
+function preencherModelo(modelo, valores){
+  return modelo.replace(/\{([^}]+)\}/g, function(_, campo){
+    var v = valores[campo];
+    return (v && String(v).trim()) ? String(v).trim() : "["+campo+"]";
+  });
+}
+/* o texto que vai para o Word, a data do bloco e a sessão seguinte, a partir do registro */
+function textoDoRegistro(r, s, p){
+  var M = MODELOS_PRONTUARIO, sit = r.situacao, c = r.campos || {};
+  var valores = {};
+  for(var k in c) valores[k] = c[k];
+  valores["FULANO"] = nomeNoProntuario(p);
+  valores["data da sessão"] = dataLonga(s.data);
+  valores["data do contato"] = dataBR(c["data do contato"]);
+  valores["nova data"] = dataBR(c["nova data"]);
+  var out = {campo:"evolucao", texto:"", dataBloco:"", proximaData:""};
+  if(sit==="realizada" || sit==="cortesia"){
+    out.texto = M.realizada.linhas.filter(function(l){ return !(r.sem && r.sem[l.id]); })
+      .map(function(l){ return preencherModelo(l.texto, valores); }).join(" ");
+  } else if(sit==="falta"){
+    out.texto = M.falta.evolucao;
+  } else if(sit==="remarcada"){
+    out.campo = "complementar";
+    out.texto = preencherModelo(M.remarcada[r.motivo || "paciente"].complementar, valores);
+    out.dataBloco = c["nova data"] || "";
+  } else if(sit==="cancelada"){
+    out.campo = "complementar";
+    out.texto = preencherModelo(M.cancelada.complementar, valores);
+    out.dataBloco = c["nova data"] || "";
+  }
+  if(sit==="realizada" || sit==="cortesia" || sit==="falta"){
+    var prox = proximaSessaoDe(p, s.data);
+    out.proximaData = prox ? chaveData(prox.data) : "";
+  }
+  out.texto = flexionarProntuario(out.texto, p.genero);
+  if(r.editado && r.textoManual != null) out.texto = r.textoManual;
+  return out;
+}
+/* os campos que o modelo pede, na ordem, sem os que o app preenche sozinho */
+var CAMPOS_AUTOMATICOS = {"FULANO":1, "data da sessão":1};
+function camposDoModelo(texto){
+  var lista = [];
+  texto.replace(/\{([^}]+)\}/g, function(_, campo){ if(!CAMPOS_AUTOMATICOS[campo] && lista.indexOf(campo) < 0) lista.push(campo); return ""; });
+  return lista;
+}
+/* um registro aprovado cuja sessão mudou de situação na grade volta a rascunho: o texto
+   aprovado não descreve mais o que aconteceu */
+function conferirAprovados(){
+  var regs = dados.registros || {};
+  Object.keys(regs).forEach(function(k){
+    var r = regs[k];
+    if(r.estado!=="aprovado") return;
+    var partes = k.split("|"), p = acharPaciente(partes[2]);
+    var st = p ? estadoSessaoDe(p, deISO(partes[0]), Number(partes[1])) : null;
+    if(!st || situacaoPront(st.estado) !== r.situacao){
+      r.estado = "rascunho";
+      r.aviso = st ? "A situação mudou na grade depois da aprovação. Confira o texto e aprove de novo." : "Esta sessão saiu da grade depois da aprovação.";
+    }
+  });
 }
 
+
 /* ---------------- ficha do paciente ---------------- */
-function abrirFicha(p){
+function abrirFicha(p, foco){
   fecharMenu();
   var fundo = document.createElement("div");
   fundo.className = "overlay";
@@ -1893,43 +2046,180 @@ function abrirFicha(p){
         '<span>Não cobrado: <b>'+moeda(c.naoCobrado)+'</b></span>' +
       '</div>';
   }
-  /* prontuário (28/09/2026): o resumo da última sessão registrada e os pedidos ao Claude.
-     O prontuário mora no computador dele; o app só guarda o pedido (tipo, paciente e hora,
-     nada clínico) em dados.pedidos, e o resumo em p.prontuario quando o Claude devolver. */
+  /* prontuário (29/09/2026): as sessões deste paciente que ainda não estão no Word, cada uma
+     com o texto montado pelos modelos. Ele escolhe o que aconteceu (e isso marca a grade),
+     completa os campos, confere o texto e aprova. O que ele aprova o Claude passa para o Word. */
+  var abertoPront = foco || null, esperaSalvar = null;
+  function salvarLogo(){ clearTimeout(esperaSalvar); esperaSalvar = setTimeout(salvar, 700); }
   function pintarProntuario(){
     var el = document.getElementById("fi-pront");
     var pr = p.prontuario || {};
-    var pedidos = (dados.pedidos || []).filter(function(x){ return x.pacienteId===p.id; }).slice(-3).reverse();
+    var pend = pendenciasDe(p);
+    dados.registros = dados.registros || {};
+    var aprovados = pend.filter(function(s){ var r = dados.registros[chaveRegistro(s.data, s.hora, p)]; return r && r.estado==="aprovado"; }).length;
     var h = '<div class="topo"><h3>Prontuário</h3>' +
-      (pr.ultima ? '<span class="sit ok">registrado até '+dataCurta(deISO(pr.ultima))+'</span>' : '<span class="sit sem">sem resumo ainda</span>') +
-      (pr.atualizadoEm ? '<span class="hint" style="margin-left:auto">resumo do Claude · '+quandoPedido(pr.atualizadoEm)+'</span>' : "") + '</div>';
-    if(pr.ultima) h += '<div class="duas"><span>Última sessão registrada: <b>'+dataLonga(deISO(pr.ultima))+(pr.sessao ? " · sessão "+esc(pr.sessao) : "")+'</b></span></div>';
-    h += pr.resumo ? '<div class="resumo">'+esc(pr.resumo)+'</div>'
-      : '<div class="duas"><span>Peça "Buscar e atualizar o resumo" para o Claude ler o prontuário e trazer a última sessão para cá.</span></div>';
-    h += '<div class="cmds">' + Object.keys(PEDIDOS).map(function(t, i){
-      return '<button class="btn'+(i===0 ? " primary" : "")+'" data-pedir="'+t+'">'+PEDIDOS[t]+'</button>';
-    }).join("") + '</div>';
-    pedidos.forEach(function(x){
-      var ponto = x.estado==="feito" ? "ok" : (x.estado==="erro" ? "erro" : "indo");
-      h += '<div class="pedido"><span class="nuvem-ponto '+ponto+'"></span>Pedido de '+quandoPedido(x.criadoEm)+' · '+esc(PEDIDOS[x.tipo]||x.tipo)+' · ' +
-        (x.estado==="feito" ? "feito" : (x.estado==="erro" ? "não deu certo" + (x.obs ? ": "+esc(x.obs) : "") : "esperando o Claude")) +
-        (x.estado==="esperando" ? '<button class="apagar" data-cancelar="'+x.id+'">cancelar</button>' : "") + '</div>';
+      (pend.length > aprovados ? '<span class="sit atencao">'+(pend.length - aprovados)+' a escrever</span>' : "") +
+      (aprovados ? '<span class="sit ok">'+aprovados+(aprovados > 1 ? " aprovados" : " aprovado")+', esperando o Claude</span>' : "") +
+      (!pend.length ? '<span class="sit ok">em dia com a agenda</span>' : "") +
+      '<label class="pgen">Texto no <select id="pr-genero">' + opc("","escolher…",p.genero||"") +
+        opc("M","masculino",p.genero||"") + opc("F","feminino",p.genero||"") + '</select></label></div>';
+    if(pr.ultima) h += '<div class="duas"><span>Último registro no Word: <b>'+dataLonga(deISO(pr.ultima))+(pr.sessao ? " · sessão "+esc(pr.sessao) : "")+(pr.situacao ? " · "+esc(SITUACAO_PRONT[pr.situacao]||pr.situacao) : "")+'</b></span></div>';
+    if(!pend.length) h += '<p class="hint" style="margin:6px 0 0">Nenhuma sessão desde '+dataLonga(deISO(PRONT_DESDE))+' esperando registro.</p>';
+    h += '<div class="plista">';
+    pend.forEach(function(s){
+      var k = chaveRegistro(s.data, s.hora, p), r = dados.registros[k], sit = situacaoPront(s.estado);
+      var estado = !r ? "a escrever" : r.estado==="aprovado" ? "aprovado, esperando o Claude" : r.estado==="feito" ? "mudou depois de ir para o Word" : "rascunho";
+      h += '<div class="pitem'+(abertoPront===k ? " aberto" : "")+'">' +
+        '<button type="button" class="pitem-cab" data-abrir="'+k+'" aria-expanded="'+(abertoPront===k)+'">' +
+          '<span class="quando">'+DIAS_CURTO[s.data.getDay()]+', '+dataCurta(s.data)+' · '+String(s.hora).padStart(2,"0")+'h</span>' +
+          '<span class="sit s-'+(sit || "confirmar")+'">'+(sit ? SITUACAO_PRONT[sit] : "marcar o que aconteceu")+'</span>' +
+          '<span class="est'+(r && r.estado==="aprovado" ? " ok" : "")+'">'+estado+'</span></button>' +
+        (abertoPront===k ? editorRegistro(s, k) : "") + '</div>';
     });
-    h += '<p class="hint" style="margin:8px 0 0">Cada botão deixa um pedido anotado aqui. A parte do Claude que busca os pedidos no seu computador ainda não está ligada.</p>';
+    h += '</div>';
+    if(pend.length) h += '<p class="hint" style="margin:8px 0 0">Aprovar aqui autoriza o Claude a escrever o texto direto no prontuário, quando você pedir no computador. Depois disso o texto sai daqui.</p>';
     el.innerHTML = h;
-    el.querySelectorAll("[data-pedir]").forEach(function(b){
+    ligarProntuario(el);
+  }
+  function editorRegistro(s, k){
+    var r = dados.registros[k], sit = situacaoPront(s.estado);
+    if(r && r.estado==="feito"){
+      return '<div class="peditor"><p class="aviso">Este registro já foi para o Word como "'+esc(SITUACAO_PRONT[r.situacao]||r.situacao)+'" e depois a grade mudou para "'+esc(SITUACAO_PRONT[sit]||"sem marca")+'". Confira o prontuário no computador.</p>' +
+        '<div class="acoes"><button class="btn sm" data-a="ciente">Já conferi</button></div></div>';
+    }
+    var h = '<div class="peditor">';
+    if(r && r.aviso) h += '<p class="aviso">'+esc(r.aviso)+'</p>';
+    /* o que aconteceu: muda a grade também, para os dois nunca discordarem */
+    var opcoes = s.origem==="extra" ? ["realizada"] : ["realizada","cortesia","falta","remarcada","cancelada"];
+    h += '<div class="pcampo"><span class="rot">O que aconteceu</span><div class="pchips">' +
+      opcoes.map(function(o){ return '<button type="button" class="chip-sit s-'+o+'" data-sit="'+o+'" aria-pressed="'+(sit===o)+'">'+SITUACAO_PRONT[o]+'</button>'; }).join("") + '</div>' +
+      (s.origem==="extra" ? '<span class="hint">Sessão que veio de outro horário: para falta ou remarcação, mude na grade.</span>' : "") + '</div>';
+    if(!sit) return h + '<p class="hint">Escolha o que aconteceu para montar o texto.</p></div>';
+    if(!r){ r = dados.registros[k] = novoRegistro(s, sit); }
+    if(r.situacao !== sit){ r.situacao = sit; r.editado = false; delete r.textoManual; delete r.aviso; }
+    var aprovado = r.estado==="aprovado";
+    if(sit==="remarcada"){
+      h += '<div class="pcampo"><span class="rot">Por quê</span><div class="pchips">' +
+        Object.keys(MODELOS_PRONTUARIO.remarcada).map(function(m){
+          return '<button type="button" class="chip-sit" data-motivo="'+m+'" aria-pressed="'+((r.motivo||"paciente")===m)+'"'+(aprovado ? " disabled" : "")+'>'+esc(MODELOS_PRONTUARIO.remarcada[m].rotulo)+'</button>';
+        }).join("") + '</div></div>';
+    }
+    if(!aprovado) h += camposDoRegistro(r, sit);
+    var t = textoDoRegistro(r, s, p);
+    h += '<div class="pcampo"><span class="rot">'+(t.campo==="complementar" ? "Registro complementar" : "Registro da evolução")+
+        (r.editado && !aprovado ? ' · editado à mão <button type="button" class="linknome" data-a="voltar">voltar ao texto dos campos</button>' : "")+'</span>' +
+      '<textarea class="ptexto" id="pr-texto" rows="6"'+(aprovado ? " readonly" : "")+'>'+esc(t.texto)+'</textarea>' +
+      '<span class="hint">'+(t.dataBloco ? "No Word, o bloco passa para "+dataBR(t.dataBloco)+" e a sessão seguinte não é aberta." :
+        t.proximaData ? "No Word, a sessão seguinte é aberta para "+dataBR(t.proximaData)+"." : "")+'</span></div>';
+    h += '<div class="acoes">' + (aprovado
+      ? '<button class="btn sm" data-a="reabrir">Reabrir para editar</button>'
+      : '<button class="btn sm ghost" data-a="ja">Já está no prontuário</button><button class="btn sm primary" data-a="aprovar">Aprovar</button>') + '</div>';
+    return h + '</div>';
+  }
+  function novoRegistro(s, sit){
+    var c = {"data do contato": chaveData(hoje0())};
+    /* a data nova: para onde ele arrastou a sessão, ou a próxima do horário fixo */
+    var prox = proximaSessaoDe(p, s.data);
+    if(s.para && s.para.data) c["nova data"] = s.para.data;
+    else if(prox) c["nova data"] = chaveData(prox.data);
+    return {estado:"rascunho", situacao:sit, motivo:"paciente", campos:c, sem:{}};
+  }
+  /* as caixas que o modelo pede: texto, data ou a escolha realizou/não realizou */
+  function camposDoRegistro(r, sit){
+    var M = MODELOS_PRONTUARIO, h = "";
+    function caixa(campo){
+      var v = (r.campos||{})[campo] || "";
+      if(campo==="realizou/não realizou") return '<label class="pf"><span>A tarefa foi feita?</span><select data-f="'+esc(campo)+'">' +
+        opc("","escolher…",v) + opc("realizou","realizou",v) + opc("não realizou","não realizou",v) + '</select></label>';
+      if(campo.indexOf("data")===0 || campo==="nova data") return '<label class="pf"><span>'+esc(campo)+'</span><input type="date" data-f="'+esc(campo)+'" value="'+esc(v)+'"></label>';
+      return '<label class="pf"><span>'+esc(campo)+'</span><textarea rows="2" data-f="'+esc(campo)+'">'+esc(v)+'</textarea></label>';
+    }
+    if(sit==="realizada" || sit==="cortesia"){
+      M.realizada.linhas.forEach(function(l){
+        var fora = r.sem && r.sem[l.id];
+        if(l.opcional) h += '<label class="pchk"><input type="checkbox" data-linha="'+l.id+'"'+(fora ? "" : " checked")+'> '+esc(l.rotulo)+'</label>';
+        if(!fora) camposDoModelo(l.texto).forEach(function(c){ h += caixa(c); });
+      });
+    } else if(sit==="remarcada"){
+      camposDoModelo(M.remarcada[r.motivo||"paciente"].complementar).forEach(function(c){ h += caixa(c); });
+      if(r.motivo==="cobranca") h += caixa("nova data");
+    } else if(sit==="cancelada"){
+      camposDoModelo(M.cancelada.complementar).forEach(function(c){ h += caixa(c); });
+      h += caixa("nova data");
+    }
+    return h ? '<div class="pcampos">'+h+'</div>' : "";
+  }
+  function sessaoDaChave(k){
+    var partes = k.split("|"), d = deISO(partes[0]), hr = Number(partes[1]);
+    var st = estadoSessaoDe(p, d, hr);
+    if(st){ st.data = d; st.hora = hr; }
+    return st;
+  }
+  function ligarProntuario(el){
+    var gen = el.querySelector("#pr-genero");
+    gen.addEventListener("change", function(){ p.genero = gen.value; salvar(); pintarProntuario(); });
+    el.querySelectorAll("[data-abrir]").forEach(function(b){
+      b.addEventListener("click", function(){ abertoPront = (abertoPront===b.dataset.abrir) ? null : b.dataset.abrir; pintarProntuario(); });
+    });
+    if(!abertoPront) return;
+    var k = abertoPront, s = sessaoDaChave(k), r = dados.registros[k];
+    if(!s) return;
+    var kGrade = chaveData(s.data)+"|"+s.hora;
+    el.querySelectorAll("[data-sit]").forEach(function(b){
       b.addEventListener("click", function(){
-        dados.pedidos = dados.pedidos || [];
-        var igual = dados.pedidos.filter(function(x){ return x.pacienteId===p.id && x.tipo===b.dataset.pedir && x.estado==="esperando"; })[0];
-        if(igual){ recado("Esse pedido já está esperando o Claude."); return; }
-        dados.pedidos.push({id:"q"+Date.now(), pacienteId:p.id, codigo:p.codigo||"", tipo:b.dataset.pedir,
-          criadoEm:new Date().toISOString(), estado:"esperando"});
-        salvar(); pintarProntuario();
+        var o = b.dataset.sit;
+        if(r && r.estado==="aprovado") { recado("Reabra o registro antes de mudar a situação."); return; }
+        if(o===situacaoPront(s.estado)) return;
+        if(s.origem==="extra"){
+          var en = dados.excecoes[kGrade]; var alvo = en && en.tipo==="extra" ? en : (en && en.entra);
+          if(alvo) alvo.realizada = true;
+        } else marcarSaida(kGrade, o);
+        salvar(); renderTudo(); pintarProntuario();
       });
     });
-    el.querySelectorAll("[data-cancelar]").forEach(function(b){
+    el.querySelectorAll("[data-motivo]").forEach(function(b){
+      b.addEventListener("click", function(){ r.motivo = b.dataset.motivo; r.editado = false; delete r.textoManual; salvar(); pintarProntuario(); });
+    });
+    el.querySelectorAll("[data-linha]").forEach(function(c){
+      c.addEventListener("change", function(){ r.sem = r.sem || {}; if(c.checked) delete r.sem[c.dataset.linha]; else r.sem[c.dataset.linha] = true; salvar(); pintarProntuario(); });
+    });
+    var caixaTexto = el.querySelector("#pr-texto");
+    el.querySelectorAll("[data-f]").forEach(function(c){
+      c.addEventListener("input", function(){
+        r.campos = r.campos || {}; r.campos[c.dataset.f] = c.value; r.estado = "rascunho";
+        /* o texto embaixo acompanha a digitação, sem redesenhar a ficha e perder o cursor */
+        if(!r.editado && caixaTexto) caixaTexto.value = textoDoRegistro(r, s, p).texto;
+        salvarLogo();
+      });
+      if(c.tagName==="SELECT" || c.type==="date") c.addEventListener("change", function(){ salvar(); pintarProntuario(); });
+    });
+    if(caixaTexto && !caixaTexto.readOnly) caixaTexto.addEventListener("input", function(){
+      r.editado = true; r.textoManual = caixaTexto.value; r.estado = "rascunho"; salvarLogo();
+    });
+    el.querySelectorAll(".peditor [data-a]").forEach(function(b){
       b.addEventListener("click", function(){
-        dados.pedidos = (dados.pedidos || []).filter(function(x){ return x.id!==b.dataset.cancelar; });
+        var a = b.dataset.a;
+        if(a==="voltar"){ r.editado = false; delete r.textoManual; }
+        else if(a==="reabrir"){ r.estado = "rascunho"; delete r.aprovadoEm; }
+        else if(a==="ciente"){ r.situacao = situacaoPront(s.estado); }
+        else if(a==="ja"){
+          /* sessão que ele já escreveu no Word por outro caminho: sai da lista, sem texto guardado */
+          dados.registros[k] = {estado:"feito", situacao:r.situacao, manual:true, feitoEm:new Date().toISOString()};
+          abertoPront = null;
+        } else if(a==="aprovar"){
+          var t = textoDoRegistro(r, s, p);
+          if(!p.genero){ recado("Escolha se o texto é no masculino ou no feminino, no alto do bloco Prontuário."); return; }
+          if(/\[[^\]]*\]/.test(t.texto)){ recado("Ainda há campo em branco no texto (entre colchetes). Preencha ou tire a linha."); return; }
+          if(!t.texto.trim()){ recado("O texto está vazio."); return; }
+          if(t.campo==="complementar" && !t.dataBloco){ recado("Falta a data nova da sessão."); return; }
+          r.estado = "aprovado"; delete r.aviso;
+          r.codigo = p.codigo || ""; r.genero = p.genero;
+          r.evolucao = t.campo==="evolucao" ? t.texto : "";
+          r.complementar = t.campo==="complementar" ? t.texto : "";
+          r.dataBloco = t.dataBloco; r.proximaData = t.proximaData;
+          r.aprovadoEm = new Date().toISOString();
+          abertoPront = null;
+        }
         salvar(); pintarProntuario();
       });
     });
@@ -1984,6 +2274,7 @@ function abrirFicha(p){
     });
   }
   resumo();
+  if(foco){ var alvoPront = document.getElementById("fi-pront"); if(alvoPront) alvoPront.scrollIntoView({block:"start"}); }
 
   fundo.querySelectorAll("[data-campo]").forEach(function(el){
     el.addEventListener("input", function(){
@@ -2809,6 +3100,13 @@ function lerAba(texto, textos){
 }
 /* o Excel guarda quebra de linha e espaço duro dentro da célula: sem juntar tudo num
    espaço só, "Nome Sobrenome" da grade não casa com o do Registro */
+/* M ou F a partir do que a planilha escreve; o que não for claro fica vazio e ele escolhe na ficha */
+function generoDe(v){
+  var t = semAcento(v);
+  if(/mulher|femin/.test(t)) return "F";
+  if(/homem|mascul/.test(t)) return "M";
+  return "";
+}
 function semAcento(s){
   return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"")
     .replace(/ /g," ").replace(/\s+/g," ").toLowerCase().trim();
@@ -2915,7 +3213,9 @@ function lerRegistro(celulas){
     inicio:     function(t){ return t.indexOf("inicio") === 0; },
     fim:        function(t){ return t.indexOf("final") === 0 || t.indexOf("fim") === 0; },
     sessoes:    function(t){ return t.indexOf("qtd. de sessoes") === 0 || t.indexOf("qtd de sessoes") === 0; },
-    remarcacoes:function(t){ return t.indexOf("remarcac") === 0; }
+    remarcacoes:function(t){ return t.indexOf("remarcac") === 0; },
+    /* "Identidade de Gênero": o texto do prontuário é flexionado por ela, nunca pelo nome */
+    genero:     function(t){ return t.indexOf("genero") >= 0; }
   });
   var faltando = [];
   ["codigo","nome","status","modalidade","valor"].forEach(function(k){ if(!cabecalho[k]) faltando.push(k); });
@@ -2940,7 +3240,8 @@ function lerRegistro(celulas){
       inicio: cabecalho.inicio ? dataDoExcel(l[cabecalho.inicio]) : "",
       fim: cabecalho.fim ? dataDoExcel(l[cabecalho.fim]) : "",
       sessoes: cabecalho.sessoes ? numero(l[cabecalho.sessoes]) : 0,
-      remarcacoes: cabecalho.remarcacoes ? numero(l[cabecalho.remarcacoes]) : 0
+      remarcacoes: cabecalho.remarcacoes ? numero(l[cabecalho.remarcacoes]) : 0,
+      genero: cabecalho.genero ? generoDe(l[cabecalho.genero]) : ""
     };
     /* o primeiro início e a soma das sessões valem para o paciente, não só para o ciclo */
     if(anterior){
@@ -3122,7 +3423,8 @@ function montarLeitura(celulas, preenchimentos, registro){
     pacientes.push({
       codigo: r.codigo, nome: escolhida.nome, nomeCompleto: r.nome, freq: freq, cobranca: cobranca,
       valor: r.valor, dia: escolhida.dia, hora: escolhida.hora,
-      status: r.status, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || ""
+      status: r.status, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || "",
+      genero: r.genero || ""
     });
   });
 
@@ -3226,6 +3528,7 @@ function aplicarLeitura(leitura){
       valor: p.valor, dia: p.dia, hora: p.hora,
       status: p.status || "", inicio: p.inicio || "", fim: p.fim || "",
       meet: antigo ? (antigo.meet || "") : "",
+      genero: p.genero || (antigo ? (antigo.genero || "") : ""),
       /* o resumo do prontuário vem do Claude, não da planilha: ler a planilha não pode apagá-lo */
       prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined
     };
@@ -3309,6 +3612,7 @@ function mesDaSemana(){ var q = somaDias(semana, 3); mesRef = new Date(q.getFull
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
   atrasoCache = null; cacheMes = {}; cacheNomes = null;
+  conferirAprovados();
   renderSemana(); renderMes(); renderSessoes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos();
 }
 
