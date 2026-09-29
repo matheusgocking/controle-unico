@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Rede de Processos</title>
+<meta name="description" content="Monte a sua rede de processos (PBT) e envie ao seu psicólogo.">
+<!--
+  Modelo de Rede Complexa Baseada em Processos, para o paciente montar e editar sozinho.
+  Página sem servidor: nada sai do aparelho. Os dados ficam no localStorage (chave rede-pbt-v1)
+  e viajam por arquivo: a imagem PNG leva a rede dentro dela (bloco tEXt "rede-pbt") e o .json
+  leva só os dados. A dimensão de cada item não é guardada: sai da posição dele na grade.
+-->
+<style>
+:root{
+  --roxo:#7030a0; --roxo-esc:#5a2582; --lilas:#b2a2c7; --lilas-cl:#f1ecf6;
+  --tinta:#1f1f1f; --apagado:#5f5a66; --borda:#d8d2df; --fundo:#f7f5f9; --papel:#ffffff;
+  --vermelho:#b3261e; --verde:#1e7a3c;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--fundo);color:var(--tinta);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 16px;background:var(--papel);border-bottom:1px solid var(--borda)}
+.marca{display:flex;flex-direction:column;margin-right:auto;min-width:0}
+.marca h1{margin:0;font:600 18px/1.2 Georgia,"Times New Roman",serif}
+.marca span{color:var(--apagado);font-size:13px}
+#nome{width:min(260px,100%);padding:7px 10px;border:1px solid var(--borda);border-radius:8px;background:#fff}
+.switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none;font-weight:600;color:var(--roxo-esc)}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.trilho{width:44px;height:26px;border-radius:13px;background:#cfc8d8;position:relative;transition:background .15s;flex:none}
+.trilho::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0003;transition:left .15s}
+.switch input:checked + .trilho{background:var(--roxo)}
+.switch input:checked + .trilho::after{left:21px}
+.switch input:focus-visible + .trilho{outline:2px solid var(--roxo);outline-offset:2px}
+
+#barra{display:flex;gap:6px;align-items:center;padding:8px 16px;background:var(--papel);border-bottom:1px solid var(--borda);overflow-x:auto;scrollbar-width:thin}
+.grupo{display:flex;gap:6px;align-items:center;padding-right:8px;margin-right:2px;border-right:1px solid var(--borda);flex:none}
+.grupo:last-child{border-right:0}
+.btn{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border:1px solid var(--borda);border-radius:8px;background:#fff;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--lilas);background:var(--lilas-cl)}
+.btn:disabled{opacity:.45;cursor:default;background:#fff;border-color:var(--borda)}
+.btn.prim{background:var(--roxo);border-color:var(--roxo);color:#fff;font-weight:600}
+.btn.prim:hover{background:var(--roxo-esc)}
+.btn.ativo{background:var(--lilas-cl);border-color:var(--roxo);color:var(--roxo-esc);font-weight:600}
+.btn.perigo{color:var(--vermelho)}
+.btn.perigo:hover{background:#fbeceb;border-color:#e6b3af}
+.btn.icone{padding:6px 10px;min-width:36px;justify-content:center}
+select.btn{padding-right:8px}
+
+#painelAjuda{display:none;margin:12px 16px 0;padding:14px 18px;background:#fff;border:1px solid var(--lilas);border-left:5px solid var(--roxo);border-radius:10px}
+body.ajuda #painelAjuda{display:block}
+#painelAjuda h2{margin:0 0 8px;font-size:16px;color:var(--roxo-esc)}
+#painelAjuda ol{margin:0 0 10px;padding-left:22px}
+#painelAjuda li{margin:4px 0}
+#painelAjuda details{margin-top:6px}
+#painelAjuda summary{cursor:pointer;font-weight:600;color:var(--roxo-esc)}
+.areas{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 18px;margin:8px 0 4px;padding:0;list-style:none}
+.areas li{margin:0}
+.fecharAjuda{float:right}
+.so-ajuda{display:none;color:var(--apagado);font-size:13px;margin:4px 0 8px}
+body.ajuda .so-ajuda{display:block}
+
+#dica{margin:10px 16px 0;padding:9px 14px;border-radius:8px;background:var(--lilas-cl);color:var(--roxo-esc);font-weight:600;display:none}
+#dica.ver{display:block}
+#dica.forte{background:var(--roxo);color:#fff}
+
+main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;padding:12px 16px 16px;align-items:start}
+#palco{background:#fff;border:1px solid var(--borda);border-radius:10px;overflow:auto;max-height:calc(100vh - 150px);-webkit-overflow-scrolling:touch}
+#cv{display:block;user-select:none;-webkit-user-select:none}
+#cv .no,#cv .alca{cursor:grab;touch-action:none}
+#cv .lig{cursor:pointer}
+body.ligando #cv .no{cursor:crosshair}
+aside{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:14px 16px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+aside h2{margin:0 0 10px;font-size:16px}
+aside h3{margin:16px 0 6px;font-size:14px;color:var(--apagado)}
+aside label{display:block;font-weight:600;margin:10px 0 4px}
+aside textarea,aside input[type=text],aside select{width:100%;padding:7px 9px;border:1px solid var(--borda);border-radius:8px;background:#fff;font-weight:400}
+aside textarea{resize:vertical}
+.campo{margin:12px 0 4px}
+.campo > span{display:block;font-weight:600;margin-bottom:5px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{flex:1 1 auto;min-height:34px;padding:5px 9px;border:1px solid var(--borda);border-radius:8px;background:#fff;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--roxo);border-color:var(--roxo);color:#fff;font-weight:600}
+.acoes{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.lista{list-style:none;margin:0;padding:0}
+.lista li{margin:2px 0}
+.lista button{width:100%;text-align:left;padding:6px 9px;border:1px solid transparent;border-radius:7px;background:none;cursor:pointer}
+.lista button:hover{background:var(--lilas-cl);border-color:var(--borda)}
+.lista .dim{font-size:12px;font-weight:700;color:var(--apagado);text-transform:uppercase;letter-spacing:.03em;margin:10px 0 2px}
+.rota{margin:0 0 6px}
+.vazio{color:var(--apagado)}
+.p{color:var(--vermelho)} .r{color:var(--verde)}
+
+footer{padding:4px 16px 22px;color:var(--apagado);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
+#salvo{font-weight:600}
+
+dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);box-shadow:0 12px 40px #0004}
+dialog::backdrop{background:#2a1d3a88}
+.dlg{padding:18px 20px 16px;overflow:auto}
+.dlg h2{margin:0 0 6px;font-size:18px}
+.dlg fieldset{border:0;padding:0;margin:14px 0 0}
+.dlg legend{font-weight:700;margin-bottom:6px;padding:0}
+.tipos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.opc{display:block;position:relative;cursor:pointer}
+.opc input{position:absolute;opacity:0}
+.opc span{display:block;height:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:9px;background:#fff;font-size:13px;color:var(--apagado)}
+.opc b{display:block;color:var(--tinta);font-size:14px;margin-bottom:2px}
+.opc input:checked + span{border-color:var(--roxo);background:var(--lilas-cl);box-shadow:inset 0 0 0 1px var(--roxo)}
+.opc input:focus-visible + span{outline:2px solid var(--roxo);outline-offset:1px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--tinta)}
+.mini .opc span{border:0;border-radius:0;text-align:center;padding:10px 4px;color:var(--tinta);font-weight:600;font-size:13px}
+.mini .opc:nth-child(odd) span{background:#f2f2f2}
+.mini .opc input:checked + span{background:var(--roxo);color:#fff;box-shadow:none}
+#descArea{margin:6px 0 0;color:var(--apagado);font-size:13px}
+#addTexto{width:100%;padding:9px 11px;border:1px solid var(--borda);border-radius:8px;font-size:16px}
+#addTexto.erro{border-color:var(--vermelho);box-shadow:0 0 0 2px #b3261e33}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chips button{padding:4px 10px;border:1px solid var(--borda);border-radius:999px;background:#fff;font-size:13px;cursor:pointer}
+.chips button:hover{background:var(--lilas-cl);border-color:var(--lilas)}
+.vals{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.dlg menu{display:flex;justify-content:flex-end;gap:8px;margin:18px 0 0;padding:0}
+
+#aviso{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);max-width:calc(100vw - 32px);background:#2a1d3a;color:#fff;padding:10px 16px;border-radius:10px;box-shadow:0 6px 20px #0004;display:none;z-index:10}
+#aviso.ver{display:block}
+
+@media (max-width: 900px){
+  main{grid-template-columns:1fr}
+  aside{position:static;max-height:none}
+  #palco{max-height:none}
+  .tipos{grid-template-columns:1fr}
+}
+@media print{
+  @page{size:landscape;margin:10mm}
+  body{background:#fff}
+  header,#barra,#painelAjuda,#dica,aside,footer,#aviso{display:none!important}
+  main{display:block;padding:0}
+  #palco{border:0;overflow:visible;max-height:none}
+  #cv{width:100%!important;height:auto!important}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">
+    <h1>Modelo de Rede Complexa</h1>
+    <span>Baseada em Processos</span>
+  </div>
+  <input id="nome" type="text" placeholder="Nome da rede (opcional)" maxlength="60" aria-label="Nome da rede">
+  <label class="switch" title="Mostra o passo a passo e as explicações">
+    <input type="checkbox" id="swAjuda"><span class="trilho"></span>Ajuda passo a passo
+  </label>
+</header>
+
+<nav id="barra" aria-label="Ferramentas">
+  <div class="grupo">
+    <button class="btn prim" id="bAdd" title="Adicionar um item à rede (ou dê dois cliques num espaço vazio)">+ Adicionar item</button>
+    <button class="btn" id="bLigar" title="Criar uma seta entre dois itens">↗ Ligar itens</button>
+  </div>
+  <div class="grupo">
+    <button class="btn icone" id="bDesf" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">↶</button>
+    <button class="btn icone" id="bRef" title="Refazer (Ctrl+Y)" aria-label="Refazer">↷</button>
+  </div>
+  <div class="grupo">
+    <select class="btn" id="selEx" aria-label="Abrir um exemplo">
+      <option value="">Exemplos…</option>
+      <option value="dor">Dor crônica</option>
+      <option value="ansiedade">Ansiedade social</option>
+      <option value="humor">Humor deprimido</option>
+    </select>
+  </div>
+  <div class="grupo">
+    <button class="btn icone" id="bMenos" title="Diminuir o zoom" aria-label="Diminuir o zoom">−</button>
+    <button class="btn icone" id="bAjustar" title="Voltar ao tamanho da tela">100%</button>
+    <button class="btn icone" id="bMais" title="Aumentar o zoom" aria-label="Aumentar o zoom">+</button>
+  </div>
+  <div class="grupo">
+    <button class="btn prim" id="bEnviar" title="Salva a imagem e o arquivo da rede para mandar ao psicólogo">Enviar ao psicólogo</button>
+    <button class="btn" id="bPng" title="Baixar a rede como imagem (PNG)">Salvar imagem</button>
+    <button class="btn" id="bJson" title="Baixar o arquivo da rede, para continuar editando depois">Salvar arquivo</button>
+    <button class="btn" id="bAbrir" title="Abrir uma rede salva (arquivo .json, .txt ou a imagem salva por aqui)">Abrir arquivo</button>
+    <button class="btn" id="bPrint" title="Imprimir ou salvar em PDF">Imprimir / PDF</button>
+    <button class="btn perigo" id="bNova" title="Apagar tudo e começar do zero">Nova rede</button>
+  </div>
+</nav>
+
+<section id="painelAjuda" aria-label="Passo a passo">
+  <button class="btn fecharAjuda" id="bFecharAjuda">Esconder ajuda</button>
+  <h2>Como montar a sua rede, passo a passo</h2>
+  <ol>
+    <li><b>Escolha uma situação difícil</b> que costuma se repetir. A rede vai mostrar o que acontece com você nela.</li>
+    <li>Toque em <b>+ Adicionar item</b> e escreva, com as suas palavras, algo que acontece nessa situação: um pensamento, uma emoção, algo que você faz, algo que sente no corpo. Escolha a área onde ele se encaixa. Na dúvida, escolha qualquer uma: dá para mudar depois.</li>
+    <li>Repita até ter os itens principais. <b>De 4 a 10 itens</b> costuma bastar.</li>
+    <li><b>Ligue os itens com setas.</b> Toque no item que vem primeiro, depois em <b>Ligar a outro item</b>, e toque no item que ele afeta. A seta sai da causa e aponta para o efeito. No computador, você também pode arrastar a bolinha roxa <b>+</b> até o outro item.</li>
+    <li><b>Toque na seta</b> para dizer se ela <b>aumenta</b> (linha cheia) ou <b>diminui</b> (linha tracejada) o outro item, e se essa influência é fraca, média ou forte.</li>
+    <li>Se um item alimenta a si mesmo (quanto mais você rumina, mais rumina), use <b>Ligar a ele mesmo</b>.</li>
+    <li><b>Arraste os itens</b> para deixar a rede fácil de ler. Não precisa ficar perfeita: ela é um rascunho para conversarmos na sessão.</li>
+    <li>Quando terminar, toque em <b>Enviar ao psicólogo</b>. Tudo fica salvo neste aparelho, então você pode fechar a página e continuar depois.</li>
+  </ol>
+  <details>
+    <summary>O que é cada área da grade</summary>
+    <ul class="areas" id="listaAreas"></ul>
+  </details>
+  <details>
+    <summary>Tipos de item e de seta</summary>
+    <ul>
+      <li><b>Processo</b> (retângulo): algo que acontece em você, como um pensamento, uma emoção, uma ação ou uma sensação.</li>
+      <li><b>Moderador</b> (cantos arredondados): uma situação ou condição que aumenta ou diminui outros itens, como uma lesão, o trabalho ou o apoio da família.</li>
+      <li><b>Kernel</b> (borda dupla): uma estratégia de mudança combinada na terapia, como a exposição gradual. Costuma ser adicionado junto com o psicólogo.</li>
+      <li><b>Texto vermelho</b>: o item atrapalha. <b>Texto verde</b>: o item ajuda.</li>
+      <li><b>Seta cheia →</b>: aumenta o outro item. <b>Seta tracejada ⊣</b>: diminui o outro item. <b>Linha mais grossa</b>: influência mais forte.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Atalhos no computador</summary>
+    <ul>
+      <li>Dois cliques num espaço vazio: adiciona um item naquele lugar.</li>
+      <li>Dois cliques num item: vai direto para o texto dele.</li>
+      <li>Delete: apaga o que está selecionado. Esc: cancela.</li>
+      <li>Ctrl+Z desfaz e Ctrl+Y refaz.</li>
+    </ul>
+  </details>
+</section>
+
+<div id="dica" role="status" aria-live="polite"></div>
+
+<main>
+  <div id="palco">
+    <svg id="cv" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 930" role="img" aria-label="Rede de processos">
+      <defs id="defs"></defs>
+      <rect x="0" y="0" width="1200" height="930" fill="#ffffff"/>
+      <text id="tTitulo" x="600" y="28" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="21" font-weight="bold" fill="#1f1f1f">Modelo de Rede Complexa Baseada em Processos</text>
+      <text id="tSub" x="600" y="50" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="14" fill="#5f5a66"></text>
+      <g id="grade"></g>
+      <g id="ligs"></g>
+      <g id="rotulosGrade"></g>
+      <g id="nos"></g>
+      <g id="sobre"></g>
+      <g id="legenda"></g>
+    </svg>
+  </div>
+  <aside id="lado" aria-live="polite"></aside>
+</main>
+
+<footer>
+  <span>O que você escreve fica só neste aparelho: esta página não envia nada pela internet. Para compartilhar, use <b>Enviar ao psicólogo</b>.</span>
+  <span id="salvo"></span>
+</footer>
+
+<dialog id="dlgAdd" aria-labelledby="tAdd">
+  <form class="dlg" id="fAdd" method="dialog">
+    <h2 id="tAdd">Adicionar item</h2>
+    <fieldset>
+      <legend>1. Que tipo de item?</legend>
+      <div class="tipos">
+        <label class="opc"><input type="radio" name="tipo" value="processo" checked><span><b>Processo</b>Algo que acontece em você: pensamento, emoção, ação, sensação.</span></label>
+        <label class="opc"><input type="radio" name="tipo" value="moderador"><span><b>Moderador</b>Situação ou condição que aumenta ou diminui outros itens.</span></label>
+        <label class="opc"><input type="radio" name="tipo" value="kernel"><span><b>Kernel</b>Estratégia de mudança combinada na terapia.</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>2. Em que área ele fica?</legend>
+      <div class="mini" id="miniGrade"></div>
+      <p id="descArea"></p>
+    </fieldset>
+    <fieldset>
+      <legend><label for="addTexto">3. Escreva com as suas palavras</label></legend>
+      <input id="addTexto" type="text" maxlength="80" autocomplete="off" placeholder="Ex.: Fico remoendo o que falei">
+      <p class="so-ajuda" style="margin-top:6px">Poucas palavras bastam. Se quiser, toque num exemplo para começar e depois ajuste.</p>
+      <div class="chips" id="chips"></div>
+    </fieldset>
+    <fieldset>
+      <legend>4. Isso te ajuda ou atrapalha?</legend>
+      <div class="vals">
+        <label class="opc"><input type="radio" name="val" value="problema" checked><span><b class="p">Atrapalha</b>Texto vermelho</span></label>
+        <label class="opc"><input type="radio" name="val" value="neutro"><span><b>Neutro</b>Não sei ou depende</span></label>
+        <label class="opc"><input type="radio" name="val" value="recurso"><span><b class="r">Ajuda</b>Texto verde</span></label>
+      </div>
+    </fieldset>
+    <menu>
+      <button class="btn" type="button" id="bAddCancelar">Cancelar</button>
+      <button class="btn prim" type="submit" id="bAddOk">Adicionar</button>
+    </menu>
+  </form>
+</dialog>
+
+<input type="file" id="arquivo" accept=".json,.txt,.png,application/json,text/plain,image/png" hidden>
+<div id="aviso" role="status"></div>
+
+<script>
+"use strict";
+const W = 1200, TOP = 60, CW = 400, CH = 260, GH = 780, VH = 930;
+const SERIF = "'Times New Roman', Times, serif";
+const CHAVE = "rede-pbt-v1", CHAVE_AJUDA = "rede-pbt-ajuda";
+const NS = "http://www.w3.org/2000/svg";
+
+const DIMS = [
+  ["atencao", "Atenção"], ["cognitivo", "Cognitivo"], ["self", "Self"],
+  ["afeto", "Afeto"], ["comportamento", "Comportamento"], ["motivacao", "Motivação"],
+  ["bio", "Biofisiológico"], ["contexto", "Contexto"], ["socio", "Sociocultural"]
+];
+const AREA = {
+  atencao: { d: "Para onde a sua atenção vai e onde ela fica presa.",
+    ex: ["Ruminação", "Preocupação com o futuro", "Ficar checando se está tudo bem", "Atenção presa no corpo", "Dificuldade de me concentrar", "Atenção no presente"] },
+  cognitivo: { d: "Os seus pensamentos e o quanto você acredita neles.",
+    ex: ["\"Não vou dar conta\"", "Levar os pensamentos ao pé da letra", "Pensar em tudo ou nada", "Regras rígidas (\"tenho que...\")", "Me culpar por tudo", "Olhar os fatos com calma"] },
+  self: { d: "Como você se vê e como fala de si.",
+    ex: ["Autocrítica", "\"Sou um fracasso\"", "Me comparar com os outros", "Precisar agradar a todos", "Autocompaixão"] },
+  afeto: { d: "As suas emoções e o que você faz com elas.",
+    ex: ["Ansiedade", "Tristeza", "Raiva", "Culpa", "Vergonha", "Tentar não sentir", "Irritação"] },
+  comportamento: { d: "O que você faz ou deixa de fazer.",
+    ex: ["Evitar situações", "Me isolar", "Adiar tarefas", "Checar várias vezes", "Comer por impulso", "Usar o celular para fugir", "Fazer exercício"] },
+  motivacao: { d: "O que te move: desejos, valores e objetivos.",
+    ex: ["Falta de sentido", "Fazer só por obrigação", "Não saber o que quero", "Perda de interesse", "Cuidar da família", "Crescer na carreira"] },
+  bio: { d: "O seu corpo: sono, dor, energia, saúde e substâncias.",
+    ex: ["Insônia", "Dor", "Cansaço", "Coração acelerado", "Tensão muscular", "Uso de álcool"] },
+  contexto: { d: "As situações e o ambiente da sua vida agora.",
+    ex: ["Conflito no trabalho", "Sobrecarga de tarefas", "Término de relacionamento", "Mudança de cidade", "Problemas financeiros"] },
+  socio: { d: "Pessoas, família, grupos, cultura e religião.",
+    ex: ["Pouco apoio", "Conflito familiar", "Cobrança da família", "Apoio dos amigos", "Comunidade religiosa", "Preconceito"] }
+};
+const EX_MODERADOR = ["Lesão ou doença", "Conflito no trabalho", "Término de relacionamento", "Apoio da família", "Falta de dinheiro", "Mudança de cidade"];
+const EX_KERNEL = ["Exposição gradual", "Ativação comportamental", "Respiração lenta", "Desfusão cognitiva", "Reestruturação cognitiva", "Autocompaixão", "Resolução de problemas", "Higiene do sono", "Clarificação de valores", "Atenção plena"];
+const TIPO = {
+  processo: { nome: "Processo", d: "Algo que acontece em você: um pensamento, uma emoção, uma ação ou uma sensação." },
+  moderador: { nome: "Moderador", d: "Uma situação ou condição que aumenta ou diminui outros itens." },
+  kernel: { nome: "Kernel", d: "Uma estratégia de mudança combinada na terapia. Costuma ser adicionada junto com o psicólogo." }
+};
+const COR = {
+  neutro: { borda: "#1f1f1f", texto: "#1f1f1f" },
+  problema: { borda: "#b3261e", texto: "#b3261e" },
+  recurso: { borda: "#1e7a3c", texto: "#1e7a3c" }
+};
+const LARG = [0, 1.3, 2.4, 4.2];
+const FORCA = ["", "fraca", "média", "forte"];
+
+/* ---------- exemplos ---------- */
+function ex(nome, nos, ligs) {
+  return { nome, nodes: nos.map(([id, tipo, texto, x, y, val]) => ({ id, tipo, texto, x, y, val, obs: "" })),
+    edges: ligs.map(([de, para, efeito, forca, ambos, curva], i) => ({ id: "e" + i, de, para, efeito: efeito || "aumenta", forca: forca || 2, ambos: !!ambos, rotulo: "", curva: curva || 0 })) };
+}
+const EXEMPLOS = {
+  dor: ex("Exemplo: dor crônica", [
+    ["a", "moderador", "Contusão no trabalho.", 600, 705, "problema"],
+    ["b", "processo", "Dor crônica nas costas.", 200, 705, "problema"],
+    ["c", "processo", "Ruminação e preocupação.", 200, 185, "problema"],
+    ["d", "processo", "Raiva.", 200, 440, "problema"],
+    ["e", "processo", "Evita o trabalho.", 600, 440, "problema"]
+  ], [["a", "b"], ["b", "c"], ["c", "d"], ["b", "e"], ["c", "e"], ["d", "e"]]),
+  ansiedade: ex("Exemplo: ansiedade social (fictício)", [
+    ["a", "moderador", "Apresentação no trabalho", 720, 705, "neutro"],
+    ["b", "processo", "\"Vão perceber que sou incapaz\"", 715, 185, "problema"],
+    ["c", "processo", "Foco em mim mesmo", 200, 185, "problema"],
+    ["d", "processo", "Ansiedade", 200, 440, "problema"],
+    ["f", "processo", "Coração acelerado e rosto vermelho", 200, 705, "problema"],
+    ["g", "processo", "Evitar falar nas reuniões", 600, 420, "problema"],
+    ["h", "processo", "Autocrítica depois", 1000, 185, "problema"],
+    ["i", "processo", "Crescer na carreira", 1000, 440, "recurso"],
+    ["k", "kernel", "Exposição gradual", 520, 520, "recurso"]
+  ], [["a", "b", "aumenta", 3], ["b", "d"], ["c", "d"], ["d", "f", "aumenta", 2, true], ["f", "c"], ["d", "g", "aumenta", 3],
+      ["g", "h"], ["h", "b"], ["i", "g", "diminui", 1], ["k", "g", "diminui", 3], ["c", "c", "aumenta", 1]]),
+  humor: ex("Exemplo: humor deprimido (fictício)", [
+    ["a", "moderador", "Perda do emprego", 600, 705, "problema"],
+    ["b", "processo", "Tristeza", 200, 440, "problema"],
+    ["c", "processo", "Ruminação sobre o passado", 200, 185, "problema"],
+    ["d", "processo", "\"Nada vai dar certo\"", 600, 185, "problema"],
+    ["e", "processo", "Ficar na cama e me isolar", 600, 420, "problema"],
+    ["f", "processo", "Perda de interesse", 1000, 440, "problema"],
+    ["g", "processo", "Sono desregulado", 200, 705, "problema"],
+    ["h", "moderador", "Apoio da irmã", 1000, 705, "recurso"],
+    ["k", "kernel", "Ativação comportamental", 650, 520, "recurso"]
+  ], [["a", "b", "aumenta", 3], ["b", "c"], ["c", "d"], ["d", "e"], ["e", "b", "aumenta", 2, true], ["e", "g"], ["g", "b"],
+      ["f", "e", "aumenta", 2, true], ["h", "b", "diminui", 2, false, -45], ["k", "e", "diminui", 3], ["c", "c", "aumenta", 1]])
+};
+
+/* ---------- estado ---------- */
+let S = { nome: "", nodes: [], edges: [] };
+let sel = null;          // {k:"n"|"e", id}
+let modo = null;         // {tipo:"origem"} | {tipo:"ligar", de}
+let exportando = false;
+let undo = [], redo = [];
+let zoom = 1;
+let geo = {};
+const $ = s => document.querySelector(s);
+const cv = $("#cv");
+
+function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function snap() { return JSON.stringify(S); }
+function guardarPasso() { undo.push(snap()); if (undo.length > 80) undo.shift(); redo = []; }
+function mudar(fn) { guardarPasso(); fn(); salvar(); render(); }
+function porId(id) { return S.nodes.find(n => n.id === id); }
+function ligPorId(id) { return S.edges.find(e => e.id === id); }
+function esc(t) { return String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function dimDe(x, y) {
+  const c = clamp(Math.floor(x / CW), 0, 2), r = clamp(Math.floor((y - TOP) / CH), 0, 2);
+  return DIMS[r * 3 + c][0];
+}
+function nomeDim(id) { return (DIMS.find(d => d[0] === id) || ["", ""])[1]; }
+
+function salvar() {
+  try { localStorage.setItem(CHAVE, JSON.stringify({ ...S, salvo: new Date().toISOString() })); } catch (e) {}
+  const h = new Date();
+  $("#salvo").textContent = "Salvo neste aparelho às " + h.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+function carregar() {
+  try {
+    const t = localStorage.getItem(CHAVE);
+    if (t) { S = normalizar(JSON.parse(t)); $("#salvo").textContent = "Rede recuperada deste aparelho"; }
+  } catch (e) {}
+}
+function normalizar(d) {
+  if (!d || !Array.isArray(d.nodes) || !Array.isArray(d.edges)) throw new Error("formato");
+  const nodes = d.nodes.filter(n => n && n.id).map(n => ({
+    id: String(n.id), tipo: TIPO[n.tipo] ? n.tipo : "processo", texto: String(n.texto ?? "").slice(0, 120),
+    x: clamp(+n.x || 600, 20, W - 20), y: clamp(+n.y || 400, TOP + 15, TOP + GH - 15),
+    val: COR[n.val] ? n.val : "neutro", obs: String(n.obs ?? "").slice(0, 500)
+  }));
+  const ids = new Set(nodes.map(n => n.id));
+  const edges = d.edges.filter(e => e && ids.has(String(e.de)) && ids.has(String(e.para))).map(e => ({
+    id: String(e.id || uid("e")), de: String(e.de), para: String(e.para), efeito: e.efeito === "diminui" ? "diminui" : "aumenta",
+    forca: [1, 2, 3].includes(+e.forca) ? +e.forca : 2, ambos: !!e.ambos, rotulo: String(e.rotulo ?? "").slice(0, 60), curva: clamp(+e.curva || 0, -200, 200)
+  }));
+  return { nome: String(d.nome ?? "").slice(0, 60), nodes, edges };
+}
+
+/* ---------- medidas do texto ---------- */
+const ctx = document.createElement("canvas").getContext("2d");
+function quebrar(texto) {
+  ctx.font = "15px " + SERIF;
+  const linhas = [];
+  for (const par of (texto || "(sem texto)").split("\n")) {
+    let cur = "";
+    for (const w of par.split(/\s+/).filter(Boolean)) {
+      const t = cur ? cur + " " + w : w;
+      if (ctx.measureText(t).width > 150 && cur) { linhas.push(cur); cur = w; } else cur = t;
+    }
+    linhas.push(cur);
+  }
+  return linhas.slice(0, 6);
+}
+function medida(n) {
+  const L = quebrar(n.texto);
+  ctx.font = "15px " + SERIF;
+  const w = Math.max(76, Math.max(...L.map(l => ctx.measureText(l).width)) + 26);
+  return { L, w, h: L.length * 18 + 16, k: n.tipo === "kernel" ? 4 : 0 };
+}
+
+/* ---------- desenho ---------- */
+function el(tag, at, pai) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in at) e.setAttribute(k, at[k]);
+  if (pai) pai.appendChild(e);
+  return e;
+}
+function montarDefs() {
+  const d = $("#defs");
+  for (const f of [1, 2, 3]) for (const s of ["", "-s"]) {
+    const cor = s ? "#7030a0" : "#1f1f1f", tam = [0, 10, 12.5, 15][f];
+    const m1 = el("marker", { id: `m-seta-${f}${s}`, viewBox: "0 0 10 10", refX: 9.5, refY: 5, markerWidth: tam, markerHeight: tam, markerUnits: "userSpaceOnUse", orient: "auto-start-reverse" }, d);
+    el("path", { d: "M0,0.8 L10,5 L0,9.2 z", fill: cor }, m1);
+    const m2 = el("marker", { id: `m-barra-${f}${s}`, viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: tam, markerHeight: tam + 3, markerUnits: "userSpaceOnUse", orient: "auto-start-reverse" }, d);
+    el("rect", { x: 6, y: 0, width: 3, height: 10, fill: cor }, m2);
+  }
+}
+function montarGrade() {
+  const g = $("#grade");
+  DIMS.forEach(([id, nome], i) => {
+    const c = i % 3, r = Math.floor(i / 3), x = c * CW, y = TOP + r * CH;
+    el("rect", { x, y, width: CW, height: CH, fill: i % 2 === 0 ? "#f2f2f2" : "#ffffff" }, g);
+    const t = el("text", { x: x + CW / 2, y: y + CH - 12, "text-anchor": "middle", "font-family": SERIF, "font-size": 15, "font-weight": "bold", fill: "#262626", "font-style": id === "self" ? "italic" : "normal", stroke: i % 2 === 0 ? "#f2f2f2" : "#ffffff", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none" }, $("#rotulosGrade"));
+    t.textContent = nome;
+  });
+  el("rect", { x: 0.5, y: TOP + 0.5, width: W - 1, height: GH - 1, fill: "none", stroke: "#1f1f1f", "stroke-width": 1 }, g);
+}
+function montarLegenda() {
+  const g = $("#legenda"), y = TOP + GH + 30;
+  const T = (x, s, at) => { const t = el("text", { x, y: y + 5, "font-family": SERIF, "font-size": 14, fill: "#1f1f1f", ...at }, g); t.textContent = s; };
+  let x = 14;
+  el("rect", { x, y: y - 10, width: 34, height: 20, fill: "#fff", stroke: "#1f1f1f" }, g); T(x + 42, "Processo"); x += 118;
+  el("rect", { x, y: y - 10, width: 34, height: 20, rx: 6, fill: "#fff", stroke: "#1f1f1f" }, g); T(x + 42, "Moderador"); x += 128;
+  el("rect", { x: x - 3, y: y - 13, width: 40, height: 26, fill: "#fff", stroke: "#1f1f1f" }, g);
+  el("rect", { x, y: y - 10, width: 34, height: 20, fill: "#f3eef8", stroke: "#1f1f1f" }, g); T(x + 44, "Kernel"); x += 108;
+  el("path", { d: `M${x},${y} H${x + 40}`, stroke: "#1f1f1f", "stroke-width": 2.4, "marker-end": "url(#m-seta-2)" }, g); T(x + 48, "Aumenta"); x += 118;
+  el("path", { d: `M${x},${y} H${x + 40}`, stroke: "#1f1f1f", "stroke-width": 2.4, "stroke-dasharray": "7 5", "marker-end": "url(#m-barra-2)" }, g); T(x + 48, "Diminui"); x += 112;
+  el("path", { d: `M${x},${y - 5} H${x + 30} M${x},${y + 5} H${x + 30}`, stroke: "#1f1f1f", "stroke-width": 1.3 }, g);
+  el("path", { d: `M${x + 36},${y} H${x + 70}`, stroke: "#1f1f1f", "stroke-width": 4.2 }, g); T(x + 78, "Fraca → forte"); x += 180;
+  T(x, "Atrapalha", { fill: "#b3261e", "font-weight": "bold" }); x += 82;
+  T(x, "Ajuda", { fill: "#1e7a3c", "font-weight": "bold" });
+  const a = el("text", { x: W - 10, y: VH - 12, "text-anchor": "end", "font-family": SERIF, "font-size": 12, fill: "#8a8490" }, g);
+  a.textContent = "Matheus Gocking · Psicólogo Clínico · CRP-16/11871";
+}
+
+function borda(n, g, tx, ty, pad) {
+  let dx = tx - n.x, dy = ty - n.y;
+  if (!dx && !dy) dy = -1;
+  const hw = g.w / 2 + g.k + pad, hh = g.h / 2 + g.k + pad;
+  const t = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity);
+  return { x: n.x + dx * t, y: n.y + dy * t };
+}
+function caminho(e, a, b) {
+  const ga = geo[a.id], gb = geo[b.id];
+  if (a === b) {
+    const hw = ga.w / 2 + ga.k, hh = ga.h / 2 + ga.k, x = a.x, y = a.y;
+    const s = { x: x - hw - 1, y: y - 2 }, f = { x: x - hw * 0.35, y: y - hh - 2 };
+    return { loop: true, d: `M${s.x},${s.y} C${x - hw - 62},${y - 6} ${f.x},${y - hh - 64} ${f.x},${f.y}`, lx: x - hw - 30, ly: y - hh - 42 };
+  }
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+  let curva = e.curva || 0;
+  if (!curva && S.edges.some(o => o !== e && o.de === e.para && o.para === e.de)) curva = 26;
+  const cx = (a.x + b.x) / 2 + nx * curva * 2, cy = (a.y + b.y) / 2 + ny * curva * 2;
+  const p1 = borda(a, ga, cx, cy, 2), p2 = borda(b, gb, cx, cy, 2);
+  return { d: `M${p1.x},${p1.y} Q${cx},${cy} ${p2.x},${p2.y}`, lx: 0.25 * p1.x + 0.5 * cx + 0.25 * p2.x, ly: 0.25 * p1.y + 0.5 * cy + 0.25 * p2.y - 10 };
+}
+
+function renderCanvas() {
+  geo = {};
+  for (const n of S.nodes) geo[n.id] = medida(n);
+  const ge = $("#ligs"); ge.textContent = "";
+  for (const e of S.edges) {
+    const a = porId(e.de), b = porId(e.para);
+    if (!a || !b) continue;
+    const G = caminho(e, a, b);
+    const s = !exportando && sel && sel.k === "e" && sel.id === e.id;
+    const cor = s ? "#7030a0" : "#1f1f1f";
+    const g = el("g", { class: "lig", "data-id": e.id }, ge);
+    el("path", { d: G.d, fill: "none", stroke: "#000", "stroke-opacity": 0, "stroke-width": 18, "pointer-events": "stroke" }, g);
+    const mk = `url(#m-${e.efeito === "diminui" ? "barra" : "seta"}-${e.forca}${s ? "-s" : ""})`;
+    const at = { d: G.d, fill: "none", stroke: cor, "stroke-width": LARG[e.forca] + (s ? 0.8 : 0), "marker-end": mk, "pointer-events": "none" };
+    if (e.efeito === "diminui") at["stroke-dasharray"] = "7 5";
+    if (e.ambos && !G.loop) at["marker-start"] = mk;
+    el("path", at, g);
+    if (e.rotulo) {
+      const t = el("text", { x: G.lx, y: G.ly, "text-anchor": "middle", "font-family": SERIF, "font-size": 13, "font-style": "italic", fill: cor, stroke: "#ffffff", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none" }, g);
+      t.textContent = e.rotulo;
+    }
+  }
+  const gn = $("#nos"); gn.textContent = "";
+  for (const n of S.nodes) {
+    const { L, w, h, k } = geo[n.id];
+    const s = !exportando && sel && sel.k === "n" && sel.id === n.id;
+    const origem = !exportando && modo && modo.de === n.id;
+    const cor = COR[n.val] || COR.neutro;
+    const g = el("g", { class: "no", "data-id": n.id, transform: `translate(${n.x},${n.y})` }, gn);
+    if (n.obs) el("title", {}, g).textContent = n.obs;
+    if (s || origem) el("rect", { x: -w / 2 - k - 7, y: -h / 2 - k - 7, width: w + 2 * k + 14, height: h + 2 * k + 14, rx: 8, fill: origem ? "#f1ecf6" : "none", stroke: "#7030a0", "stroke-width": 2, "stroke-dasharray": "5 4" }, g);
+    if (k) el("rect", { x: -w / 2 - k, y: -h / 2 - k, width: w + 2 * k, height: h + 2 * k, fill: "#ffffff", stroke: cor.borda, "stroke-width": 1 }, g);
+    el("rect", { x: -w / 2, y: -h / 2, width: w, height: h, rx: n.tipo === "moderador" ? 10 : 0, fill: k ? "#f3eef8" : "#ffffff", stroke: cor.borda, "stroke-width": n.val === "neutro" ? 1 : 1.5 }, g);
+    const t = el("text", { "text-anchor": "middle", "font-family": SERIF, "font-size": 15, fill: cor.texto }, g);
+    L.forEach((l, i) => { el("tspan", { x: 0, y: -h / 2 + 21 + i * 18 }, t).textContent = l; });
+    if (s && !modo) {
+      const lado = n.x + w / 2 + k + 30 > W ? -1 : 1;
+      const hd = el("g", { class: "alca", "data-alca": n.id, transform: `translate(${lado * (w / 2 + k + 17)},0)` }, g);
+      el("circle", { r: 12, fill: "#7030a0" }, hd);
+      el("path", { d: "M-5.5,0H5.5M0,-5.5V5.5", stroke: "#fff", "stroke-width": 2.2 }, hd);
+      el("title", {}, hd).textContent = "Arraste até outro item para criar uma seta";
+    }
+  }
+  const nome = S.nome.trim();
+  const data = new Date().toLocaleDateString("pt-BR");
+  $("#tSub").textContent = nome ? `${nome} · ${data}` : data;
+}
+
+function render() {
+  renderCanvas();
+  renderLado();
+  renderDica();
+  document.body.classList.toggle("ligando", !!modo);
+  $("#bLigar").classList.toggle("ativo", !!modo);
+  $("#bDesf").disabled = !undo.length;
+  $("#bRef").disabled = !redo.length;
+  if (document.activeElement !== $("#nome")) $("#nome").value = S.nome;
+}
+
+/* ---------- painel lateral ---------- */
+function seg(campo, atual, opcoes) {
+  return `<div class="seg" data-campo="${campo}">` + opcoes.map(([v, r]) =>
+    `<button type="button" data-v="${v}" aria-pressed="${String(v) === String(atual)}">${r}</button>`).join("") + `</div>`;
+}
+function descLig(e) {
+  const b = porId(e.para), a = porId(e.de);
+  const seta = e.ambos ? "↔" : "→";
+  return `${esc(a?.texto)} ${seta} ${esc(b?.texto)} <span class="vazio">(${e.efeito}, ${FORCA[e.forca]})</span>`;
+}
+function renderLado() {
+  const lado = $("#lado");
+  if (sel && sel.k === "n" && porId(sel.id)) {
+    const n = porId(sel.id);
+    const ligs = S.edges.filter(e => e.de === n.id || e.para === n.id);
+    lado.innerHTML = `
+      <h2>Item selecionado</h2>
+      <label for="pTexto">Texto</label>
+      <textarea id="pTexto" rows="2" maxlength="120">${esc(n.texto)}</textarea>
+      <p class="so-ajuda">Poucas palavras. Aperte Enter para quebrar a linha.</p>
+      <div class="campo"><span>Tipo</span>${seg("tipo", n.tipo, [["processo", "Processo"], ["moderador", "Moderador"], ["kernel", "Kernel"]])}</div>
+      <p class="so-ajuda">${TIPO[n.tipo].d}</p>
+      <div class="campo"><span>Isso ajuda ou atrapalha?</span>${seg("val", n.val, [["problema", "Atrapalha"], ["neutro", "Neutro"], ["recurso", "Ajuda"]])}</div>
+      <label for="pArea">Área</label>
+      <select id="pArea">${DIMS.map(([id, nome]) => `<option value="${id}" ${id === dimDe(n.x, n.y) ? "selected" : ""}>${nome}</option>`).join("")}</select>
+      <p class="so-ajuda">${AREA[dimDe(n.x, n.y)].d} A área muda sozinha quando você arrasta o item.</p>
+      <label for="pObs">Anotação (opcional)</label>
+      <textarea id="pObs" rows="2" maxlength="500" placeholder="Quando acontece? Com que frequência?">${esc(n.obs)}</textarea>
+      <div class="acoes">
+        <button class="btn prim" data-a="ligar">↗ Ligar a outro item</button>
+        <button class="btn" data-a="loop">↺ Ligar a ele mesmo</button>
+        <button class="btn" data-a="dup">Duplicar</button>
+        <button class="btn perigo" data-a="apagar">Apagar item</button>
+      </div>
+      <h3>Setas deste item</h3>
+      ${ligs.length ? `<ul class="lista">${ligs.map(e => `<li><button data-sel-e="${e.id}">${descLig(e)}</button></li>`).join("")}</ul>` : `<p class="vazio">Nenhuma seta ainda.</p>`}`;
+  } else if (sel && sel.k === "e" && ligPorId(sel.id)) {
+    const e = ligPorId(sel.id), a = porId(e.de), b = porId(e.para), loop = e.de === e.para;
+    lado.innerHTML = `
+      <h2>Seta selecionada</h2>
+      <p class="rota"><b>${esc(a.texto)}</b> ${loop ? "↺ alimenta a si mesmo" : (e.ambos ? "↔" : "→") + ` <b>${esc(b.texto)}</b>`}</p>
+      <div class="campo"><span>O que ela faz?</span>${seg("efeito", e.efeito, [["aumenta", "→ Aumenta"], ["diminui", "⊣ Diminui"]])}</div>
+      <p class="so-ajuda">Aumenta: quando o primeiro cresce, o segundo cresce também (mais dor, mais raiva). Diminui: quando o primeiro cresce, o segundo diminui (mais apoio, menos tristeza).</p>
+      <div class="campo"><span>Quão forte?</span>${seg("forca", e.forca, [[1, "Fraca"], [2, "Média"], [3, "Forte"]])}</div>
+      <p class="so-ajuda">Quanto um influencia o outro. Quanto mais forte, mais grossa a linha.</p>
+      ${loop ? "" : `
+      <div class="campo"><span>Direção</span>${seg("ambos", e.ambos, [[false, "Um sentido"], [true, "Os dois sentidos"]])}</div>
+      <p class="so-ajuda">Os dois sentidos: um alimenta o outro e vice-versa.</p>
+      <div class="acoes" style="margin-top:6px"><button class="btn" data-a="inverter">⇄ Inverter a direção</button></div>
+      <label for="pCurva">Curvatura</label>
+      <input id="pCurva" type="range" min="-150" max="150" step="5" value="${e.curva}" style="width:100%">
+      <p class="so-ajuda">Curve a seta para ela não passar por cima de outros itens.</p>`}
+      <label for="pRot">Legenda da seta (opcional)</label>
+      <input id="pRot" type="text" maxlength="60" value="${esc(e.rotulo)}" placeholder="Ex.: quando estou cansado">
+      <div class="acoes"><button class="btn perigo" data-a="apagarE">Apagar seta</button></div>`;
+  } else {
+    const n = S.nodes.length, m = S.edges.length;
+    let lista = "";
+    for (const [id, nome] of DIMS) {
+      const itens = S.nodes.filter(x => dimDe(x.x, x.y) === id);
+      if (!itens.length) continue;
+      lista += `<li class="dim">${nome}</li>` + itens.map(x => `<li><button data-sel-n="${x.id}" class="${x.val === "problema" ? "p" : x.val === "recurso" ? "r" : ""}">${esc(x.texto) || "(sem texto)"}</button></li>`).join("");
+    }
+    lado.innerHTML = `
+      <h2>Sua rede</h2>
+      <p>${n} ${n === 1 ? "item" : "itens"} e ${m} ${m === 1 ? "seta" : "setas"}.</p>
+      ${n ? `<p class="so-ajuda">Toque num item ou numa seta para editar.</p><ul class="lista">${lista}</ul>`
+          : `<p class="vazio">Toque em <b>+ Adicionar item</b> para começar, ou abra um exemplo em <b>Exemplos</b> para ver como fica.</p>`}`;
+  }
+}
+
+let passoGuardado = false;
+function editarAoVivo(fn) {
+  if (!passoGuardado) { guardarPasso(); passoGuardado = true; }
+  fn(); salvar(); renderCanvas();
+  $("#bDesf").disabled = false;
+}
+$("#lado").addEventListener("focusin", () => { passoGuardado = false; });
+$("#lado").addEventListener("input", ev => {
+  const t = ev.target;
+  if (t.id === "pTexto") editarAoVivo(() => { porId(sel.id).texto = t.value; });
+  if (t.id === "pObs") editarAoVivo(() => { porId(sel.id).obs = t.value; });
+  if (t.id === "pRot") editarAoVivo(() => { ligPorId(sel.id).rotulo = t.value; });
+  if (t.id === "pCurva") editarAoVivo(() => { ligPorId(sel.id).curva = +t.value; });
+});
+$("#lado").addEventListener("change", ev => {
+  const t = ev.target;
+  if (t.id === "pArea") mudar(() => { const n = porId(sel.id), p = lugarLivre(t.value, n.id); n.x = p.x; n.y = p.y; });
+  if (t.id === "pTexto" || t.id === "pObs" || t.id === "pRot") renderLado();
+});
+$("#lado").addEventListener("click", ev => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  if (b.dataset.selN) { sel = { k: "n", id: b.dataset.selN }; render(); return; }
+  if (b.dataset.selE) { sel = { k: "e", id: b.dataset.selE }; render(); return; }
+  const grupo = b.closest(".seg");
+  if (grupo && sel) {
+    const campo = grupo.dataset.campo; let v = b.dataset.v;
+    if (campo === "forca") v = +v;
+    if (campo === "ambos") v = v === "true";
+    const obj = sel.k === "n" ? porId(sel.id) : ligPorId(sel.id);
+    if (obj[campo] !== v) mudar(() => { obj[campo] = v; });
+    return;
+  }
+  const a = b.dataset.a;
+  if (a === "ligar") { modo = { tipo: "ligar", de: sel.id }; render(); }
+  if (a === "loop") criarLigacao(sel.id, sel.id, true);
+  if (a === "dup") mudar(() => { const n = porId(sel.id); const c = { ...n, id: uid("n"), x: clamp(n.x + 30, 20, W - 20), y: clamp(n.y + 30, TOP + 15, TOP + GH - 15) }; S.nodes.push(c); sel = { k: "n", id: c.id }; });
+  if (a === "apagar") apagarSel();
+  if (a === "apagarE") apagarSel();
+  if (a === "inverter") mudar(() => { const e = ligPorId(sel.id); [e.de, e.para] = [e.para, e.de]; e.curva = -e.curva; });
+});
+
+function apagarSel() {
+  if (!sel) return;
+  if (sel.k === "n") mudar(() => { S.nodes = S.nodes.filter(n => n.id !== sel.id); S.edges = S.edges.filter(e => e.de !== sel.id && e.para !== sel.id); sel = null; });
+  else mudar(() => { S.edges = S.edges.filter(e => e.id !== sel.id); sel = null; });
+  avisar("Apagado. Para voltar, use Desfazer (↶).");
+}
+function criarLigacao(de, para, permitirLoop) {
+  modo = null;
+  if (de === para && !permitirLoop) { render(); return; }
+  const ja = S.edges.find(e => e.de === de && e.para === para);
+  if (ja) { sel = { k: "e", id: ja.id }; render(); avisar("Essa seta já existe. Ela está selecionada."); return; }
+  const inv = S.edges.find(e => e.de === para && e.para === de && de !== para);
+  mudar(() => {
+    const e = { id: uid("e"), de, para, efeito: "aumenta", forca: 2, ambos: false, rotulo: "", curva: 0 };
+    S.edges.push(e); sel = { k: "e", id: e.id };
+  });
+  if (inv) avisar("Já existe uma seta no sentido contrário. Se um alimenta o outro, você também pode usar “Os dois sentidos” numa seta só.");
+}
+
+/* ---------- dica contextual ---------- */
+function renderDica() {
+  const d = $("#dica"); let t = "", forte = false;
+  if (modo && modo.tipo === "origem") { t = "Toque no item de onde a seta sai (a causa). Para cancelar, toque num espaço vazio."; forte = true; }
+  else if (modo && modo.tipo === "ligar") { t = `Agora toque no item que é afetado por “${porId(modo.de)?.texto || ""}”. Para cancelar, toque num espaço vazio.`; forte = true; }
+  else if (document.body.classList.contains("ajuda")) {
+    const n = S.nodes.length, m = S.edges.length;
+    if (!n) t = "Passo 1: toque em “+ Adicionar item” e escreva algo que acontece com você na situação difícil.";
+    else if (sel && sel.k === "n") t = "Arraste o item para mover. Para criar uma seta, toque em “Ligar a outro item” ou arraste a bolinha roxa +.";
+    else if (sel && sel.k === "e") t = "Escolha, ao lado, se esta seta aumenta ou diminui o outro item e quão forte ela é.";
+    else if (n < 3) t = "Continue adicionando itens. De 4 a 10 costuma bastar.";
+    else if (!m) t = "Agora ligue os itens: toque num item e depois em “Ligar a outro item”.";
+    else t = "Toque numa seta para ajustar. Quando terminar, toque em “Enviar ao psicólogo”.";
+  }
+  d.textContent = t;
+  d.classList.toggle("ver", !!t);
+  d.classList.toggle("forte", forte);
+}
+
+/* ---------- ponteiro no desenho ---------- */
+function pt(ev) {
+  const p = cv.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY;
+  return p.matrixTransform(cv.getScreenCTM().inverse());
+}
+function noEm(p) {
+  for (let i = S.nodes.length - 1; i >= 0; i--) {
+    const n = S.nodes[i], g = geo[n.id];
+    if (Math.abs(p.x - n.x) <= g.w / 2 + g.k + 6 && Math.abs(p.y - n.y) <= g.h / 2 + g.k + 6) return n;
+  }
+  return null;
+}
+let arrasto = null, puxando = null;
+cv.addEventListener("pointerdown", ev => {
+  if (ev.button > 0) return;
+  const alca = ev.target.closest("[data-alca]");
+  if (alca) {
+    puxando = { de: alca.dataset.alca };
+    cv.setPointerCapture(ev.pointerId); ev.preventDefault(); return;
+  }
+  const gno = ev.target.closest("g.no");
+  if (gno) {
+    const id = gno.dataset.id;
+    if (modo && modo.tipo === "origem") { modo = { tipo: "ligar", de: id }; sel = { k: "n", id }; render(); return; }
+    if (modo && modo.tipo === "ligar") { criarLigacao(modo.de, id); return; }
+    const n = porId(id), p = pt(ev);
+    const trocou = !(sel && sel.k === "n" && sel.id === id);
+    sel = { k: "n", id };
+    arrasto = { id, sx: p.x, sy: p.y, ox: n.x, oy: n.y, mexeu: false };
+    cv.setPointerCapture(ev.pointerId); ev.preventDefault();
+    if (trocou) render(); else renderCanvas();
+    return;
+  }
+  const glig = ev.target.closest("g.lig");
+  if (glig) { modo = null; sel = { k: "e", id: glig.dataset.id }; render(); return; }
+  if (modo || sel) { modo = null; sel = null; render(); }
+});
+cv.addEventListener("pointermove", ev => {
+  if (arrasto) {
+    const p = pt(ev), n = porId(arrasto.id), g = geo[n.id];
+    const dx = p.x - arrasto.sx, dy = p.y - arrasto.sy;
+    if (!arrasto.mexeu && Math.hypot(dx, dy) < 3) return;
+    if (!arrasto.mexeu) { guardarPasso(); arrasto.mexeu = true; }
+    n.x = clamp(arrasto.ox + dx, g.w / 2 + g.k + 2, W - g.w / 2 - g.k - 2);
+    n.y = clamp(arrasto.oy + dy, TOP + g.h / 2 + g.k + 2, TOP + GH - g.h / 2 - g.k - 2);
+    renderCanvas();
+  } else if (puxando) {
+    const p = pt(ev), a = porId(puxando.de), o = $("#sobre");
+    o.textContent = "";
+    el("path", { d: `M${a.x},${a.y} L${p.x},${p.y}`, stroke: "#7030a0", "stroke-width": 2, "stroke-dasharray": "6 4", fill: "none", "marker-end": "url(#m-seta-2-s)" }, o);
+    const alvo = noEm(p);
+    if (alvo && alvo.id !== a.id) { const g = geo[alvo.id]; el("rect", { x: alvo.x - g.w / 2 - g.k - 6, y: alvo.y - g.h / 2 - g.k - 6, width: g.w + 2 * g.k + 12, height: g.h + 2 * g.k + 12, rx: 8, fill: "none", stroke: "#7030a0", "stroke-width": 2 }, o); }
+  }
+});
+function soltar(ev) {
+  if (arrasto) {
+    const mexeu = arrasto.mexeu; arrasto = null;
+    if (mexeu) { salvar(); render(); }
+  } else if (puxando) {
+    const de = puxando.de; puxando = null; $("#sobre").textContent = "";
+    const alvo = ev.type === "pointerup" ? noEm(pt(ev)) : null;
+    if (alvo && alvo.id !== de) criarLigacao(de, alvo.id); else renderCanvas();
+  }
+}
+cv.addEventListener("pointerup", soltar);
+cv.addEventListener("pointercancel", soltar);
+cv.addEventListener("dblclick", ev => {
+  const gno = ev.target.closest("g.no");
+  if (gno) { sel = { k: "n", id: gno.dataset.id }; render(); const t = $("#pTexto"); if (t) { t.focus(); t.select(); } return; }
+  if (ev.target.closest("g.lig")) return;
+  const p = pt(ev);
+  if (p.y < TOP || p.y > TOP + GH) return;
+  abrirAdicionar(dimDe(p.x, p.y), { x: p.x, y: p.y });
+});
+
+/* ---------- adicionar item ---------- */
+let posAdd = null;
+function montarMini() {
+  $("#miniGrade").innerHTML = DIMS.map(([id, nome]) => `<label class="opc"><input type="radio" name="area" value="${id}"><span${id === "self" ? ' style="font-style:italic"' : ""}>${nome}</span></label>`).join("");
+  $("#listaAreas").innerHTML = DIMS.map(([id, nome]) => `<li><b>${nome}:</b> ${AREA[id].d} Ex.: ${AREA[id].ex.slice(0, 3).join(", ")}.</li>`).join("");
+}
+function valorRadio(nome) { const r = $(`#fAdd input[name=${nome}]:checked`); return r ? r.value : null; }
+function atualizarAdd() {
+  const area = valorRadio("area"), tipo = valorRadio("tipo");
+  $("#descArea").textContent = area ? AREA[area].d : "Escolha um quadrado. É a mesma grade da rede.";
+  const lista = tipo === "kernel" ? EX_KERNEL : tipo === "moderador" ? EX_MODERADOR : (area ? AREA[area].ex : []);
+  $("#chips").innerHTML = lista.map(x => `<button type="button">${esc(x)}</button>`).join("");
+}
+function abrirAdicionar(area, pos) {
+  posAdd = pos || null;
+  const f = $("#fAdd");
+  f.reset();
+  const alvo = area || (sel && sel.k === "n" && porId(sel.id) ? dimDe(porId(sel.id).x, porId(sel.id).y) : null);
+  if (alvo) f.querySelector(`input[name=area][value=${alvo}]`).checked = true;
+  $("#addTexto").classList.remove("erro");
+  atualizarAdd();
+  modo = null;
+  $("#dlgAdd").showModal();
+  setTimeout(() => $("#addTexto").focus(), 30);
+}
+$("#fAdd").addEventListener("change", atualizarAdd);
+$("#chips").addEventListener("click", ev => {
+  const b = ev.target.closest("button"); if (!b) return;
+  $("#addTexto").value = b.textContent; $("#addTexto").classList.remove("erro"); $("#addTexto").focus();
+});
+$("#bAddCancelar").addEventListener("click", () => $("#dlgAdd").close());
+$("#fAdd").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const texto = $("#addTexto").value.trim();
+  if (!texto) { $("#addTexto").classList.add("erro"); $("#addTexto").focus(); avisar("Escreva o item antes de adicionar."); return; }
+  const area = valorRadio("area") || "comportamento";
+  const p = posAdd && dimDe(posAdd.x, posAdd.y) === area ? posAdd : lugarLivre(area);
+  mudar(() => {
+    const n = { id: uid("n"), tipo: valorRadio("tipo"), texto, x: p.x, y: p.y, val: valorRadio("val"), obs: "" };
+    S.nodes.push(n); sel = { k: "n", id: n.id };
+    geo[n.id] = medida(n);
+    n.x = clamp(n.x, geo[n.id].w / 2 + 6, W - geo[n.id].w / 2 - 6);
+    n.y = clamp(n.y, TOP + geo[n.id].h / 2 + 6, TOP + GH - geo[n.id].h / 2 - 30);
+  });
+  $("#dlgAdd").close();
+});
+function lugarLivre(dim, ignorar) {
+  const i = DIMS.findIndex(d => d[0] === dim), c = i % 3, r = Math.floor(i / 3), x0 = c * CW, y0 = TOP + r * CH;
+  let melhor = null, nota = -Infinity;
+  for (let yy = 0; yy < 4; yy++) for (let xx = 0; xx < 3; xx++) {
+    const x = x0 + 95 + xx * 105, y = y0 + 40 + yy * 52;
+    let d = 400;
+    for (const n of S.nodes) if (n.id !== ignorar) d = Math.min(d, Math.hypot((n.x - x) / 1.7, n.y - y));
+    const v = d - Math.hypot(x - (x0 + CW / 2), y - (y0 + CH / 2 - 15)) * 0.05;
+    if (v > nota) { nota = v; melhor = { x, y }; }
+  }
+  return melhor;
+}
+
+/* ---------- arquivos ---------- */
+function dados() { return { app: "rede-pbt", versao: 1, salvo: new Date().toISOString(), ...S }; }
+function nomeArquivo(ext) {
+  const base = (S.nome || "rede de processos").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "rede";
+  return `${base}-${new Date().toISOString().slice(0, 10)}.${ext}`;
+}
+function baixar(blob, nome) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function paraB64(txt) { const b = new TextEncoder().encode(txt); let s = ""; for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode.apply(null, b.subarray(i, i + 8192)); return btoa(s); }
+function deB64(s) { const bin = atob(s), b = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return new TextDecoder().decode(b); }
+function comDados(png, texto) {
+  const corpo = new TextEncoder().encode("rede-pbt\0" + paraB64(texto));
+  const tipoCorpo = new Uint8Array(4 + corpo.length); tipoCorpo.set([116, 69, 88, 116]); tipoCorpo.set(corpo, 4);
+  const bloco = new Uint8Array(12 + corpo.length), dv = new DataView(bloco.buffer);
+  dv.setUint32(0, corpo.length); bloco.set(tipoCorpo, 4); dv.setUint32(8 + corpo.length, crc32(tipoCorpo));
+  const fim = png.length - 12, out = new Uint8Array(png.length + bloco.length);
+  out.set(png.subarray(0, fim)); out.set(bloco, fim); out.set(png.subarray(fim), fim + bloco.length);
+  return out;
+}
+function lerDadosPng(b) {
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength); let i = 8;
+  while (i + 8 <= b.length) {
+    const len = dv.getUint32(i), tipo = String.fromCharCode(b[i + 4], b[i + 5], b[i + 6], b[i + 7]);
+    if (tipo === "tEXt") {
+      const txt = new TextDecoder("latin1").decode(b.subarray(i + 8, i + 8 + len));
+      if (txt.startsWith("rede-pbt\0")) return deB64(txt.slice(9));
+    }
+    i += 12 + len;
+  }
+  return null;
+}
+async function gerarPng() {
+  const s0 = sel, m0 = modo; sel = null; modo = null; exportando = true; renderCanvas();
+  const c = cv.cloneNode(true);
+  exportando = false; sel = s0; modo = m0; renderCanvas();
+  c.querySelector("#sobre").remove();
+  c.setAttribute("width", W * 2); c.setAttribute("height", VH * 2);
+  const src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(c));
+  const img = new Image();
+  await new Promise((ok, falha) => { img.onload = ok; img.onerror = falha; img.src = src; });
+  const cnv = document.createElement("canvas"); cnv.width = W * 2; cnv.height = VH * 2;
+  const g = cnv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cnv.width, cnv.height); g.drawImage(img, 0, 0);
+  const blob = await new Promise(ok => cnv.toBlob(ok, "image/png"));
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  return new Blob([comDados(bytes, JSON.stringify(dados()))], { type: "image/png" });
+}
+function jsonBlob(tipo) { return new Blob([JSON.stringify(dados(), null, 1)], { type: tipo || "application/json" }); }
+
+$("#bPng").addEventListener("click", async () => {
+  if (!S.nodes.length) return avisar("A rede ainda está vazia.");
+  baixar(await gerarPng(), nomeArquivo("png")); avisar("Imagem salva na pasta de downloads.");
+});
+$("#bJson").addEventListener("click", () => { baixar(jsonBlob(), nomeArquivo("json")); avisar("Arquivo salvo. Use “Abrir arquivo” para continuar a editar depois."); });
+$("#bEnviar").addEventListener("click", async () => {
+  if (!S.nodes.length) return avisar("A rede ainda está vazia. Adicione alguns itens antes de enviar.");
+  const png = new File([await gerarPng()], nomeArquivo("png"), { type: "image/png" });
+  const tentativas = [
+    [png, new File([jsonBlob()], nomeArquivo("json"), { type: "application/json" })],
+    [png, new File([jsonBlob("text/plain")], nomeArquivo("txt"), { type: "text/plain" })],
+    [png]
+  ];
+  if (navigator.canShare) {
+    for (const files of tentativas) {
+      if (!navigator.canShare({ files })) continue;
+      try { await navigator.share({ files, title: "Minha rede de processos" }); avisar("Enviado."); return; }
+      catch (e) { if (e.name === "AbortError") return; break; }
+    }
+  }
+  baixar(png, png.name); baixar(jsonBlob(), nomeArquivo("json"));
+  avisar("Os arquivos foram salvos na pasta de downloads. Anexe a imagem (e, se puder, o arquivo .json) na conversa com o psicólogo.");
+});
+$("#bAbrir").addEventListener("click", () => $("#arquivo").click());
+$("#arquivo").addEventListener("change", async ev => {
+  const f = ev.target.files[0]; ev.target.value = "";
+  if (!f) return;
+  try {
+    let txt;
+    if (f.type === "image/png" || /\.png$/i.test(f.name)) {
+      txt = lerDadosPng(new Uint8Array(await f.arrayBuffer()));
+      if (!txt) throw new Error("sem dados");
+    } else txt = await f.text();
+    const d = normalizar(JSON.parse(txt));
+    if (S.nodes.length && !confirm("Abrir este arquivo vai substituir a rede que está na tela. Continuar? (Dá para desfazer.)")) return;
+    mudar(() => { S = d; sel = null; modo = null; });
+    avisar("Rede aberta.");
+  } catch (e) {
+    avisar(/png/i.test(f.name) ? "Essa imagem não tem os dados da rede (fotos enviadas pelo WhatsApp perdem esses dados). Abra o arquivo .json." : "Não consegui ler esse arquivo. Ele precisa ter sido salvo por esta página.");
+  }
+});
+$("#bPrint").addEventListener("click", () => { sel = null; modo = null; render(); setTimeout(() => window.print(), 50); });
+$("#bNova").addEventListener("click", () => {
+  if (S.nodes.length && !confirm("Apagar a rede inteira e começar do zero? (Dá para desfazer.)")) return;
+  mudar(() => { S = { nome: "", nodes: [], edges: [] }; sel = null; modo = null; });
+});
+$("#selEx").addEventListener("change", ev => {
+  const k = ev.target.value; ev.target.value = "";
+  if (!k) return;
+  if (S.nodes.length && !confirm("Trocar a rede atual pelo exemplo? (Dá para desfazer.)")) return;
+  mudar(() => { S = JSON.parse(JSON.stringify(EXEMPLOS[k])); sel = null; modo = null; });
+});
+
+/* ---------- barra, ajuda, zoom, teclado ---------- */
+$("#bAdd").addEventListener("click", () => abrirAdicionar());
+$("#bLigar").addEventListener("click", () => {
+  if (modo) { modo = null; render(); return; }
+  if (S.nodes.length < 1) return avisar("Adicione itens antes de ligá-los.");
+  modo = sel && sel.k === "n" ? { tipo: "ligar", de: sel.id } : { tipo: "origem" };
+  render();
+});
+function desfazer() { if (!undo.length) return; redo.push(snap()); S = JSON.parse(undo.pop()); sel = null; modo = null; salvar(); render(); avisar("Desfeito."); }
+function refazer() { if (!redo.length) return; undo.push(snap()); S = JSON.parse(redo.pop()); sel = null; modo = null; salvar(); render(); avisar("Refeito."); }
+$("#bDesf").addEventListener("click", desfazer);
+$("#bRef").addEventListener("click", refazer);
+$("#nome").addEventListener("focus", () => { passoGuardado = false; });
+$("#nome").addEventListener("input", ev => editarAoVivo(() => { S.nome = ev.target.value; }));
+
+function ajuda(on) {
+  document.body.classList.toggle("ajuda", on);
+  $("#swAjuda").checked = on;
+  try { localStorage.setItem(CHAVE_AJUDA, on ? "1" : "0"); } catch (e) {}
+  renderDica();
+}
+$("#swAjuda").addEventListener("change", ev => ajuda(ev.target.checked));
+$("#bFecharAjuda").addEventListener("click", () => ajuda(false));
+
+function aplicarZoom() {
+  const base = Math.max($("#palco").clientWidth - 2, 860);
+  const w = Math.round(base * zoom);
+  cv.style.width = w + "px"; cv.style.height = Math.round(w * VH / W) + "px";
+  $("#bAjustar").textContent = Math.round(zoom * 100) + "%";
+}
+$("#bMais").addEventListener("click", () => { zoom = Math.min(2.5, +(zoom + 0.25).toFixed(2)); aplicarZoom(); });
+$("#bMenos").addEventListener("click", () => { zoom = Math.max(0.5, +(zoom - 0.25).toFixed(2)); aplicarZoom(); });
+$("#bAjustar").addEventListener("click", () => { zoom = 1; aplicarZoom(); });
+let largAnt = 0;
+new ResizeObserver(() => { const l = $("#palco").clientWidth; if (Math.abs(l - largAnt) > 1) { largAnt = l; aplicarZoom(); } }).observe($("#palco"));
+
+document.addEventListener("keydown", ev => {
+  const campo = ev.target.closest("input, textarea, select, [contenteditable]");
+  if ($("#dlgAdd").open) return;
+  if ((ev.ctrlKey || ev.metaKey) && !campo) {
+    const k = ev.key.toLowerCase();
+    if (k === "z" && !ev.shiftKey) { ev.preventDefault(); desfazer(); }
+    else if (k === "y" || (k === "z" && ev.shiftKey)) { ev.preventDefault(); refazer(); }
+    return;
+  }
+  if (campo) return;
+  if (ev.key === "Delete" || ev.key === "Backspace") { if (sel) { ev.preventDefault(); apagarSel(); } }
+  if (ev.key === "Escape") { modo = null; sel = null; render(); }
+});
+
+let tAviso;
+function avisar(t) { const a = $("#aviso"); a.textContent = t; a.classList.add("ver"); clearTimeout(tAviso); tAviso = setTimeout(() => a.classList.remove("ver"), 4200); }
+
+/* ---------- início ---------- */
+montarDefs(); montarGrade(); montarLegenda(); montarMini();
+carregar();
+let ajudaSalva = null; try { ajudaSalva = localStorage.getItem(CHAVE_AJUDA); } catch (e) {}
+ajuda(ajudaSalva === null ? true : ajudaSalva === "1");
+render();
+aplicarZoom();
+</script>
+</body>
+</html>
