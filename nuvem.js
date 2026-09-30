@@ -66,6 +66,9 @@ var Nuvem = (function(){
     var estado = Math.random().toString(36).slice(2) + Date.now().toString(36);
     guarda("controle-unico-oauth-estado", estado);
     guarda("controle-unico-oauth-aba", window.top.location.hash || "");
+    // o Google só devolve para o endereço autorizado (a pasta do site): quem saiu de outra página
+    // (o controle da Ana, ana.html) volta para ela depois (30/09/2026)
+    guarda("controle-unico-oauth-pagina", (window.top.location.pathname.match(/[^\/]+\.html$/) || [""])[0]);
     var p = {client_id:CLIENT_ID, redirect_uri:enderecoDeVolta(), response_type:"token", scope:ESCOPO, state:estado, include_granted_scopes:"true"};
     if(silencioso) p.prompt = "none";
     saindo = true;
@@ -78,19 +81,23 @@ var Nuvem = (function(){
     if(!/(^|&)(access_token|error)=/.test(h)) return;
     var p = new URLSearchParams(h);
     var esperado = le("controle-unico-oauth-estado"), aba = le("controle-unico-oauth-aba") || "";
-    guarda("controle-unico-oauth-estado", null); guarda("controle-unico-oauth-aba", null);
+    var pagina = le("controle-unico-oauth-pagina");
+    guarda("controle-unico-oauth-estado", null); guarda("controle-unico-oauth-aba", null); guarda("controle-unico-oauth-pagina", null);
     try{ history.replaceState(null, "", location.pathname + location.search + aba); }catch(e){}
-    if(!esperado || p.get("state") !== esperado){ aviso = "A resposta do Google não conferiu. Entre de novo."; return; }
+    // quem saiu do controle da Ana volta para ele, tenha o Google aceitado ou não
+    var voltar = function(){ if(pagina && pagina !== "index.html" && !location.pathname.endsWith(pagina)){ saindo = true; location.replace(pagina + aba); } };
+    if(!esperado || p.get("state") !== esperado){ aviso = "A resposta do Google não conferiu. Entre de novo."; return voltar(); }
     if(p.get("error")){
       guarda("controle-unico-auto-falhou", String(Date.now()));
       if(!/^(interaction|login|consent)_required$/.test(p.get("error"))) aviso = "O Google recusou: " + p.get("error");
-      return;
+      return voltar();
     }
     token = p.get("access_token");
     expira = Date.now() + (Number(p.get("expires_in")) || 3600) * 1000;
     try{ localStorage.setItem(CH_TOKEN, JSON.stringify({t:token, e:expira})); }catch(e){}
     guarda("controle-unico-ja-entrou", "1");
     guarda("controle-unico-auto-falhou", null);
+    voltar();
   }
   /* ao abrir o app no iPhone: quem já entrou antes entra de novo sem tocar em nada */
   function entrarSozinho(){

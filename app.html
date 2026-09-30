@@ -271,8 +271,11 @@ const livro = {};
 for (const c of Object.keys(VAZIO)) livro[c] = arrumar[c](Object.assign(VAZIO[c](), armazem.ler(c) || {}));
 function salvar(c){ armazem.gravar(c, livro[c]); desenhar(); }
 
+// Dentro do controle da Ana (ana.html), esta página só serve a Casa: o caderno do dinheiro dele
+// não é aberto nem criado no Google dela (30/09/2026).
+const PERFIL = (() => { try { return window.top.PERFIL || ""; } catch(e){ return ""; } })();
 const nuvem = {};
-for (const c of Object.keys(VAZIO)) {
+for (const c of (PERFIL === "ana" ? ["casa"] : Object.keys(VAZIO))) {
   nuvem[c] = Nuvem.caderno({
     id: ID_NUVEM[c], nome: NOME_DRIVE[c], rotulo: c === "casa" ? "o caderno da Casa" : "o caderno do Dinheiro",
     compartilhado: c === "casa",
