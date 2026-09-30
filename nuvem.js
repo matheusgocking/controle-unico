@@ -209,6 +209,14 @@ var Nuvem = (function(){
     function marcarPendente(v){ pendente = v; guarda(CH_P, v ? "1" : null); }
     function marcarArquivo(a){ arquivo = a ? {id:a.id, modifiedTime:a.modifiedTime} : null; guarda(CH_A, arquivo ? JSON.stringify(arquivo) : null); }
     c.pendente = function(){ return pendente; };
+    c.arquivoId = function(){ return arquivo ? arquivo.id : null; };
+    /* dá a outra pessoa acesso de edição a este caderno, sem mandar e-mail (controle da Ana, 30/09/2026) */
+    c.compartilharCom = function(email){
+      if(!arquivo) return Promise.reject(new Error("o caderno ainda não está no Drive"));
+      return api("https://www.googleapis.com/drive/v3/files/" + arquivo.id + "/permissions?sendNotificationEmail=false", {
+        method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({role:"writer", type:"user", emailAddress:email})
+      }).then(function(r){ return r.json(); });
+    };
 
     function falhou(e){
       gravando = false; conectando = false;

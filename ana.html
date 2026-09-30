@@ -228,7 +228,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 </nav>
 
 <main class="palco" id="palco">
-  <div id="conteudo"><div class="wrap"><div id="tela"></div>
+  <div id="conteudo"><div class="wrap"><div id="chegou"></div><div id="tela"></div>
     <div class="pe"><button class="b s" id="exportar" type="button">Baixar planilha</button><a href="privacidade.html">Privacidade</a></div></div></div>
 </main>
 
@@ -642,6 +642,48 @@ document.getElementById("exportar").onclick = () => {
   ];
   baixar(xlsx(abas), `Controle da Ana ${hojeISO()}.xlsx`);
 };
+
+// ---------- dados que chegam por link ----------
+// Para levar o controle a quem já criou um caderno vazio (30/09/2026): o link traz os dados
+// comprimidos no endereço, depois do #, que não vai para servidor nenhum. Quem abre toca em
+// "Trazer" e o caderno do Google dela recebe tudo; "com=" diz com quem compartilhar o caderno.
+const CH_COMPARTILHAR = "controle-unico-ana-compartilhar";
+async function lerPacote(txt){
+  const b64 = txt.replace(/-/g, "+").replace(/_/g, "/");
+  const bytes = Uint8Array.from(atob(b64 + "===".slice((b64.length + 3) % 4)), c => c.charCodeAt(0));
+  const fluxo = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(fluxo).text());
+}
+function tentarCompartilhar(){
+  let email = null; try { email = localStorage.getItem(CH_COMPARTILHAR); } catch(e){}
+  if (!email || !Nuvem.conectado() || !nuvem.arquivoId() || nuvem.pendente()) return;
+  nuvem.compartilharCom(email).then(() => {
+    try { localStorage.removeItem(CH_COMPARTILHAR); } catch(e){}
+    document.getElementById("chegou").innerHTML = `<p class="aviso" style="background:var(--pos-soft)">Pronto: o controle está no seu Google e compartilhado com ${escH(email)}.</p>`;
+  }).catch(() => {});
+}
+setInterval(tentarCompartilhar, 5000);
+(async () => {
+  const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+  const pacote = h.get("importar"); if (!pacote) return;
+  const com = h.get("com");
+  try { history.replaceState(null, "", location.pathname + "#mes"); } catch(e){}
+  const caixa = document.getElementById("chegou");
+  let dados;
+  try { dados = await lerPacote(pacote); }
+  catch(e){ caixa.innerHTML = `<p class="aviso">Não consegui ler o link (${escH(e.message)}). Peça um link novo.</p>`; return; }
+  const n = (dados.plantoes || []).length, l = (dados.lancamentos || []).length;
+  caixa.innerHTML = `<p class="aviso">Chegou o controle com ${n} plantões e ${l} gastos. <button class="b s p" id="trazer" type="button">Trazer para o app</button></p>`;
+  document.getElementById("trazer").onclick = () => {
+    const temAlgo = cad.lancamentos.length || cad.plantoes.length || cad.gastosFixos.length;
+    if (temAlgo && !confirm("Isto troca o que já está no app pelo que chegou no link. Seguir?")) return;
+    ["plantoes","lancamentos","gastosFixos","receitasFixas","emprestimos"].forEach(k => (dados[k] || []).forEach(x => { if (!x.id) x.id = novoId(); }));
+    cad = arrumar(dados); salvar();
+    if (com) { try { localStorage.setItem(CH_COMPARTILHAR, com); } catch(e){} }
+    caixa.innerHTML = `<p class="aviso">Trazido. ${Nuvem.conectado() ? "Mandando para o seu Google…" : "Agora toque em <b>Entrar com o Google</b>, lá em cima, para guardar no seu Google."}</p>`;
+    setTimeout(tentarCompartilhar, 3000);
+  };
+})();
 
 // ---------- começo ----------
 { let a = (location.hash || "").replace("#", ""); if (!a) { try { a = localStorage.getItem("cu-ana-aba") || "mes"; } catch(e){ a = "mes"; } } aba = ["mes","plantoes","gastos","casa"].includes(a) ? a : "mes"; }
