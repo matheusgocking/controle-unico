@@ -608,13 +608,14 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <button class="btn primary" id="msg">Mensagem de divulgação</button>
     </div>
 
-    <!-- os pacientes de hoje em cartões, iguais aos da aba Pacientes (28/09/2026) -->
-    <div class="panel hidden" id="hoje-faixa" style="margin-bottom:14px">
+    <div class="gridwrap"><div class="grid" id="grade"></div></div>
+
+    <!-- os pacientes de hoje em cartões, iguais aos da aba Pacientes (28/09/2026);
+         depois da grade, não antes (pedido dele, 01/10/2026) -->
+    <div class="panel hidden" id="hoje-faixa" style="margin-top:14px">
       <div class="hoje-cab"><h2 id="hoje-titulo">Hoje</h2><p class="sub" id="hoje-sub"></p></div>
       <div class="pgrid" id="hoje-cartoes"></div>
     </div>
-
-    <div class="gridwrap"><div class="grid" id="grade"></div></div>
 
     <div class="legend">
       <span><i style="background:var(--t-sessao-bg); border-color:var(--t-sessao-bar)"></i>Sessão do horário fixo</span>

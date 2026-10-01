@@ -54,6 +54,9 @@ var Categorias = (function(){
     var n = Object.assign({}, l);
     n.tipo = semPonto(l.tipo); n.forma = semPonto(l.forma); n.descricao = semPonto(l.descricao);
     n.categoria = categoriaDinheiro(l.categoria, l.descricao);
+    // aporte e resgate são sempre movimento da reserva, seja qual for a categoria escolhida
+    // (01/10/2026: um resgate lançado como Moradia não baixava a caixinha)
+    if (n.tipo === "Aporte" || n.tipo === "Resgate") n.categoria = "Reserva";
     return n;
   }
   function fixo(g){

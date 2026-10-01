@@ -156,6 +156,16 @@ details.novo[open] > summary{margin-bottom:10px}
 form.linha{background:var(--surface-2);border-radius:var(--radius);padding:12px;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));align-items:end}
 label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 input,select{width:100%;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--text)}
+/* a escolha Pessoal ou Casa dentro do formulário único de lançamento (01/10/2026) */
+.chave{display:inline-flex;gap:4px;padding:4px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.chave button{border:0;background:transparent;color:var(--muted);padding:6px 16px;border-radius:7px;cursor:pointer;font-size:14px}
+.chave button[aria-pressed="true"]{background:var(--text);color:var(--bg);font-weight:600}
+/* ordenar a lista: no computador pelo cabeçalho, no celular por uma caixa de escolha */
+th .ord{border:0;background:transparent;color:inherit;font:inherit;padding:0;cursor:pointer}
+th .ord:hover{color:var(--text)}
+th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
+.ordem-cel{display:none;margin:0 0 6px;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.ordem-cel select{width:auto;flex:1;padding:6px 8px}
 details.origem{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6}
 details.origem summary{cursor:pointer;color:var(--faint)}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -184,6 +194,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .stat b{font-size:17px}
   table.t thead{display:none}
+  .ordem-cel{display:flex}
   table.t tr{display:grid;grid-template-columns:38px minmax(0,1fr) auto 22px;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
   table.t tr:last-child{border-bottom:0}
   table.t td{border:0;padding:0 !important}
@@ -204,6 +215,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="exportar-xlsx.js"></script>
 <script src="categorias.js"></script>
+<script src="grafico-meses.js"></script>
 <script src="nuvem.js"></script>
 <script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
@@ -381,20 +393,90 @@ function contasDinheiro(){
     ? soma(fixosDoMes.filter(g => Number(g.dia) > agora.getDate()), g => valorFixo(g, chaveMes(ref))) : null;
   const semDia = fixosDoMes.filter(g => !Number(g.dia)).length;
 
+  // Aporte e resgate mexem sempre na reserva, seja qual for a categoria (01/10/2026).
   const r = livro.matheus.reserva;
   const desde = r.dataBase || "0000-00-00";
-  const movReserva = livro.matheus.lancamentos.filter(l => l.categoria === "Reserva" && (l.data || "") >= desde);
+  const movReserva = livro.matheus.lancamentos.filter(l => (l.data || "") >= desde);
   const reserva = (Number(r.saldoBase) || 0)
     + soma(movReserva.filter(l => l.tipo === "Aporte"), l => l.valor)
     - soma(movReserva.filter(l => l.tipo === "Resgate"), l => l.valor);
 
   // Como na linha Total do painel da planilha: o que foi para a reserva saiu do caixa do mês,
   // o que voltou dela entrou. Assim, tirar da reserva e gastar deixa o saldo do mês no lugar.
-  const aportesMes = soma(doMes.filter(l => l.categoria === "Reserva" && l.tipo === "Aporte"), l => l.valor);
-  const resgatesMes = soma(doMes.filter(l => l.categoria === "Reserva" && l.tipo === "Resgate"), l => l.valor);
+  const aportesMes = soma(doMes.filter(l => l.tipo === "Aporte"), l => l.valor);
+  const resgatesMes = soma(doMes.filter(l => l.tipo === "Resgate"), l => l.valor);
   const sobra = entrou - saiu - aportesMes + resgatesMes;
   return { entrou, receitaSolta, recebidoClinica: cl.recebido, dePacientes: cl.pacientes, saiu, minhaCasa, fixosMes, faltaSair, semDia, reserva,
            aportesMes, resgatesMes, sobra, falta: cl.falta, clinicaOk: cl.ok, fimDoMes: sobra + (cl.falta || 0) - (faltaSair || 0) };
+}
+
+// Entrou e saiu em cada mês, para o gráfico do Dinheiro (01/10/2026). As mesmas regras do mês
+// aberto: entrou é receita solta mais tudo o que a Clínica recebeu; saiu é despesa lançada sem
+// Moradia, mais os fixos do mês, mais o que ele pagou na casa.
+function serieMeses(){
+  const w = janelaClinica(), cache = w ? null : lerLocal("controle-unico-clinica-cache");
+  const pags = w ? w.dados.pagamentos || [] : (cache && cache.pagamentos) || [];
+  const eu = livro.casa.pessoas[0];
+  const doK = k => l => (l.data || "").slice(0, 7) === k;
+  return GraficoMeses.meses(12, chaveMes(ref)).map(k => ({ k,
+    entrou: soma(livro.matheus.lancamentos.filter(doK(k)).filter(l => l.tipo === "Receita"), l => l.valor) + soma(pags.filter(doK(k)), g => g.valor),
+    saiu: soma(livro.matheus.lancamentos.filter(doK(k)).filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor)
+        + soma(livro.matheus.gastosFixos, g => valorFixo(g, k))
+        + soma(livro.casa.lancamentos.filter(doK(k)).filter(l => l.quem === eu), l => l.valor) }));
+}
+
+// ---------- ordenar as listas ----------
+// Clicar no cabeçalho (ou escolher na caixa, no celular) ordena por aquela coluna; clicar de
+// novo inverte. Data e valor começam do maior; texto, de A a Z (pedido dele, 01/10/2026).
+const ordem = { lanc:{ c:"data", d:-1 }, casa:{ c:"data", d:-1 } };
+const COLUNAS = {
+  lanc: [["data","Dia"],["descricao","Descrição"],["categoria","Categoria"],["forma","Forma"],["valor","Valor"]],
+  casa: [["data","Dia"],["compra","Compra"],["quem","Quem"],["valor","Valor"]]
+};
+const valorDaColuna = (l, c) => c === "valor" ? Number(l.valor) || 0
+  : c === "compra" ? semPonto(l.categoria) + " " + (l.descricao || "") : String(l[c] || "");
+function ordenar(lista, qual){
+  const { c, d } = ordem[qual];
+  return lista.slice().sort((a, b) => {
+    const x = valorDaColuna(a, c), y = valorDaColuna(b, c);
+    const r = typeof x === "number" ? x - y : x.localeCompare(y, "pt-BR", { sensitivity:"base" });
+    return (r || (b.data || "").localeCompare(a.data || "") * d) * d;
+  });
+}
+function cabecalho(qual){
+  const o = ordem[qual];
+  return `<thead><tr>${COLUNAS[qual].map(([c, n]) => `<th${c === "valor" ? ' class="dir"' : ""}><button type="button" class="ord" data-ord="${qual}:${c}" aria-pressed="${o.c === c}"
+    title="Ordenar por ${n.toLowerCase()}">${n}${o.c === c ? (o.d > 0 ? " ▲" : " ▼") : ""}</button></th>`).join("")}<th></th></tr></thead>`;
+}
+function ordemCelular(qual){
+  const o = ordem[qual], op = (c, d, n) => `<option value="${c}:${d}"${o.c === c && o.d === d ? " selected" : ""}>${n}</option>`;
+  return `<label class="ordem-cel">Ordenar por <select data-ordsel="${qual}" aria-label="Ordenar a lista">
+    ${op("data", -1, "mais recentes")}${op("data", 1, "mais antigos")}${op("valor", -1, "maior valor")}${op("valor", 1, "menor valor")}
+    ${COLUNAS[qual].filter(([c]) => c !== "data" && c !== "valor").map(([c, n]) => op(c, 1, n.toLowerCase() + ", de A a Z")).join("")}</select></label>`;
+}
+
+// ---------- o formulário único de lançamento ----------
+// Um botão só, e dentro dele a escolha: é Pessoal (caderno do Dinheiro) ou é da Casa (pedido
+// dele, 01/10/2026). Dentro do controle da Ana esta página só tem a Casa, então não há escolha.
+let ondeLanc = null;      // o que ele escolheu por último; sem escolha, vale a tela em que está
+let rascunho = null;      // o que já estava digitado quando trocou de Pessoal para Casa
+function formLancamento(padrao){
+  const soCasa = PERFIL === "ana";
+  const onde = soCasa ? "casa" : (ondeLanc || padrao);
+  const p = onde === "pessoal", v = rascunho || {};
+  const op = (lista, sel) => lista.map(t => `<option${t === sel ? " selected" : ""}>${escH(t)}</option>`).join("");
+  return `<details class="novo"><summary>+ Novo lançamento</summary><form class="linha" id="fNovo" data-onde="${onde}">
+    ${soCasa ? "" : `<div style="grid-column:1 / -1"><label>É de</label><div class="chave" role="group" aria-label="Pessoal ou da casa">
+      <button type="button" data-onde="pessoal" aria-pressed="${p}">Pessoal</button><button type="button" data-onde="casa" aria-pressed="${!p}">Casa</button></div></div>`}
+    <div><label>Data</label><input type="date" name="data" value="${escH(v.data || hojeISO())}" required></div>
+    ${p ? `<div><label>Tipo</label><select name="tipo">${op(TIPOS)}</select></div>`
+        : `<div><label>Quem comprou</label><select name="quem">${op(livro.casa.pessoas, soCasa ? (livro.casa.pessoas.find(x => /^ana/i.test(x)) || livro.casa.pessoas[1]) : livro.casa.pessoas[0])}</select></div>`}
+    <div style="grid-column:span 2"><label>Descrição</label><input name="descricao" value="${escH(v.descricao || "")}" ${p ? 'placeholder="o que foi" required' : 'placeholder="opcional"'}></div>
+    <div><label>Categoria</label><select name="categoria">${op(p ? CATEGORIAS : CAT_CASA)}</select></div>
+    ${p ? `<div><label>Forma</label><select name="forma">${op(FORMAS)}</select></div>` : ""}
+    <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" value="${escH(v.valor || "")}" required></div>
+    <div><button class="b p" type="submit">Lançar</button></div>
+  </form>${p ? `<p class="nota">Aporte e resgate mexem sempre na reserva.</p>` : `<p class="nota">iFood pedido para os dois é da Casa; pedido só seu é Pessoal.</p>`}</details>`;
 }
 
 // ---------- telas ----------
@@ -512,7 +594,7 @@ function telaTudo(){
                             ["Cripto", cart ? cart.total : 0, "var(--c4)", cart ? "lida em " + new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : ""]],
                            "patrimônio", "Patrimônio: reserva e cripto");
 
-  return barraMes() + cardSituacao(d) + `
+  return barraMes() + formLancamento("pessoal") + cardSituacao(d) + `
 
   <div class="duas">
     <section class="painel"><h2>Para onde foi</h2>${roscaCategorias()}</section>
@@ -555,23 +637,14 @@ function linhaLanc(l){
 
 function telaDinheiro(){
   const d = contasDinheiro();
-  const doMes = livro.matheus.lancamentos.filter(noMes).sort((a,b) => b.data.localeCompare(a.data));
+  const doMes = ordenar(livro.matheus.lancamentos.filter(noMes), "lanc");
   const r = livro.matheus.reserva;
   const km = chaveMes(ref);
   const fixosMes = livro.matheus.gastosFixos.slice().sort((a, b) => valorFixo(b, km) - valorFixo(a, km));
 
+  const form = formLancamento("pessoal");
 
-  const form = `<details class="novo"><summary>+ Novo lançamento</summary><form class="linha" id="fLanc">
-    <div><label>Data</label><input type="date" name="data" value="${hojeISO()}" required></div>
-    <div><label>Tipo</label><select name="tipo">${TIPOS.map(t => `<option>${t}</option>`).join("")}</select></div>
-    <div style="grid-column:span 2"><label>Descrição</label><input name="descricao" placeholder="o que foi" required></div>
-    <div><label>Categoria</label><select name="categoria">${CATEGORIAS.map(t => `<option>${t}</option>`).join("")}</select></div>
-    <div><label>Forma</label><select name="forma">${FORMAS.map(t => `<option>${t}</option>`).join("")}</select></div>
-    <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
-    <div><button class="b p" type="submit">Lançar</button></div>
-  </form></details>`;
-
-  const lista = doMes.length ? `<table class="t"><thead><tr><th>Dia</th><th>Descrição</th><th>Categoria</th><th>Forma</th><th class="dir">Valor</th><th></th></tr></thead>
+  const lista = doMes.length ? `${ordemCelular("lanc")}<table class="t">${cabecalho("lanc")}
     <tbody>${doMes.map(linhaLanc).join("")}</tbody></table>`
     : `<p class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</p>`;
 
@@ -609,9 +682,11 @@ function telaDinheiro(){
           <div class="stat"><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
           <div class="stat"><span>Meta</span><b>${r.meta ? dinheiro(r.meta) : "—"}</b></div>
         </div>${formReserva}
-        <p class="nota">Aportes e resgates da categoria Reserva contam a partir da data conferida${r.dataBase ? " (" + dataCurta(r.dataBase) + "/" + r.dataBase.slice(0, 4) + ")" : ""}.</p></section>
+        <p class="nota">Todo aporte e todo resgate contam a partir da data conferida${r.dataBase ? " (" + dataCurta(r.dataBase) + "/" + r.dataBase.slice(0, 4) + ")" : ""}.</p></section>
     </div>
   </div>
+  <section class="painel" style="margin-top:18px"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serieMeses(), { aberto:chaveMes(ref) })}
+    <p class="nota">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos e o que você pagou na casa. Aporte e resgate não entram.</p></section>
   <section class="painel" style="margin-top:18px"><h2>Gastos fixos<span class="dir">dia e valor em ${MESES[ref.getMonth()]}</span></h2>${formFixo}${fixos}</section>`;
 }
 
@@ -662,7 +737,7 @@ function cardCasa(c){
 
 function telaCasa(){
   const c = contasCasa();
-  const doMes = livro.casa.lancamentos.filter(noMes).sort((a,b) => b.data.localeCompare(a.data));
+  const doMes = ordenar(livro.casa.lancamentos.filter(noMes), "casa");
   const [p1, p2] = livro.casa.pessoas;
   const cor = q => q === p1 ? "var(--c1)" : "var(--c2)";
   const parte = Number(livro.casa.divisao) || 0.5;
@@ -675,17 +750,10 @@ function telaCasa(){
   if (cats.length > cabem) itensCat.push(["Outros", soma(cats.slice(cabem), e => e[1]), "var(--c8)", cats.slice(cabem).map(e => semPonto(e[0])).join(", ")]);
 
 
-  const form = `<details class="novo"><summary>+ Nova compra</summary><form class="linha" id="fCasa">
-    <div><label>Data</label><input type="date" name="data" value="${hojeISO()}" required></div>
-    <div><label>Quem comprou</label><select name="quem">${livro.casa.pessoas.map(p => `<option>${escH(p)}</option>`).join("")}</select></div>
-    <div style="grid-column:span 2"><label>Descrição</label><input name="descricao" placeholder="opcional"></div>
-    <div><label>Categoria</label><select name="categoria" title="iFood para os dois vai aqui; só seu, na Carteira">${CAT_CASA.map(t => `<option>${t}</option>`).join("")}</select></div>
-    <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
-    <div><button class="b p" type="submit">Lançar</button></div>
-  </form><p class="nota">iFood pedido para os dois entra aqui; pedido só seu entra na Carteira.</p></details>`;
+  const form = formLancamento("casa");
 
   const quem = q => `<span class="quem"><i style="background:${cor(q)}"></i>${escH(primeiro(q))}</span>`;
-  const lista = doMes.length ? `<table class="t"><thead><tr><th>Dia</th><th>Compra</th><th>Quem</th><th class="dir">Valor</th><th></th></tr></thead><tbody>
+  const lista = doMes.length ? `${ordemCelular("casa")}<table class="t">${cabecalho("casa")}<tbody>
     ${doMes.map(l => `<tr><td class="c-data">${dataCurta(l.data)}</td>
       <td class="c-desc"><b>${escH(semPonto(l.categoria))}${l.descricao && l.descricao !== "-" ? " · " + escH(l.descricao) : ""}</b><span class="so-cel">${quem(l.quem)}</span></td>
       <td class="c-quem">${quem(l.quem)}</td>
@@ -760,8 +828,46 @@ function ligar(){
   const pega = f => Object.fromEntries(new FormData(f));
   const liga = (idForm, fn) => { const f = document.getElementById(idForm); if (f) f.onsubmit = e => { e.preventDefault(); fn(f, pega(f)); }; };
 
-  liga("fLanc", (f, d) => { livro.matheus.lancamentos.push({ id:novoId(), data:d.data, tipo:d.tipo,
-    descricao:d.descricao, categoria:d.categoria, forma:d.forma, valor:Number(d.valor) }); salvar("matheus"); });
+  // ordenar: cabeçalho no computador, caixa de escolha no celular
+  document.querySelectorAll("[data-ord]").forEach(b => b.onclick = () => {
+    const [qual, c] = b.dataset.ord.split(":"), o = ordem[qual];
+    ordem[qual] = o.c === c ? { c, d:-o.d } : { c, d: c === "data" || c === "valor" ? -1 : 1 };
+    desenhar();
+  });
+  document.querySelectorAll("[data-ordsel]").forEach(s => s.onchange = () => {
+    const [c, d] = s.value.split(":"); ordem[s.dataset.ordsel] = { c, d:Number(d) }; desenhar();
+  });
+  // clicar num mês do gráfico abre aquele mês
+  GraficoMeses.ligar(document.getElementById("tela"), k => { ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1); desenhar(); });
+
+  // o formulário único: trocar entre Pessoal e Casa guarda o que já estava digitado
+  const fn = document.getElementById("fNovo");
+  if (fn) {
+    fn.querySelectorAll("[data-onde]").forEach(b => b.onclick = () => {
+      rascunho = { data:fn.data.value, descricao:fn.descricao.value, valor:fn.valor.value };
+      ondeLanc = b.dataset.onde; desenhar();
+    });
+    // aporte e resgate são sempre da reserva: a categoria trava
+    if (fn.tipo) {
+      const travar = () => { const r = fn.tipo.value === "Aporte" || fn.tipo.value === "Resgate";
+        if (r) fn.categoria.value = "Reserva"; fn.categoria.disabled = r; };
+      fn.tipo.onchange = travar; travar();
+    }
+    fn.onsubmit = e => {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(fn));
+      rascunho = null;
+      if (fn.dataset.onde === "casa") {
+        livro.casa.lancamentos.push({ id:novoId(), data:d.data, quem:d.quem, descricao:(d.descricao || "").trim() || "-", categoria:d.categoria, valor:Number(d.valor) });
+        salvar("casa");
+      } else {
+        const reserva = d.tipo === "Aporte" || d.tipo === "Resgate";
+        livro.matheus.lancamentos.push({ id:novoId(), data:d.data, tipo:d.tipo, descricao:d.descricao.trim(),
+          categoria: reserva ? "Reserva" : d.categoria, forma:d.forma, valor:Number(d.valor) });
+        salvar("matheus");
+      }
+    };
+  }
   liga("fFixo", (f, d) => {
     const valores = {};
     for (let m = ref.getMonth(); m < 12; m++) valores[ref.getFullYear() + "-" + String(m + 1).padStart(2, "0")] = Number(d.valor);
@@ -769,8 +875,6 @@ function ligar(){
     salvar("matheus"); });
   liga("fReserva", (f, d) => { livro.matheus.reserva = { saldoBase:Number(d.saldoBase) || 0,
     dataBase:d.dataBase || null, meta:Number(d.meta) || 0 }; salvar("matheus"); });
-  liga("fCasa", (f, d) => { livro.casa.lancamentos.push({ id:novoId(), data:d.data, quem:d.quem,
-    descricao:d.descricao || "-", categoria:d.categoria, valor:Number(d.valor) }); salvar("casa"); });
   liga("fDivisao", (f, d) => { livro.casa.divisao = Math.min(Math.max(Number(d.divisao) || 50, 0), 100) / 100; salvar("casa"); });
   liga("fPessoas", (f, d) => {
     const antigos = livro.casa.pessoas.slice(), novos = [d.p1.trim(), d.p2.trim()];
@@ -849,6 +953,14 @@ function importarCadernos(j){
   vem.forEach(([c, d]) => { livro[c] = arrumar[c](Object.assign(VAZIO[c](), d)); armazem.gravar(c, livro[c]); });
   desenhar();
 }
+
+// O controle da Ana (ana.html) lança na Casa por aqui, sem sair da tela dos gastos dela (01/10/2026).
+window.casaParaFora = {
+  pessoas: () => livro.casa.pessoas.slice(),
+  categorias: () => CAT_CASA.slice(),
+  lancar: d => { livro.casa.lancamentos.push({ id:novoId(), data:d.data, quem:d.quem, descricao:(d.descricao || "").trim() || "-",
+    categoria:d.categoria, valor:Number(d.valor) }); salvar("casa"); }
+};
 
 try { const t = localStorage.getItem("cu-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
 { const k = abaDoEndereco(); if (k) aba = k; }
