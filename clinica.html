@@ -404,6 +404,8 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
 .linknome:hover{color:var(--accent); text-decoration:underline}
 .recibo{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px}
 .recibo .q{font-weight:600}
+.recibo .v.saldo{margin-left:0; min-width:104px; text-align:right; color:var(--muted); font-size:12px}
+.extrato{max-height:340px; overflow-y:auto; overflow-x:hidden}
 .recibo .v{margin-left:auto; font-variant-numeric:tabular-nums}
 .recibo .meio{color:var(--muted); font-size:11.5px; background:var(--surface-2); border-radius:20px; padding:1px 8px}
 .recibo .apagar{border:0; background:transparent; color:var(--faint); cursor:pointer; font-size:12px; padding:2px 6px; border-radius:6px}
@@ -1158,6 +1160,75 @@ function valorSessao(p){
   if(p.cobranca==="mensal") return p.valor/4;
   if(p.cobranca==="quinzenal") return p.valor/2;
   return p.valor;
+}
+/* Ciclos de pagamento (regra dele, 01/10/2026): a sessão vale o preço do combinado que valia
+   no dia dela. Quem pagou sessão avulsa a R$ 150 e depois fechou o ciclo mensal de R$ 500 tem
+   as primeiras a 150 e as seguintes a 125; mudar a cobrança não mexe no que já passou. Cada
+   ciclo guarda a data de início, a cobrança e o valor que ele digitou (pode ser personalizado).
+   Sem lista de ciclos, vale a cobrança atual do paciente para tudo. */
+function ciclosDe(p){
+  var l = (p.ciclos || []).filter(function(c){ return c && c.inicio; })
+    .sort(function(a,b){ return a.inicio < b.inicio ? -1 : (a.inicio > b.inicio ? 1 : 0); });
+  return l.length ? l : [{inicio:p.inicio || "", cobranca:p.cobranca, valor:p.valor}];
+}
+/* folga de 3 dias: a sessão que abre um ciclo pode ter acontecido um pouco antes da data dele */
+function cicloEm(p, iso){
+  var l = ciclosDe(p), limite = chaveData(somaDias(deISO(iso), 3)), achado = l[0];
+  l.forEach(function(c){ if(c.inicio <= limite) achado = c; });
+  return achado;
+}
+function valorSessaoEm(p, iso){ return valorSessao(cicloEm(p, iso)); }
+function rotuloCiclo(c){ return c.cobranca==="mensal" ? "ciclo mensal" : (c.cobranca==="quinzenal" ? "quinzenal" : "avulsa"); }
+/* abre um ciclo novo a partir de uma data; o paciente passa a mostrar a cobrança dele */
+function abrirCiclo(p, inicio, cobranca, valor){
+  if(!p.ciclos || !p.ciclos.length) p.ciclos = [{inicio:p.inicio || inicio, cobranca:p.cobranca, valor:p.valor}];
+  p.ciclos = p.ciclos.filter(function(c){ return c.inicio !== inicio; });
+  p.ciclos.push({inicio:inicio, cobranca:cobranca, valor:Number(valor)||0, noApp:true});
+  var ultimo = ciclosDe(p).slice(-1)[0];
+  p.cobranca = ultimo.cobranca; p.valor = ultimo.valor;
+  if(p.cobranca==="quinzenal") p.freq = "quinzenal";
+}
+/* Extrato do paciente: cada sessão cobrada, no preço do ciclo dela, e cada pagamento, com o
+   saldo correndo (positivo = deve, negativo = pagou adiantado). O passado vem do prontuário
+   (p.historico, carregado uma vez até a data "ate"); dali em diante, da agenda: sessão que já
+   passou e cobra. Sem histórico carregado devolve null e a conta antiga, pela planilha, vale. */
+function extratoDe(p){
+  if(!p.historico || !p.historico.ate) return null;
+  var linhas = [], cortesia = p.cortesiaPlanilha ? 1 : 0;
+  var ROT = {realizada:"Sessão realizada", falta:"Não compareceu (cobrada)", avisou:"Avisou e não veio"};
+  (p.historico.sessoes || []).forEach(function(s){
+    var c = cicloEm(p, s.data), cobra = s.situacao==="realizada" || s.situacao==="falta";
+    var v = cobra ? valorSessao(c) : 0, texto = ROT[s.situacao] || s.situacao;
+    if(cobra && cortesia){ v = 0; cortesia = 0; texto += " (cortesia)"; }
+    linhas.push({data:s.data, ordem:0, texto:texto, tipo:rotuloCiclo(c), cobrado:v, pago:0, n:s.n});
+  });
+  var de = somaDias(deISO(p.historico.ate), 1), ROTA = {sessao:"Sessão (a confirmar)", realizada:"Sessão realizada", falta:"Não compareceu (cobrada)"};
+  sessoesDoPaciente(p, de, hoje0()).forEach(function(s){
+    if(!cobraSessao(s.estado) || !jaPassou(s.data, s.hora)) return;
+    var iso = chaveData(s.data), c = cicloEm(p, iso);
+    linhas.push({data:iso, ordem:0, texto:ROTA[s.estado], tipo:rotuloCiclo(c), cobrado:valorSessao(c), pago:0});
+  });
+  pagamentosDe(p.id).forEach(function(g){
+    linhas.push({data:g.data, ordem:1, texto:"Pagamento", tipo:"", cobrado:0, pago:Number(g.valor)||0});
+  });
+  linhas.sort(function(a,b){ return a.data < b.data ? -1 : (a.data > b.data ? 1 : a.ordem - b.ordem); });
+  var saldo = 0, cobrado = 0, pago = 0;
+  linhas.forEach(function(l){ saldo += l.cobrado - l.pago; cobrado += l.cobrado; pago += l.pago; l.saldo = Math.round(saldo*100)/100; });
+  return {linhas:linhas, cobrado:cobrado, pago:pago, saldo:Math.round(saldo*100)/100};
+}
+/* Carga do histórico lido dos prontuários (feita pelo Claude, uma vez por paciente):
+   lista de {codigo, ate, sessoes:[{data, n, situacao}]}. Devolve quantos pacientes recebeu. */
+function importarHistorico(lista){
+  var n = 0;
+  (lista || []).forEach(function(h){
+    var p = dados.pacientes.filter(function(x){ return x.codigo === h.codigo; })[0];
+    if(!p || !h.ate) return;
+    if(h.ciclos && h.ciclos.length) p.ciclos = h.ciclos;
+    p.historico = {ate:h.ate, sessoes:(h.sessoes || []).filter(function(s){ return s.data && s.data <= h.ate; })};
+    n++;
+  });
+  salvar(); renderTudo();
+  return n;
 }
 function receitaMensal(p, sessoesNoMes){
   if(p.cobranca==="mensal") return p.valor;
@@ -1994,6 +2065,7 @@ function abrirFicha(p, foco){
         '<div><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span></div></div>' +
       '<div class="fipag pront" id="fi-pront"></div>' +
       '<div class="fipag" id="fi-pag"></div>' +
+      '<div class="fipag" id="fi-ext"></div>' +
       '<div class="fipag" id="fi-sess"></div>' +
       '<div class="fipag" id="fi-form"></div>' +
       '<div class="grid2">' +
@@ -2031,8 +2103,61 @@ function abrirFicha(p, foco){
     document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
     pintarProntuario();
     pintarPagamentos();
+    pintarExtrato();
     pintarSessoes();
     pintarFormulacao();
+  }
+  /* extrato e ciclos de pagamento (01/10/2026): cada sessão no preço do ciclo dela, cada
+     pagamento e o saldo; embaixo, os ciclos e o campo para abrir um novo com o valor que ele
+     combinar. Sem histórico carregado mostra só os ciclos. */
+  var extratoInteiro = false;
+  function pintarExtrato(){
+    var el = document.getElementById("fi-ext");
+    var ext = extratoDe(p), h = '<div class="topo"><h3>Extrato</h3>';
+    if(ext){
+      h += '<span class="sit '+(ext.saldo > 0.005 ? "atraso" : "ok")+'">'+
+        (ext.saldo > 0.005 ? "Deve "+moeda(ext.saldo) : (ext.saldo < -0.005 ? "Crédito de "+moeda(-ext.saldo) : "Em dia"))+'</span>' +
+        '<span class="hint">cobrado '+moeda(ext.cobrado)+' · pago '+moeda(ext.pago)+'</span></div>';
+      var linhas = ext.linhas.slice().reverse();
+      if(!extratoInteiro) linhas = linhas.slice(0, 8);
+      h += '<div class="extrato">';
+      linhas.forEach(function(l){
+        h += '<div class="recibo"><span>'+dataLonga(deISO(l.data))+'</span>' +
+          '<span class="q">'+esc(l.texto)+'</span>' +
+          (l.tipo ? '<span class="meio">'+esc(l.tipo)+'</span>' : "") +
+          '<span class="v">'+(l.pago ? "− "+moeda(l.pago) : (l.cobrado ? "+ "+moeda(l.cobrado) : "sem cobrança"))+'</span>' +
+          '<span class="v saldo">'+(l.saldo > 0.005 ? "deve "+moeda(l.saldo) : (l.saldo < -0.005 ? "crédito "+moeda(-l.saldo) : "zerado"))+'</span></div>';
+      });
+      h += '</div>';
+      if(ext.linhas.length > 8) h += '<button class="btn sm ghost" id="fi-ext-mais" style="margin-top:8px">'+(extratoInteiro ? "Mostrar só os últimos" : "Ver o extrato inteiro ("+ext.linhas.length+" linhas)")+'</button>';
+      h += '<p class="hint" style="margin:8px 0 0">Sessões até '+dataLonga(deISO(p.historico.ate))+' vêm do prontuário; depois, da agenda.</p>';
+    } else {
+      h += '<span class="hint">o histórico do prontuário ainda não foi carregado; a dívida segue a conta da planilha</span></div>';
+    }
+    h += '<div class="topo" style="margin-top:12px"><h3>Ciclos de pagamento</h3><span class="hint">a sessão vale o preço do ciclo em que caiu</span></div>';
+    ciclosDe(p).forEach(function(c){
+      h += '<div class="recibo"><span>'+(c.inicio ? "desde "+dataLonga(deISO(c.inicio)) : "desde o início")+'</span>' +
+        '<span class="meio">'+rotuloCiclo(c)+'</span>' +
+        '<span class="v">'+moeda(c.valor)+(c.cobranca==="avulsa" ? " por sessão" : " · "+moeda(valorSessao(c))+" por sessão")+'</span></div>';
+    });
+    h += '<div style="display:flex; flex-wrap:wrap; gap:8px; align-items:end; margin-top:10px">' +
+      '<div class="field" style="margin:0"><label for="ci-inicio">Novo ciclo a partir de</label><input type="date" id="ci-inicio" value="'+chaveData(hoje0())+'"></div>' +
+      '<div class="field" style="margin:0"><label for="ci-cobranca">Cobrança</label><select id="ci-cobranca">'+
+        opc("mensal","Ciclo mensal (4 sessões)",p.cobranca)+opc("quinzenal","Quinzenal (2 sessões)",p.cobranca)+opc("avulsa","Por sessão",p.cobranca)+'</select></div>' +
+      '<div class="field" style="margin:0"><label for="ci-valor">Valor combinado (R$)</label><input type="number" id="ci-valor" min="0" step="10" value="'+p.valor+'" style="width:120px"></div>' +
+      '<button class="btn sm" id="ci-abrir">Abrir ciclo</button></div>';
+    el.innerHTML = h;
+    var mais = document.getElementById("fi-ext-mais");
+    if(mais) mais.addEventListener("click", function(){ extratoInteiro = !extratoInteiro; pintarExtrato(); });
+    document.getElementById("ci-abrir").addEventListener("click", function(){
+      var ini = document.getElementById("ci-inicio").value, valor = Number(document.getElementById("ci-valor").value);
+      if(!ini || !(valor > 0)){ alert("Preencha a data de início e o valor combinado."); return; }
+      abrirCiclo(p, ini, document.getElementById("ci-cobranca").value, valor);
+      document.getElementById("fi-cobranca").value = p.cobranca;
+      document.getElementById("fi-valor").value = p.valor;
+      document.getElementById("fi-freq").value = p.freq;
+      salvar(); renderTudo(); resumo();
+    });
   }
   /* as sessões destrinchadas (pedido dele, 25/09/2026): quantas realizadas, quantas faltas
      cobradas, quantas remarcadas e cortesias, e quanto o que não foi cobrado valeria */
@@ -2287,6 +2412,12 @@ function abrirFicha(p, foco){
     el.addEventListener("input", function(){
       var campo = el.dataset.campo;
       p[campo] = (campo==="valor"||campo==="dia"||campo==="hora") ? Number(el.value) : el.value;
+      /* mexer na cobrança ou no valor aqui corrige o ciclo atual; para mudar dali em diante
+         sem tocar no passado, é o "Abrir ciclo" do extrato */
+      if((campo==="cobranca"||campo==="valor") && p.ciclos && p.ciclos.length){
+        var atualCiclo = ciclosDe(p).slice(-1)[0];
+        atualCiclo.cobranca = p.cobranca; atualCiclo.valor = p.valor;
+      }
       salvar(); renderTudo(); resumo();
     });
   });
@@ -2475,7 +2606,13 @@ function devidoDe(p){
   if(!devidoCache) devidoCache = {};
   if(devidoCache[p.id] !== undefined) return devidoCache[p.id];
   var vs = valorSessao(p), r = null;
-  if(p.basePlanilha && vs > 0){
+  var ext = vs > 0 ? extratoDe(p) : null;
+  if(ext){
+    /* com o histórico do prontuário carregado, a dívida é o saldo do extrato, cada sessão no
+       preço do ciclo dela; em sessões, pelo valor do ciclo atual */
+    var ne = ext.saldo > 0.005 ? Math.ceil(ext.saldo / vs - 1e-6) : -Math.floor(-ext.saldo / vs + 1e-6);
+    r = {valor:ne * vs, sessoes:ne, exato:ext.saldo, depois:0, pago:ext.pago, base:p.historico.ate, extrato:true};
+  } else if(p.basePlanilha && vs > 0){
     /* A planilha soma a sessão da semana no dia da semana do Início (a régua), que em vários
        pacientes não é o dia em que ele atende. Então cada sessão da agenda é ligada à batida
        da régua mais próxima dela (até 3 dias antes ou depois): se essa batida veio depois da
@@ -3349,6 +3486,10 @@ function lerRegistro(celulas){
       ciclo.sessoesTotais = ciclo.sessoes;
       ciclo.ciclos = 1;
     }
+    /* a lista de ciclos de pagamento do paciente, para o extrato cobrar cada sessão no preço dela */
+    var modo = ciclo.modalidade.indexOf("Mensal") === 0 ? "mensal" : (ciclo.modalidade.indexOf("Quinzenal") === 0 ? "quinzenal" : "avulsa");
+    ciclo.lista = (anterior && anterior.lista ? anterior.lista : []).concat(
+      ciclo.inicio && ciclo.valor > 0 ? [{inicio:ciclo.inicio, cobranca:modo, valor:ciclo.valor}] : []);
     porCodigo[codigo] = ciclo;
   });
   return porCodigo;
@@ -3522,7 +3663,7 @@ function montarLeitura(celulas, preenchimentos, registro){
       status: r.status, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || "",
       genero: r.genero || "",
       sessoesPlanilha: r.sessoesTotais || 0, cortesiaPlanilha: r.cortesia ? 1 : 0, aPagarPlanilha: r.aPagar || 0,
-      reguaPlanilha: r.regua
+      reguaPlanilha: r.regua, ciclos: r.lista || []
     });
   });
 
@@ -3655,6 +3796,12 @@ function aplicarLeitura(leitura){
       sessoesPlanilha: p.sessoesPlanilha || 0, cortesiaPlanilha: p.cortesiaPlanilha || 0,
       reguaPlanilha: (p.reguaPlanilha === 0 || p.reguaPlanilha) ? p.reguaPlanilha : null,
       basePlanilha: leitura.baseData || chaveData(hoje0()),
+      /* os ciclos da planilha, mais os que ele abriu no app depois do último dela; o histórico
+         do prontuário não vem da planilha e ler a planilha não pode apagá-lo */
+      ciclos: (p.ciclos || []).concat(((antigo && antigo.ciclos) || []).filter(function(c){
+        return c.noApp && !(p.ciclos || []).some(function(x){ return x.inicio >= c.inicio; });
+      })),
+      historico: antigo && antigo.historico ? antigo.historico : undefined,
       /* o resumo do prontuário vem do Claude, não da planilha: ler a planilha não pode apagá-lo */
       prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined
     };
