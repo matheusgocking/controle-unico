@@ -1820,6 +1820,15 @@ function renderPacientes(){
   desenharAgendaPacientes(filtroPacientes === "triagem");
 }
 
+/* Suspenso é pausa (Matheus, 01/10/2026): conta os dias desde o Fim da planilha, que é o dia
+   da suspensão, e avisa quando passa de 30, que é quando ele encerra como inativo. */
+var DIAS_SUSPENSAO = 30;
+function seloSuspensao(a){
+  if(!a.fim) return '<span class="selo sem">Suspenso sem data na planilha</span>';
+  var dias = Math.round((hoje0() - deISO(a.fim)) / 86400000);
+  if(dias > DIAS_SUSPENSAO) return '<span class="selo atraso">Suspenso há '+dias+' dias · passou de '+DIAS_SUSPENSAO+', encerrar</span>';
+  return '<span class="selo atencao">Suspenso há '+dias+(dias===1?" dia":" dias")+' · faltam '+(DIAS_SUSPENSAO-dias)+'</span>';
+}
 /* quem não está na agenda: veio da planilha e não tem ficha aqui, só o histórico */
 function desenharCarteira(pedaco){
   var alvo = document.getElementById("plist");
@@ -1839,6 +1848,7 @@ function desenharCarteira(pedaco){
         '<span class="sub">'+esc(periodo)+' · '+a.sessoes+(a.sessoes===1?" sessão":" sessões")+
           (a.ciclos>1 ? " · "+a.ciclos+" ciclos" : "")+'</span>' +
         '<span class="cod">'+esc(a.codigo)+' · '+esc(a.status.replace(/\.$/,""))+'</span>' +
+        (pedaco === "suspenso" ? seloSuspensao(a) : "") +
         (f ? selo(f) : "") +
       '</span></div>';
   });
