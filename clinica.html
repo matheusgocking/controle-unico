@@ -2473,8 +2473,16 @@ function devidoDe(p){
   if(devidoCache[p.id] !== undefined) return devidoCache[p.id];
   var vs = valorSessao(p), r = null;
   if(p.basePlanilha && vs > 0){
-    var hoje = hoje0(), depois = 0;
-    for(var d = somaDias(deISO(p.basePlanilha), 1); d <= hoje; d = somaDias(d, 1)){
+    /* A planilha soma a sessão da semana no dia da semana do Início (a régua), que em vários
+       pacientes não é o dia em que ele atende. Então cada sessão da agenda é ligada à batida
+       da régua mais próxima dela (até 3 dias antes ou depois): se essa batida veio depois da
+       base, a planilha ainda não contou e a agenda conta; se veio antes, já está na base. Sem
+       isso, quem atende na quinta e tem a régua na sexta ficaria com uma sessão a menos. */
+    var hoje = hoje0(), depois = 0, base = deISO(p.basePlanilha);
+    var regua = (p.reguaPlanilha === 0 || p.reguaPlanilha) ? Number(p.reguaPlanilha) : null;
+    for(var d = somaDias(base, -3); d <= hoje; d = somaDias(d, 1)){
+      var batida = regua === null ? d : somaDias(d, ((regua - d.getDay() + 10) % 7) - 3);
+      if(batida <= base) continue;
       sessoesDoDia(d).forEach(function(s){
         if(s.paciente.id === p.id && cobraSessao(s.estado) && jaPassou(d, s.hora)) depois++;
       });
@@ -3325,6 +3333,9 @@ function lerRegistro(celulas){
       cortesia: (cabecalho.cortesia && semAcento(l[cabecalho.cortesia]||"").indexOf("sim") === 0) || !!(anterior && anterior.cortesia),
       aPagar: cabecalho.aPagar ? numero(l[cabecalho.aPagar]) : 0
     };
+    /* o dia da semana em que a planilha soma uma sessão: o do Início deste ciclo (a régua da coluna Z) */
+    var ini = ciclo.inicio ? deISO(ciclo.inicio) : null;
+    ciclo.regua = ini && !isNaN(ini.getTime()) ? ini.getDay() : null;
     /* o primeiro início e a soma das sessões valem para o paciente, não só para o ciclo */
     if(anterior){
       ciclo.primeiroInicio = anterior.primeiroInicio || anterior.inicio || ciclo.inicio;
@@ -3507,7 +3518,8 @@ function montarLeitura(celulas, preenchimentos, registro){
       valor: r.valor, dia: escolhida.dia, hora: escolhida.hora,
       status: r.status, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || "",
       genero: r.genero || "",
-      sessoesPlanilha: r.sessoesTotais || 0, cortesiaPlanilha: r.cortesia ? 1 : 0, aPagarPlanilha: r.aPagar || 0
+      sessoesPlanilha: r.sessoesTotais || 0, cortesiaPlanilha: r.cortesia ? 1 : 0, aPagarPlanilha: r.aPagar || 0,
+      reguaPlanilha: r.regua
     });
   });
 
@@ -3638,6 +3650,7 @@ function aplicarLeitura(leitura){
       /* a base do saldo devedor: quantas sessões a planilha contava no dia em que o arquivo foi
          salvo. Dali em diante quem conta é a agenda (ver devidoDe) */
       sessoesPlanilha: p.sessoesPlanilha || 0, cortesiaPlanilha: p.cortesiaPlanilha || 0,
+      reguaPlanilha: (p.reguaPlanilha === 0 || p.reguaPlanilha) ? p.reguaPlanilha : null,
       basePlanilha: leitura.baseData || chaveData(hoje0()),
       /* o resumo do prontuário vem do Claude, não da planilha: ler a planilha não pode apagá-lo */
       prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined
