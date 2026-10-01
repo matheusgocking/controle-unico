@@ -100,7 +100,9 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   header{background:var(--barra); color:var(--barra-ink); border-bottom:0; padding:6px 12px; padding-top:calc(6px + env(safe-area-inset-top,0px)); min-height:48px}
   .marca{display:none}
   .titulo{display:block}
-  .dir{gap:6px}
+  /* sem login o botão "Entrar com o Google" não cabe ao lado dos outros: quebra a linha em vez de empurrar a tela para o lado */
+  .dir{gap:6px; flex:1 1 0; min-width:0; flex-wrap:wrap; justify-content:flex-end}
+  .nuvem{flex-wrap:wrap; justify-content:flex-end}
   .bt{border-color:rgba(255,255,255,.35); color:var(--barra-ink); padding:6px 9px}
   .bt .rot{display:none}
   .bt.p{background:#ffffff; color:#5b2a82; border-color:#ffffff}

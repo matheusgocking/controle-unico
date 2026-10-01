@@ -567,9 +567,17 @@ function desenhar(){
   if (naCasa) return;
   const t = document.getElementById("tela");
   const abertos = [...t.querySelectorAll("details")].map(x => x.open), mesma = t.dataset.aba === aba;
+  // redesenhar no meio de um lançamento (o Drive pode mandar) não apaga o que estava digitado
+  const digitado = {};
+  if (mesma) t.querySelectorAll("form[id]").forEach(f => { if (!f.dataset.limpo) digitado[f.id] = [...f.elements].filter(e => e.name).map(e => [e.name, e.value]); });
   t.innerHTML = aba === "plantoes" ? telaPlantoes() : aba === "gastos" ? telaGastos() : telaMes();
   t.dataset.aba = aba;
   if (mesma) t.querySelectorAll("details").forEach((x, i) => { if (abertos[i]) x.open = true; });
+  for (const id in digitado) {
+    const f = document.getElementById(id); if (!f) continue;
+    digitado[id].forEach(([n, v]) => { const e = f.elements[n];
+      if (e && (e.tagName !== "SELECT" || [...e.options].some(o => o.value === v))) e.value = v; });
+  }
   ligar();
 }
 
@@ -608,7 +616,7 @@ function ligar(){
   });
 
   const pega = f => Object.fromEntries(new FormData(f));
-  const liga = (id, fn) => { const f = document.getElementById(id); if (f) f.onsubmit = e => { e.preventDefault(); fn(pega(f), f); }; };
+  const liga = (id, fn) => { const f = document.getElementById(id); if (f) f.onsubmit = e => { e.preventDefault(); const d = pega(f); f.dataset.limpo = "1"; fn(d, f); }; };
   const ateDezembro = v => { const o = {}; for (let m = ref.getMonth(); m < 12; m++) o[ref.getFullYear() + "-" + pad(m + 1)] = v; return o; };
 
   // o valor do plantão novo vem da tabela do local pelo dia da semana
@@ -636,12 +644,12 @@ function ligar(){
   if (fn) {
     fn.querySelectorAll("[data-onde]").forEach(b => b.onclick = () => {
       rascunho = { data:fn.data.value, descricao:fn.descricao.value, valor:fn.valor.value };
-      ondeLanc = b.dataset.onde; desenhar();
+      ondeLanc = b.dataset.onde; fn.dataset.limpo = "1"; desenhar();
     });
     fn.onsubmit = e => {
       e.preventDefault();
       const d = pega(fn), cf = casaFora();
-      rascunho = null;
+      rascunho = null; fn.dataset.limpo = "1";
       if (fn.dataset.onde === "casa" && cf) { cf.lancar(d); desenhar(); }
       else { cad.lancamentos.push({ id:novoId(), data:d.data, descricao:d.descricao.trim(), categoria:d.categoria, forma:d.forma, valor:Number(d.valor) }); salvar(); }
     };
@@ -678,7 +686,9 @@ document.getElementById("abas").onclick = e => { const b = e.target.closest("[da
 const quadroCasa = document.createElement("iframe");
 quadroCasa.id = "q-casa"; quadroCasa.title = "Casa"; quadroCasa.src = "app.html#casa"; quadroCasa.hidden = true;
 document.getElementById("palco").appendChild(quadroCasa);
-quadroCasa.addEventListener("load", () => { const t = document.documentElement.dataset.theme; if (t) try { quadroCasa.contentDocument.documentElement.setAttribute("data-theme", t); } catch(e){} });
+quadroCasa.addEventListener("load", () => { const t = document.documentElement.dataset.theme; if (t) try { quadroCasa.contentDocument.documentElement.setAttribute("data-theme", t); } catch(e){}
+  if (aba !== "casa") desenhar();   // só agora dá para oferecer a escolha "Casa" no lançamento
+});
 // quando a Casa grava, a parte dela no mês muda aqui também
 window.addEventListener("storage", e => {
   const digitando = document.activeElement && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);

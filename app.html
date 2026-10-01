@@ -792,9 +792,18 @@ function desenhar(){
   // redesenhar não fecha o formulário aberto na mesma tela (a Clínica pode mudar enquanto ele digita)
   const abertos = [...t.querySelectorAll("details")].map(x => x.open);
   const mesma = t.dataset.aba === aba;
+  // nem apaga o que ele estava digitando: o Drive ou a Clínica podem mandar redesenhar no meio
+  // de um lançamento (01/10/2026). Formulário que acabou de ser enviado volta limpo.
+  const digitado = {};
+  if (mesma) t.querySelectorAll("form[id]").forEach(f => { if (!f.dataset.limpo) digitado[f.id] = [...f.elements].filter(e => e.name).map(e => [e.name, e.value]); });
   t.innerHTML = aba === "tudo" ? telaTudo() : aba === "carteira" ? telaDinheiro() : telaCasa();
   t.dataset.aba = aba;
   if (mesma) t.querySelectorAll("details").forEach((x, i) => { if (abertos[i] && !x.querySelector("form.enviado")) x.open = true; });
+  for (const id in digitado) {
+    const f = document.getElementById(id); if (!f) continue;
+    digitado[id].forEach(([n, v]) => { const e = f.elements[n];
+      if (e && (e.tagName !== "SELECT" || [...e.options].some(o => o.value === v))) e.value = v; });
+  }
   ligar();
 }
 
@@ -826,7 +835,7 @@ function ligar(){
   });
 
   const pega = f => Object.fromEntries(new FormData(f));
-  const liga = (idForm, fn) => { const f = document.getElementById(idForm); if (f) f.onsubmit = e => { e.preventDefault(); fn(f, pega(f)); }; };
+  const liga = (idForm, fn) => { const f = document.getElementById(idForm); if (f) f.onsubmit = e => { e.preventDefault(); const d = pega(f); f.dataset.limpo = "1"; fn(f, d); }; };
 
   // ordenar: cabeçalho no computador, caixa de escolha no celular
   document.querySelectorAll("[data-ord]").forEach(b => b.onclick = () => {
@@ -845,7 +854,7 @@ function ligar(){
   if (fn) {
     fn.querySelectorAll("[data-onde]").forEach(b => b.onclick = () => {
       rascunho = { data:fn.data.value, descricao:fn.descricao.value, valor:fn.valor.value };
-      ondeLanc = b.dataset.onde; desenhar();
+      ondeLanc = b.dataset.onde; fn.dataset.limpo = "1"; desenhar();
     });
     // aporte e resgate são sempre da reserva: a categoria trava
     if (fn.tipo) {
@@ -856,7 +865,7 @@ function ligar(){
     fn.onsubmit = e => {
       e.preventDefault();
       const d = Object.fromEntries(new FormData(fn));
-      rascunho = null;
+      rascunho = null; fn.dataset.limpo = "1";
       if (fn.dataset.onde === "casa") {
         livro.casa.lancamentos.push({ id:novoId(), data:d.data, quem:d.quem, descricao:(d.descricao || "").trim() || "-", categoria:d.categoria, valor:Number(d.valor) });
         salvar("casa");
