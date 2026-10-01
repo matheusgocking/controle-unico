@@ -108,6 +108,7 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   .bt.p{background:#ffffff; color:#5b2a82; border-color:#ffffff}
   .bt[aria-pressed="true"]{background:rgba(255,255,255,.18); color:var(--barra-ink); border-color:rgba(255,255,255,.7)}
   .nuvem-ponto{box-shadow:0 0 0 2px rgba(255,255,255,.55)}
+  .versao{color:var(--barra-ink); opacity:.8}
   nav{
     order:3; flex:none; display:grid; grid-template-columns:repeat(3,1fr); gap:0; overflow:visible;
     background:var(--surface); border-top:1px solid var(--line); border-bottom:0;
@@ -115,7 +116,7 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   }
   nav button{flex-direction:column; gap:2px; font-size:11px; padding:6px 2px; border-radius:10px; min-height:52px; justify-content:center}
   nav button svg{width:22px; height:22px}
-  nav button[aria-pressed="true"]{background:transparent; color:var(--accent)}
+  nav button[aria-pressed="true"]{background:transparent; color:var(--accent); box-shadow:none}
   nav button[aria-pressed="true"] svg{background:color-mix(in srgb, var(--accent) 16%, transparent); border-radius:99px; padding:2px 12px; width:46px; box-sizing:content-box}
   /* no celular a chave continua a de antes: centrada, numa faixa própria */
   .vistas{order:1; justify-content:center; padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--line)}

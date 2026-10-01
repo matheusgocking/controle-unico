@@ -103,7 +103,7 @@ nav.abas button[aria-pressed="true"]{background:var(--surface);color:var(--text)
 .leg li:hover{background:var(--surface-2)}
 .leg i{width:10px;height:10px;border-radius:3px;flex:none;align-self:center}
 .leg .n{flex:1;min-width:0}
-.leg .n small{display:block;color:var(--faint);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leg .n small{display:block;color:var(--faint);font-size:11.5px;white-space:normal}
 .leg b{font-weight:600;white-space:nowrap}
 .leg .pc{color:var(--faint);font-size:12px;min-width:44px;text-align:right}
 /* rosca em painel estreito (coluna da direita): o gráfico em cima e a legenda embaixo */
@@ -936,6 +936,11 @@ document.getElementById("exportar").onclick = () => {
     const pac = {}; w.dados.pacientes.forEach(p => pac[p.id] = p);
     abas.push({ nome:"Recebimentos", linhas:[["Data","Prontuário","Nome","Valor","Meio","Observação"],
       ...w.dados.pagamentos.map(g => [g.data, (pac[g.pacienteId] || {}).codigo || g.codigo || "-", (pac[g.pacienteId] || {}).nome || "-", g.valor, g.meio || "-", g.obs || ""])] });
+    // os anúncios da aba Marketing da Clínica e quem veio de cada um (01/10/2026)
+    const origens = w.dados.origens || {}, vazio = v => (v === undefined || v === null || v === "") ? "-" : v;
+    abas.push({ nome:"Anúncios", linhas:[["Post","Começou","Terminou","Colocado","Gasto","Visualizações","Alcance","Conversas","Seguidores","Métricas lidas em","Pacientes"],
+      ...(w.dados.anuncios || []).map(a => [a.post || "-", vazio(a.inicio), vazio(a.fim), vazio(a.colocado), vazio(a.gasto), vazio(a.views), vazio(a.alcance), vazio(a.conversas), vazio(a.seguidores), vazio(a.lidoEm),
+        Object.keys(origens).filter(c => origens[c].anuncio === a.id).join(", ") || "-"])] });
   }
   baixar(xlsx(abas), `Controle Único ${m}.xlsx`);
 };

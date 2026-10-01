@@ -439,6 +439,9 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
   .wrap{padding:12px 12px 40px}
   .top{gap:10px; margin-bottom:12px}
   .tabs{overflow-x:auto; flex-wrap:nowrap; width:100%; scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  /* enquanto houver aba escondida à direita, a borda esmaece para avisar que a fila continua */
+  .tabs.tem-mais{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent); mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent)}
   .tab{white-space:nowrap; padding:7px 12px}
   .stats{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%}
   .stat{min-width:0}
@@ -463,6 +466,9 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
   .cell .nm{font-size:9.5px; line-height:1.15; white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; hyphens:auto}
   .cell .lab{font-size:8px; letter-spacing:-.01em}
   .cell .saiu{display:none}
+  /* o código do prontuário ficava em cima do nome: menor, e o nome desce para dar lugar a ele */
+  .cell .cod{font-size:7px; top:1px; right:2px; letter-spacing:0}
+  .cell:has(.cod){justify-content:flex-end; padding-bottom:3px}
   .cell.reservado .nm, .cell.reservado .lab, .cell.divulgado .nm{display:none}
   .cell.divulgado .lab{font-size:8px}
   input,select,textarea{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
@@ -557,12 +563,62 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .meses span{flex:1 1 0; text-align:center; font-size:11px; color:var(--muted); padding-top:4px}
 .meses span.agora{color:var(--accent); font-weight:700}
 .legenda-graf i.meta{background:transparent; border-top:2px dashed var(--ok); border-radius:0; height:0; width:16px}
-@media (max-width:700px){ .plot .rot{font-size:8.5px} .plot i{width:8px} }
+/* no celular os valores de meses vizinhos se atropelavam: um sim, um não, sobem uma linha */
+@media (max-width:700px){ .plot .rot{font-size:8.5px} .plot i{width:8px} .plot .col:nth-child(even) .rot{transform:translateY(-11px)} }
+/* a lista de sessões vinha colada na legenda da grade */
+#v-sessoes .bar{margin-top:24px}
+/* ---------- marketing (01/10/2026) ---------- */
+/* um cartão por vez que ele turbinou: nome do post, situação e os números em colunas */
+.mk-an{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px}
+.mk-an + .mk-an{margin-top:10px}
+.mk-an .topo{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-bottom:10px}
+.mk-an h3{font-size:14.5px}
+.mk-an .quando{color:var(--muted); font-size:12.5px}
+.mk-an .acoes{margin-left:auto}
+.mk-nums{display:grid; grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); gap:10px 14px}
+.mk-nums div{display:flex; flex-direction:column; min-width:0}
+.mk-nums b{font-family:Literata,Georgia,serif; font-size:16px; white-space:nowrap}
+.mk-nums span{color:var(--muted); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em}
+.mk-nums .vazio b{color:var(--faint); font-weight:400}
+.mk-uso{display:flex; align-items:center; gap:10px; margin-top:10px; font-size:12px; color:var(--muted)}
+.mk-uso .trilho{flex:1; height:8px; border-radius:20px; background:var(--surface-3); overflow:hidden}
+.mk-uso .trilho span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
+.mk-an .pe{margin:10px 0 0; font-size:12px; color:var(--muted)}
+/* o ranking por post: a barra é a nota de cada um contra a do melhor */
+.mk-post{padding:10px 0; border-bottom:1px solid var(--border)}
+.mk-post:last-child{border-bottom:0; padding-bottom:0}
+.mk-post .cab{display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px}
+.mk-post .cab b{font-size:14px}
+.mk-post .trilho{height:8px; border-radius:20px; background:var(--surface-2); overflow:hidden; margin:7px 0}
+.mk-post .trilho span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
+.mk-post .nums{display:flex; flex-wrap:wrap; gap:2px 16px; font-size:12.5px; color:var(--muted)}
+.mk-post .nums b{color:var(--text); font-weight:600}
+/* como cada paciente chegou: o nome à esquerda e a escolha à direita */
+.mk-origem{display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px}
+.mk-origem .quem{display:flex; flex-direction:column; min-width:0; flex:1 1 220px}
+.mk-origem .quem b{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.mk-origem .quem span{color:var(--muted); font-size:11.5px}
+.mk-origem select,#fi-origem{padding:6px 8px; min-height:34px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); max-width:100%}
+.mk-desde{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; font-size:12.5px; color:var(--muted)}
+.mk-desde input{padding:4px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text)}
+.modal .erro{color:var(--devendo); font-size:12.5px; margin-right:auto; align-self:center}
+.modal details.metricas{margin:4px 0 12px; border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px}
+.modal details.metricas summary{cursor:pointer; font-weight:600; font-size:13px}
+.modal details.metricas[open] summary{margin-bottom:10px}
+@media (max-width:700px){
+  #mk-novo{width:100%; padding:8px}
+  .mk-origem select{width:100%; min-height:40px}
+  .mk-an .btn.sm{min-height:36px; padding:6px 12px}   /* área de toque */
+  .mk-nums{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px 8px}
+  .mk-nums b{font-size:15px}
+  #v-marketing .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 @media (prefers-reduced-motion: no-preference){ .cell,.btn,.tab{transition:background-color .12s ease} }
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="nuvem.js"></script>
 <script src="modelos-prontuario.js"></script>
+<script src="categorias.js"></script>
 <script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
 <body>
@@ -584,6 +640,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <button class="tab" role="tab" aria-selected="false" data-view="meta">Meta</button>
       <button class="tab" role="tab" aria-selected="false" data-view="pacientes">Pacientes</button>
       <button class="tab" role="tab" aria-selected="false" data-view="pagamentos">Pagamentos</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="marketing">Marketing</button>
     </div>
   </div>
 
@@ -941,6 +998,52 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <h2>Pagamentos do mês</h2>
       <p class="sub" id="pg-hist-sub">O que entrou no mês aberto, do mais novo para o mais antigo.</p>
       <div id="pg-historico"></div>
+    </div>
+  </section>
+
+  <!-- ============ MARKETING ============ -->
+  <!-- Pedido dele (01/10/2026): lançar quanto colocou em cada anúncio sem mexer na Carteira,
+       ver as métricas (o Claude atualiza) e qual anúncio vale mais. Substitui o controle que
+       ele mantinha nas Notas do iPhone. -->
+  <section id="v-marketing" class="hidden">
+    <div class="bar">
+      <div class="nav"><div class="range" style="margin-left:0"><span>Anúncios do Instagram</span><small id="mk-sub"></small></div></div>
+      <div class="stats">
+        <div class="stat" id="mk-gasto-caixa"><b id="mk-gasto">R$ 0</b><span>Gasto em anúncios</span></div>
+        <div class="stat" title="Conversas iniciadas no direct, somadas dos anúncios que já têm métricas."><b id="mk-conversas">0</b><span>Conversas</span></div>
+        <div class="stat" title="Gasto dividido pelas conversas, só nos anúncios que têm as duas coisas."><b id="mk-cpc">—</b><span>Por conversa</span></div>
+        <div class="stat" title="Pacientes marcados como vindos de anúncio, em 'Como cada paciente chegou'."><b id="mk-pacientes">0</b><span>Pacientes</span></div>
+        <div class="stat" title="Gasto em anúncios dividido pelos pacientes que vieram deles."><b id="mk-cpp">—</b><span>Por paciente</span></div>
+        <div class="stat" id="mk-retorno-caixa"><b id="mk-retorno">R$ 0</b><span>Já voltou</span></div>
+      </div>
+      <button class="btn primary" id="mk-novo">+ Novo anúncio</button>
+    </div>
+
+    <div class="panel">
+      <h2>Qual post vale mais</h2>
+      <p class="sub" id="mk-rank-sub"></p>
+      <div id="mk-rank"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Cada anúncio</h2>
+      <p class="sub">Um cartão para cada vez que você turbinou. Você lança o post, as datas e quanto colocou; as métricas vêm do Instagram, e o Claude preenche quando você pedir "atualiza as métricas dos anúncios".</p>
+      <div id="mk-lista"></div>
+    </div>
+
+    <div class="panel">
+      <h2>O dinheiro dos anúncios</h2>
+      <p class="sub">O que sai do seu bolso é a recarga de saldo, lançada na Carteira com a categoria "Clínica: Anúncios". Lançar um anúncio aqui não cria gasto lá: só diz para onde o saldo foi.</p>
+      <div class="linhas" id="mk-dinheiro"></div>
+      <label class="mk-desde" for="mk-desde">Recarrego saldo na Meta desde <input type="date" id="mk-desde" aria-label="A partir de quando o anúncio é pago com saldo recarregado"></label>
+      <p class="hint" style="margin:8px 0 0">A sobra é a recarga menos o que você colocou nos anúncios, a partir dessa data. O saldo exato, com o imposto, é o que a Meta mostra.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Como cada paciente chegou</h2>
+      <p class="sub">O único dado que só você sabe. Com ele o app conta quantos pacientes cada anúncio trouxe e quanto eles já pagaram. A mesma escolha aparece na ficha do paciente.</p>
+      <div class="filtros" id="mk-filtros" role="tablist" aria-label="Quais pacientes mostrar"></div>
+      <div id="mk-origens"></div>
     </div>
   </section>
 
@@ -2121,6 +2224,8 @@ function abrirFicha(p, foco){
       '</div>' +
       '<div class="field"><label for="fi-meet">Link do Meet</label>' +
         '<input id="fi-meet" data-campo="meet" value="'+esc(p.meet||"")+'" placeholder="cole aqui a sala fixa dele"></div>' +
+      '<div class="field"><label for="fi-origem">Como chegou</label>' +
+        '<select id="fi-origem">'+opcoesOrigem(p.codigo)+'</select><span class="hint">Alimenta a aba Marketing: quantos pacientes cada anúncio trouxe.</span></div>' +
       '<div class="acoes"><button class="btn ghost" id="fi-remover">Remover da agenda</button>' +
         '<button class="btn primary" id="fi-fechar">Pronto</button></div>' +
     '</div>';
@@ -2441,6 +2546,10 @@ function abrirFicha(p, foco){
   fundo.querySelectorAll("[data-campo]").forEach(function(el){
     el.addEventListener("input", function(){
       var campo = el.dataset.campo;
+      /* "como chegou" é guardado por prontuário: se o código muda, a marca vai junto */
+      if(campo==="codigo" && dados.origens && dados.origens[p.codigo] && el.value !== p.codigo){
+        dados.origens[el.value] = dados.origens[p.codigo]; delete dados.origens[p.codigo];
+      }
       p[campo] = (campo==="valor"||campo==="dia"||campo==="hora") ? Number(el.value) : el.value;
       /* mexer na cobrança ou no valor aqui corrige o ciclo atual; para mudar dali em diante
          sem tocar no passado, é o "Abrir ciclo" do extrato */
@@ -2450,6 +2559,10 @@ function abrirFicha(p, foco){
       }
       salvar(); renderTudo(); resumo();
     });
+  });
+
+  document.getElementById("fi-origem").addEventListener("change", function(e){
+    definirOrigem(p.codigo, e.target.value); salvar(); renderMarketing();
   });
 
   function fechar(){ fundo.remove(); document.removeEventListener("keydown", aoTeclar); }
@@ -3219,6 +3332,390 @@ function renderPainel(){
   });
 }
 
+/* ---------------- marketing (01/10/2026) ----------------
+   Pedido dele: lançar quanto colocou em cada anúncio sem mexer na Carteira (lá entra só a
+   recarga de saldo na Meta, na categoria Clínica: Anúncios), ver as métricas, que o Claude
+   atualiza lendo o painel do Instagram, e saber qual anúncio vale mais.
+   dados.anuncios: uma linha por vez que ele turbinou (post, inicio, fim, colocado e as
+   métricas da Meta: gasto, views, alcance, conversas, seguidores, lidoEm).
+   dados.origens: como cada paciente chegou, por prontuário, porque o paciente da agenda é
+   refeito a cada leitura da planilha e o arquivado nem tem ficha.
+   dados.marketing.desde: a partir de quando o anúncio é pago com saldo recarregado. */
+function moeda2(v){ return "R$ " + (Number(v)||0).toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function inteiro(n){ return (Number(n)||0).toLocaleString("pt-BR"); }
+function temNumero(v){ return v !== null && v !== undefined && v !== "" && !isNaN(Number(v)); }
+function anuncios(){ return dados.anuncios || []; }
+function acharAnuncio(id){ return anuncios().filter(function(a){ return a.id === id; })[0] || null; }
+var contaIdAnuncio = 0;
+function novoIdAnuncio(){ return "a" + Date.now() + String(contaIdAnuncio++); }
+
+function valorOrigem(codigo){
+  var o = (dados.origens || {})[codigo];
+  if(!o) return "";
+  return o.tipo === "anuncio" && o.anuncio ? "anuncio:" + o.anuncio : o.tipo;
+}
+function definirOrigem(codigo, valor){
+  if(!codigo) return;
+  if(!dados.origens) dados.origens = {};
+  if(!valor) delete dados.origens[codigo];
+  else if(valor.indexOf("anuncio:") === 0) dados.origens[codigo] = {tipo:"anuncio", anuncio:valor.slice(8)};
+  else dados.origens[codigo] = {tipo:valor};
+}
+/* as opções de "Como chegou", iguais na aba Marketing e na ficha */
+function opcoesOrigem(codigo){
+  var atual = valorOrigem(codigo);
+  var h = opc("", "Não marcado", atual);
+  var lista = anuncios().slice().sort(function(a,b){ return (b.inicio||"").localeCompare(a.inicio||""); });
+  if(lista.length){
+    h += '<optgroup label="Anúncio">';
+    lista.forEach(function(a){
+      h += opc("anuncio:"+a.id, esc(a.post || "Anúncio sem nome") + (a.inicio ? " · " + dataLonga(deISO(a.inicio)) : ""), atual);
+    });
+    h += '</optgroup>';
+  }
+  return h + opc("anuncio", "Anúncio, não sei qual", atual) + opc("indicacao", "Indicação", atual) +
+    opc("organico", "Instagram, sem anúncio", atual) + opc("outro", "Outro", atual);
+}
+/* a carteira inteira, de quem começou por último para quem começou primeiro */
+function carteiraInteira(){
+  var l = dados.pacientes.map(function(p){
+    return {codigo:p.codigo, nome:nomeCompletoDe(p) || p.nome, inicio:p.inicio || "", situacao:"na agenda"};
+  });
+  (dados.arquivados || []).forEach(function(a){
+    l.push({codigo:a.codigo, nome:a.nome, inicio:a.inicio || "", situacao:String(a.status||"").replace(/\.$/,"").toLowerCase()});
+  });
+  return l.sort(function(a,b){ return (b.inicio||"").localeCompare(a.inicio||"") || a.nome.localeCompare(b.nome); });
+}
+/* os pagamentos de paciente, por prontuário: valem os da agenda e os de quem já saiu */
+function recebidoPorCodigo(){
+  var codigoDe = {}, m = {};
+  dados.pacientes.forEach(function(p){ codigoDe[p.id] = p.codigo; });
+  dados.pagamentos.forEach(function(g){
+    if(!dePaciente(g)) return;
+    var c = codigoDe[g.pacienteId] || g.codigo;
+    if(!c) return;
+    (m[c] = m[c] || []).push(g);
+  });
+  return m;
+}
+/* quanto o paciente já pagou, e quanto disso nas quatro primeiras semanas: o "retorno" que
+   ele anotava nas Notas do iPhone era só o primeiro mês */
+function retornoDe(lista){
+  if(!lista || !lista.length) return {total:0, primeiro:0};
+  var datas = lista.map(function(g){ return g.data; }).sort();
+  var limite = chaveData(somaDias(deISO(datas[0]), 28)), total = 0, primeiro = 0;
+  lista.forEach(function(g){ var v = Number(g.valor)||0; total += v; if(g.data < limite) primeiro += v; });
+  return {total:total, primeiro:primeiro};
+}
+/* a conta de um anúncio. O custo é o gasto que a Meta mostra; sem métrica ainda, o que ele colocou */
+function contaDoAnuncio(a, rec){
+  var gasto = temNumero(a.gasto) ? Number(a.gasto) : null, colocado = Number(a.colocado) || 0;
+  var codigos = Object.keys(dados.origens || {}).filter(function(c){ return dados.origens[c].anuncio === a.id; });
+  var total = 0, primeiro = 0;
+  codigos.forEach(function(c){ var r = retornoDe(rec[c]); total += r.total; primeiro += r.primeiro; });
+  return {
+    gasto:gasto, colocado:colocado, custo: gasto !== null ? gasto : colocado,
+    conversas: temNumero(a.conversas) ? Number(a.conversas) : null,
+    views: temNumero(a.views) ? Number(a.views) : null,
+    alcance: temNumero(a.alcance) ? Number(a.alcance) : null,
+    seguidores: temNumero(a.seguidores) ? Number(a.seguidores) : null,
+    codigos:codigos, pacientes:codigos.length, retorno:total, primeiro:primeiro
+  };
+}
+function situacaoAnuncio(a){
+  var hoje = chaveData(hoje0());
+  if(a.inicio && a.inicio > hoje) return {classe:"sem", texto:"Começa em " + dataCurta(deISO(a.inicio))};
+  if(a.fim && a.fim < hoje) return {classe:"sem", texto:"Terminou em " + dataLonga(deISO(a.fim))};
+  return {classe:"ok", texto: a.fim ? "No ar até " + dataCurta(deISO(a.fim)) : "No ar"};
+}
+/* o mesmo post turbinado várias vezes vira uma linha só no ranking */
+function anunciosPorPost(contas){
+  var m = {}, ordem = [];
+  contas.forEach(function(x){
+    var k = semAcento(x.a.post) || x.a.id;
+    if(!m[k]){ m[k] = {post:x.a.post || "Anúncio sem nome", vezes:0, medidos:0, custo:0, gastoMedido:0, conversas:0, pacientes:0, retorno:0}; ordem.push(k); }
+    var g = m[k];
+    g.vezes++; g.custo += x.c.custo; g.pacientes += x.c.pacientes; g.retorno += x.c.retorno;
+    if(x.c.gasto !== null) g.medidos++;
+    if(x.c.gasto !== null && x.c.conversas !== null){ g.gastoMedido += x.c.gasto; g.conversas += x.c.conversas; }
+  });
+  return ordem.map(function(k){ return m[k]; });
+}
+/* o que a Carteira tem na categoria dos anúncios; null quando este aparelho não tem o caderno */
+function lancamentosDeAnuncio(){
+  var d = null;
+  try{ d = JSON.parse(localStorage.getItem("controle-unico-dinheiro-cache") || "null"); }catch(e){}
+  if(!d || !d.lancamentos) return null;
+  if(window.Categorias) d = Categorias.cadernoDinheiro(d);
+  return d.lancamentos.filter(function(l){ return l.categoria === "Clínica: Anúncios" && l.tipo === "Despesa"; });
+}
+
+var filtroOrigem = "todos", origensInteiras = false;
+function renderMarketing(){
+  var rec = recebidoPorCodigo();
+  var contas = anuncios().map(function(a){ return {a:a, c:contaDoAnuncio(a, rec)}; })
+    .sort(function(x,y){ return (y.a.inicio||"").localeCompare(x.a.inicio||""); });
+
+  /* 1. os números do alto: tudo o que está lançado */
+  var custo = 0, gastoMedido = 0, conversas = 0, semMetrica = 0;
+  contas.forEach(function(x){
+    custo += x.c.custo;
+    if(x.c.gasto === null) semMetrica++;
+    if(x.c.gasto !== null && x.c.conversas !== null){ gastoMedido += x.c.gasto; conversas += x.c.conversas; }
+  });
+  var deAnuncio = Object.keys(dados.origens || {}).filter(function(c){ return dados.origens[c].tipo === "anuncio"; });
+  var voltou = 0, voltouPrimeiro = 0;
+  deAnuncio.forEach(function(c){ var r = retornoDe(rec[c]); voltou += r.total; voltouPrimeiro += r.primeiro; });
+  var datas = contas.map(function(x){ return x.a.inicio; }).filter(Boolean).sort();
+  document.getElementById("mk-sub").textContent = contas.length
+    ? plural(contas.length, "anúncio lançado", "anúncios lançados") + (datas.length ? ", desde " + dataLonga(deISO(datas[0])) : "")
+    : "nenhum anúncio lançado";
+  document.getElementById("mk-gasto").textContent = moeda(custo);
+  document.getElementById("mk-gasto-caixa").title = "O gasto que a Meta mostra em cada anúncio, sem o imposto que ela cobra por cima." +
+    (semMetrica ? " Em " + plural(semMetrica, "anúncio", "anúncios") + " ainda sem métrica, vale o que você colocou." : "");
+  document.getElementById("mk-conversas").textContent = inteiro(conversas);
+  document.getElementById("mk-cpc").textContent = conversas > 0 ? moeda2(gastoMedido / conversas) : "—";
+  document.getElementById("mk-pacientes").textContent = deAnuncio.length;
+  document.getElementById("mk-cpp").textContent = deAnuncio.length && custo > 0 ? moeda(custo / deAnuncio.length) : "—";
+  document.getElementById("mk-retorno").textContent = moeda(voltou);
+  document.getElementById("mk-retorno-caixa").title = "Tudo o que os pacientes vindos de anúncio já pagaram. Só no primeiro mês de cada um: " + moeda(voltouPrimeiro) + ".";
+
+  /* 2. qual post vale mais. Com pacientes marcados em dois posts ou mais, a nota é quanto
+     voltou para cada real; antes disso, quantas conversas cada real comprou */
+  var grupos = anunciosPorPost(contas);
+  var porRetorno = grupos.filter(function(g){ return g.pacientes > 0 && g.custo > 0; }).length >= 2;
+  /* anúncio que ainda não tem métrica nem paciente não entra na comparação: acabou de começar */
+  grupos.forEach(function(g){
+    g.porReal = g.conversas > 0 && g.gastoMedido > 0 ? g.conversas / g.gastoMedido : null;
+    g.nota = porRetorno ? (g.custo > 0 && (g.medidos > 0 || g.pacientes > 0) ? g.retorno / g.custo : null) : g.porReal;
+  });
+  grupos.sort(function(a,b){
+    return ((b.nota === null ? -1 : b.nota) - (a.nota === null ? -1 : a.nota)) || ((b.porReal || 0) - (a.porReal || 0));
+  });
+  var comNota = grupos.filter(function(g){ return g.nota !== null; });
+  var melhor = comNota.length ? comNota[0].nota : 0;
+  document.getElementById("mk-rank-sub").textContent = !grupos.length ? "Aparece aqui quando houver anúncio lançado."
+    : (porRetorno ? "Do que mais devolveu para cada real gasto ao que menos devolveu. O mesmo post turbinado várias vezes conta junto."
+                  : "Do que paga menos por conversa ao que paga mais. Conversa não é paciente: quando houver pacientes marcados em dois posts ou mais, a ordem passa a ser por quanto voltou para cada real.");
+  document.getElementById("mk-rank").innerHTML = grupos.length ? grupos.map(function(g, i){
+    var etiqueta = "";
+    if(g.nota === null) etiqueta = '<span class="sit sem">sem métrica ainda</span>';
+    else if(comNota.length >= 2 && g === comNota[0]) etiqueta = '<span class="sit ok">vale mais</span>';
+    else if(comNota.length >= 2 && g === comNota[comNota.length-1] && g.nota < melhor) etiqueta = '<span class="sit atraso">vale menos</span>';
+    var largura = g.nota !== null && melhor > 0 ? Math.max(3, Math.round(g.nota / melhor * 100)) : 0;
+    return '<div class="mk-post"><div class="cab"><b>'+esc(g.post)+'</b>'+etiqueta+
+        '<span class="hint">'+(g.vezes === 1 ? "turbinado 1 vez" : "turbinado "+g.vezes+" vezes")+'</span></div>' +
+      '<div class="trilho"><span style="width:'+largura+'%"></span></div>' +
+      '<div class="nums"><span><b>'+moeda2(g.custo)+'</b> gastos</span>' +
+        '<span><b>'+(g.conversas > 0 ? inteiro(g.conversas) : "—")+'</b> conversas</span>' +
+        '<span><b>'+(g.conversas > 0 ? moeda2(g.gastoMedido / g.conversas) : "—")+'</b> por conversa</span>' +
+        '<span><b>'+g.pacientes+'</b> '+(g.pacientes === 1 ? "paciente" : "pacientes")+'</span>' +
+        (g.pacientes > 0 ? '<span><b>'+moeda(g.custo / g.pacientes)+'</b> por paciente</span>' : "") +
+        (g.pacientes > 0 && g.custo > 0 ? '<span>voltou <b>'+moeda2(g.retorno / g.custo)+'</b> para cada R$ 1</span>' : "") +
+      '</div></div>';
+  }).join("") : "";
+
+  /* 3. cada anúncio, do mais novo para o mais antigo */
+  var codigoNome = {};
+  carteiraInteira().forEach(function(x){ codigoNome[x.codigo] = String(x.nome||"").trim().split(/\s+/)[0]; });
+  var num = function(v, rotulo, vazio){ return '<div'+(vazio ? ' class="vazio"' : "")+'><b>'+v+'</b><span>'+rotulo+'</span></div>'; };
+  document.getElementById("mk-lista").innerHTML = contas.length ? contas.map(function(x){
+    var a = x.a, c = x.c, s = situacaoAnuncio(a);
+    var periodo = (a.inicio ? dataCurta(deISO(a.inicio)) : "?") + (a.fim ? " a " + dataLonga(deISO(a.fim)) : (a.inicio ? "/" + a.inicio.slice(0,4) : ""));
+    var uso = c.gasto !== null && c.colocado > 0
+      ? '<div class="mk-uso"><span class="trilho"><span style="width:'+Math.min(100, Math.round(c.gasto / c.colocado * 100))+'%"></span></span>' +
+        '<span>'+Math.min(999, Math.round(c.gasto / c.colocado * 100))+'% do que você colocou</span></div>' : "";
+    var nomes = c.codigos.map(function(k){ return codigoNome[k] || k; }).join(", ");
+    return '<div class="mk-an"><div class="topo"><h3>'+esc(a.post || "Anúncio sem nome")+'</h3>' +
+        '<span class="quando">'+periodo+'</span><span class="sit '+s.classe+'">'+esc(s.texto)+'</span>' +
+        '<span class="acoes"><button class="btn sm" data-anuncio="'+esc(a.id)+'">Editar</button></span></div>' +
+      '<div class="mk-nums">' +
+        num(c.colocado > 0 ? moeda2(c.colocado) : "—", "você colocou", !(c.colocado > 0)) +
+        num(c.gasto !== null ? moeda2(c.gasto) : "—", "gasto na Meta", c.gasto === null) +
+        num(c.conversas !== null ? inteiro(c.conversas) : "—", "conversas", c.conversas === null) +
+        num(c.gasto !== null && c.conversas > 0 ? moeda2(c.gasto / c.conversas) : "—", "por conversa", !(c.gasto !== null && c.conversas > 0)) +
+        num(c.views !== null ? inteiro(c.views) : "—", "visualizações", c.views === null) +
+        num(c.alcance !== null ? inteiro(c.alcance) : "—", "alcance", c.alcance === null) +
+        num(c.seguidores !== null ? inteiro(c.seguidores) : "—", "seguidores", c.seguidores === null) +
+        num(c.pacientes, c.pacientes === 1 ? "paciente" : "pacientes", !c.pacientes) +
+        num(c.pacientes ? moeda(c.retorno) : "—", "já voltou", !c.pacientes) +
+      '</div>' + uso +
+      '<p class="pe">' + (a.lidoEm ? "Métricas lidas em " + dataLonga(deISO(a.lidoEm)) + "." : "Sem métricas ainda: peça ao Claude para atualizar, ou digite em Editar.") +
+        (nomes ? " Vieram dele: " + esc(nomes) + "." : "") + '</p></div>';
+  }).join("") : '<p class="pvazio">Nenhum anúncio lançado ainda. Use "+ Novo anúncio" para lançar o primeiro.</p>';
+  document.querySelectorAll("#mk-lista [data-anuncio]").forEach(function(b){
+    b.addEventListener("click", function(){ abrirAnuncio(b.dataset.anuncio); });
+  });
+
+  /* 4. o dinheiro: o que saiu do bolso está na Carteira, e a sobra do saldo recarregado */
+  var lanc = lancamentosDeAnuncio(), desde = (dados.marketing || {}).desde || "";
+  var campoDesde = document.getElementById("mk-desde");
+  if(document.activeElement !== campoDesde) campoDesde.value = desde;
+  var hd = "";
+  if(!lanc){
+    hd = linha("O que saiu do bolso", "— abra a aba Carteira uma vez neste aparelho");
+  } else {
+    var hojeISO = chaveData(hoje0()), mesISO = hojeISO.slice(0,7), anoISO = hojeISO.slice(0,4), noMes = 0, noAno = 0, recarga = 0;
+    lanc.forEach(function(l){
+      var v = Number(l.valor)||0, d = String(l.data||"");
+      if(d.indexOf(mesISO) === 0) noMes += v;
+      if(d.indexOf(anoISO) === 0) noAno += v;
+      if(desde && d >= desde) recarga += v;
+    });
+    hd = linha("Saiu do bolso neste mês, pela Carteira", "<b>"+moeda2(noMes)+"</b>") +
+         linha("Saiu do bolso em " + anoISO, "<b>"+moeda2(noAno)+"</b>");
+    if(desde){
+      var posto = 0;
+      anuncios().forEach(function(a){ if(a.inicio && a.inicio >= desde) posto += Number(a.colocado)||0; });
+      var sobra = Math.round((recarga - posto) * 100) / 100;
+      hd += linha("Recarregado desde " + dataLonga(deISO(desde)), "<b>"+moeda2(recarga)+"</b>") +
+            linha("Colocado em anúncios desde então", "<b>"+moeda2(posto)+"</b>") +
+            linha(sobra >= 0 ? "Sobra para anunciar" : "Colocado a mais do que a recarga lançada",
+                  '<b'+(sobra < 0 ? ' style="color:var(--devendo)"' : "")+'>'+moeda2(Math.abs(sobra))+'</b>');
+    }
+  }
+  document.getElementById("mk-dinheiro").innerHTML = hd;
+
+  /* 5. como cada paciente chegou */
+  var todos = carteiraInteira(), conta = {todos:todos.length, "":0, anuncio:0, indicacao:0, organico:0, outro:0};
+  todos.forEach(function(x){ var o = (dados.origens || {})[x.codigo]; conta[o ? o.tipo : ""] = (conta[o ? o.tipo : ""] || 0) + 1; });
+  var chips = [["todos","Todos"],["","Sem marcar"],["anuncio","Anúncio"],["indicacao","Indicação"],["organico","Instagram, sem anúncio"],["outro","Outro"]];
+  var barra = document.getElementById("mk-filtros");
+  barra.innerHTML = chips.map(function(f){
+    return '<button class="filtro'+(f[0]===filtroOrigem ? " on" : "")+'" data-f="'+f[0]+'" role="tab" aria-selected="'+(f[0]===filtroOrigem)+'">'+
+      f[1]+'<span class="q">'+(conta[f[0]]||0)+'</span></button>';
+  }).join("");
+  barra.querySelectorAll("button[data-f]").forEach(function(b){
+    b.addEventListener("click", function(){ filtroOrigem = b.dataset.f; origensInteiras = false; renderMarketing(); });
+  });
+  var visiveis = todos.filter(function(x){
+    if(filtroOrigem === "todos") return true;
+    var o = (dados.origens || {})[x.codigo];
+    return (o ? o.tipo : "") === filtroOrigem;
+  });
+  var LIMITE = 12, mostrados = origensInteiras ? visiveis : visiveis.slice(0, LIMITE);
+  var alvo = document.getElementById("mk-origens");
+  alvo.innerHTML = (mostrados.length ? mostrados.map(function(x){
+    var pago = retornoDe(rec[x.codigo]).total;
+    return '<div class="mk-origem"><span class="quem"><b>'+esc(x.nome)+'</b>' +
+      '<span>'+esc(x.codigo)+(x.inicio ? " · começou em "+dataLonga(deISO(x.inicio)) : "")+" · "+esc(x.situacao)+(pago > 0 ? " · já pagou "+moeda(pago) : "")+'</span></span>' +
+      '<select data-origem="'+esc(x.codigo)+'" aria-label="Como '+esc(x.nome)+' chegou">'+opcoesOrigem(x.codigo)+'</select></div>';
+  }).join("") : '<p class="pvazio">'+(todos.length ? "Ninguém nesta lista." : 'Nenhum paciente ainda. Use "Ler a planilha" no alto da página.')+'</p>') +
+    (visiveis.length > LIMITE ? '<button class="btn sm ghost" id="mk-mais" style="margin-top:10px">'+
+      (origensInteiras ? "Mostrar só os mais recentes" : "Ver todos ("+visiveis.length+")")+'</button>' : "");
+  alvo.querySelectorAll("select[data-origem]").forEach(function(s){
+    s.addEventListener("change", function(){ definirOrigem(s.dataset.origem, s.value); salvar(); renderMarketing(); });
+  });
+  var mais = document.getElementById("mk-mais");
+  if(mais) mais.addEventListener("click", function(){ origensInteiras = !origensInteiras; renderMarketing(); });
+}
+
+/* a janela de um anúncio: serve para lançar um novo e para corrigir um que já existe.
+   Só grava no Salvar, para um anúncio pela metade não entrar nas contas */
+function abrirAnuncio(id){
+  var a = id ? acharAnuncio(id) : null;
+  var v = a || {post:"", inicio:chaveData(hoje0()), fim:"", colocado:""};
+  var campo = function(rot, idc, tipo, valor, extra, dica){
+    return '<div class="field"><label for="'+idc+'">'+rot+'</label><input id="'+idc+'" type="'+tipo+'" value="'+esc(valor === null || valor === undefined ? "" : valor)+'" '+(extra||"")+'>' +
+      (dica ? '<span class="hint">'+dica+'</span>' : "") + '</div>';
+  };
+  var posts = {}, lista = "";
+  anuncios().forEach(function(x){ if(x.post && !posts[x.post]){ posts[x.post] = true; lista += '<option value="'+esc(x.post)+'">'; } });
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="an-titulo">' +
+    '<h2 id="an-titulo">'+(a ? "Anúncio" : "Novo anúncio")+'</h2>' +
+    '<p class="hint" style="margin:0 0 14px">Lançar aqui não cria gasto na Carteira: lá entra só a recarga de saldo na Meta.</p>' +
+    campo("Post que você turbinou", "an-post", "text", v.post, 'list="an-posts" placeholder="ex.: Reels de 03/02, motivos para fazer terapia" autocomplete="off"',
+      "Use sempre o mesmo nome para o mesmo post: é por ele que o app junta as vezes em que você turbinou.") +
+    '<datalist id="an-posts">'+lista+'</datalist>' +
+    '<div class="grid2">' + campo("Começou em", "an-inicio", "date", v.inicio) +
+      campo("Termina em", "an-fim", "date", v.fim, "", "Pode ficar em branco.") + '</div>' +
+    campo("Quanto você colocou (R$)", "an-colocado", "number", v.colocado, 'min="0" step="0.01" inputmode="decimal"',
+      "O valor que o Instagram mostrou na hora de turbinar. É ele que desconta da sobra do saldo.") +
+    '<details class="metricas"'+(a ? " open" : "")+'><summary>Métricas do Instagram</summary>' +
+      '<p class="hint" style="margin:0 0 10px">O Claude preenche quando você pede para atualizar as métricas. Você também pode digitar.</p>' +
+      '<div class="grid2">' + campo("Gasto até agora (R$)", "an-gasto", "number", v.gasto, 'min="0" step="0.01" inputmode="decimal"') +
+        campo("Conversas iniciadas", "an-conversas", "number", v.conversas, 'min="0" step="1" inputmode="numeric"') + '</div>' +
+      '<div class="grid2">' + campo("Visualizações", "an-views", "number", v.views, 'min="0" step="1" inputmode="numeric"') +
+        campo("Contas alcançadas", "an-alcance", "number", v.alcance, 'min="0" step="1" inputmode="numeric"') + '</div>' +
+      '<div class="grid2">' + campo("Seguidores novos", "an-seguidores", "number", v.seguidores, 'min="0" step="1" inputmode="numeric"') +
+        campo("Métricas lidas em", "an-lido", "date", v.lidoEm || "") + '</div>' +
+    '</details>' +
+    '<div class="acoes">' + (a ? '<button class="btn ghost" id="an-apagar" style="margin-right:auto">Apagar anúncio</button>' : "") +
+      '<span class="erro" id="an-erro" role="alert"></span>' +
+      '<button class="btn" id="an-cancelar">Cancelar</button><button class="btn primary" id="an-salvar">'+(a ? "Salvar" : "Lançar anúncio")+'</button></div>' +
+    '</div>';
+  document.body.appendChild(fundo);
+  var el = function(i){ return document.getElementById(i); };
+  function fechar(){ fundo.remove(); document.removeEventListener("keydown", aoTeclar); }
+  function aoTeclar(e){
+    if(e.key === "Escape") fechar();
+    else if(e.key === "Enter" && e.target && e.target.tagName === "INPUT" && fundo.contains(e.target)){ e.preventDefault(); el("an-salvar").click(); }
+  }
+  document.addEventListener("keydown", aoTeclar);
+  fundo.addEventListener("click", function(e){ if(e.target === fundo) fechar(); });
+  el("an-cancelar").addEventListener("click", fechar);
+  el("an-post").focus();
+  var numero = function(i){ var t = el(i).value.trim(); return t === "" ? null : Number(t); };
+  el("an-salvar").addEventListener("click", function(){
+    var post = el("an-post").value.trim(), inicio = el("an-inicio").value, fim = el("an-fim").value;
+    var erro = "";
+    if(!post) erro = "Falta o nome do post.";
+    else if(!inicio) erro = "Falta a data em que começou.";
+    else if(fim && fim < inicio) erro = "O fim está antes do começo.";
+    else if(numero("an-colocado") === null && numero("an-gasto") === null) erro = "Falta quanto você colocou.";
+    if(erro){ el("an-erro").textContent = erro; return; }
+    /* a nuvem pode ter trocado os dados com a janela aberta: acha o anúncio de novo pelo id */
+    var alvo = id ? acharAnuncio(id) : null;
+    if(!alvo){ alvo = {id: id || novoIdAnuncio()}; if(!dados.anuncios) dados.anuncios = []; dados.anuncios.push(alvo); }
+    alvo.post = post; alvo.inicio = inicio; alvo.fim = fim;
+    alvo.colocado = numero("an-colocado") === null ? 0 : numero("an-colocado");
+    var mudouMetrica = false;
+    [["gasto","an-gasto"],["conversas","an-conversas"],["views","an-views"],["alcance","an-alcance"],["seguidores","an-seguidores"]].forEach(function(par){
+      var n = numero(par[1]), antes = temNumero(alvo[par[0]]) ? Number(alvo[par[0]]) : null;
+      if(n !== antes) mudouMetrica = true;
+      if(n === null) delete alvo[par[0]]; else alvo[par[0]] = n;
+    });
+    /* quem digita uma métrica sem dizer o dia leu hoje */
+    alvo.lidoEm = el("an-lido").value || (mudouMetrica ? chaveData(hoje0()) : (alvo.lidoEm || ""));
+    if(!alvo.lidoEm) delete alvo.lidoEm;
+    salvar(); renderTudo(); fechar();
+    recado(a ? "Anúncio atualizado." : "Anúncio lançado. A Carteira não muda.");
+  });
+  if(a) el("an-apagar").addEventListener("click", function(){
+    var ligados = Object.keys(dados.origens || {}).filter(function(c){ return dados.origens[c].anuncio === id; });
+    if(!confirm("Apagar este anúncio?" + (ligados.length ? " " + plural(ligados.length, "paciente marcado nele fica", "pacientes marcados nele ficam") + ' como "Anúncio, não sei qual".' : "") + " Ctrl+Z desfaz.")) return;
+    dados.anuncios = anuncios().filter(function(x){ return x.id !== id; });
+    ligados.forEach(function(c){ dados.origens[c] = {tipo:"anuncio"}; });
+    salvar(); renderTudo(); fechar();
+    recado("Anúncio apagado.");
+  });
+}
+
+/* O Claude atualiza as métricas por aqui, com o que leu no painel do Instagram. Cada item
+   acha o anúncio pelo id ou, sem ele, por ref (o código do post no Instagram) ou post, mais a
+   data de início; o que vier preenchido entra, o resto fica como estava; o que não achar, cria. */
+function atualizarAnuncios(lista){
+  var criados = 0, atualizados = 0;
+  if(!dados.anuncios) dados.anuncios = [];
+  (lista || []).forEach(function(n){
+    var a = n.id ? acharAnuncio(n.id) : null;
+    if(!a) a = dados.anuncios.filter(function(x){
+      return x.inicio === n.inicio && ((n.ref && x.ref === n.ref) || semAcento(x.post) === semAcento(n.post));
+    })[0];
+    var existia = !!a;
+    if(a) atualizados++; else { a = {id:novoIdAnuncio(), colocado:0}; dados.anuncios.push(a); criados++; }
+    ["post","ref","inicio","fim","colocado","gasto","views","alcance","conversas","seguidores","lidoEm"].forEach(function(k){
+      /* o nome que ele deu ao post só muda se o pedido vier com o id do anúncio */
+      if(k === "post" && existia && !n.id) return;
+      if(n[k] !== undefined && n[k] !== null && n[k] !== "") a[k] = n[k];
+    });
+  });
+  salvar(); renderTudo();
+  return {criados:criados, atualizados:atualizados, total:dados.anuncios.length};
+}
+
 /* ---------------- ler a planilha ---------------- */
 /* O navegador não abre um caminho do disco sozinho, por segurança: o botão abre a janela
    de escolher arquivo e daí para frente é tudo aqui dentro. Um .xlsx é um ZIP de XMLs; o
@@ -3900,7 +4397,7 @@ function mostrarView(v){
   document.getElementById("subvista").classList.toggle("hidden", !naSessao);
   document.getElementById("v-semana").classList.toggle("hidden", !(naSessao && subSessoes==="semana"));
   document.getElementById("v-mes").classList.toggle("hidden", !(naSessao && subSessoes==="mes"));
-  ["sessoes","painel","meta","pacientes","pagamentos"].forEach(function(x){
+  ["sessoes","painel","meta","pacientes","pagamentos","marketing"].forEach(function(x){
     document.getElementById("v-"+x).classList.toggle("hidden", x!==v);
   });
   document.querySelectorAll(".tabs .tab[data-view]").forEach(function(t){
@@ -3909,14 +4406,29 @@ function mostrarView(v){
   document.querySelectorAll("#subvista .tab").forEach(function(t){
     t.setAttribute("aria-selected", t.dataset.sub===subSessoes ? "true" : "false");
   });
+  dicaDeAbas(true);
 }
+/* no celular as abas do alto rolam de lado: a aba aberta vem para a vista, e a borda direita
+   esmaece enquanto houver aba escondida (o Marketing ficava fora da tela, sem aviso) */
+function dicaDeAbas(mostrarAberta){
+  var faixa = document.querySelector(".top .tabs"); if(!faixa || !faixa.clientWidth) return;
+  var aberta = faixa.querySelector('.tab[aria-selected="true"]');
+  if(mostrarAberta === true && aberta){
+    if(aberta.offsetLeft < faixa.scrollLeft) faixa.scrollLeft = aberta.offsetLeft - 8;
+    else if(aberta.offsetLeft + aberta.offsetWidth > faixa.scrollLeft + faixa.clientWidth) faixa.scrollLeft = aberta.offsetLeft + aberta.offsetWidth - faixa.clientWidth + 8;
+  }
+  faixa.classList.toggle("tem-mais", faixa.scrollLeft + faixa.clientWidth < faixa.scrollWidth - 6);
+}
+document.querySelector(".top .tabs").addEventListener("scroll", function(){ dicaDeAbas(); }, {passive:true});
+window.addEventListener("resize", function(){ dicaDeAbas(); });
+if(window.ResizeObserver) new ResizeObserver(function(){ dicaDeAbas(); }).observe(document.querySelector(".top .tabs"));
 /* na semana, a lista de baixo mostra o mês em que a semana cai (pela quarta-feira dela) */
 function mesDaSemana(){ var q = somaDias(semana, 3); mesRef = new Date(q.getFullYear(), q.getMonth(), 1); }
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
   atrasoCache = null; devidoCache = null; cacheMes = {}; cacheNomes = null;
   conferirAprovados();
-  renderSemana(); renderMes(); renderSessoes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos();
+  renderSemana(); renderMes(); renderSessoes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos(); renderMarketing();
 }
 
 /* A planilha continua mudando enquanto as duas existirem: se a agenda deste arquivo
@@ -3997,6 +4509,13 @@ document.getElementById("ss-desde").addEventListener("change", function(){
   salvar(); renderTudo();
 });
 document.getElementById("pg-paciente").addEventListener("change", function(){ dicaPagamento(true); });
+document.getElementById("mk-novo").addEventListener("click", function(){ abrirAnuncio(""); });
+document.getElementById("mk-desde").addEventListener("change", function(){
+  var v = document.getElementById("mk-desde").value;
+  if(!dados.marketing) dados.marketing = {};
+  if(v) dados.marketing.desde = v; else delete dados.marketing.desde;
+  salvar(); renderMarketing();
+});
 document.getElementById("pg-add").addEventListener("click", function(){
   var p = acharPaciente(document.getElementById("pg-paciente").value);
   var quem = document.getElementById("pg-quem").value.trim();

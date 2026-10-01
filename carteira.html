@@ -66,6 +66,8 @@ header h1{ margin:0; font-size:21px; font-weight:700; letter-spacing:-.01em; dis
 .seg{ display:inline-flex; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--surface); }
 .seg button{ border:0; background:none; padding:6px 11px; cursor:pointer; font-size:13px; color:var(--muted); }
 .seg button[aria-pressed="true"]{ background:var(--accent-soft); color:var(--text); font-weight:600; }
+/* no celular o último período ("Tudo") ficava cortado e fora de alcance: os seis dividem a largura */
+@media (max-width:700px){ #periodo{ display:flex; max-width:100%; } #periodo button{ flex:1 1 0; min-width:0; padding:6px 3px; } }
 .painel{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; }
 .painel h2{ margin:0 0 12px; font-size:16px; font-weight:700; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .painel h2 .dir{ margin-left:auto; display:flex; gap:10px; align-items:center; font-weight:400; flex-wrap:wrap; }
