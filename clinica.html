@@ -3541,11 +3541,16 @@ function importarRecebimentos(lista){
   dados.pacientes.forEach(function(p){ if(p.codigo) porCodigo[p.codigo] = p.id; });
   var jaTem = {};
   dados.pagamentos.forEach(function(g){ if(g.chavePlanilha) jaTem[g.chavePlanilha] = true; });
+  var doApp = lancadosNoApp();
   var novos = 0;
   lista.forEach(function(r){
     var chave = (r.codigo || semAcento(r.nome)) + "|" + r.data + "|" + r.valor;
     if(jaTem[chave]) return;
     jaTem[chave] = true;
+    /* o mesmo pagamento lançado no app e na planilha (ele lança nos dois enquanto a planilha
+       não para): não entra de novo, só passa a ser reconhecido como o da planilha (01/10/2026) */
+    var gemeo = (doApp[chave] || []).shift();
+    if(gemeo){ gemeo.chavePlanilha = chave; return; }
     novos++;
     dados.pagamentos.push({
       id: "g" + Date.now() + Math.floor(Math.random()*100000),
@@ -3562,16 +3567,34 @@ function importarRecebimentos(lista){
   });
   return novos;
 }
+/* os pagamentos lançados no próprio app (sem marca da planilha), pela mesma chave dos recibos
+   da planilha: prontuário + data + valor. Serve para a leitura não duplicar o que já está aqui. */
+function lancadosNoApp(){
+  var codigoDe = {}, m = {};
+  dados.pacientes.forEach(function(p){ codigoDe[p.id] = p.codigo; });
+  dados.pagamentos.forEach(function(g){
+    if(g.chavePlanilha) return;
+    var c = codigoDe[g.pacienteId] || g.codigo || semAcento(g.nomePlanilha || "");
+    if(!c) return;
+    var k = c + "|" + g.data + "|" + g.valor;
+    (m[k] = m[k] || []).push(g);
+  });
+  return m;
+}
 /* quantos recibos da planilha ainda não estão aqui: entra no resumo antes de aplicar */
 function recibosNovos(lista){
   if(!lista || !lista.length) return 0;
   var jaTem = {};
   dados.pagamentos.forEach(function(g){ if(g.chavePlanilha) jaTem[g.chavePlanilha] = true; });
+  var doApp = lancadosNoApp(), sobra = {};
   var n = 0, vistos = {};
   lista.forEach(function(r){
     var chave = (r.codigo || semAcento(r.nome)) + "|" + r.data + "|" + r.valor;
     if(jaTem[chave] || vistos[chave]) return;
-    vistos[chave] = true; n++;
+    vistos[chave] = true;
+    if(sobra[chave] === undefined) sobra[chave] = (doApp[chave] || []).length;
+    if(sobra[chave] > 0){ sobra[chave]--; return; }
+    n++;
   });
   return n;
 }
