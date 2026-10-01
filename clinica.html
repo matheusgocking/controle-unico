@@ -321,6 +321,8 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .selo.atencao{background:var(--warn-soft); color:var(--warn)}
 .selo.atraso{background:var(--devendo-soft); color:var(--devendo)}
 .selo.sem{background:var(--neutral-chip); color:var(--faint)}
+.susp-data{margin-top:4px; font-size:11px; color:var(--muted)}
+.susp-data input{font:inherit; color:var(--text); background:transparent; border:1px solid var(--border); border-radius:6px; padding:1px 4px}
 .linhas.movs div{font-size:12.5px}
 .pdia + .pdia{margin-top:18px}
 .pdia-cab{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; padding:6px 8px; margin-bottom:9px; border-bottom:1px solid var(--border); border-radius:8px 8px 0 0}
@@ -1820,14 +1822,23 @@ function renderPacientes(){
   desenharAgendaPacientes(filtroPacientes === "triagem");
 }
 
-/* Suspenso é pausa (Matheus, 01/10/2026): conta os dias desde o Fim da planilha, que é o dia
-   da suspensão, e avisa quando passa de 30, que é quando ele encerra como inativo. */
+/* Suspenso é pausa (Matheus, 01/10/2026): até 30 dias; passou disso, ele encerra como inativo.
+   O dia da suspensão é do app (dados.suspensoes), não da planilha: lá o Fim fica na última
+   sessão, para o registro continuar o mesmo se o paciente voltar. O dia nasce na leitura da
+   planilha em que o paciente aparece suspenso pela primeira vez, e ele corrige no cartão. */
 var DIAS_SUSPENSAO = 30;
+function suspensoDesde(a){ return (dados.suspensoes || {})[a.codigo] || ""; }
+function marcarSuspensoes(){
+  var antes = dados.suspensoes || {}, agora = {};
+  arquivadosPorStatus("suspenso").forEach(function(a){ agora[a.codigo] = antes[a.codigo] || chaveData(hoje0()); });
+  dados.suspensoes = agora;
+}
 function seloSuspensao(a){
-  if(!a.fim) return '<span class="selo sem">Suspenso sem data na planilha</span>';
-  var dias = Math.round((hoje0() - deISO(a.fim)) / 86400000);
-  if(dias > DIAS_SUSPENSAO) return '<span class="selo atraso">Suspenso há '+dias+' dias · passou de '+DIAS_SUSPENSAO+', encerrar</span>';
-  return '<span class="selo atencao">Suspenso há '+dias+(dias===1?" dia":" dias")+' · faltam '+(DIAS_SUSPENSAO-dias)+'</span>';
+  var desde = suspensoDesde(a);
+  if(!desde) return '<span class="selo sem">Suspenso sem data</span>';
+  var ini = deISO(desde), dias = Math.round((hoje0() - ini) / 86400000), ate = dataCurta(somaDias(ini, DIAS_SUSPENSAO));
+  if(dias > DIAS_SUSPENSAO) return '<span class="selo atraso">Suspenso há '+dias+' dias · venceu em '+ate+', encerrar</span>';
+  return '<span class="selo atencao">Suspenso há '+dias+(dias===1?" dia":" dias")+' · até '+ate+' (faltam '+(DIAS_SUSPENSAO-dias)+')</span>';
 }
 /* quem não está na agenda: veio da planilha e não tem ficha aqui, só o histórico */
 function desenharCarteira(pedaco){
@@ -1848,12 +1859,21 @@ function desenharCarteira(pedaco){
         '<span class="sub">'+esc(periodo)+' · '+a.sessoes+(a.sessoes===1?" sessão":" sessões")+
           (a.ciclos>1 ? " · "+a.ciclos+" ciclos" : "")+'</span>' +
         '<span class="cod">'+esc(a.codigo)+' · '+esc(a.status.replace(/\.$/,""))+'</span>' +
-        (pedaco === "suspenso" ? seloSuspensao(a) : "") +
+        (pedaco === "suspenso" ? seloSuspensao(a) +
+          '<label class="susp-data">Suspenso desde <input type="date" data-cod="'+esc(a.codigo)+'" value="'+esc(suspensoDesde(a))+'"></label>' : "") +
         (f ? selo(f) : "") +
       '</span></div>';
   });
   h += "</div>";
   alvo.innerHTML = h;
+  alvo.querySelectorAll(".susp-data input").forEach(function(c){
+    c.addEventListener("change", function(){
+      if(!c.value) return;
+      if(!dados.suspensoes) dados.suspensoes = {};
+      dados.suspensoes[c.dataset.cod] = c.value;
+      salvar(); renderPacientes();
+    });
+  });
 }
 
 function desenharMovimentos(lista){
@@ -3816,7 +3836,7 @@ function aplicarLeitura(leitura){
       prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined
     };
   });
-  if(leitura.arquivados) dados.arquivados = leitura.arquivados;
+  if(leitura.arquivados){ dados.arquivados = leitura.arquivados; marcarSuspensoes(); }
   if(leitura.formulacoes) dados.formulacoes = leitura.formulacoes;
   if(leitura.recebimentos) importarRecebimentos(leitura.recebimentos);
   dados.blocos = leitura.blocos;
