@@ -385,13 +385,15 @@ function contasDinheiro(){
   // Moradia fica de fora para não contar duas vezes: ela vem da casa.
   // Os gastos fixos do mês contam como despesa do mês, como na planilha.
   const fixosDoMes = livro.matheus.gastosFixos.filter(g => valorFixo(g, chaveMes(ref)) > 0);
-  const fixosMes = soma(fixosDoMes, g => valorFixo(g, chaveMes(ref)));
-  const saiu = soma(doMes.filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor) + fixosMes + minhaCasa;
-
   const agora = new Date();
   const faltaSair = chaveMes(ref) === chaveMes(agora)
     ? soma(fixosDoMes.filter(g => Number(g.dia) > agora.getDate()), g => valorFixo(g, chaveMes(ref))) : null;
   const semDia = fixosDoMes.filter(g => !Number(g.dia)).length;
+  // No mês corrente, o fixo cujo dia ainda não chegou fica só em "Ainda vai sair": antes ele entrava
+  // também em "Gastei" e era descontado duas vezes no fim do mês (corrigido em 01/10/2026).
+  // Fixo sem dia marcado conta como já pago.
+  const fixosMes = soma(fixosDoMes, g => valorFixo(g, chaveMes(ref))) - (faltaSair || 0);
+  const saiu = soma(doMes.filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor) + fixosMes + minhaCasa;
 
   // Aporte e resgate mexem sempre na reserva, seja qual for a categoria (01/10/2026).
   const r = livro.matheus.reserva;
@@ -472,11 +474,15 @@ function formLancamento(padrao){
     ${p ? `<div><label>Tipo</label><select name="tipo">${op(TIPOS)}</select></div>`
         : `<div><label>Quem comprou</label><select name="quem">${op(livro.casa.pessoas, soCasa ? (livro.casa.pessoas.find(x => /^ana/i.test(x)) || livro.casa.pessoas[1]) : livro.casa.pessoas[0])}</select></div>`}
     <div style="grid-column:span 2"><label>Descrição</label><input name="descricao" value="${escH(v.descricao || "")}" ${p ? 'placeholder="o que foi" required' : 'placeholder="opcional"'}></div>
-    <div><label>Categoria</label><select name="categoria">${op(p ? CATEGORIAS : CAT_CASA)}</select></div>
+    <div><label>Categoria</label>${p
+      // Pessoal: nenhuma categoria vem escolhida, e Moradia não é oferecida, porque a moradia dele vem das
+      // compras da Casa e uma despesa lançada aqui como Moradia não entrava em "Gastei" (01/10/2026)
+      ? `<select name="categoria" required><option value="" disabled selected hidden>escolha…</option>${op(CATEGORIAS.filter(c => c !== "Moradia"))}</select>`
+      : `<select name="categoria">${op(CAT_CASA)}</select>`}</div>
     ${p ? `<div><label>Forma</label><select name="forma">${op(FORMAS)}</select></div>` : ""}
     <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" value="${escH(v.valor || "")}" required></div>
     <div><button class="b p" type="submit">Lançar</button></div>
-  </form>${p ? `<p class="nota">Aporte e resgate mexem sempre na reserva.</p>` : `<p class="nota">iFood pedido para os dois é da Casa; pedido só seu é Pessoal.</p>`}</details>`;
+  </form>${p ? `<p class="nota">Aporte e resgate mexem sempre na reserva. Moradia não aparece aqui: ela vem das compras da Casa.</p>` : `<p class="nota">iFood pedido para os dois é da Casa; pedido só seu é Pessoal.</p>`}</details>`;
 }
 
 // ---------- telas ----------
@@ -619,7 +625,7 @@ function telaTudo(){
     sem a categoria moradia, mais os gastos fixos do mês e o que você pagou na casa, como manda o sistema Ciclo do Dinheiro
     do Mês. Saldo agora: recebi menos gastei, menos o que foi para a reserva (aporte) e mais o que saiu dela (resgate), como a linha Total
     da planilha; o gasto feito com o dinheiro resgatado entra normalmente em Gastei. Ainda vou receber: a mesma conta do Painel da Clínica, pela agenda e pela cobrança de cada paciente, menos o que
-    os pacientes já pagaram. Ainda vai sair: gastos fixos com dia depois de hoje. A seta compara o fim do mês com zero.
+    os pacientes já pagaram. Ainda vai sair: gastos fixos com dia depois de hoje, que só entram em Gastei quando o dia chega (fixo sem dia conta como já pago). A seta compara o fim do mês com zero.
     Cripto: o total da última vez que a Carteira cripto abriu neste aparelho.
   </details>`;
 }
