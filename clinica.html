@@ -717,7 +717,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <div class="prog-legenda"><span><b id="pn-recebido">R$ 0</b> recebidos</span><span id="pn-de"></span></div>
       <div class="cifras">
         <div class="result"><div class="rotulo">Falta receber neste mês</div><div class="big" id="pn-falta">R$ 0</div><p class="hint" id="pn-falta-sub"></p></div>
-        <div class="result"><div class="rotulo">Dívida vencida, de qualquer mês</div><div class="big" id="pn-divida">R$ 0</div><p class="hint" id="pn-divida-sub"></p></div>
+        <div class="result"><div class="rotulo" id="pn-divida-rot">Dívida vencida, de qualquer mês</div><div class="big" id="pn-divida">R$ 0</div><p class="hint" id="pn-divida-sub"></p></div>
         <div class="result" id="pn-meta-caixa"><div class="rotulo">Meta do mês (aba Meta)</div><div class="big" id="pn-meta">R$ 0</div><p class="hint" id="pn-meta-sub"></p></div>
       </div>
     </div>
@@ -725,7 +725,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
     <div class="blocos" style="margin-top:16px">
       <div class="panel">
         <h2>Quem está devendo</h2>
-        <p class="sub">Do atraso maior para o menor. O nome abre a ficha.</p>
+        <p class="sub" id="pn-devendo-sub">Do atraso maior para o menor. O nome abre a ficha.</p>
         <div id="pn-devendo"></div>
       </div>
       <div class="panel falt">
@@ -922,11 +922,11 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 
     <div class="panel">
       <h2>Situação de cada paciente</h2>
-      <p class="sub">Primeiro quem está atrasado. O botão registra um pagamento de hoje, no valor do ciclo dele.</p>
+      <p class="sub">Primeiro quem deve mais. "Deve" são as sessões já cobradas e ainda não pagas, como na planilha. O botão registra um pagamento de hoje, no valor do ciclo dele.</p>
       <div class="tabwrap">
         <table class="tab" id="pg-tabela">
           <thead><tr>
-            <th>Paciente</th><th>Cobrança</th><th>Último pagamento</th><th>Próximo pagamento</th><th>Situação</th><th></th>
+            <th>Paciente</th><th>Deve</th><th>Cobrança</th><th>Último pagamento</th><th>Próximo pagamento</th><th>Situação</th><th></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -1289,7 +1289,7 @@ function renderHoje(){
   var alvo = document.getElementById("hoje-cartoes");
   alvo.innerHTML = "";
   lista.forEach(function(s){
-    var p = s.paciente, pg = situacaoPagamento(p), pr = p.prontuario || {};
+    var p = s.paciente, pg = situacaoPagamento(p), pr = p.prontuario || {}, dv = textoDevido(p);
     var estado = rot[s.estado] || (jaPassou(hoje, s.hora) ? "a confirmar" : "prevista");
     var c = document.createElement("button");
     c.className = "pcard";
@@ -1299,7 +1299,8 @@ function renderHoje(){
         '<span class="n">'+esc(p.nome)+'</span>' +
         '<span class="sub">'+String(s.hora).padStart(2,"0")+'h · '+estado+'</span>' +
         '<span class="pr">'+(pr.ultima ? "Prontuário até "+dataCurta(deISO(pr.ultima)) : esc(p.codigo||""))+'</span>' +
-        '<span class="selo '+pg.classe+'">'+esc(pg.texto)+'</span>' +
+        (dv.classe==="atraso" ? '<span class="selo atraso">'+esc(dv.texto)+'</span>'
+                              : '<span class="selo '+pg.classe+'">'+esc(pg.texto)+'</span>') +
       '</span>';
     c.addEventListener("click", function(){ abrirFicha(p); });
     alvo.appendChild(c);
@@ -2257,6 +2258,8 @@ function abrirFicha(p, foco){
         '<span>Próximo: <b>'+(s.venc ? dataLonga(s.venc) : "—")+'</b></span>' +
         '<span>'+rotuloCobranca(p)+': <b>'+moeda(p.valor)+'</b></span>' +
       '</div>';
+    var dv = textoDevido(p);
+    h += '<p style="margin:8px 0 0"><span class="sit '+dv.classe+'">'+esc(dv.texto.charAt(0).toUpperCase()+dv.texto.slice(1))+'</span> <span class="hint">'+esc(dv.titulo)+'</span></p>';
     if(lista.length){
       h += '<div style="margin-top:8px">';
       lista.forEach(function(g){
@@ -2458,6 +2461,49 @@ function situacaoPagamento(p){
   if(dias<=3)  return {chave:"atencao", classe:"atencao", texto:"Vence em "+dias+(dias>1?" dias":" dia"), venc:v, dias:dias, ultimo:u, peso:2};
   return {chave:"ok", classe:"ok", texto:"Em dia", venc:v, dias:dias, ultimo:u, peso:3};
 }
+/* Quanto o paciente deve (pedido dele, 01/10/2026: era por aqui que ele se localizava na
+   planilha, pelas colunas Qtd. Sessões a Pagar e Valor a Pagar). A mesma conta de lá:
+   sessões cobradas × valor por sessão, menos uma cortesia se houver, menos tudo o que o
+   prontuário já pagou. As sessões vêm da planilha até o dia em que ela foi salva (basePlanilha)
+   e, dali em diante, da agenda: sessão que já passou e cobra (realizada, a confirmar ou falta
+   sem aviso). Negativo quer dizer que pagou adiantado. Sem leitura da planilha não há base. */
+var devidoCache = null;
+function devidoDe(p){
+  if(!devidoCache) devidoCache = {};
+  if(devidoCache[p.id] !== undefined) return devidoCache[p.id];
+  var vs = valorSessao(p), r = null;
+  if(p.basePlanilha && vs > 0){
+    var hoje = hoje0(), depois = 0;
+    for(var d = somaDias(deISO(p.basePlanilha), 1); d <= hoje; d = somaDias(d, 1)){
+      sessoesDoDia(d).forEach(function(s){
+        if(s.paciente.id === p.id && cobraSessao(s.estado) && jaPassou(d, s.hora)) depois++;
+      });
+    }
+    var pago = 0;
+    pagamentosDe(p.id).forEach(function(g){ pago += Number(g.valor)||0; });
+    var sessoes = (Number(p.sessoesPlanilha)||0) - (Number(p.cortesiaPlanilha)||0) + depois;
+    var exato = Math.round((sessoes * vs - pago) * 100) / 100;
+    /* como a planilha: a sessão paga pela metade ainda é uma sessão a pagar, e o valor a pagar
+       é o de sessões inteiras (conferido em 01/10/2026: assim os 19 pacientes batem com ela).
+       Adiantado só conta sessão inteira já paga. */
+    var n = exato > 0.005 ? Math.ceil(exato / vs - 1e-6) : -Math.floor(-exato / vs + 1e-6);
+    r = {valor:n * vs, sessoes:n, exato:exato, depois:depois, pago:pago, base:p.basePlanilha};
+  }
+  devidoCache[p.id] = r;
+  return r;
+}
+function plural(n, um, varios){ return String(n).replace(".", ",") + " " + (Math.abs(n) === 1 ? um : varios); }
+/* frase curta para tabela, cartão e ficha: "deve 3 sessões · R$ 525", "em dia", "2 sessões adiantadas" */
+function textoDevido(p){
+  var d = devidoDe(p);
+  if(!d) return {classe:"sem", texto:"sem base", titulo:"Leia a planilha uma vez para o app saber quantas sessões já foram cobradas."};
+  var titulo = "Planilha até " + dataCurta(deISO(d.base)) + ", mais " + plural(d.depois, "sessão", "sessões") + " da agenda desde então; já pagou " + moeda(d.pago) + "." +
+    (d.valor > 0.5 && Math.abs(d.valor - d.exato) > 0.5 ? " A diferença exata é " + moeda(d.exato) + "." : "");
+  if(d.valor > 0.5) return {classe:"atraso", texto:"deve " + plural(d.sessoes, "sessão", "sessões") + " · " + moeda(d.valor), titulo:titulo};
+  if(d.valor < -0.5) return {classe:"ok", texto:plural(-d.sessoes, "sessão adiantada", "sessões adiantadas"), titulo:titulo};
+  return {classe:"ok", texto:"nada a pagar", titulo:titulo};
+}
+
 /* a grade pergunta isso célula por célula: calcula uma vez por desenho, não vinte */
 function mapaDeAtraso(){
   if(atrasoCache) return atrasoCache;
@@ -2524,7 +2570,9 @@ function renderPagamentos(){
     recebidos.length + (recebidos.length===1 ? " pagamento registrado" : " pagamentos registrados");
 
   var linhas = dados.pacientes.map(function(p){ return {p:p, s:situacaoPagamento(p)}; });
+  var deve = function(l){ var d = devidoDe(l.p); return d && d.valor > 0.5 ? d.valor : 0; };
   linhas.sort(function(a,b){
+    if(deve(a) !== deve(b)) return deve(b) - deve(a);
     if(a.s.peso!==b.s.peso) return a.s.peso - b.s.peso;
     if(a.s.venc && b.s.venc && (a.s.venc - b.s.venc)) return a.s.venc - b.s.venc;
     return (a.p.dia - b.p.dia) || (a.p.hora - b.p.hora);
@@ -2544,12 +2592,13 @@ function renderPagamentos(){
   var tb = document.querySelector("#pg-tabela tbody");
   tb.innerHTML = "";
   linhas.forEach(function(l){
-    var p = l.p, s = l.s;
+    var p = l.p, s = l.s, dv = textoDevido(p);
     var tr = document.createElement("tr");
-    if(s.chave==="atraso") tr.className = "linha-atraso";
+    if(s.chave==="atraso" || dv.classe==="atraso") tr.className = "linha-atraso";
     tr.innerHTML =
       '<td><span class="quem"><span class="ini">'+esc(inicial1(p))+'</span>' +
         '<button class="linknome" data-ficha="'+p.id+'">'+esc(p.nome)+'</button></span></td>' +
+      '<td><span class="sit '+dv.classe+'" title="'+esc(dv.titulo)+'">'+esc(dv.texto)+'</span></td>' +
       '<td>'+rotuloCobranca(p)+'<br><span class="hint">'+moeda(p.valor)+' por ciclo</span></td>' +
       '<td>'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio||"")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
       '<td>'+(s.venc ? dataLonga(s.venc)+'<br><span class="hint">'+DIAS_CURTO[s.venc.getDay()].toLowerCase()+'</span>' : "—")+'</td>' +
@@ -2847,6 +2896,32 @@ function renderPainel(){
       }).join("") +
       '<tr><td><b>Total</b></td><td></td><td class="num"><b>'+moeda(divida)+'</b></td></tr></tbody></table>'
     : '<p class="pvazio">Ninguém em atraso.</p>';
+
+  /* 2b. com a planilha lida, a lista passa a ser a do que cada um deve de verdade: sessões
+     cobradas e não pagas, e o valor (pedido dele, 01/10/2026). Sem leitura, fica a lista acima. */
+  if(dados.pacientes.some(function(p){ return devidoDe(p); })){
+    var deve = [];
+    dados.pacientes.forEach(function(p){ var d = devidoDe(p); if(d && d.valor > 0.5) deve.push({p:p, d:d, s:situacaoPagamento(p)}); });
+    deve.sort(function(a,b){ return b.d.valor - a.d.valor; });
+    var totalDeve = deve.reduce(function(t,x){ return t + x.d.valor; }, 0);
+    var totalSess = Math.round(deve.reduce(function(t,x){ return t + x.d.sessoes; }, 0) * 10) / 10;
+    document.getElementById("pn-divida-rot").textContent = "Sessões já cobradas e não pagas";
+    document.getElementById("pn-divida").textContent = moeda(totalDeve);
+    document.getElementById("pn-divida-sub").textContent = deve.length
+      ? plural(deve.length, "paciente", "pacientes") + " · " + plural(totalSess, "sessão", "sessões") : "ninguém devendo";
+    document.getElementById("pn-devendo-sub").textContent = "De quem deve mais para quem deve menos, pela mesma conta da planilha. O nome abre a ficha.";
+    document.getElementById("pn-devendo").innerHTML = deve.length
+      ? '<table class="tab"><thead><tr><th>Paciente</th><th class="num">Sessões</th><th class="num">Valor</th><th>Pagamento</th></tr></thead><tbody>' +
+        deve.map(function(x){
+          return '<tr class="linha-atraso"><td><div class="quem"><span class="ini">'+esc(inicial1(x.p))+'</span>' +
+            '<button class="linknome" data-ficha="'+x.p.id+'">'+esc(x.p.nome)+'</button></div></td>' +
+            '<td class="num">'+String(x.d.sessoes).replace(".", ",")+'</td>' +
+            '<td class="num"><b>'+moeda(x.d.valor)+'</b></td>' +
+            '<td><span class="sit '+x.s.classe+'">'+esc(x.s.texto)+'</span></td></tr>';
+        }).join("") +
+        '<tr><td><b>Total</b></td><td class="num"><b>'+String(totalSess).replace(".", ",")+'</b></td><td class="num"><b>'+moeda(totalDeve)+'</b></td><td></td></tr></tbody></table>'
+      : '<p class="pvazio">Ninguém devendo sessão.</p>';
+  }
 
   /* a meta é a da aba Meta: o que ele quer receber mais os custos, antes do imposto */
   var metaFat = ((+c.meta||0) + (+c.custos||0)) / Math.max(0.01, 1 - (+c.imposto||0)/100);
@@ -3215,6 +3290,10 @@ function lerRegistro(celulas){
     fim:        function(t){ return t.indexOf("final") === 0 || t.indexOf("fim") === 0; },
     sessoes:    function(t){ return t.indexOf("qtd. de sessoes") === 0 || t.indexOf("qtd de sessoes") === 0; },
     remarcacoes:function(t){ return t.indexOf("remarcac") === 0; },
+    /* para o saldo devedor de cada paciente (01/10/2026): a cortesia abate uma sessão, e o
+       "Valor a Pagar" da planilha serve só de conferência da conta feita aqui */
+    cortesia:   function(t){ return t.indexOf("cortesia") >= 0; },
+    aPagar:     function(t){ return t.indexOf("valor a pagar") === 0; },
     /* "Identidade de Gênero": o texto do prontuário é flexionado por ela, nunca pelo nome */
     genero:     function(t){ return t.indexOf("genero") >= 0; }
   });
@@ -3242,7 +3321,9 @@ function lerRegistro(celulas){
       fim: cabecalho.fim ? dataDoExcel(l[cabecalho.fim]) : "",
       sessoes: cabecalho.sessoes ? numero(l[cabecalho.sessoes]) : 0,
       remarcacoes: cabecalho.remarcacoes ? numero(l[cabecalho.remarcacoes]) : 0,
-      genero: cabecalho.genero ? generoDe(l[cabecalho.genero]) : ""
+      genero: cabecalho.genero ? generoDe(l[cabecalho.genero]) : "",
+      cortesia: (cabecalho.cortesia && semAcento(l[cabecalho.cortesia]||"").indexOf("sim") === 0) || !!(anterior && anterior.cortesia),
+      aPagar: cabecalho.aPagar ? numero(l[cabecalho.aPagar]) : 0
     };
     /* o primeiro início e a soma das sessões valem para o paciente, não só para o ciclo */
     if(anterior){
@@ -3425,7 +3506,8 @@ function montarLeitura(celulas, preenchimentos, registro){
       codigo: r.codigo, nome: escolhida.nome, nomeCompleto: r.nome, freq: freq, cobranca: cobranca,
       valor: r.valor, dia: escolhida.dia, hora: escolhida.hora,
       status: r.status, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || "",
-      genero: r.genero || ""
+      genero: r.genero || "",
+      sessoesPlanilha: r.sessoesTotais || 0, cortesiaPlanilha: r.cortesia ? 1 : 0, aPagarPlanilha: r.aPagar || 0
     });
   });
 
@@ -3530,6 +3612,10 @@ function aplicarLeitura(leitura){
       status: p.status || "", inicio: p.inicio || "", fim: p.fim || "",
       meet: antigo ? (antigo.meet || "") : "",
       genero: p.genero || (antigo ? (antigo.genero || "") : ""),
+      /* a base do saldo devedor: quantas sessões a planilha contava no dia em que o arquivo foi
+         salvo. Dali em diante quem conta é a agenda (ver devidoDe) */
+      sessoesPlanilha: p.sessoesPlanilha || 0, cortesiaPlanilha: p.cortesiaPlanilha || 0,
+      basePlanilha: leitura.baseData || chaveData(hoje0()),
       /* o resumo do prontuário vem do Claude, não da planilha: ler a planilha não pode apagá-lo */
       prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined
     };
@@ -3612,7 +3698,7 @@ function mostrarView(v){
 function mesDaSemana(){ var q = somaDias(semana, 3); mesRef = new Date(q.getFullYear(), q.getMonth(), 1); }
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
-  atrasoCache = null; cacheMes = {}; cacheNomes = null;
+  atrasoCache = null; devidoCache = null; cacheMes = {}; cacheNomes = null;
   conferirAprovados();
   renderSemana(); renderMes(); renderSessoes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos();
 }
@@ -3673,6 +3759,9 @@ document.getElementById("arquivo-planilha").addEventListener("change", function(
     .then(function(buffer){ return interpretarPlanilha(buffer); })
     .then(function(leitura){
       if(!leitura.pacientes.length) throw new Error("não achei nenhum paciente ativo na grade");
+      /* a contagem de sessões da planilha vale para o dia em que o Excel a salvou */
+      var salvoEm = new Date(arquivo.lastModified || Date.now()), hojeL = hoje0();
+      leitura.baseData = chaveData(salvoEm > hojeL ? hojeL : salvoEm);
       avisarLeitura("");
       mostrarLeitura(leitura);
     })
