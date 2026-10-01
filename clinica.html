@@ -1336,6 +1336,9 @@ function estadoCelula(dia, hora, data){
   }
   /* as duas linhas da célula dizem o estado inteiro: "Atendimento" em cima, divulgado ou não embaixo */
   var bloco = dados.blocos[dia+"-"+hora];
+  /* o que está divulgado hoje não diz o que estava divulgado no passado: nas semanas que já
+     passaram o horário aparece só como atendimento, sem "Divulgado" (pedido dele, 01/10/2026) */
+  if(bloco==="divulgado" && data < inicioSemana(hoje0())) bloco = "reservado";
   if(bloco==="divulgado") return {classe:"divulgado", nome:"Atendimento", etiqueta:"Divulgado", paciente:null};
   /* o não divulgado ocupa quase toda a grade: repetir "Atendimento / Não divulgado" em
      cada hora virava ruído e abafava as sessões. Fica a hachura, uma palavra só, e a
