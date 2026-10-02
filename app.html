@@ -538,7 +538,7 @@ function filtroCategoria(todos, qual){
   if (cats.length < 2) return "";
   const vistos = filtrar(todos, qual);
   return `<label class="filtro-cat">Categoria <select data-filtrocat="${qual}" aria-label="Filtrar por categoria">
-    <option value="">todas</option>${cats.map(c => `<option value="${escH(c)}"${filtroCat[qual] === c ? " selected" : ""}>${escH(comPonto(c))}</option>`).join("")}</select>
+    <option value="">todas</option>${cats.map(c => `<option value="${escH(c)}"${filtroCat[qual] === c ? " selected" : ""}>${escH(comPonto(nomeCat(c)))}</option>`).join("")}</select>
     ${filtroCat[qual] ? `<span>${vistos.length} de ${todos.length} · ${dinheiro(soma(vistos, l => l.valor))}</span>` : ""}</label>`;
 }
 function ordemCelular(qual){
@@ -563,7 +563,7 @@ function configLancamento(padrao){
     pessoal: soCasa ? null : {
       explica: "Só meu. Entra inteiro no meu mês.",
       tipos: [["Despesa","Despesa",""], ["Receita","Receita","Entrada que não é de paciente (pagamento de paciente é lançado na Clínica)."],
-              ["Aporte","Aporte na reserva","Dinheiro que foi para a reserva."], ["Resgate","Resgate da reserva","Dinheiro que saiu da reserva. O gasto feito com ele é lançado à parte, como despesa."]],
+              ["Aporte","Aporte na reserva","Dinheiro que foi para a reserva de emergência."], ["Resgate","Resgate da reserva","Dinheiro que saiu da reserva de emergência. O gasto feito com ele é lançado à parte, como despesa."]],
       grupos: Categorias.GRUPOS_DINHEIRO, formas: FORMAS },
     casa: {
       explica: `Da casa, dividido com ${primeiro(soCasa ? p1 : p2)}. Entra na balança.`,
@@ -615,6 +615,9 @@ const sinalDin = v => (v < -0.005 ? "−" : "") + dinheiro(Math.abs(v));
 const semPonto = s => String(s || "").replace(/\.$/, "").replace(". (", " (");
 // na tela, categoria e descrição terminam com ponto (pedido dele, 02/10/2026); o dado guardado continua sem
 const comPonto = FormLancamento.comPonto;
+// O nome certo da reserva é "Reserva de emergência" (correção dele, 02/10/2026). O dado guardado
+// continua "Reserva", que é a chave das contas; só o que aparece na tela muda.
+const nomeCat = c => semPonto(c) === "Reserva" ? "Reserva de emergência" : semPonto(c);
 const dataCurta = d => (d || "").slice(8, 10) + "/" + (d || "").slice(5, 7);
 const nd = motivo => `<b class="nota" style="font-size:22px">—</b><small>${motivo}</small>`;
 
@@ -744,13 +747,38 @@ function cardSituacao(d){
 `;
 }
 
+// Na aba Tudo, a lista de tudo o que ele lançou no mês (pedido dele, 02/10/2026): os lançamentos
+// pessoais e, da Casa, só as compras dele. As da Ana ficam na tela da Casa.
+function painelMeusLancamentos(){
+  const eu = livro.casa.pessoas[0];
+  const itens = livro.matheus.lancamentos.filter(noMes).map(l => ({ l, onde:"matheus" }))
+    .concat(livro.casa.lancamentos.filter(noMes).filter(l => l.quem === eu).map(l => ({ l, onde:"casa" })))
+    .sort((a, b) => (b.l.data || "").localeCompare(a.l.data || ""));
+  const linha = ({ l, onde }) => {
+    const casa = onde === "casa", lugar = casa ? "Casa" : "Pessoal";
+    const cls = !casa && (l.tipo === "Receita" || l.tipo === "Resgate") ? "pos" : "";
+    const sinal = cls ? "+ " : casa || l.tipo === "Despesa" ? "− " : "";
+    const cat = nomeCat(l.categoria) + (!casa && l.tipo !== "Despesa" ? " · " + semPonto(l.tipo) : "");
+    return `<tr><td class="c-data">${dataCurta(l.data)}</td>
+      <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : nomeCat(l.categoria)))}</b><span class="so-cel">${escH(comPonto(lugar + " · " + cat))}</span></td>
+      <td class="c-cat">${lugar}.</td><td class="c-forma">${escH(comPonto(cat))}</td>
+      <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
+      <td class="c-x"><button class="x lapis" data-editar="${onde}:${l.id}" aria-label="Alterar" title="Alterar">✎</button></td></tr>`;
+  };
+  return `<section class="painel" style="margin-top:16px"><h2>Meus lançamentos<span class="dir">${itens.length} no mês</span></h2>
+    ${itens.length ? `<table class="t"><thead><tr><th>Dia</th><th>Descrição</th><th>De onde</th><th>Categoria</th><th class="dir">Valor</th><th></th></tr></thead>
+      <tbody>${itens.map(linha).join("")}</tbody></table>
+      <p class="nota">Os seus lançamentos pessoais e as compras da casa que você pagou. As compras da Ana aparecem na Casa.</p>`
+      : `<p class="vazio">Nenhum lançamento seu em ${MESES[ref.getMonth()]}.</p>`}</section>`;
+}
+
 function telaTudo(){
   const d = contasDinheiro(), c = contasCasa(), cl = contasClinica(), cart = carteiraAgora();
   const r = livro.matheus.reserva;
   const [p1, p2] = livro.casa.pessoas;
-  const patrimonio = rosca([["Reserva", d.reserva, "var(--c3)", r.meta ? `${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}` : ""],
+  const patrimonio = rosca([["Reserva de emergência", d.reserva, "var(--c3)", r.meta ? `${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}` : ""],
                             ["Cripto", cart ? cart.total : 0, "var(--c4)", cart ? "lida em " + new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : ""]],
-                           "patrimônio", "Patrimônio: reserva e cripto");
+                           "patrimônio", "Patrimônio: reserva de emergência e cripto");
 
   return barraMes() + formLancamento("") + cardSituacao(d) + `
 
@@ -772,6 +800,8 @@ function telaTudo(){
       </div></section>
   </div>
 
+  ${painelMeusLancamentos()}
+
   <details class="origem"><summary>De onde vem cada número</summary>
     Recebi: receitas soltas do Dinheiro mais os pagamentos da Clínica (pacientes e acertos). Gastei: despesas lançadas no mês,
     sem a categoria moradia, mais os gastos fixos do mês e o que você pagou na casa, como manda o sistema Ciclo do Dinheiro
@@ -787,9 +817,9 @@ function linhaLanc(l){
   const sinal = cls ? "+ " : l.tipo === "Despesa" ? "− " : "";
   const tipo = l.tipo !== "Despesa" ? ` · ${semPonto(l.tipo)}` : "";
   // linha composta leva um ponto só, no fim: "Reserva · Resgate." (correção dele, 02/10/2026)
-  const cat = semPonto(l.categoria), forma = semPonto(l.forma);
+  const cat = nomeCat(l.categoria), forma = semPonto(l.forma);
   return `<tr><td class="c-data">${dataCurta(l.data)}</td>
-    <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : l.categoria))}</b><span class="so-cel">${escH(comPonto([cat, forma].filter(Boolean).join(" · ") + tipo))}</span></td>
+    <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : cat))}</b><span class="so-cel">${escH(comPonto([cat, forma].filter(Boolean).join(" · ") + tipo))}</span></td>
     <td class="c-cat">${escH(comPonto(cat + tipo))}</td><td class="c-forma">${escH(comPonto(forma))}</td>
     <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
     <td class="c-x"><button class="x lapis" data-editar="matheus:${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="matheus:lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
@@ -954,7 +984,7 @@ function telaDinheiro(){
     <tbody>${filtrar(doMes, "lanc").map(linhaLanc).join("")}</tbody></table>`
     : `<p class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</p>`;
 
-  const formReserva = `<details class="novo"><summary>Ajustar a reserva</summary><form class="linha" id="fReserva">
+  const formReserva = `<details class="novo"><summary>Ajustar a reserva de emergência</summary><form class="linha" id="fReserva">
     <div><label>Saldo conferido</label><input type="number" name="saldoBase" step="0.01" inputmode="decimal" value="${r.saldoBase || ""}"></div>
     <div><label>Conferido em</label><input type="date" name="dataBase" value="${r.dataBase || ""}"></div>
     <div><label>Meta</label><input type="number" name="meta" step="0.01" inputmode="decimal" value="${r.meta || ""}"></div>
@@ -967,7 +997,7 @@ function telaDinheiro(){
     <div class="coluna">
       <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias()}</section>
       ${painelLimites()}
-      <section class="painel"><h2>Reserva</h2>
+      <section class="painel"><h2>Reserva de emergência</h2>
         <div class="stats duas-col" style="margin-bottom:12px">
           <div class="stat"><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
           <div class="stat"><span>Meta</span><b>${r.meta ? dinheiro(r.meta) : "—"}</b></div>

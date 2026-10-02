@@ -569,6 +569,8 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 @media (max-width:700px){ .plot .rot{font-size:8.5px} .plot i{width:8px} .plot .col:nth-child(even) .rot{transform:translateY(-11px)} }
 /* a lista de sessões vinha colada na legenda da grade */
 #v-sessoes .bar{margin-top:24px}
+#v-sessoes h2 .ss-n{font:400 12.5px/1 inherit; color:var(--muted); margin-left:6px}
+#ss-p-marcar{border-color:var(--quente-line)}
 /* ---------- marketing (01/10/2026) ---------- */
 /* um cartão por vez que ele turbinou: nome do post, situação e os números em colunas */
 .mk-an{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px}
@@ -738,9 +740,19 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       </div>
       <label class="ss-desde" for="ss-desde">Contando desde <input type="date" id="ss-desde" aria-label="A partir de quando a agenda registra o que aconteceu"></label>
     </div>
+    <div class="panel hidden" id="ss-p-marcar" style="margin-bottom:16px">
+      <h2>Falta marcar</h2>
+      <p class="sub" id="ss-marcar-sub"></p>
+      <div class="tabwrap">
+        <table class="tab" id="ss-marcar">
+          <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
     <div class="panel">
-      <h2>Uma linha por sessão</h2>
-      <p class="sub">O que aconteceu com cada sessão do mês. A linha nasce do horário fixo do paciente e a situação é a que você deu na grade da semana; mudar aqui muda lá também. Quem faltou sem avisar 24 horas antes é cobrado; remarcada, cortesia e "não haverá" não cobram.</p>
+      <h2>Histórico de sessões <small class="ss-n" id="ss-historico-n"></small></h2>
+      <p class="sub">Uma linha por sessão que já passou e que você marcou, da mais recente para a mais antiga. O histórico vai se formando conforme você marca na grade da semana ou aqui; mudar aqui muda lá também. Quem faltou sem avisar 24 horas antes é cobrado; remarcada, cortesia e "não haverá" não cobram.</p>
       <div class="leg-sit">
         <span><i style="background:var(--ok-soft); border-color:var(--ok)"></i>Realizada</span>
         <span><i style="background:var(--quente-bg); border-color:var(--quente-line)"></i>A confirmar</span>
@@ -757,6 +769,16 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
         </table>
       </div>
       <p class="hint" style="margin-top:10px">A data em "Contando desde" diz a partir de quando a agenda registra o que de fato aconteceu; antes dela, o mês é só projeção e fica de fora das contas por paciente e do painel.</p>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>Sessões previstas <small class="ss-n" id="ss-previstas-n"></small></h2>
+      <p class="sub">O que ainda vai acontecer neste mês, pela agenda. Depois da hora, a sessão sobe para "Falta marcar" até você dizer o que aconteceu.</p>
+      <div class="tabwrap">
+        <table class="tab" id="ss-previstas">
+          <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -3078,13 +3100,36 @@ function renderSessoes(){
   document.getElementById("ss-sub").textContent = lista.length + (lista.length===1 ? " sessão na agenda do mês" : " sessões na agenda do mês") +
     (foraDoRegistro(ref.getFullYear(), ref.getMonth()) ? " · antes de Contando desde: só projeção" : "");
 
-  var tb = document.querySelector("#ss-tabela tbody");
-  tb.innerHTML = "";
-  if(!lista.length){
-    tb.innerHTML = '<tr><td colspan="5"><p class="pvazio">Nenhuma sessão na agenda deste mês.</p></td></tr>';
-    return;
+  /* Três listas (pedido dele, 02/10/2026): o que falta marcar (sessão que já passou e ele não disse
+     o que aconteceu, de qualquer mês desde "Contando desde"), o histórico do mês (o que já passou e
+     tem marca: vai se formando conforme ele marca na grade ou aqui) e as previstas do mês. */
+  var tb = document.getElementById("v-sessoes");
+  var falta = [];
+  for(var dm = mesDesde(); dm <= hoje; dm = somaDias(dm, 1)){
+    (function(d){
+      sessoesDoDia(d, true).forEach(function(s){
+        if(s.estado==="sessao" && jaPassou(d, s.hora)) falta.push({data:d, hora:s.hora, paciente:s.paciente, estado:s.estado, origem:s.origem});
+      });
+    })(dm);
   }
-  lista.forEach(function(s){
+  var cronologica = function(a, b){ return (a.data - b.data) || (a.hora - b.hora); };
+  var feitas = lista.filter(function(s){ return jaPassou(s.data, s.hora) && s.estado!=="sessao"; }).sort(function(a, b){ return cronologica(b, a); });
+  var futuras = lista.filter(function(s){ return !jaPassou(s.data, s.hora); }).sort(cronologica);
+  var nomeMes = ref.toLocaleDateString("pt-BR",{month:"long"});
+  document.getElementById("ss-p-marcar").classList.toggle("hidden", !falta.length);
+  document.getElementById("ss-marcar-sub").textContent = plural(falta.length, "sessão já passou", "sessões já passaram") +
+    " e você ainda não disse o que aconteceu. Marque aqui ou na grade: ela sai desta lista e entra no histórico.";
+  document.getElementById("ss-historico-n").textContent = feitas.length ? plural(feitas.length, "sessão", "sessões") + " em " + nomeMes : "";
+  document.getElementById("ss-previstas-n").textContent = futuras.length ? plural(futuras.length, "sessão", "sessões") + " em " + nomeMes : "";
+  var preencher = function(id, itens, vazio){
+    var corpo = document.querySelector("#" + id + " tbody");
+    corpo.innerHTML = itens.length ? "" : '<tr><td colspan="5"><p class="pvazio">' + vazio + '</p></td></tr>';
+    itens.forEach(function(s){ corpo.appendChild(linhaDaSessao(s)); });
+  };
+  preencher("ss-marcar", falta, "");
+  preencher("ss-tabela", feitas, "Nenhuma sessão marcada em " + nomeMes + " ainda.");
+  preencher("ss-previstas", futuras, "Nenhuma sessão por vir em " + nomeMes + ".");
+  function linhaDaSessao(s){
     var k = chaveData(s.data)+"|"+s.hora;
     var futuro = !jaPassou(s.data, s.hora);
     var tr = document.createElement("tr");
@@ -3108,8 +3153,8 @@ function renderSessoes(){
       '<td><button class="linknome" data-ficha="'+s.paciente.id+'">'+esc(nomeCurto(s.paciente))+'</button></td>' +
       '<td>'+situacao+'</td>' +
       '<td class="num">'+(cobraSessao(s.estado) ? moeda(valorSessao(s.paciente)) : '<span class="hint">'+moeda(valorSessao(s.paciente))+' não cobrado</span>')+'</td>';
-    tb.appendChild(tr);
-  });
+    return tr;
+  }
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
     b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.ficha); if(p) abrirFicha(p); });
   });
