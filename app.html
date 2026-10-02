@@ -71,6 +71,7 @@ nav.abas button[aria-pressed="true"]{background:var(--surface);color:var(--text)
 .duas{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;margin-top:18px}
 .duas.igual{grid-template-columns:1fr 1fr}
 .duas.larga{grid-template-columns:1.75fr 1fr;align-items:start}
+.duas.inv{grid-template-columns:1fr 1.35fr}
 .coluna{display:grid;gap:18px;align-content:start;min-width:0}
 
 /* situação do mês */
@@ -165,6 +166,30 @@ td.c-x{white-space:nowrap}
 .pd.feita b{color:var(--muted);font-weight:500}
 .pd .trilho{margin-top:4px}
 details.pd-fechadas{margin-top:12px} details.pd-fechadas summary{cursor:pointer;font-size:13px;color:var(--muted)}
+@container (max-width:560px){ .pd{grid-template-columns:minmax(0,1fr) auto} .pd .pd-acoes{grid-column:1 / -1} }
+/* as vistas do Dinheiro (01/10/2026): Lançamentos, Gastos fixos, Pendências e Mês a mês, cada uma na sua tela */
+.subabas{display:flex;gap:2px;margin:12px 0 4px;box-shadow:inset 0 -1px 0 var(--line);overflow-x:auto;scrollbar-width:none}
+.subabas::-webkit-scrollbar{display:none}
+.subabas button{border:0;background:transparent;color:var(--muted);padding:9px 14px;cursor:pointer;font-size:14px;white-space:nowrap}
+.subabas button:hover{color:var(--text)}
+.subabas button[aria-pressed="true"]{color:var(--text);font-weight:600;box-shadow:inset 0 -2px 0 var(--text)}
+.subabas button em{font-style:normal;font-size:11.5px;font-weight:600;margin-left:6px;padding:1px 7px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
+.stats.tres{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px}
+.bloco{margin-top:18px}
+.fx-grupos > .bloco:first-child{margin-top:0}
+/* as tabelas dos grupos de fixos com as mesmas colunas, para um grupo alinhar com o outro */
+table.fixos{table-layout:fixed}
+table.fixos th:nth-child(2){width:30%} table.fixos th:nth-child(3){width:90px} table.fixos th:nth-child(4){width:170px} table.fixos th:nth-child(5){width:30px}
+details.fx-fora-d > summary{cursor:pointer;font-size:14px;color:var(--muted)}
+details.fx-fora-d[open] > summary{margin-bottom:12px}
+/* mês a mês em lista: um mês por linha, com o que sobrou à direita */
+.hm{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:4px 14px;align-items:baseline;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;padding:10px 4px;cursor:pointer;border-radius:0}
+.hm:first-child{border-top:0}
+.hm:hover{background:var(--surface-2)}
+.hm .hm-m{font-weight:600;text-transform:capitalize}
+.hm .hm-d{color:var(--muted);font-size:13px}
+.hm b{white-space:nowrap}
+.hm b small{font-weight:400;color:var(--faint);font-size:12px;margin-right:6px}
 /* formulários atrás de um botão */
 details.novo{margin:0 0 12px}
 details.novo > summary{list-style:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:1px solid var(--line);background:var(--surface);padding:6px 12px;border-radius:var(--radius);font-size:14px}
@@ -192,7 +217,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 .na-casca #nuvem-entrar,.na-casca .marca,.na-casca #tema,.na-casca nav.abas{display:none !important}
 
 @media (max-width:960px){
-  .duas,.duas.igual,.duas.larga{grid-template-columns:1fr}
+  .duas,.duas.igual,.duas.larga,.duas.inv{grid-template-columns:1fr}
   .situ{grid-template-columns:1fr}
 }
 /* ---------- celular: aqui sim, jeito de app ---------- */
@@ -230,6 +255,12 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   input,select{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
   .pd{grid-template-columns:minmax(0,1fr) auto} .pd .pd-acoes{grid-column:1 / -1}
   .pd .pd-quem b{white-space:normal} .pd .pd-val{white-space:normal;max-width:190px}
+  .subabas{margin:8px 0 2px} .subabas button{padding:10px 6px;font-size:13px;flex:1 1 auto}
+  .subabas .so-larg{display:none} .subabas .so-cel{display:inline;font-size:inherit;color:inherit;overflow:visible}
+  .subabas button em{margin-left:4px;padding:1px 6px}
+  .stats.tres{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px} .stats.tres .stat:last-child{grid-column:1 / -1}
+  .bloco{margin-top:12px}
+  .hm{grid-template-columns:minmax(0,1fr) auto} .hm .hm-d{grid-column:1 / -1;grid-row:2}
 }
 /* celular: o botão de lançar fica sempre à mão, no canto de baixo */
 .fab{display:none}
@@ -643,8 +674,8 @@ function cardSituacao(d){
   <section class="painel"><h2>Situação do mês<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
     <div class="situ"><div>
       <div class="linha-k">
-        <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes${outros > 0.005 ? ` e ${dinheiro(outros)} de outras entradas` : ""}</small></div>
-        <div class="k"><span>Gastei${d.entrou > 0.005 ? ` <em class="pct-k${d.saiu > d.entrou + 0.005 ? " neg" : ""}">${Math.round(d.saiu / d.entrou * 100)}% do que recebi</em>` : ""}</span><b>${dinheiro(d.saiu)}</b><small>${dinheiro(lancado)} lançados, ${dinheiro(d.fixosMes)} de fixos e ${dinheiro(d.minhaCasa)} da casa</small></div>
+        <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small>${outros > 0.005 ? `<small>${dinheiro(outros)} de outras entradas</small>` : ""}</div>
+        <div class="k"><span>Gastei${d.entrou > 0.005 ? ` <em class="pct-k${d.saiu > d.entrou + 0.005 ? " neg" : ""}">${Math.round(d.saiu / d.entrou * 100)}% do que recebi</em>` : ""}</span><b>${dinheiro(d.saiu)}</b><small>${dinheiro(lancado)} lançados</small><small>${dinheiro(d.fixosMes)} de fixos</small><small>${dinheiro(d.minhaCasa)} da casa</small></div>
         <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
       </div>
       <div class="linha-k">
@@ -667,10 +698,10 @@ function telaTudo(){
 
   return barraMes() + formLancamento("") + cardSituacao(d) + `
 
-  <div class="duas">
-    <section class="painel"><h2>Para onde foi</h2>${roscaCategorias()}</section>
+  <div class="duas inv">
     <section class="painel"><h2>Patrimônio</h2>${patrimonio}
       ${cart ? "" : `<p class="nota">Abra a Carteira cripto uma vez neste aparelho para o total dela entrar aqui.</p>`}</section>
+    <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias()}</section>
   </div>
 
   <div class="duas igual">
@@ -727,10 +758,14 @@ function painelPendencias(){
         : `<button class="b s" data-pend-pago="${p.id}">${p.tipo === "receber" ? "Recebi uma parte" : "Paguei uma parte"}</button><button class="b s" data-pend-quitar="${p.id}">Quitar</button>`}
         <button class="x" data-pend-apagar="${p.id}" aria-label="Apagar" title="Apagar">×</button></div></div>`;
   };
+  // Tela própria (01/10/2026: no fim da tela do Dinheiro ele achou a lista mal organizada): os três
+  // totais em cima e, lado a lado, quem deve a ele e a quem ele deve, do maior para o menor.
+  const doTipo = tipo => abertas.filter(p => p.tipo === tipo).sort((x, y) => restantePend(y) - restantePend(x));
+  const aReceber = soma(doTipo("receber"), restantePend), aPagar = soma(doTipo("pagar"), restantePend);
   const grupo = (tipo, titulo) => {
-    const l = abertas.filter(p => p.tipo === tipo).sort((x, y) => restantePend(y) - restantePend(x));
-    return `<div class="pd-grupo">${titulo}<span>${dinheiro(soma(l, restantePend))}</span></div>` +
-      (l.length ? l.map(linha).join("") : `<p class="vazio">Nada em aberto.</p>`);
+    const l = doTipo(tipo);
+    return `<section class="painel"><h2>${titulo}<span class="dir">${l.length} em aberto</span></h2>` +
+      (l.length ? l.map(linha).join("") : `<p class="vazio">Nada em aberto.</p>`) + `</section>`;
   };
   const form = `<details class="novo"><summary>+ Nova pendência</summary><form class="linha" id="fPend">
     <div><label>É dinheiro</label><select name="tipo"><option value="receber">a receber</option><option value="pagar">a pagar</option></select></div>
@@ -742,11 +777,17 @@ function painelPendencias(){
     <div><label>Desde</label><input type="date" name="inicio" value="${hojeISO()}"></div>
     <div style="grid-column:span 2"><label>Observação</label><input name="obs" placeholder="opcional" autocomplete="off"></div>
     <div><button class="b p" type="submit">Guardar</button></div></form></details>`;
-  return `<section class="painel" style="margin-top:18px"><h2>Pendências<span class="dir">${abertas.length} em aberto</span></h2>${form}
-    ${todas.length ? grupo("receber", "A receber") + grupo("pagar", "A pagar") : `<p class="vazio">Nenhuma pendência. Use "+ Nova pendência", ou traga as da planilha.</p>`}
-    ${fechadas.length ? `<details class="pd-fechadas"><summary>Quitadas (${fechadas.length})</summary>${fechadas.map(linha).join("")}</details>` : ""}
-    <p class="nota" style="margin-top:12px">Esta lista só acompanha quem deve e quanto falta: ela não entra nas contas do mês. O dinheiro que entrar ou sair continua sendo lançado no lugar de sempre (recebimento de paciente na Clínica, o resto em "+ Novo lançamento").
-      <button class="b s" id="pendPlanilha" type="button" style="margin-left:6px">Trazer da planilha</button><input type="file" id="pendArquivo" accept=".xlsx" class="hidden"></p></section>`;
+  return `<div class="stats tres">
+      <div class="stat"><span>A receber</span><b class="pos">${dinheiro(aReceber)}</b><small>${doTipo("receber").length} em aberto</small></div>
+      <div class="stat"><span>A pagar</span><b>${dinheiro(aPagar)}</b><small>${doTipo("pagar").length} em aberto</small></div>
+      <div class="stat"><span>Diferença</span><b class="${aReceber - aPagar < -0.005 ? "neg" : ""}">${sinalDin(aReceber - aPagar)}</b><small>a receber menos a pagar</small></div>
+    </div>
+    <div class="bloco">${form}</div>
+    ${todas.length ? `<div class="duas igual" style="margin-top:0">${grupo("receber", "A receber")}${grupo("pagar", "A pagar")}</div>`
+      : `<section class="painel"><p class="vazio">Nenhuma pendência. Use "+ Nova pendência", ou traga as da planilha.</p></section>`}
+    ${fechadas.length ? `<section class="painel bloco"><details class="pd-fechadas" style="margin-top:0"><summary>Quitadas (${fechadas.length})</summary>${fechadas.map(linha).join("")}</details></section>` : ""}
+    <p class="nota" style="margin-top:14px">Esta lista só acompanha quem deve e quanto falta: ela não entra nas contas do mês. O dinheiro que entrar ou sair continua sendo lançado no lugar de sempre (recebimento de paciente na Clínica, o resto em "+ Novo lançamento").
+      <button class="b s" id="pendPlanilha" type="button" style="margin-left:6px">Trazer da planilha</button><input type="file" id="pendArquivo" accept=".xlsx" class="hidden"></p>`;
 }
 // Lê a aba Pendências da Controle Financeiro.xlsx no navegador e acrescenta o que ainda não está aqui
 // (mesmo nome, tipo, valor total e data de início contam como a mesma pendência).
@@ -777,36 +818,35 @@ async function importarPendencias(arquivo){
   return { novas, repetidas };
 }
 
-function telaDinheiro(){
-  const d = contasDinheiro();
-  const doMes = ordenar(livro.matheus.lancamentos.filter(noMes), "lanc");
-  const r = livro.matheus.reserva;
-  const km = chaveMes(ref);
-  // primeiro os que têm valor no mês aberto, na ordem do dia de vencimento; no fim, os que não cobram neste mês
-  const fixosMes = livro.matheus.gastosFixos.slice().sort((a, b) =>
-    ((valorFixo(b, km) > 0) - (valorFixo(a, km) > 0)) || ((Number(a.dia) || 99) - (Number(b.dia) || 99)) || (valorFixo(b, km) - valorFixo(a, km)));
+// O Dinheiro em quatro telas (pedido dele, 01/10/2026: fixos e pendências empilhados no fim da
+// tela ficavam mal organizados). A chave fica no alto; o mês aberto vale para todas.
+const VISTAS_DIN = [["mes","Lançamentos"],["fixos",'<span class="so-larg">Gastos fixos</span><span class="so-cel">Fixos</span>'],["pend","Pendências"],["hist","Mês a mês"]];
+let vistaDin = "mes";
+function subabasDinheiro(){
+  const n = pendencias().filter(p => !pendQuitada(p)).length;
+  return `<div class="subabas" role="group" aria-label="O que mostrar no Dinheiro">${VISTAS_DIN.map(([k, nome]) =>
+    `<button type="button" data-vd="${k}" aria-pressed="${k === vistaDin}">${nome}${k === "pend" && n ? `<em>${n}</em>` : ""}</button>`).join("")}</div>`;
+}
+
+// Gastos fixos separados pelo que interessa no mês: o que ainda vai sair, o que já saiu e,
+// recolhido, o que não cobra neste mês. Dentro de cada grupo, na ordem do dia.
+function vistaFixos(){
+  const km = chaveMes(ref), nome = MESES[ref.getMonth()];
   const hojeD = new Date(), mesCorrente = km === chaveMes(hojeD), mesPassado = km < chaveMes(hojeD);
-  const situFixo = g => {
-    if (!(valorFixo(g, km) > 0)) return `<span class="fx-sit">não cobra em ${MESES[ref.getMonth()]}</span>`;
-    if (!Number(g.dia)) return `<span class="fx-sit">sem dia marcado: conta como já saiu</span>`;
-    if (mesPassado || (mesCorrente && Number(g.dia) <= hojeD.getDate())) return `<span class="fx-sit ok">saiu no dia ${g.dia}</span>`;
-    return `<span class="fx-sit vai">vence no dia ${g.dia}</span>`;
-  };
-
-  const form = formLancamento("pessoal");
-
-  const lista = doMes.length ? `${ordemCelular("lanc")}<table class="t">${cabecalho("lanc")}
-    <tbody>${doMes.map(linhaLanc).join("")}</tbody></table>`
-    : `<p class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</p>`;
-
-  const fixos = fixosMes.length
-    ? `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Dia</th><th class="dir">Valor em ${MESES[ref.getMonth()]}</th><th></th></tr></thead><tbody>
-      ${fixosMes.map(g => `<tr${valorFixo(g, km) > 0 ? "" : ' class="fx-fora"'}><td class="c-desc"><b>${escH(g.descricao)}</b>${situFixo(g)}<span class="so-cel">${escH(semPonto(g.categoria))}</span></td>
+  const porDia = (a, b) => ((Number(a.dia) || 99) - (Number(b.dia) || 99)) || (valorFixo(b, km) - valorFixo(a, km));
+  const cobra = livro.matheus.gastosFixos.filter(g => valorFixo(g, km) > 0).sort(porDia);
+  const fora = livro.matheus.gastosFixos.filter(g => !(valorFixo(g, km) > 0)).sort(porDia);
+  // a mesma regra da Situação do mês: fixo sem dia conta como já saiu; mês futuro, nada saiu ainda
+  const saiu = g => mesPassado || (mesCorrente && (!Number(g.dia) || Number(g.dia) <= hojeD.getDate()));
+  const jaSaiu = cobra.filter(saiu), vaiSair = cobra.filter(g => !saiu(g));
+  const total = l => soma(l, g => valorFixo(g, km));
+  const tabela = lista => `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Dia</th><th class="dir">Valor em ${nome}</th><th></th></tr></thead><tbody>
+      ${lista.map(g => `<tr${valorFixo(g, km) > 0 ? "" : ' class="fx-fora"'}><td class="c-desc"><b>${escH(g.descricao)}</b>${!Number(g.dia) && valorFixo(g, km) > 0 ? `<span class="fx-sit">sem dia marcado${mesCorrente ? ": conta como já saiu" : ""}</span>` : ""}<span class="so-cel">${escH(semPonto(g.categoria))}</span></td>
         <td class="c-cat">${escH(semPonto(g.categoria))}</td>
         <td class="dir"><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${g.id}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês"></td>
-        <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${g.id}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor em ${MESES[ref.getMonth()]}"></td>
-        <td class="c-x"><button class="x" data-apagar="matheus:gastosFixos:${g.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
-    : `<p class="vazio">Nenhum gasto fixo cadastrado.</p>`;
+        <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${g.id}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor em ${nome}"></td>
+        <td class="c-x"><button class="x" data-apagar="matheus:gastosFixos:${g.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`;
+  const grupo = (titulo, lista) => lista.length ? `<section class="painel bloco"><h2>${titulo}<span class="dir">${lista.length} · ${dinheiro(total(lista))}</span></h2>${tabela(lista)}</section>` : "";
 
   const formFixo = `<details class="novo"><summary>+ Novo gasto fixo</summary><form class="linha" id="fFixo">
     <div style="grid-column:span 2"><label>Gasto fixo</label><input name="descricao" placeholder="assinatura, conta" required></div>
@@ -816,6 +856,46 @@ function telaDinheiro(){
     <div><button class="b p" type="submit">Cadastrar deste mês até dezembro</button></div>
   </form></details>`;
 
+  return `<div class="stats tres" style="margin-top:0">
+      <div class="stat"><span>Fixos de ${nome}</span><b>${dinheiro(total(cobra))}</b><small>${cobra.length} ${cobra.length === 1 ? "conta" : "contas"}</small></div>
+      <div class="stat"><span>Já saiu</span><b>${dinheiro(total(jaSaiu))}</b><small>${jaSaiu.length} de ${cobra.length}</small></div>
+      <div class="stat"><span>Ainda vai sair</span><b class="${vaiSair.length ? "warn" : ""}">${dinheiro(total(vaiSair))}</b><small>${vaiSair.length ? (mesCorrente ? "próximo: dia " + vaiSair[0].dia : vaiSair.length + " de " + cobra.length) : "nada a vencer"}</small></div>
+    </div>
+    <div class="bloco">${formFixo}</div>
+    ${livro.matheus.gastosFixos.length ? "" : `<section class="painel"><p class="vazio">Nenhum gasto fixo cadastrado.</p></section>`}
+    <div class="fx-grupos">${grupo(mesCorrente ? "Ainda vai sair" : "Vai sair em " + nome, vaiSair)}${grupo(mesCorrente ? "Já saiu" : "Saiu em " + nome, jaSaiu)}</div>
+    ${fora.length ? `<section class="painel bloco"><details class="fx-fora-d"><summary>Não cobram em ${nome} (${fora.length})</summary>${tabela(fora)}</details></section>` : ""}
+    <p class="nota" style="margin-top:14px">O dia é o da cobrança (no cartão, o dia da compra). Com o dia marcado, o fixo só entra em "Gastei" quando ele chega; antes disso fica em "Ainda vai sair". Para um fixo deixar de cobrar em ${nome}, apague o valor dele.</p>`;
+}
+
+// Mês a mês: o gráfico e, embaixo, a mesma conta em lista, com o que sobrou em cada mês.
+function vistaHistorico(){
+  const serie = serieMeses();
+  const linhas = serie.slice().reverse().filter(m => m.entrou > 0.005 || m.saiu > 0.005).map(m => {
+    const sobra = m.entrou - m.saiu;
+    return `<button type="button" class="hm" data-irmes="${m.k}"><span class="hm-m">${MESES[Number(m.k.slice(5, 7)) - 1]} ${m.k.slice(0, 4)}</span>
+      <span class="hm-d">entrou ${dinheiro(m.entrou)} · saiu ${dinheiro(m.saiu)}</span>
+      <b class="${sobra < -0.005 ? "neg" : "pos"}"><small>${sobra < -0.005 ? "faltou" : "sobrou"}</small>${dinheiro(Math.abs(sobra))}</b></button>`;
+  }).join("");
+  return `<section class="painel bloco"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serie, { aberto:chaveMes(ref) })}</section>
+    ${linhas ? `<section class="painel bloco"><h2>Cada mês<span class="dir">últimos 12 meses</span></h2>${linhas}</section>` : ""}
+    <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos (no mês corrente, também os que ainda vão vencer) e o que você pagou na casa. Aporte e resgate não entram.</p>`;
+}
+
+function telaDinheiro(){
+  if (vistaDin === "fixos") return subabasDinheiro() + barraMes() + vistaFixos();
+  if (vistaDin === "pend") return subabasDinheiro() + painelPendencias();
+  if (vistaDin === "hist") return subabasDinheiro() + vistaHistorico();
+  const d = contasDinheiro();
+  const doMes = ordenar(livro.matheus.lancamentos.filter(noMes), "lanc");
+  const r = livro.matheus.reserva;
+
+  const form = formLancamento("pessoal");
+
+  const lista = doMes.length ? `${ordemCelular("lanc")}<table class="t">${cabecalho("lanc")}
+    <tbody>${doMes.map(linhaLanc).join("")}</tbody></table>`
+    : `<p class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</p>`;
+
   const formReserva = `<details class="novo"><summary>Ajustar a reserva</summary><form class="linha" id="fReserva">
     <div><label>Saldo conferido</label><input type="number" name="saldoBase" step="0.01" inputmode="decimal" value="${r.saldoBase || ""}"></div>
     <div><label>Conferido em</label><input type="date" name="dataBase" value="${r.dataBase || ""}"></div>
@@ -823,11 +903,11 @@ function telaDinheiro(){
     <div><button class="b p" type="submit">Guardar</button></div>
   </form></details>`;
 
-  return barraMes() + cardSituacao(d) + `
+  return subabasDinheiro() + barraMes() + cardSituacao(d) + `
   <div class="duas larga">
     <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
     <div class="coluna">
-      <section class="painel"><h2>Para onde foi</h2>${roscaCategorias()}</section>
+      <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias()}</section>
       <section class="painel"><h2>Reserva</h2>
         <div class="stats duas-col" style="margin-bottom:12px">
           <div class="stat"><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
@@ -835,12 +915,7 @@ function telaDinheiro(){
         </div>${formReserva}
         <p class="nota">Todo aporte e todo resgate contam a partir da data conferida${r.dataBase ? " (" + dataCurta(r.dataBase) + "/" + r.dataBase.slice(0, 4) + ")" : ""}.</p></section>
     </div>
-  </div>
-  <section class="painel" style="margin-top:18px"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serieMeses(), { aberto:chaveMes(ref) })}
-    <p class="nota">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos e o que você pagou na casa. Aporte e resgate não entram.</p></section>
-  ${painelPendencias()}
-  <section class="painel" style="margin-top:18px"><h2>Gastos fixos<span class="dir">${dinheiro(soma(livro.matheus.gastosFixos, g => valorFixo(g, km)))} em ${MESES[ref.getMonth()]}</span></h2>${formFixo}${fixos}
-    <p class="nota" style="margin-top:10px">O dia é o da cobrança (no cartão, o dia da compra). Com o dia marcado, o fixo só entra em "Gastei" quando ele chega; antes disso fica em "Ainda vai sair".</p></section>`;
+  </div>`;
 }
 
 // O card do alto da Casa, no mesmo desenho do card da aba Tudo (pedido dele, 28/09/2026):
@@ -944,13 +1019,14 @@ function desenhar(){
   const t = document.getElementById("tela");
   // redesenhar não fecha o formulário aberto na mesma tela (a Clínica pode mudar enquanto ele digita)
   const abertos = [...t.querySelectorAll("details")].map(x => x.open);
-  const mesma = t.dataset.aba === aba;
+  const chaveTela = aba === "carteira" ? aba + ":" + vistaDin : aba;
+  const mesma = t.dataset.aba === chaveTela;
   // nem apaga o que ele estava digitando: o Drive ou a Clínica podem mandar redesenhar no meio
   // de um lançamento (01/10/2026). Formulário que acabou de ser enviado volta limpo.
   const digitado = {};
   if (mesma) t.querySelectorAll("form[id]").forEach(f => { if (!f.dataset.limpo) digitado[f.id] = [...f.elements].filter(e => e.name && (e.type !== "radio" || e.checked)).map(e => [e.name, e.value]); });
   t.innerHTML = aba === "tudo" ? telaTudo() : aba === "carteira" ? telaDinheiro() : telaCasa();
-  t.dataset.aba = aba;
+  t.dataset.aba = chaveTela;
   if (mesma) t.querySelectorAll("details").forEach((x, i) => { if (abertos[i] && !x.querySelector("form.enviado")) x.open = true; });
   for (const id in digitado) {
     const f = document.getElementById(id); if (!f) continue;
@@ -1001,7 +1077,9 @@ function ligar(){
     const [c, d] = s.value.split(":"); ordem[s.dataset.ordsel] = { c, d:Number(d) }; desenhar();
   });
   // clicar num mês do gráfico abre aquele mês
-  GraficoMeses.ligar(document.getElementById("tela"), k => { ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1); desenhar(); });
+  // clicar num mês (no gráfico ou na lista) abre os lançamentos daquele mês
+  GraficoMeses.ligar(document.getElementById("tela"), k => { ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1); vistaDin = "mes"; desenhar(); window.scrollTo(0, 0); });
+  document.querySelectorAll("[data-vd]").forEach(b => b.onclick = () => { vistaDin = b.dataset.vd; desenhar(); });
 
   // o formulário único de lançamento (lancamento.js) entra em cada lugar marcado na tela
   document.querySelectorAll("[data-lanc]").forEach(el => FormLancamento.montar(el, configLancamento(el.dataset.lanc || null)));
@@ -1070,6 +1148,8 @@ function vigiarFab(){
 }
 // o botão flutuante do celular abre o formulário da tela em que ele está e leva até ele
 document.getElementById("fab").onclick = () => {
+  // nas telas de fixos, pendências e mês a mês não há formulário: o botão volta para os lançamentos
+  if (!document.querySelector("[data-lanc]") && aba === "carteira") { vistaDin = "mes"; desenhar(); }
   const el = document.querySelector("[data-lanc]"); if (!el) return;
   FormLancamento.abrir(configLancamento(el.dataset.lanc || null));
   desenhar();
