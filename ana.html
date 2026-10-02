@@ -299,6 +299,8 @@ const sinalDin = v => (v < -0.005 ? "−" : "") + dinheiro(Math.abs(v));
 const pctTxt = (a, b) => (b > 0 ? (a / b * 100) : 0).toLocaleString("pt-BR", { maximumFractionDigits:1 }) + "%";
 const soma = (a, f) => a.reduce((s, x) => s + (Number(f ? f(x) : x) || 0), 0);
 const escH = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+// na tela, categoria e descrição terminam com ponto (02/10/2026); o dado guardado continua como foi digitado
+const comPonto = FormLancamento.comPonto;
 const chaveMes = d => d.getFullYear() + "-" + pad(d.getMonth() + 1);
 const km = () => chaveMes(ref);
 const nomeMes = k => MESES[Number(k.slice(5, 7)) - 1];
@@ -380,9 +382,9 @@ function roscaSaidas(s){
   const cats = s.porCat;
   if (!cats.length) return `<p class="vazio">Nada saiu em ${MESES[ref.getMonth()]}.</p>`;
   const cabem = cats.length > 8 ? 7 : 8;
-  const itens = cats.slice(0, cabem).map(([k, v], i) => [k, v, `var(--c${i + 1})`]);
+  const itens = cats.slice(0, cabem).map(([k, v], i) => [comPonto(k), v, `var(--c${i + 1})`]);
   const resto = cats.slice(cabem);
-  if (resto.length) itens.push(["Outros", soma(resto, e => e[1]), "var(--c8)"]);
+  if (resto.length) itens.push(["Outros.", soma(resto, e => e[1]), "var(--c8)"]);
   return rosca(itens, "sai", "Saídas do mês por categoria");
 }
 
@@ -395,7 +397,7 @@ function telaMes(){
     : `<div class="veredito neg"><b>${passado ? "Fechou negativo" : "Falta no mês"}</b><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} em ${sinalDin(sobra)}: sai mais do que entra.</p></div>`;
   const semCasa = !s.casa ? `<p class="aviso">A parte da casa ainda não aparece: abra a aba <b>Casa</b> uma vez e toque em "Escolher o que foi compartilhado comigo".</p>` : "";
 
-  const linhasEnt = e.fixas.map(x => `<tr><td class="c-desc"><b>${escH(x.rot)}</b></td>
+  const linhasEnt = e.fixas.map(x => `<tr><td class="c-desc"><b>${escH(comPonto(x.rot))}</b></td>
       <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-receita="${x.id}" value="${x.valor || ""}" placeholder="—" aria-label="${escH(x.rot)} em ${nome}"></td>
       <td class="c-x"><button class="x" data-apagar="receitasFixas:${x.id}" aria-label="Apagar">×</button></td></tr>`).join("")
     + e.plantoes.map(x => `<tr><td class="c-desc"><b>${escH(x.rot)}</b><small class="nota" style="display:block">${x.n ? (x.n > 1 ? x.n + " plantões" : "1 plantão") + " de " + nomeMes(x.de) : "nenhum plantão de " + nomeMes(x.de)}</small></td>
@@ -544,16 +546,16 @@ function ordemCelular(){
 function telaGastos(){
   const k = km(), nome = MESES[ref.getMonth()];
   const lst = ordenar(cad.lancamentos.filter(l => doMes(l, k)));
-  const opCat = cad.categorias.map(c => `<option>${escH(c)}</option>`).join("");
+  const opCat = cad.categorias.map(c => `<option value="${escH(c)}">${escH(comPonto(c))}</option>`).join("");
   const form = formLancamento(k);
   const linhas = lst.map(l => `<tr><td class="c-data">${dataCurta(l.data)}</td>
-    <td class="c-desc"><b>${escH(l.descricao || l.categoria)}</b><span class="so-cel">${escH(l.categoria)} · ${escH(l.forma)}</span></td>
-    <td class="c-cat">${escH(l.categoria)}</td><td class="c-forma">${escH(l.forma)}</td>
+    <td class="c-desc"><b>${escH(comPonto(l.descricao || l.categoria))}</b><span class="so-cel">${escH(comPonto(l.categoria))} · ${escH(l.forma)}</span></td>
+    <td class="c-cat">${escH(comPonto(l.categoria))}</td><td class="c-forma">${escH(l.forma)}</td>
     <td class="c-val dir">${dinheiro(l.valor)}</td>
     <td class="c-x"><button class="x lapis" data-editar="${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
   const fixos = cad.gastosFixos.slice().sort((a, b) => valorNoMes(b, k) - valorNoMes(a, k));
   const tFixos = fixos.length ? `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Valor em ${nome}</th><th></th></tr></thead><tbody>
-    ${fixos.map(g => `<tr><td class="c-desc"><b>${escH(g.descricao)}</b><span class="so-cel">${escH(g.categoria)}</span></td><td class="c-cat">${escH(g.categoria)}</td>
+    ${fixos.map(g => `<tr><td class="c-desc"><b>${escH(comPonto(g.descricao))}</b><span class="so-cel">${escH(comPonto(g.categoria))}</span></td><td class="c-cat">${escH(comPonto(g.categoria))}</td>
       <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-fixo="${g.id}" value="${valorNoMes(g, k) || ""}" placeholder="—" aria-label="${escH(g.descricao)} em ${nome}"></td>
       <td class="c-x"><button class="x" data-apagar="gastosFixos:${g.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
     : `<p class="vazio">Nenhum gasto fixo.</p>`;

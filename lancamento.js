@@ -98,6 +98,16 @@ var FormLancamento = (function(){
   var diaBR = function(d){ return String(d || "").slice(8, 10) + "/" + String(d || "").slice(5, 7); };
   var lembrado = function(k){ try { return localStorage.getItem("cu-lanc-" + k) || ""; } catch(e){ return ""; } };
   var lembrar = function(k, v){ try { localStorage.setItem("cu-lanc-" + k, v); } catch(e){} };
+  /* Ponto final só na tela (pedido dele, 02/10/2026): categoria e descrição aparecem com ponto, como
+     nas planilhas, mas o que se guarda continua sem, para nenhuma soma depender da grafia. */
+  var comPonto = function(s){ var t = String(s == null ? "" : s).trim(); return !t || t === "-" || /[.!?…]$/.test(t) ? t : t + "."; };
+  /* O valor se escreve só com os números e a vírgula anda sozinha (pedido dele, 02/10/2026):
+     1, 10, 102, 1025 viram 0,01, 0,10, 1,02, 10,25. */
+  var mascara = function(s){
+    var d = String(s == null ? "" : s).replace(/\D/g, "").replace(/^0+/, "").slice(0, 11);
+    return d ? (Number(d) / 100).toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 }) : "";
+  };
+  var centavos = function(s){ return Number(String(s == null ? "" : s).replace(/\D/g, "")) / 100; };
 
   function chips(nome, itens, atual){
     return '<div class="lanc-chips">' + itens.map(function(it){
@@ -148,14 +158,14 @@ var FormLancamento = (function(){
           '<button type="button" class="lanc-mini" data-dia="' + ontem() + '" aria-pressed="' + (est.data === ontem()) + '">Ontem</button></div></div>';
         if (!semCategoria){
           h += '<div><span class="lanc-rot">Categoria</span>' + lado.grupos.map(function(g){
-            return '<div class="lanc-grupo' + (g[0] ? "" : " solto") + '"><i>' + esc(g[0]) + '</i>' + chips("categoria", g[1], est.cat[o]) + '</div>';
+            return '<div class="lanc-grupo' + (g[0] ? "" : " solto") + '"><i>' + esc(g[0]) + '</i>' + chips("categoria", g[1].map(function(c){ return [c, comPonto(c)]; }), est.cat[o]) + '</div>';
           }).join("") + '</div>';
         }
         // a ordem que ele pediu: categoria, descrição (opcional), valor e, por fim, a forma de pagamento
         h += '<div class="lanc-duas">' +
           '<div class="lanc-campo"><label for="lanc-desc">Descrição <small>(opcional)</small></label><input id="lanc-desc" name="descricao" autocomplete="off" placeholder="' +
             (semCategoria ? (tipo === "Receita" ? "de onde veio" : "para que foi") : "se quiser lembrar o que foi") + '" value="' + esc(est.descricao) + '"></div>' +
-          '<div class="lanc-campo"><label for="lanc-valor">Valor</label><div class="lanc-valor"><i>R$</i><input type="number" id="lanc-valor" name="valor" step="0.01" min="0" inputmode="decimal" placeholder="0,00" value="' + esc(est.valor) + '" required></div></div></div>';
+          '<div class="lanc-campo"><label for="lanc-valor">Valor</label><div class="lanc-valor"><i>R$</i><input type="text" id="lanc-valor" name="valor" inputmode="numeric" autocomplete="off" placeholder="0,00" value="' + esc(est.valor) + '" required></div></div></div>';
         if (o === "pessoal") h += '<div><span class="lanc-rot">Forma de pagamento</span>' + chips("forma", cfg.pessoal.formas, est.forma) + '</div>';
         else h += '<div><span class="lanc-rot">Quem comprou</span>' + chips("quem", cfg.casa.pessoas.map(function(p){ return [p, String(p).split(" ")[0]]; }), est.quem) + '</div>';
         h += '<div class="lanc-pe"><button type="submit" class="lanc-ok">' + (alterando ? "Guardar a alteração" : (o === "pessoal" ? "Lançar em Pessoal" : "Lançar na Casa")) + '</button>' +
@@ -191,7 +201,8 @@ var FormLancamento = (function(){
     });
     form.addEventListener("input", function(e){
       var n = e.target.name;
-      if (n === "valor" || n === "descricao") est[n] = e.target.value;
+      if (n === "valor"){ est.valor = mascara(e.target.value); if (e.target.value !== est.valor) e.target.value = est.valor; }
+      else if (n === "descricao") est[n] = e.target.value;
     });
     form.addEventListener("focusin", function(e){ est.foco = e.target.name && e.target.type !== "radio" ? e.target.name : ""; });
     form.querySelectorAll("[data-dia]").forEach(function(b){ b.onclick = function(){ est.data = b.getAttribute("data-dia"); redesenhar(); }; });
@@ -211,7 +222,7 @@ var FormLancamento = (function(){
     form.onsubmit = function(e){
       e.preventDefault();
       if (!o) return;
-      var valor = Number(String(est.valor).replace(",", "."));
+      var valor = centavos(est.valor);
       var erro = "";
       if (!est.data) erro = "Falta o dia.";
       else if (!semCategoria && !est.cat[o]) erro = "Falta a categoria.";
@@ -219,7 +230,7 @@ var FormLancamento = (function(){
       else if (o === "pessoal" && !est.forma) erro = "Falta a forma de pagamento.";
       if (erro){ est.erro = erro; redesenhar(); return; }
       var dados = { data:est.data, tipo:tipo, categoria:semCategoria ? "" : est.cat[o], descricao:String(est.descricao || "").trim(), valor:valor, forma:est.forma, quem:est.quem };
-      var resumo = (dados.categoria || tipo) + (dados.descricao ? " (" + dados.descricao + ")" : "") + ", " + dinheiro(valor) + ", dia " + diaBR(dados.data) + ".";
+      var resumo = (dados.categoria || tipo) + (dados.descricao ? " (" + dados.descricao.replace(/\.+$/, "") + ")" : "") + ", " + dinheiro(valor) + ", dia " + diaBR(dados.data) + ".";
       // limpa antes de entregar: a página se redesenha dentro do lancar e já pega o formulário vazio
       if (alterando){
         var id = est.editando;
@@ -246,10 +257,10 @@ var FormLancamento = (function(){
     est.tipo = reg.tipo || ""; est.data = reg.data || est.data;
     est.cat[onde] = reg.categoria || "";
     est.descricao = reg.descricao && reg.descricao !== "-" ? reg.descricao : "";
-    est.valor = reg.valor == null ? "" : String(reg.valor);
+    est.valor = reg.valor == null ? "" : mascara((Number(reg.valor) || 0).toFixed(2));
     if (reg.forma) est.forma = reg.forma;
     if (reg.quem) est.quem = reg.quem;
   }
 
-  return { montar:montar, abrir:abrir, editar:editar };
+  return { montar:montar, abrir:abrir, editar:editar, comPonto:comPonto };
 })();
