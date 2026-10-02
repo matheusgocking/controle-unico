@@ -81,6 +81,8 @@ nav.abas button[aria-pressed="true"]{background:var(--surface);color:var(--text)
 .k b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-top:2px;white-space:nowrap}
 .k small{display:block;color:var(--faint);font-size:12px;margin-top:3px}
 .k.destaque b{font-size:32px}
+.k .pct-k{font-style:normal;font-size:11.5px;font-weight:600;margin-left:6px;padding:1px 7px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
+.k .pct-k.neg{background:var(--neg-soft);color:var(--neg)}
 .veredito{border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;justify-content:center;gap:10px;background:var(--surface-2)}
 .veredito.pos{background:var(--pos-soft)} .veredito.neg{background:var(--neg-soft)} .veredito.warn{background:var(--warn-soft)}
 .veredito .topo-v{display:flex;align-items:center;gap:12px}
@@ -142,6 +144,9 @@ td.c-x{width:1%}
 table.t input{width:84px;padding:5px 8px;text-align:right}
 table.t input.dia{width:58px}
 .so-cel{display:none}
+.fx-sit{display:block;font-size:11.5px;color:var(--faint)}
+.fx-sit.ok{color:var(--muted)} .fx-sit.vai{color:var(--warn);font-weight:600}
+tr.fx-fora td.c-desc b,tr.fx-fora td.c-cat{color:var(--faint)}
 .quem{display:inline-flex;align-items:center;gap:6px;font-size:13px}
 .quem i{width:9px;height:9px;border-radius:50%}
 .x{border:0;background:transparent;color:var(--faint);cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
@@ -149,6 +154,17 @@ table.t input.dia{width:58px}
 .x.lapis{font-size:14px} .x.lapis:hover{color:var(--accent)}
 td.c-x{white-space:nowrap}
 
+/* pendências: uma linha por dívida, com quem, quanto falta e os botões */
+.pd-grupo{margin:14px 0 4px;font-size:12.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:flex;gap:10px;align-items:baseline}
+.pd-grupo span{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600;color:var(--text);font-size:14px}
+.pd{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.pd b{font-weight:600} .pd span{display:block;font-size:12px;color:var(--muted)}
+.pd .pd-quem b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd .pd-val{text-align:right;white-space:nowrap}
+.pd .pd-acoes{display:flex;gap:6px;align-items:center}
+.pd.feita b{color:var(--muted);font-weight:500}
+.pd .trilho{margin-top:4px}
+details.pd-fechadas{margin-top:12px} details.pd-fechadas summary{cursor:pointer;font-size:13px;color:var(--muted)}
 /* formulários atrás de um botão */
 details.novo{margin:0 0 12px}
 details.novo > summary{list-style:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:1px solid var(--line);background:var(--surface);padding:6px 12px;border-radius:var(--radius);font-size:14px}
@@ -212,6 +228,8 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   form.linha > div[style]{grid-column:1 / -1 !important}
   form.linha .b{width:100%}
   input,select{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
+  .pd{grid-template-columns:minmax(0,1fr) auto} .pd .pd-acoes{grid-column:1 / -1}
+  .pd .pd-quem b{white-space:normal} .pd .pd-val{white-space:normal;max-width:190px}
 }
 /* celular: o botão de lançar fica sempre à mão, no canto de baixo */
 .fab{display:none}
@@ -225,6 +243,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="exportar-xlsx.js"></script>
+<script src="ler-xlsx.js"></script>
 <script src="categorias.js"></script>
 <script src="lancamento.js"></script>
 <script src="grafico-meses.js"></script>
@@ -277,7 +296,7 @@ const arrumar = { matheus: Categorias.cadernoDinheiro, casa: Categorias.cadernoC
 
 const VAZIO = {
   matheus: () => ({ versao:1, caderno:"dinheiro", atualizadoEm:null, lancamentos:[], gastosFixos:[],
-                    reserva:{ saldoBase:0, dataBase:null, meta:0 } }),
+                    reserva:{ saldoBase:0, dataBase:null, meta:0 }, pendencias:[] }),
   casa:    () => ({ versao:1, caderno:"casa", atualizadoEm:null, lancamentos:[], pessoas:["Pessoa 1","Pessoa 2"], divisao:0.5 })
 };
 const NOME_DRIVE = { matheus:"Controle Único - dinheiro.json", casa:"Controle Único - casa.json" };
@@ -620,7 +639,7 @@ function cardSituacao(d){
     <div class="situ"><div>
       <div class="linha-k">
         <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes${outros > 0.005 ? ` e ${dinheiro(outros)} de outras entradas` : ""}</small></div>
-        <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b><small>${dinheiro(lancado)} lançados, ${dinheiro(d.fixosMes)} de fixos e ${dinheiro(d.minhaCasa)} da casa</small></div>
+        <div class="k"><span>Gastei${d.entrou > 0.005 ? ` <em class="pct-k${d.saiu > d.entrou + 0.005 ? " neg" : ""}">${Math.round(d.saiu / d.entrou * 100)}% do que recebi</em>` : ""}</span><b>${dinheiro(d.saiu)}</b><small>${dinheiro(lancado)} lançados, ${dinheiro(d.fixosMes)} de fixos e ${dinheiro(d.minhaCasa)} da casa</small></div>
         <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
       </div>
       <div class="linha-k">
@@ -682,12 +701,92 @@ function linhaLanc(l){
     <td class="c-x"><button class="x lapis" data-editar="matheus:${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="matheus:lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
 }
 
+// ---------- pendências: quem deve a ele e a quem ele deve ----------
+// Era a última aba viva da planilha congelada (decisão dele de 01/10/2026: vira lista própria do
+// app). É só acompanhamento: nenhuma conta do mês lê esta lista. O dinheiro que entra ou sai por
+// conta de uma pendência continua sendo lançado no lugar de sempre.
+const pendencias = () => livro.matheus.pendencias || (livro.matheus.pendencias = []);
+const restantePend = p => Math.max(0, (Number(p.total) || 0) - (Number(p.pago) || 0));
+const pendQuitada = p => !!p.quitada || restantePend(p) < 0.005;
+const chavePend = p => [String(p.nome || "").trim().toLowerCase(), p.tipo, Number(p.total) || 0, p.inicio || ""].join("|");
+function painelPendencias(){
+  const todas = pendencias(), abertas = todas.filter(p => !pendQuitada(p)), fechadas = todas.filter(pendQuitada);
+  const linha = p => {
+    const falta = restantePend(p), feita = pendQuitada(p);
+    const sub = [p.origem, p.inicio ? "desde " + dataCurta(p.inicio) + "/" + p.inicio.slice(0, 4) : "", p.obs].filter(Boolean).map(escH).join(" · ");
+    return `<div class="pd${feita ? " feita" : ""}">
+      <div class="pd-quem"><b>${escH(p.nome)}</b><span>${sub || "&nbsp;"}</span></div>
+      <div class="pd-val"><b>${feita ? "quitada" : dinheiro(falta)}</b><span>${feita ? dinheiro(p.total) : `de ${dinheiro(p.total)}${Number(p.pago) > 0 ? ", já " + (p.tipo === "receber" ? "recebi " : "paguei ") + dinheiro(p.pago) : ""}`}</span>
+        ${feita || !(Number(p.pago) > 0) ? "" : `<div class="trilho"><i style="width:${pct(p.pago, p.total)}%"></i></div>`}</div>
+      <div class="pd-acoes">${feita ? `<button class="b s" data-pend-reabrir="${p.id}">Reabrir</button>`
+        : `<button class="b s" data-pend-pago="${p.id}">${p.tipo === "receber" ? "Recebi uma parte" : "Paguei uma parte"}</button><button class="b s" data-pend-quitar="${p.id}">Quitar</button>`}
+        <button class="x" data-pend-apagar="${p.id}" aria-label="Apagar" title="Apagar">×</button></div></div>`;
+  };
+  const grupo = (tipo, titulo) => {
+    const l = abertas.filter(p => p.tipo === tipo).sort((x, y) => restantePend(y) - restantePend(x));
+    return `<div class="pd-grupo">${titulo}<span>${dinheiro(soma(l, restantePend))}</span></div>` +
+      (l.length ? l.map(linha).join("") : `<p class="vazio">Nada em aberto.</p>`);
+  };
+  const form = `<details class="novo"><summary>+ Nova pendência</summary><form class="linha" id="fPend">
+    <div><label>É dinheiro</label><select name="tipo"><option value="receber">a receber</option><option value="pagar">a pagar</option></select></div>
+    <div style="grid-column:span 2"><label>De quem, ou para quem</label><input name="nome" required autocomplete="off"></div>
+    <div><label>Origem</label><input name="origem" list="pendOrigens" placeholder="opcional" autocomplete="off">
+      <datalist id="pendOrigens"><option>Prática Clínica</option><option>Empréstimo</option><option>Viagem</option><option>Multa</option><option>Outro</option></datalist></div>
+    <div><label>Valor total</label><input type="number" name="total" step="0.01" min="0" inputmode="decimal" required></div>
+    <div><label>Já foi pago</label><input type="number" name="pago" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></div>
+    <div><label>Desde</label><input type="date" name="inicio" value="${hojeISO()}"></div>
+    <div style="grid-column:span 2"><label>Observação</label><input name="obs" placeholder="opcional" autocomplete="off"></div>
+    <div><button class="b p" type="submit">Guardar</button></div></form></details>`;
+  return `<section class="painel" style="margin-top:18px"><h2>Pendências<span class="dir">${abertas.length} em aberto</span></h2>${form}
+    ${todas.length ? grupo("receber", "A receber") + grupo("pagar", "A pagar") : `<p class="vazio">Nenhuma pendência. Use "+ Nova pendência", ou traga as da planilha.</p>`}
+    ${fechadas.length ? `<details class="pd-fechadas"><summary>Quitadas (${fechadas.length})</summary>${fechadas.map(linha).join("")}</details>` : ""}
+    <p class="nota" style="margin-top:12px">Esta lista só acompanha quem deve e quanto falta: ela não entra nas contas do mês. O dinheiro que entrar ou sair continua sendo lançado no lugar de sempre (recebimento de paciente na Clínica, o resto em "+ Novo lançamento").
+      <button class="b s" id="pendPlanilha" type="button" style="margin-left:6px">Trazer da planilha</button><input type="file" id="pendArquivo" accept=".xlsx" class="hidden"></p></section>`;
+}
+// Lê a aba Pendências da Controle Financeiro.xlsx no navegador e acrescenta o que ainda não está aqui
+// (mesmo nome, tipo, valor total e data de início contam como a mesma pendência).
+async function importarPendencias(arquivo){
+  const abas = await lerXlsx(await arquivo.arrayBuffer());
+  const semAcento = s => String(s == null ? "" : s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const aba = abas.find(x => semAcento(x.nome).indexOf("pend") === 0);
+  if (!aba) throw new Error('não achei a aba "Pendências" nesse arquivo');
+  const cab = (aba.linhas[0] || []).map(semAcento);
+  const acha = (padrao, reserva) => { const i = cab.findIndex(t => padrao.test(t)); return i >= 0 ? i : reserva; };
+  const c = { nome:acha(/nome/, 0), tipo:acha(/^tipo/, 1), origem:acha(/origem/, 2), inicio:acha(/inicio/, 3), fim:acha(/fim|final|termino/, 4),
+              total:acha(/total/, 5), pago:acha(/pago/, 6), status:acha(/status/, 8), obs:acha(/observ/, 9) };
+  // data do Excel (número de série) ou texto AAAA-MM-DD, que é como a planilha baixada do app escreve
+  const dataDe = v => typeof v === "number" && v > 30000 && v < 80000 ? new Date(Math.round((v - 25569) * 86400000)).toISOString().slice(0, 10)
+    : /^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? String(v) : "";
+  const semPt = s => String(s == null ? "" : s).replace(/\.+\s*$/, "").trim();
+  const jaTem = new Set(pendencias().map(chavePend));
+  let novas = 0, repetidas = 0;
+  aba.linhas.slice(1).forEach(l => {
+    const nome = semPt(l[c.nome]), total = Number(l[c.total]);
+    if (!nome || nome === "-" || !(total > 0)) return;
+    const p = { id:novoId(), nome, tipo: semAcento(l[c.tipo]).indexOf("pagar") >= 0 ? "pagar" : "receber", origem:semPt(l[c.origem]),
+      inicio:dataDe(l[c.inicio]), fim:dataDe(l[c.fim]), total, pago:Number(l[c.pago]) || 0, obs:semPt(l[c.obs]) === "-" ? "" : semPt(l[c.obs]) };
+    if (semAcento(l[c.status]).indexOf("quitad") === 0) p.quitada = true;
+    if (jaTem.has(chavePend(p))) { repetidas++; return; }
+    jaTem.add(chavePend(p)); pendencias().push(p); novas++;
+  });
+  return { novas, repetidas };
+}
+
 function telaDinheiro(){
   const d = contasDinheiro();
   const doMes = ordenar(livro.matheus.lancamentos.filter(noMes), "lanc");
   const r = livro.matheus.reserva;
   const km = chaveMes(ref);
-  const fixosMes = livro.matheus.gastosFixos.slice().sort((a, b) => valorFixo(b, km) - valorFixo(a, km));
+  // primeiro os que têm valor no mês aberto, na ordem do dia de vencimento; no fim, os que não cobram neste mês
+  const fixosMes = livro.matheus.gastosFixos.slice().sort((a, b) =>
+    ((valorFixo(b, km) > 0) - (valorFixo(a, km) > 0)) || ((Number(a.dia) || 99) - (Number(b.dia) || 99)) || (valorFixo(b, km) - valorFixo(a, km)));
+  const hojeD = new Date(), mesCorrente = km === chaveMes(hojeD), mesPassado = km < chaveMes(hojeD);
+  const situFixo = g => {
+    if (!(valorFixo(g, km) > 0)) return `<span class="fx-sit">não cobra em ${MESES[ref.getMonth()]}</span>`;
+    if (!Number(g.dia)) return `<span class="fx-sit">sem dia marcado: conta como já saiu</span>`;
+    if (mesPassado || (mesCorrente && Number(g.dia) <= hojeD.getDate())) return `<span class="fx-sit ok">saiu no dia ${g.dia}</span>`;
+    return `<span class="fx-sit vai">vence no dia ${g.dia}</span>`;
+  };
 
   const form = formLancamento("pessoal");
 
@@ -697,7 +796,7 @@ function telaDinheiro(){
 
   const fixos = fixosMes.length
     ? `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Dia</th><th class="dir">Valor em ${MESES[ref.getMonth()]}</th><th></th></tr></thead><tbody>
-      ${fixosMes.map(g => `<tr><td class="c-desc"><b>${escH(g.descricao)}</b><span class="so-cel">${escH(semPonto(g.categoria))}</span></td>
+      ${fixosMes.map(g => `<tr${valorFixo(g, km) > 0 ? "" : ' class="fx-fora"'}><td class="c-desc"><b>${escH(g.descricao)}</b>${situFixo(g)}<span class="so-cel">${escH(semPonto(g.categoria))}</span></td>
         <td class="c-cat">${escH(semPonto(g.categoria))}</td>
         <td class="dir"><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${g.id}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês"></td>
         <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${g.id}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor em ${MESES[ref.getMonth()]}"></td>
@@ -734,7 +833,9 @@ function telaDinheiro(){
   </div>
   <section class="painel" style="margin-top:18px"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serieMeses(), { aberto:chaveMes(ref) })}
     <p class="nota">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos e o que você pagou na casa. Aporte e resgate não entram.</p></section>
-  <section class="painel" style="margin-top:18px"><h2>Gastos fixos<span class="dir">dia e valor em ${MESES[ref.getMonth()]}</span></h2>${formFixo}${fixos}</section>`;
+  ${painelPendencias()}
+  <section class="painel" style="margin-top:18px"><h2>Gastos fixos<span class="dir">${dinheiro(soma(livro.matheus.gastosFixos, g => valorFixo(g, km)))} em ${MESES[ref.getMonth()]}</span></h2>${formFixo}${fixos}
+    <p class="nota" style="margin-top:10px">O dia é o da cobrança (no cartão, o dia da compra). Com o dia marcado, o fixo só entra em "Gastei" quando ele chega; antes disso fica em "Ainda vai sair".</p></section>`;
 }
 
 // O card do alto da Casa, no mesmo desenho do card da aba Tudo (pedido dele, 28/09/2026):
@@ -905,6 +1006,43 @@ function ligar(){
     for (let m = ref.getMonth(); m < 12; m++) valores[ref.getFullYear() + "-" + String(m + 1).padStart(2, "0")] = Number(d.valor);
     livro.matheus.gastosFixos.push({ id:novoId(), descricao:d.descricao, categoria:d.categoria, dia:Number(d.dia), valores });
     salvar("matheus"); });
+  liga("fPend", (f, d) => {
+    pendencias().push({ id:novoId(), nome:d.nome.trim(), tipo:d.tipo === "pagar" ? "pagar" : "receber", origem:(d.origem || "").trim(),
+      inicio:d.inicio || "", fim:"", total:Number(d.total) || 0, pago:Number(d.pago) || 0, obs:(d.obs || "").trim() });
+    salvar("matheus"); });
+  const daPend = id => pendencias().find(p => p.id === id);
+  document.querySelectorAll("[data-pend-pago]").forEach(b => b.onclick = () => {
+    const p = daPend(b.dataset.pendPago); if (!p) return;
+    const t = prompt(`Quanto ${p.tipo === "receber" ? "você recebeu" : "você pagou"} agora? Faltam ${dinheiro(restantePend(p))}.`);
+    if (t === null) return;
+    // "1.250,50" e "1250.5" valem: com vírgula, o ponto é separador de milhar
+    const limpo = String(t).replace(/[^0-9.,]/g, ""), v = Number(limpo.indexOf(",") >= 0 ? limpo.replace(/\./g, "").replace(",", ".") : limpo);
+    if (!(v > 0)) { alert("Não entendi o valor."); return; }
+    p.pago = Math.round(((Number(p.pago) || 0) + v) * 100) / 100; salvar("matheus");
+  });
+  document.querySelectorAll("[data-pend-quitar]").forEach(b => b.onclick = () => {
+    const p = daPend(b.dataset.pendQuitar); if (!p) return;
+    if (!confirm(`Quitar a pendência de ${p.nome}? Fica guardada em Quitadas.`)) return;
+    p.quitada = true; p.fim = p.fim || hojeISO(); salvar("matheus");
+  });
+  document.querySelectorAll("[data-pend-reabrir]").forEach(b => b.onclick = () => {
+    const p = daPend(b.dataset.pendReabrir); if (!p) return;
+    delete p.quitada; if (restantePend(p) < 0.005) p.pago = 0; salvar("matheus");
+  });
+  document.querySelectorAll("[data-pend-apagar]").forEach(b => b.onclick = () => {
+    const p = daPend(b.dataset.pendApagar); if (!p || !confirm(`Apagar a pendência de ${p.nome}?`)) return;
+    livro.matheus.pendencias = pendencias().filter(x => x.id !== p.id); salvar("matheus");
+  });
+  const bp = document.getElementById("pendPlanilha"), ap = document.getElementById("pendArquivo");
+  if (bp && ap) {
+    bp.onclick = () => ap.click();
+    ap.onchange = async e => {
+      const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+      try { const r = await importarPendencias(f); salvar("matheus");
+        alert(r.novas ? `Vieram ${r.novas} pendência${r.novas === 1 ? "" : "s"} da planilha${r.repetidas ? " (" + r.repetidas + " já estavam aqui)" : ""}.` : "Nenhuma pendência nova: as da planilha já estavam aqui."); }
+      catch(err){ alert("Não consegui ler: " + err.message); }
+    };
+  }
   liga("fReserva", (f, d) => { livro.matheus.reserva = { saldoBase:Number(d.saldoBase) || 0,
     dataBase:d.dataBase || null, meta:Number(d.meta) || 0 }; salvar("matheus"); });
   liga("fDivisao", (f, d) => { livro.casa.divisao = Math.min(Math.max(Number(d.divisao) || 50, 0), 100) / 100; salvar("casa"); });
@@ -968,7 +1106,9 @@ document.getElementById("exportar").onclick = () => {
       ...livro.matheus.gastosFixos.map(g => [g.descricao, g.categoria, g.dia || "-",
         ...MESES.map((n, i) => valorFixo(g, ref.getFullYear() + "-" + String(i + 1).padStart(2, "0")) || "-")])] },
     { nome:"Casa", linhas:[["Data","Quem Comprou?","Descrição","Categorias","Valor"],
-      ...livro.casa.lancamentos.map(l => [l.data, l.quem, l.descricao, l.categoria, l.valor])] }
+      ...livro.casa.lancamentos.map(l => [l.data, l.quem, l.descricao, l.categoria, l.valor])] },
+    { nome:"Pendências", linhas:[["Nome","Tipo","Origem","Início","Fim","Valor Total","Valor Pago","Restante","Status","Observações"],
+      ...pendencias().map(p => [p.nome, p.tipo === "pagar" ? "A pagar" : "A receber", p.origem || "-", p.inicio || "-", p.fim || "-", p.total, Number(p.pago) || 0, restantePend(p), pendQuitada(p) ? "Quitado" : "Pendente", p.obs || ""])] }
   ];
   const w = janelaClinica();
   if (w) {

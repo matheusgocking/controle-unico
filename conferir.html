@@ -670,10 +670,17 @@ function tabelaItens(itens, titulo){
   return `<details class="lista" open><summary>${escH(titulo)} <span class="q">${itens.length} ${itens.length === 1 ? "item" : "itens"}${feitos ? ", " + feitos + " conferido" + (feitos === 1 ? "" : "s") : ""}</span></summary>
     <div class="tabwrap"><table class="t itens"><thead><tr><th></th><th>Onde</th><th>Dia</th><th>O quê</th><th class="dir">Valor</th></tr></thead><tbody>${linhas}</tbody></table></div></details>`;
 }
+// As planilhas do Dinheiro e da Casa pararam em 30/09/2026: dali em diante os dois são lançados só
+// no app e conferidos contra o extrato do banco. Comparar outubro com uma planilha parada só
+// mostraria tudo como "só no app".
+const PLANILHA_ATE = { financeiro:"2026-09", casa:"2026-09" };
+const mesAberto = () => ref.getFullYear() + "-" + String(ref.getMonth() + 1).padStart(2, "0");
+const parada = tipo => !!PLANILHA_ATE[tipo] && mesAberto() > PLANILHA_ATE[tipo];
 function secao(titulo, arquivoRotulo, r, tipo){
   const p = planilhas[tipo];
   let corpo = "";
-  if (r.falta === "planilha") corpo = `<p class="vazio">Escolha a planilha ${escH(arquivoRotulo)} para conferir.</p>`;
+  if (parada(tipo)) corpo = `<p class="vazio">Não há o que comparar em ${MESES[ref.getMonth()]}: a planilha ${escH(arquivoRotulo)} parou em 30/09/2026 e, desde outubro, ${titulo === "Casa" ? "a Casa é lançada" : "o Dinheiro é lançado"} só no app. A conferência deste mês é contra o extrato do Nubank, no começo do mês seguinte.</p>`;
+  else if (r.falta === "planilha") corpo = `<p class="vazio">Escolha a planilha ${escH(arquivoRotulo)} para conferir.</p>`;
   else if (r.falta === "app") corpo = `<p class="vazio">O app ainda não tem esse caderno neste aparelho. Abra a aba ${escH(titulo)} uma vez (entre com o Google) e volte aqui.</p>`;
   else {
     const soP = r.itens.filter(i => i.lado === "planilha"), soA = r.itens.filter(i => i.lado === "app"), dif = r.itens.filter(i => i.lado === "dif");
@@ -684,7 +691,8 @@ function secao(titulo, arquivoRotulo, r, tipo){
   }
   return `<section class="painel" id="s-${tipo}"><h2>${escH(titulo)}<span class="dir">${p ? escH(p.nome + " · " + quandoLida(p)) : escH(arquivoRotulo)}</span></h2>${corpo}</section>`;
 }
-function chip(nome, r){
+function chip(nome, r, tipo){
+  if (parada(tipo)) return `<span class="chip ok"><i aria-hidden="true"></i>${escH(nome)}: <b>só no app, pelo extrato</b></span>`;
   if (r.falta) return `<span class="chip falta"><i aria-hidden="true"></i>${escH(nome)}: <b>${r.falta === "planilha" ? "sem planilha" : "sem caderno"}</b></span>`;
   const n = r.itens.filter(i => !conferidos.has(i.k)).length;
   const tot = r.totais.filter(t => t.p !== null && t.p !== undefined && t.a !== null && t.a !== undefined && !t.semDif && !(t.inteiro ? Math.round(t.a) === Math.round(t.p) : perto(t.a, t.p))).length;
@@ -699,7 +707,7 @@ function desenhar(){
   desenharArquivos();
   const app = appDados();
   resultado = { dinheiro:conferirDinheiro(app), casa:conferirCasa(app), clinica:conferirClinica(app) };
-  document.getElementById("chips").innerHTML = chip("Dinheiro", resultado.dinheiro) + chip("Casa", resultado.casa) + chip("Clínica", resultado.clinica);
+  document.getElementById("chips").innerHTML = chip("Dinheiro", resultado.dinheiro, "financeiro") + chip("Casa", resultado.casa, "casa") + chip("Clínica", resultado.clinica, "clinica");
   document.getElementById("mesbar").innerHTML = barraMes();
   document.getElementById("telas").innerHTML =
     secao("Dinheiro", "Controle Financeiro.xlsx", resultado.dinheiro, "financeiro") +
@@ -710,15 +718,16 @@ function desenhar(){
     if (i.checked) conferidos.add(i.dataset.k); else conferidos.delete(i.dataset.k);
     guardar(CH.conferidos, [...conferidos]);
     const tr = i.closest("tr"); if (tr) tr.classList.toggle("feito", i.checked);
-    document.getElementById("chips").innerHTML = chip("Dinheiro", resultado.dinheiro) + chip("Casa", resultado.casa) + chip("Clínica", resultado.clinica);
+    document.getElementById("chips").innerHTML = chip("Dinheiro", resultado.dinheiro, "financeiro") + chip("Casa", resultado.casa, "casa") + chip("Clínica", resultado.clinica, "clinica");
   });
 }
 function textoDaLista(){
   if (!resultado) return "";
   const nomeMes = MESES[ref.getMonth()] + " de " + ref.getFullYear();
   let s = "Conferência do Controle Único, " + nomeMes + "\n";
-  [["Dinheiro", resultado.dinheiro], ["Casa", resultado.casa], ["Clínica", resultado.clinica]].forEach(([n, r]) => {
+  [["Dinheiro", resultado.dinheiro, "financeiro"], ["Casa", resultado.casa, "casa"], ["Clínica", resultado.clinica, "clinica"]].forEach(([n, r, tipo]) => {
     s += "\n== " + n + " ==\n";
+    if (parada(tipo)){ s += "só no app desde outubro de 2026: conferir pelo extrato do Nubank\n"; return; }
     if (r.falta){ s += (r.falta === "planilha" ? "sem planilha" : "sem caderno no app") + "\n"; return; }
     r.totais.forEach(t => { const tem = t.p != null && t.a != null; s += "- " + t.rot + ": planilha " + fmtVal(t.p, t.inteiro) + " | app " + fmtVal(t.a, t.inteiro) + (tem ? (t.inteiro ? (Math.round(t.a) === Math.round(t.p)) : perto(t.a, t.p)) ? " | igual" : " | DIFERENTE" : "") + (t.obs ? " (" + t.obs + ")" : "") + "\n"; });
     if (!r.itens.length) s += "- item por item: igual\n";

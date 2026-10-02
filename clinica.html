@@ -549,6 +549,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .cifras .result.bateu .big,.cifras .result.bateu .rotulo{color:var(--ok)}
 .horarios{display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 12px}
 .horarios span{background:var(--t-divulgado-bg); color:var(--t-divulgado-fg); border-left:4px solid var(--t-divulgado-bar); border-radius:8px; padding:5px 10px; font-size:12.5px; font-weight:600}
+.pn-fora-t{font-size:13px; margin:18px 0 6px; color:var(--muted); font-family:inherit; text-transform:uppercase; letter-spacing:.05em; font-weight:500}
 .falt h3{font-size:13px; margin:10px 0 2px; color:var(--muted); font-family:inherit; text-transform:uppercase; letter-spacing:.05em; font-weight:500}
 .falt .contagem .quem{flex:1; min-width:0}
 .plot{position:relative; height:190px; display:flex; align-items:flex-end; gap:6px; border-bottom:1px solid var(--border-strong); margin-top:18px}
@@ -1962,6 +1963,7 @@ function desenharCarteira(pedaco){
         '<span class="sub">'+esc(periodo)+' · '+a.sessoes+(a.sessoes===1?" sessão":" sessões")+
           (a.ciclos>1 ? " · "+a.ciclos+" ciclos" : "")+'</span>' +
         '<span class="cod">'+esc(a.codigo)+' · '+esc(a.status.replace(/\.$/,""))+'</span>' +
+        (Number(a.aPagar) > 0.5 ? '<span class="selo atraso">Deve ' + moeda(a.aPagar) + ' pela planilha</span>' : "") +
         (pedaco === "suspenso" ? seloSuspensao(a) +
           '<label class="susp-data">Suspenso desde <input type="date" data-cod="'+esc(a.codigo)+'" value="'+esc(suspensoDesde(a))+'"></label>' : "") +
         (f ? selo(f) : "") +
@@ -3214,6 +3216,27 @@ function renderPainel(){
       : '<p class="pvazio">Ninguém devendo sessão.</p>';
   }
 
+  /* 2c. quem já saiu da agenda e ficou devendo: o valor é o da planilha na última leitura
+     (Valor a Pagar do Registro), porque o app só calcula a dívida de quem está na agenda */
+  var foraDevendo = (dados.arquivados || []).filter(function(a){ return Number(a.aPagar) > 0.5; })
+    .sort(function(a, b){ return b.aPagar - a.aPagar; });
+  var temLeituraNova = (dados.arquivados || []).some(function(a){ return a.aPagar !== undefined; });
+  var hFora = '<h3 class="pn-fora-t">Quem já saiu da agenda e ficou devendo</h3>';
+  if(!temLeituraNova) hFora += '<p class="pvazio">Leia a planilha uma vez (botão "Ler a planilha", no alto) para trazer a dívida de quem já saiu.</p>';
+  else if(!foraDevendo.length) hFora += '<p class="pvazio">Ninguém, pela planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + '.</p>';
+  else {
+    var totalFora = foraDevendo.reduce(function(t, a){ return t + Number(a.aPagar); }, 0);
+    hFora += '<table class="tab"><thead><tr><th>Paciente</th><th>Situação</th><th class="num">Valor</th></tr></thead><tbody>' +
+      foraDevendo.map(function(a){
+        return '<tr><td><div class="quem"><span class="ini">' + esc((a.nome || "?").charAt(0).toUpperCase()) + '</span><span><b>' + esc(a.nome) + '</b><br><span class="hint">' + esc(a.codigo) +
+          (a.fim ? " · saiu em " + dataLonga(deISO(a.fim)) : "") + '</span></span></div></td>' +
+          '<td>' + esc(String(a.status || "").replace(/\.$/, "")) + '</td><td class="num"><b>' + moeda(a.aPagar) + '</b></td></tr>';
+      }).join("") +
+      '<tr><td><b>Total</b></td><td>' + plural(foraDevendo.length, "pessoa", "pessoas") + '</td><td class="num"><b>' + moeda(totalFora) + '</b></td></tr></tbody></table>' +
+      '<p class="hint" style="margin-top:8px">Valor da planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + ': muda quando você ler a planilha de novo.</p>';
+  }
+  document.getElementById("pn-devendo").insertAdjacentHTML("beforeend", hFora);
+
   /* a meta é a da aba Meta: o que ele quer receber mais os custos, antes do imposto */
   var metaFat = ((+c.meta||0) + (+c.custos||0)) / Math.max(0.01, 1 - (+c.imposto||0)/100);
   var bateu = metaFat > 0 && agora.recebido >= metaFat;
@@ -4208,7 +4231,10 @@ function montarLeitura(celulas, preenchimentos, registro){
     arquivados.push({
       codigo: codigo, nome: r.nome, status: r.status || "", valor: r.valor,
       modalidade: r.modalidade, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || "",
-      sessoes: r.sessoesTotais || 0, ciclos: r.ciclos || 1
+      sessoes: r.sessoesTotais || 0, ciclos: r.ciclos || 1,
+      /* o que a planilha diz que este prontuário ainda deve (coluna Valor a Pagar, que só aparece
+         no ciclo mais recente): é a dívida de quem já saiu, que o app não tem como calcular */
+      aPagar: r.aPagar || 0
     });
   });
   arquivados.sort(function(a,b){ return (b.fim||"").localeCompare(a.fim||"") || a.nome.localeCompare(b.nome); });
@@ -4333,7 +4359,7 @@ function aplicarLeitura(leitura){
       prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined
     };
   });
-  if(leitura.arquivados){ dados.arquivados = leitura.arquivados; marcarSuspensoes(); }
+  if(leitura.arquivados){ dados.arquivados = leitura.arquivados; dados.arquivadosEm = leitura.baseData || chaveData(hoje0()); marcarSuspensoes(); }
   if(leitura.formulacoes) dados.formulacoes = leitura.formulacoes;
   if(leitura.recebimentos) importarRecebimentos(leitura.recebimentos);
   dados.blocos = leitura.blocos;
