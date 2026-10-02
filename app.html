@@ -212,6 +212,16 @@ th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 .filtro-cat{display:flex;margin:0 0 6px;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
 .filtro-cat select{width:auto;flex:0 1 240px;min-width:0;padding:6px 8px}
 .filtro-cat span{color:var(--text);font-weight:600;white-space:nowrap}
+.lim{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:12px}
+.lim li{display:grid;gap:4px}
+.lim .l1{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:14px}
+.lim .l1 b{font-weight:600} .lim .l1 span{white-space:nowrap;color:var(--muted);font-size:13px}
+.lim .trilho{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.lim .trilho i{display:block;height:100%;border-radius:99px;background:var(--pos)}
+.lim .perto .trilho i{background:var(--warn)} .lim .passou .trilho i{background:var(--neg)}
+.lim .l2{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--muted)}
+.lim .perto .l2 b{color:var(--warn)} .lim .passou .l2 b{color:var(--neg)}
+.lim .l2 button{border:0;background:transparent;color:var(--faint);font:inherit;cursor:pointer;padding:0;text-decoration:underline}
 details.origem{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6}
 details.origem summary{cursor:pointer;color:var(--faint)}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -656,6 +666,32 @@ function roscaCategorias(){
   return rosca(itens, "saiu", "Despesas do mês por categoria");
 }
 
+// Limite de gasto por categoria (aprovado por ele em 02/10/2026): ele diz quanto quer gastar no mês
+// em cada categoria e a tela mostra o quanto já foi, com aviso a partir de 80% e quando passa.
+// O gasto é o mesmo de "Gastos por categoria": lançamentos do mês mais os fixos da categoria.
+const limites = () => livro.matheus.limites || (livro.matheus.limites = {});
+const PERTO_DO_LIMITE = 0.8;
+function painelLimites(){
+  const gasto = Object.fromEntries(porCategoria()), lim = limites();
+  const itens = Object.keys(lim).filter(c => Number(lim[c]) > 0)
+    .map(c => ({ c, teto:Number(lim[c]), foi:gasto[c] || 0 })).sort((a, b) => b.foi / b.teto - a.foi / a.teto);
+  const linha = x => {
+    const r = x.foi / x.teto, cls = r > 1.0005 ? "passou" : r >= PERTO_DO_LIMITE ? "perto" : "";
+    const aviso = cls === "passou" ? `passou ${dinheiro(x.foi - x.teto)}` : cls === "perto" ? `perto do limite: sobram ${dinheiro(x.teto - x.foi)}` : `sobram ${dinheiro(x.teto - x.foi)}`;
+    return `<li class="${cls}"><div class="l1"><b>${escH(comPonto(x.c))}</b><span>${dinheiro(x.foi)} de ${dinheiro(x.teto)}</span></div>
+      <div class="trilho" role="img" aria-label="${Math.round(r * 100)}% do limite"><i style="width:${pct(x.foi, x.teto)}%"></i></div>
+      <div class="l2"><b>${aviso}</b><button type="button" data-limite-x="${escH(x.c)}">tirar limite</button></div></li>`;
+  };
+  const cats = CATEGORIAS.filter(t => t !== "Reserva" && t !== "Outras entradas");
+  const form = `<details class="novo"><summary>${itens.length ? "Mudar ou criar limite" : "+ Criar limite"}</summary><form class="linha" id="fLimite">
+    <div><label>Categoria</label><select name="categoria" required><option value="" disabled selected hidden>escolha…</option>${cats.map(t => `<option value="${t}">${comPonto(t)}</option>`).join("")}</select></div>
+    <div><label>Limite por mês</label><input type="text" name="valor" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="0,00" required></div>
+    <div><button class="b p" type="submit">Guardar</button></div>
+  </form></details>`;
+  return `<section class="painel"><h2>Limites por categoria</h2>${itens.length ? `<ul class="lim">${itens.map(linha).join("")}</ul>`
+    : `<p class="nota" style="margin-top:0">Diga quanto quer gastar por mês numa categoria e o app avisa quando chegar perto.</p>`}${form}</section>`;
+}
+
 function roscaCasa(c){
   const [p1, p2] = livro.casa.pessoas;
   return rosca([[primeiro(p1), c.pagou[p1], "var(--c1)"], [primeiro(p2), c.pagou[p2], "var(--c2)"]], "casa no mês", "Quem pagou a casa");
@@ -930,6 +966,7 @@ function telaDinheiro(){
     <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
     <div class="coluna">
       <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias()}</section>
+      ${painelLimites()}
       <section class="painel"><h2>Reserva</h2>
         <div class="stats duas-col" style="margin-bottom:12px">
           <div class="stat"><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
@@ -1116,6 +1153,10 @@ function ligar(){
     pendencias().push({ id:novoId(), nome:d.nome.trim(), tipo:d.tipo === "pagar" ? "pagar" : "receber", origem:(d.origem || "").trim(),
       inicio:d.inicio || "", fim:"", total:Number(d.total) || 0, pago:Number(d.pago) || 0, obs:(d.obs || "").trim() });
     salvar("matheus"); });
+  // campo de dinheiro em que a vírgula anda sozinha (o mesmo jeito do formulário de lançamento)
+  document.querySelectorAll("[data-dinheiro]").forEach(i => i.oninput = () => { const v = FormLancamento.mascara(i.value); if (i.value !== v) i.value = v; });
+  liga("fLimite", (f, d) => { const v = FormLancamento.centavos(d.valor); if (!d.categoria || !(v > 0)) return; limites()[d.categoria] = v; salvar("matheus"); });
+  document.querySelectorAll("[data-limite-x]").forEach(b => b.onclick = () => { delete limites()[b.dataset.limiteX]; salvar("matheus"); });
   const daPend = id => pendencias().find(p => p.id === id);
   document.querySelectorAll("[data-pend-pago]").forEach(b => b.onclick = () => {
     const p = daPend(b.dataset.pendPago); if (!p) return;

@@ -140,6 +140,7 @@ button,input,select,textarea{font:inherit; color:inherit}
 .btn.ghost{border-color:transparent; background:transparent; color:var(--muted)}
 .btn.ghost:hover{color:var(--text); background:var(--surface-2)}
 .btn.sm{padding:4px 9px; font-size:12.5px}
+.btn.cobrar{display:block; margin-top:5px}
 
 /* ---------- barra da semana ---------- */
 .bar{display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px}
@@ -3210,7 +3211,8 @@ function renderPainel(){
             '<button class="linknome" data-ficha="'+x.p.id+'">'+esc(x.p.nome)+'</button></div></td>' +
             '<td class="num">'+String(x.d.sessoes).replace(".", ",")+'</td>' +
             '<td class="num"><b>'+moeda(x.d.valor)+'</b></td>' +
-            '<td><span class="sit '+x.s.classe+'">'+esc(x.s.texto)+'</span></td></tr>';
+            '<td><span class="sit '+x.s.classe+'">'+esc(x.s.texto)+'</span>' +
+            '<button class="btn sm cobrar" data-cobrar="'+x.p.id+'">Cobrar</button></td></tr>';
         }).join("") +
         '<tr><td><b>Total</b></td><td class="num"><b>'+String(totalSess).replace(".", ",")+'</b></td><td class="num"><b>'+moeda(totalDeve)+'</b></td><td></td></tr></tbody></table>'
       : '<p class="pvazio">Ninguém devendo sessão.</p>';
@@ -3230,7 +3232,7 @@ function renderPainel(){
       foraDevendo.map(function(a){
         return '<tr><td><div class="quem"><span class="ini">' + esc((a.nome || "?").charAt(0).toUpperCase()) + '</span><span><b>' + esc(a.nome) + '</b><br><span class="hint">' + esc(a.codigo) +
           (a.fim ? " · saiu em " + dataLonga(deISO(a.fim)) : "") + '</span></span></div></td>' +
-          '<td>' + esc(String(a.status || "").replace(/\.$/, "")) + '</td><td class="num"><b>' + moeda(a.aPagar) + '</b></td></tr>';
+          '<td>' + esc(String(a.status || "").replace(/\.$/, "")) + '<button class="btn sm cobrar" data-cobrar-fora="' + esc(a.codigo) + '">Cobrar</button></td><td class="num"><b>' + moeda(a.aPagar) + '</b></td></tr>';
       }).join("") +
       '<tr><td><b>Total</b></td><td>' + plural(foraDevendo.length, "pessoa", "pessoas") + '</td><td class="num"><b>' + moeda(totalFora) + '</b></td></tr></tbody></table>' +
       '<p class="hint" style="margin-top:8px">Valor da planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + ': muda quando você ler a planilha de novo.</p>';
@@ -3352,6 +3354,49 @@ function renderPainel(){
     "A meta é a da aba Meta: o que você quer receber, mais os custos, antes do imposto.";
   document.querySelectorAll("#v-painel [data-ficha]").forEach(function(b){
     b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.ficha); if(p) abrirFicha(p); });
+  });
+  document.querySelectorAll("#v-painel [data-cobrar]").forEach(function(b){
+    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.cobrar), d = p && devidoDe(p); if(d) abrirCobranca(p.nome, d.sessoes, d.valor); });
+  });
+  document.querySelectorAll("#v-painel [data-cobrar-fora]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var a = (dados.arquivados || []).filter(function(x){ return x.codigo === b.dataset.cobrarFora; })[0];
+      if(a) abrirCobranca(a.nome, 0, Number(a.aPagar));
+    });
+  });
+}
+
+/* Cobrança pronta para copiar (aprovado por ele em 02/10/2026): o botão Cobrar de "Quem está
+   devendo" abre o texto montado, ele ajusta se quiser e copia para o WhatsApp. O app não envia
+   nada. O texto parte da mensagem-padrão dele de cobrança (saudação e despedida iguais); o meio
+   diz as sessões e o valor em aberto. Sem chave Pix aqui: o site é público. */
+function textoCobranca(nome, sessoes, valor){
+  var primeiro = String(nome || "").trim().split(/\s+/)[0] || "";
+  var oque = sessoes > 0 ? "referente a " + plural(sessoes, "sessão", "sessões") + " em aberto, no valor de " + moeda2(valor)
+                         : "que ficou em aberto, no valor de " + moeda2(valor);
+  return "*Olá, " + primeiro + "!*\nTudo bem com você?\n\n" +
+    "Passando para lembrar do pagamento " + oque + ". 😉\n\n" +
+    "Obrigado!";
+}
+function abrirCobranca(nome, sessoes, valor){
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal"><h2>Cobrança de ' + esc(String(nome || "").trim().split(/\s+/)[0]) + '</h2>' +
+    '<p class="sub">Ajuste o texto se quiser e copie para o WhatsApp. O app não envia nada.</p>' +
+    '<textarea id="cob-txt" style="min-height:200px"></textarea>' +
+    '<div class="acoes"><button class="btn" id="cob-fechar">Fechar</button><button class="btn primary" id="cob-copiar">Copiar</button></div></div>';
+  document.body.appendChild(fundo);
+  var ta = document.getElementById("cob-txt");
+  ta.value = textoCobranca(nome, sessoes, valor);
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fundo.remove(); });
+  document.getElementById("cob-fechar").addEventListener("click", function(){ fundo.remove(); });
+  document.getElementById("cob-copiar").addEventListener("click", function(){
+    ta.select();
+    try{ document.execCommand("copy"); }catch(e){}
+    if(navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(function(){});
+    var b = document.getElementById("cob-copiar");
+    b.textContent = "Copiado";
+    setTimeout(function(){ b.textContent = "Copiar"; }, 1600);
   });
 }
 

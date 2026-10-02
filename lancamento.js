@@ -262,5 +262,5 @@ var FormLancamento = (function(){
     if (reg.quem) est.quem = reg.quem;
   }
 
-  return { montar:montar, abrir:abrir, editar:editar, comPonto:comPonto };
+  return { montar:montar, abrir:abrir, editar:editar, comPonto:comPonto, mascara:mascara, centavos:centavos };
 })();
