@@ -624,8 +624,13 @@ function veredito(d){
   const fim = d.fimDoMes;
   if (fim < -0.005) return caixa("neg", false, "Não pode gastar",
     `Mesmo que entre tudo o que falta, ${nome} fecha em ${sinalDin(fim)}${semPrevisto}.`);
-  if (d.sobra < -0.005) return caixa("warn", true, "Segure até entrar",
+  // saldo zerado também é "segure": o que fecha o mês no azul ainda não entrou (01/10/2026: com saldo
+  // de R$ 0,00 a caixa dizia "Pode gastar até R$ 6.625,52", que é dinheiro que ele ainda vai receber)
+  if (d.sobra < 0.005) return caixa("warn", true, "Segure até entrar",
     `Hoje está em ${sinalDin(d.sobra)}. Se entrar o previsto, fecha em ${dinheiro(fim)}: dá para gastar isso, mas só depois que entrar${semPrevisto}.`);
+  // o que dá para gastar hoje é o que já está na mão, sem passar do que sobra no fim do mês
+  if (d.sobra < fim - 0.005) return caixa("pos", true, "Pode gastar",
+    `Hoje, até ${dinheiro(d.sobra)}. Se entrar o previsto, até ${dinheiro(fim)} no mês${semPrevisto}.`);
   return caixa("pos", true, "Pode gastar", `Até ${dinheiro(fim)} sem fechar ${nome} no vermelho${semPrevisto}.`);
 }
 
