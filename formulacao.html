@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Formulação de Caso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Mesmo desenho das outras telas do Controle Único (conferir.html): fundo cinza-azulado, painéis de borda fina. */
+:root{
+  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
+  --accent:#7030a0; --accent-soft:#f0e5fb;
+  --pos:#1f6b4f; --pos-soft:#dcefe6; --neg:#a3241f; --neg-soft:#fbdedd; --warn:#8a4b12; --warn-soft:#fbe8d4;
+  --font:"IBM Plex Sans",system-ui,sans-serif; --radius:8px;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-soft:#2e2140;
+  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
+}}
+:root[data-theme="dark"]{
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
+  --accent:#c8a4f2; --accent-soft:#2e2140;
+  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hidden{display:none !important}
+.wrap{max-width:960px;margin:0 auto;padding:4px 24px 64px}
+.topo{max-width:960px;margin:0 auto;padding:14px 24px 6px;display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
+.marca{font-weight:700;font-size:17px;margin-right:auto}
+.nuvem{font-size:12.5px;color:var(--faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0;min-width:0}
+.nuvem-ponto{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:none}
+.nuvem-ponto.ok{background:#2f9e5b} .nuvem-ponto.indo{background:#d49a1c} .nuvem-ponto.erro{background:#d0453a}
+#nuvem-acoes{display:flex;gap:6px;flex-wrap:wrap}
+.b{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:7px 12px;cursor:pointer;font-size:14px;min-height:36px}
+.b:hover{border-color:var(--faint)}
+.b.p{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600}
+.b.s{font-size:13px;padding:4px 10px;min-height:30px}
+.b.perigo{color:var(--neg);border-color:var(--neg)}
+.b.liso{border-color:transparent;background:transparent;color:var(--muted)}
+.b.liso:hover{background:var(--surface-2)}
+
+/* escolha do caso e das vistas */
+.barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
+.barra select{flex:1 1 220px;min-width:0;max-width:420px;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:7px 10px;min-height:36px;font-weight:600}
+.vistas{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 0;overflow-x:auto}
+.vistas button{border:0;background:none;padding:9px 14px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;font-weight:500}
+.vistas button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.vistas .q{font-weight:400;color:var(--faint);font-size:12.5px}
+.sub{margin:14px 0 0;font-size:13.5px;color:var(--muted)}
+.vazio{color:var(--muted);font-size:14px;padding:8px 0;margin:0}
+
+/* módulos */
+details.painel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-top:14px;min-width:0}
+details.painel > summary{cursor:pointer;list-style:none;display:flex;gap:10px;align-items:center;padding:13px 18px;font-weight:700;font-size:15.5px}
+details.painel > summary::-webkit-details-marker{display:none}
+details.painel > summary::before{content:"›";display:inline-block;transition:transform .12s;color:var(--faint);width:10px}
+details.painel[open] > summary::before{transform:rotate(90deg)}
+details.painel > summary .q{margin-left:auto;font-weight:400;color:var(--faint);font-size:13px}
+.corpo{padding:0 18px 14px}
+.campo{display:grid;grid-template-columns:200px minmax(0,1fr);gap:4px 16px;padding:9px 0;border-top:1px solid var(--line)}
+.campo > .rot{font-size:13.5px;font-weight:600;color:var(--muted);padding-top:3px}
+.campo.solto{grid-template-columns:minmax(0,1fr)}
+.dica{font-size:12.5px;color:var(--faint);margin:0 0 4px}
+ul.itens{list-style:none;margin:0;padding:0}
+.item{padding:6px 10px;border-left:3px solid var(--line);margin:0 0 6px;background:var(--surface-2);border-radius:0 6px 6px 0}
+.item.hip{border-left-color:var(--accent);border-left-style:dashed}
+.it-texto{white-space:pre-wrap;overflow-wrap:anywhere}
+.it-pe{display:flex;gap:4px 10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--faint);margin-top:2px}
+.it-pe .acoes{margin-left:auto;display:flex;gap:2px}
+.it-pe .acoes button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:12.5px;padding:3px 7px;border-radius:6px;min-height:28px}
+.it-pe .acoes button:hover{background:var(--surface);color:var(--text)}
+.selo{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--surface);color:var(--muted)}
+.selo.hip{background:var(--accent-soft);color:var(--accent)}
+.tag{border:0;background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:0 7px;cursor:pointer;font-weight:500;font-size:inherit}
+.rels{margin:4px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)}
+.rels b{font-weight:600;color:var(--text)}
+.mais{border:1px dashed var(--line);background:none;color:var(--muted);border-radius:6px;cursor:pointer;padding:3px 10px;font-size:13px;min-height:30px}
+.mais:hover{border-color:var(--accent);color:var(--accent)}
+
+/* hashtags e relações */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;font-size:13.5px;cursor:pointer;min-height:32px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--surface);border-color:var(--accent);font-weight:600}
+.chip .q{color:var(--faint);font-size:12px} .chip[aria-pressed="true"] .q{color:inherit}
+.bloco{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin-top:14px}
+.bloco h2{margin:0 0 8px;font-size:15.5px}
+.rel{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.rel:first-of-type{border-top:0}
+.rel .seta{color:var(--accent);font-weight:600;font-size:13px;white-space:nowrap}
+.rel small{display:block;color:var(--faint);font-size:12px}
+
+/* janelas */
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:18px 20px;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px)}
+dialog::backdrop{background:rgba(10,14,20,.55)}
+dialog h2{margin:0 0 2px;font-size:17px}
+dialog .onde{margin:0 0 12px;font-size:13px;color:var(--faint)}
+dialog label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:10px 0 4px}
+dialog textarea,dialog input[type=text],dialog input[type=date],dialog input[type=search],dialog select{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:var(--radius);padding:8px 10px;font-size:16px}
+dialog textarea{min-height:110px;resize:vertical}
+.linha2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pe-dlg{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.pe-dlg .esq{margin-right:auto}
+.lista-alvo{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius);margin-top:8px}
+.lista-alvo button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 10px;cursor:pointer}
+.lista-alvo button:hover{background:var(--accent-soft)}
+.lista-alvo button small{display:block;color:var(--faint);font-size:12px}
+.marcar{display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-weight:400 !important;color:var(--text) !important;font-size:14.5px !important;margin:0 !important;cursor:pointer}
+.marcar input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.marcar .q{margin-left:auto;color:var(--faint);font-size:12.5px}
+.pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.na-casca .marca{display:none}
+.na-casca #nuvem-entrar{display:none !important}
+
+@media (max-width:700px){
+  .topo{padding:10px 12px 4px}
+  .wrap{padding:0 12px 56px}
+  details.painel > summary{padding:12px 14px}
+  .corpo{padding:0 14px 12px}
+  .campo{grid-template-columns:minmax(0,1fr)}
+  .rel{grid-template-columns:minmax(0,1fr)}
+  .linha2{grid-template-columns:1fr}
+  select,input,textarea{font-size:16px !important}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="nuvem.js"></script>
+<script>if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
+</head>
+<body>
+<div class="topo">
+  <span class="marca">Formulação de Caso</span>
+  <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto">Carregando…</span>
+    <button class="b s p" id="nuvem-entrar" type="button">Entrar com o Google</button><span id="nuvem-acoes"></span></p>
+</div>
+
+<main class="wrap">
+  <div class="barra">
+    <select id="caso" aria-label="Caso aberto"></select>
+    <button class="b p" id="novo-caso" type="button">＋ Novo caso</button>
+    <button class="b" id="abrir-modulos" type="button">Módulos</button>
+  </div>
+  <div class="vistas" role="tablist" id="vistas">
+    <button role="tab" data-vista="formulacao">Formulação</button>
+    <button role="tab" data-vista="hashtags">Hashtags <span class="q" id="q-tags"></span></button>
+    <button role="tab" data-vista="relacoes">Relações <span class="q" id="q-rels"></span></button>
+  </div>
+  <div id="conteudo"></div>
+  <div class="pe" id="pe">
+    <button class="b s" id="baixar-texto" type="button">Baixar este caso em texto</button>
+    <button class="b s" id="baixar-copia" type="button">Baixar cópia de tudo</button>
+    <button class="b s" id="restaurar" type="button">Restaurar cópia</button>
+    <button class="b s perigo" id="apagar-caso" type="button">Apagar este caso</button>
+    <input type="file" id="arq-copia" accept="application/json,.json" class="hidden">
+  </div>
+</main>
+
+<dialog id="dlg-item">
+  <form method="dialog" id="f-item">
+    <h2 id="it-titulo">Novo registro</h2>
+    <p class="onde" id="it-onde"></p>
+    <label for="it-texto">O que registrar</label>
+    <textarea id="it-texto" required placeholder=""></textarea>
+    <p class="dica" style="margin-top:4px">Escreva #palavra no meio do texto para ligar este registro a outros com a mesma hashtag.</p>
+    <div class="linha2">
+      <div><label for="it-data">Data</label><input type="date" id="it-data"></div>
+      <div><label for="it-hip">É dado ou hipótese?</label>
+        <select id="it-hip"><option value="0">Dado (relatado ou observado)</option><option value="1">Hipótese (minha leitura)</option></select></div>
+    </div>
+    <div id="it-mover-caixa"><label for="it-mover">Onde fica</label><select id="it-mover"></select></div>
+    <div class="pe-dlg">
+      <button class="b perigo esq" type="button" id="it-apagar">Apagar</button>
+      <button class="b" type="button" data-fechar>Cancelar</button>
+      <button class="b" type="submit" id="it-outro" value="outro">Guardar e novo</button>
+      <button class="b p" type="submit" value="ok">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-ligar">
+  <h2>Ligar a outro registro</h2>
+  <p class="onde" id="lg-de"></p>
+  <label for="lg-tipo">Este registro</label>
+  <select id="lg-tipo"></select>
+  <label for="lg-busca">Qual registro?</label>
+  <input type="search" id="lg-busca" placeholder="Procurar no texto">
+  <div class="lista-alvo" id="lg-lista"></div>
+  <div class="pe-dlg"><button class="b" type="button" data-fechar>Fechar</button></div>
+</dialog>
+
+<dialog id="dlg-modulos">
+  <h2>Módulos deste caso</h2>
+  <p class="onde">Ligue só o que este caso pede. Desligar um módulo esconde, não apaga.</p>
+  <div id="md-lista"></div>
+  <div class="pe-dlg">
+    <button class="b esq" type="button" id="md-todos">Ligar todos</button>
+    <button class="b p" type="button" data-fechar>Pronto</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-caso">
+  <form method="dialog" id="f-caso">
+    <h2>Novo caso</h2>
+    <p class="onde">O caso fica guardado no seu Google Drive, não neste site.</p>
+    <div id="cs-clinica-caixa"><label for="cs-clinica">Paciente da Clínica</label><select id="cs-clinica"></select></div>
+    <div class="linha2">
+      <div><label for="cs-codigo">Prontuário</label><input type="text" id="cs-codigo" autocomplete="off"></div>
+      <div><label for="cs-nome">Nome</label><input type="text" id="cs-nome" autocomplete="off" required></div>
+    </div>
+    <div class="pe-dlg">
+      <button class="b esq" type="button" data-fechar>Cancelar</button>
+      <button class="b p" type="submit">Criar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/* Formulação de Caso flexível: estrutura mínima + módulos + relações + vistas.
+   Cada informação é registrada uma vez (um registro, num módulo); hashtags e relações ligam
+   os registros, e as vistas mostram o mesmo conteúdo de jeitos diferentes. Nenhum dado de
+   paciente mora neste arquivo: os casos ficam no caderno "Controle Único - formulação.json",
+   no Google Drive de quem entrou, com cópia neste navegador. */
+const CH = "controle-unico-formulacao-cache", CH_ABERTO = "controle-unico-formulacao-aberto";
+
+/* campo: [nome, dica, nasce como hipótese] */
+const MODULOS = [
+  {id:"motivo", nome:"Motivo da procura", fixo:true, dica:"Demanda inicial e razões para a busca por atendimento."},
+  {id:"problemas", nome:"Problemas prioritários", fixo:true, dica:"Um registro por problema, do mais ao menos prioritário."},
+  {id:"objetivos", nome:"Objetivos terapêuticos", fixo:true, dica:"Um registro por objetivo, com o prazo."},
+  {id:"identificacao", nome:"Dados de identificação", campos:[["Idade"],["Nacionalidade"],["Identidade de gênero"],["Orientação sexual"],["Estado civil"],["Escolaridade"],["Ocupação"],["Residência atual"],["Contexto cultural"],["Orientação religiosa"],["Situação socioeconômica"]]},
+  {id:"contexto", nome:"Contexto atual relevante", campos:[
+    ["Relacionamentos e rede de apoio","Relacionamentos, convivência, apoio e conflitos."],
+    ["Situação acadêmica/profissional","Estudo/trabalho, rotina, desempenho e dificuldades."],
+    ["Condições de saúde física","Condições médicas e limitações atuais."],
+    ["Medicamentos atuais","Medicamento, dose, frequência e indicação."],
+    ["Uso atual de substâncias","Substância, frequência, padrão e função."],
+    ["Estressores atuais relevantes","Demandas, conflitos, mudanças, perdas e outras fontes de estresse."],
+    ["Sono","Horário, duração, qualidade, regularidade e dificuldades."],
+    ["Alimentação","Padrão, regularidade e alterações."],
+    ["Atividade física","Modalidade, frequência, duração e regularidade."]]},
+  {id:"recursos", nome:"Recursos e obstáculos", campos:[
+    ["Recursos atuais","O que favorece o funcionamento, o enfrentamento ou o tratamento."],
+    ["Obstáculos atuais","O que dificulta o funcionamento, o enfrentamento ou o tratamento."]]},
+  {id:"valores", nome:"Valores, interesses e aspirações", campos:[
+    ["Valores","Aspectos e qualidades de vida considerados importantes."],
+    ["Interesses","Atividades, experiências e áreas de interesse relevantes."],
+    ["Aspirações","Direções, projetos e realizações desejadas."]]},
+  {id:"concomitantes", nome:"Tratamentos concomitantes", dica:"Um registro por tratamento: período, modalidade, indicação, intervenção, resposta, efeitos adversos e evolução."},
+  {id:"historico", nome:"Histórico pessoal relevante", campos:[
+    ["Infância e desenvolvimento","Desenvolvimento, temperamento, vínculos, criação e experiências significativas."],
+    ["Familiar","Cuidadores, dinâmica familiar, práticas parentais, conflitos e acontecimentos significativos."],
+    ["Escolar e acadêmico","Adaptação, desempenho, aprendizagem e acontecimentos relevantes."],
+    ["Profissional","Trajetória, desempenho, relações, conflitos e mudanças relevantes."],
+    ["Social e interpessoal","Amizades, pertencimento, isolamento, padrões interpessoais e conflitos."],
+    ["Amoroso e sexual","Relacionamentos, sexualidade, padrões e experiências relevantes."],
+    ["Perdas e luto","Perda, vínculo, período e repercussões."],
+    ["Eventos traumáticos","Evento, período ou recorrência e repercussões."],
+    ["Religioso e cultural","Valores, pertencimento, experiências e conflitos."],
+    ["Histórico de uso de substâncias","Início, trajetória, padrões, consequências e função."],
+    ["Histórico de saúde física","Doenças, acidentes, cirurgias, hospitalizações e intercorrências."]]},
+  {id:"familia", nome:"Histórico familiar de saúde mental", campos:[["Pai"],["Mãe"],["Irmã(o)"],["Outros familiares relevantes"],
+    ["Outros antecedentes familiares relevantes","Condições médicas ou neurodesenvolvimentais relevantes para o caso."]]},
+  {id:"saudemental", nome:"Histórico de saúde mental", campos:[["Problemas e sintomas"],["Contexto de início"],["Curso e desfecho"],["Intercorrências relevantes"],
+    ["Tratamentos anteriores","Período, modalidade, indicação, intervenção, resposta e motivo do encerramento."]]},
+  {id:"alerta", nome:"Sinais de alerta (red flags)"},
+  {id:"funcionamento", nome:"Funcionamento", campos:[["Comportamento"],["Cognição"],["Afeto e humor"],["Biofisiológico"],["Existencial"],["Social/interpessoal"],["Na sociedade"]]},
+  {id:"diagnostico", nome:"Diagnóstico", campos:[["Diagnóstico(s)"],["Fundamentação diagnóstica"],["Diagnósticos diferenciais"],["Síntese diagnóstica","",true],["Observações diagnósticas"]]},
+  {id:"contingencias", nome:"Análise de contingências", campos:[
+    ["Antecedentes e contexto"],["Operações motivadoras"],["Respostas"],["Consequências"],["Função hipotetizada","",true],
+    ["Padrões comportamentais relevantes","Respostas recorrentes, diante de quais contextos, possivelmente relacionadas a qual função.",true],
+    ["Variáveis contextuais relevantes","Condição associada ao aumento ou à redução de um padrão."],
+    ["Hipóteses funcionais","Diante de quê, qual resposta tende a produzir qual consequência, mantida por quê.",true]]},
+  {id:"cognitivo", nome:"Diagrama cognitivo", campos:[
+    ["Precipitantes relevantes"],["Crenças nucleares","",true],["Crenças intermediárias","",true],["Estratégias compensatórias e de enfrentamento"],
+    ["Situações e pensamentos automáticos","Situação, pensamento automático, significado, emoção e comportamento."],
+    ["Pensamentos automáticos recorrentes"],["Crenças nucleares adaptativas","",true],["Crenças intermediárias adaptativas","",true]]},
+  {id:"sorc", nome:"Análise SORC", campos:[
+    ["Situação desencadeadora (S)","Externa ou interna."],["Vulnerabilidades (O)"],
+    ["Respostas (R)","Pensamento, emoção, comportamento, interação e reações físicas."],
+    ["Consequências (C)","De curto e de longo prazo."],["Metaproblema"]]},
+  {id:"processos", nome:"Rede de processos", campos:[["Atenção"],["Cognitivo"],["Self"],["Afeto"],["Comportamento"],["Motivação"],["Biofisiológico"],["Contexto"],["Sociocultural"]]},
+  {id:"participacao", nome:"Preferências e participação do paciente"}
+];
+const MOD = Object.fromEntries(MODULOS.map(m => [m.id, m]));
+const TIPOS_REL = ["leva a", "mantém", "aumenta", "reduz", "está ligado a"];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "x" + Date.now() + Math.random().toString(16).slice(2));
+const hoje = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
+const dataBR = iso => iso ? iso.slice(8,10) + "/" + iso.slice(5,7) + "/" + iso.slice(0,4) : "";
+const RE_TAG = /#([\p{L}\p{N}_-]+)/gu;
+const tagsDe = t => Array.from(String(t).matchAll(RE_TAG), m => m[1].toLowerCase());
+const curto = (t, n) => { t = String(t).replace(/\s+/g, " ").trim(); return t.length > (n || 70) ? t.slice(0, (n || 70) - 1) + "…" : t; };
+const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+
+function normalizar(d){
+  d = d && typeof d === "object" ? d : {};
+  if (!Array.isArray(d.casos)) d.casos = [];
+  d.versao = 1;
+  d.casos.forEach(c => { c.itens = c.itens || []; c.relacoes = c.relacoes || []; c.modulos = c.modulos || []; });
+  return d;
+}
+let livro = normalizar((() => { try { return JSON.parse(localStorage.getItem(CH)); } catch(e){ return null; } })());
+let abertoId = (() => { try { return localStorage.getItem(CH_ABERTO); } catch(e){ return null; } })();
+let vista = ["hashtags","relacoes"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "formulacao";
+let tagAberta = null;
+const fechados = new Set();
+
+const caderno = Nuvem.caderno({
+  id:"formulacao", nome:"Controle Único - formulação.json", rotulo:"a Formulação de Caso",
+  obter: () => livro,
+  aplicar: d => { livro = normalizar(d); guardarLocal(); desenhar(); },
+  temDados: d => !!(d && d.casos && d.casos.length)
+});
+function guardarLocal(){ try { localStorage.setItem(CH, JSON.stringify(livro)); } catch(e){} }
+function gravar(){ guardarLocal(); caderno.mudou(); desenhar(); }
+
+function caso(){
+  let c = livro.casos.find(x => x.id === abertoId);
+  if (!c && livro.casos.length){ c = livro.casos[0]; abertoId = c.id; }
+  return c || null;
+}
+function abrirCaso(id){ abertoId = id; tagAberta = null; try { localStorage.setItem(CH_ABERTO, id); } catch(e){} desenhar(); }
+const itensDe = (c, m, campo) => c.itens.filter(i => i.m === m && (campo === undefined || (i.c || "") === campo));
+const ativos = c => MODULOS.filter(m => m.fixo || c.modulos.includes(m.id));
+const ondeFica = it => MOD[it.m] ? MOD[it.m].nome + (it.c ? " › " + it.c : "") : "Sem módulo";
+
+/* ---------- desenho ---------- */
+function comTags(t){ return esc(t).replace(RE_TAG, (tudo, nome) => '<button type="button" class="tag" data-tag="' + esc(nome.toLowerCase()) + '">#' + nome + '</button>'); }
+
+function htmlRelacoes(c, it){
+  const linhas = [];
+  c.relacoes.forEach(r => {
+    const outro = c.itens.find(i => i.id === (r.de === it.id ? r.para : r.para === it.id ? r.de : null));
+    if (!outro) return;
+    linhas.push(r.de === it.id ? "<li>→ <b>" + esc(r.tipo) + "</b>: " + esc(curto(outro.texto)) + "</li>"
+                               : "<li>← " + esc(curto(outro.texto)) + " <b>" + esc(r.tipo) + "</b> este</li>");
+  });
+  return linhas.length ? '<ul class="rels">' + linhas.join("") + "</ul>" : "";
+}
+function htmlItem(c, it, comOrigem){
+  return '<li class="item' + (it.hip ? " hip" : "") + '" data-item="' + it.id + '">' +
+    '<div class="it-texto">' + comTags(it.texto) + "</div>" + htmlRelacoes(c, it) +
+    '<div class="it-pe">' + (comOrigem ? "<span>" + esc(ondeFica(it)) + "</span>" : "") +
+      (it.hip ? '<span class="selo hip">Hipótese</span>' : "") + (it.data ? "<span>" + dataBR(it.data) + "</span>" : "") +
+      '<span class="acoes"><button type="button" data-ligar>Ligar</button><button type="button" data-editar>Editar</button></span></div></li>';
+}
+function htmlCampo(c, m, campo){
+  const nome = campo ? campo[0] : "", itens = itensDe(c, m.id, nome);
+  return '<div class="campo' + (campo ? "" : " solto") + '">' + (campo ? '<div class="rot">' + esc(nome) + "</div>" : "") + "<div>" +
+    (itens.length ? '<ul class="itens">' + itens.map(i => htmlItem(c, i)).join("") + "</ul>" : "") +
+    '<button type="button" class="mais" data-novo="' + m.id + '" data-campo="' + esc(nome) + '">＋ Registro</button></div></div>';
+}
+function htmlModulo(c, m){
+  const n = itensDe(c, m.id).length;
+  /* registro guardado num campo que o módulo não tem mais: aparece solto, para não sumir */
+  const nomes = (m.campos || []).map(x => x[0]);
+  const orfaos = m.campos ? itensDe(c, m.id).filter(i => !nomes.includes(i.c || "")) : [];
+  return '<details class="painel" data-modulo="' + m.id + '"' + (fechados.has(m.id) ? "" : " open") + "><summary>" + esc(m.nome) +
+    '<span class="q">' + (n ? plural(n, "registro", "registros") : "vazio") + "</span></summary><div class=\"corpo\">" +
+    (m.dica ? '<p class="dica">' + esc(m.dica) + "</p>" : "") +
+    (m.campos ? m.campos.map(campo => htmlCampo(c, m, campo)).join("") : htmlCampo(c, m, null)) +
+    (orfaos.length ? '<div class="campo solto"><ul class="itens">' + orfaos.map(i => htmlItem(c, i)).join("") + "</ul></div>" : "") +
+    "</div></details>";
+}
+function contagemTags(c){
+  const mapa = new Map();
+  c.itens.forEach(i => new Set(tagsDe(i.texto)).forEach(t => mapa.set(t, (mapa.get(t) || 0) + 1)));
+  return Array.from(mapa).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"));
+}
+function vistaFormulacao(c){
+  const lig = ativos(c), fora = MODULOS.length - lig.length;
+  return lig.map(m => htmlModulo(c, m)).join("") +
+    (fora ? '<p class="sub">' + plural(fora, "módulo desligado", "módulos desligados") + '. <button type="button" class="b s" data-abrir-modulos>Escolher módulos</button></p>' : "");
+}
+function vistaHashtags(c){
+  const tags = contagemTags(c);
+  if (!tags.length) return '<p class="sub">Nenhuma hashtag ainda. Escreva #palavra dentro de um registro (por exemplo, #evitação) e ele aparece aqui, junto com todos os outros que usarem a mesma.</p>';
+  if (!tagAberta || !tags.some(t => t[0] === tagAberta)) tagAberta = tags[0][0];
+  const itens = c.itens.filter(i => tagsDe(i.texto).includes(tagAberta));
+  return '<div class="chips">' + tags.map(t => '<button type="button" class="chip" data-tag="' + esc(t[0]) + '" aria-pressed="' + (t[0] === tagAberta) + '">#' + esc(t[0]) + ' <span class="q">' + t[1] + "</span></button>").join("") + "</div>" +
+    '<div class="bloco"><h2>#' + esc(tagAberta) + '</h2><ul class="itens">' +
+    MODULOS.flatMap(m => itens.filter(i => i.m === m.id)).map(i => htmlItem(c, i, true)).join("") + "</ul></div>";
+}
+function vistaRelacoes(c){
+  const rels = c.relacoes.filter(r => c.itens.some(i => i.id === r.de) && c.itens.some(i => i.id === r.para));
+  if (!rels.length) return '<p class="sub">Nenhuma relação ainda. Em qualquer registro, toque em Ligar para dizer que ele leva a outro, mantém, aumenta ou reduz outro.</p>';
+  const lado = id => { const i = c.itens.find(x => x.id === id); return "<div>" + esc(curto(i.texto, 110)) + "<small>" + esc(ondeFica(i)) + (i.hip ? " · hipótese" : "") + "</small></div>"; };
+  return '<div class="bloco"><h2>Relações entre registros</h2>' + rels.map(r =>
+    '<div class="rel">' + lado(r.de) + '<span class="seta">' + esc(r.tipo) + " →</span>" + lado(r.para) +
+    '<button type="button" class="b s liso" data-desligar="' + r.id + '">Desfazer</button></div>').join("") + "</div>";
+}
+function desenhar(){
+  const c = caso(), sel = $("caso");
+  sel.innerHTML = livro.casos.length
+    ? livro.casos.slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map(x => '<option value="' + x.id + '"' + (c && x.id === c.id ? " selected" : "") + ">" + esc(x.nome) + (x.codigo ? " · " + esc(x.codigo) : "") + "</option>").join("")
+    : "<option>Nenhum caso</option>";
+  sel.disabled = !livro.casos.length;
+  ["vistas", "pe", "abrir-modulos"].forEach(id => $(id).classList.toggle("hidden", !c));
+  if (!c){
+    $("conteudo").innerHTML = '<p class="sub">Nenhum caso ainda. Comece por <b>＋ Novo caso</b>: ele nasce só com o mínimo (motivo da procura, problemas prioritários e objetivos) e você liga os módulos que o caso pedir.</p>';
+    return;
+  }
+  document.querySelectorAll("#vistas button").forEach(b => b.setAttribute("aria-selected", b.dataset.vista === vista));
+  const nt = contagemTags(c).length;
+  $("q-tags").textContent = nt || ""; $("q-rels").textContent = c.relacoes.length || "";
+  $("conteudo").innerHTML = vista === "hashtags" ? vistaHashtags(c) : vista === "relacoes" ? vistaRelacoes(c) : vistaFormulacao(c);
+}
+
+/* ---------- registro: novo e edição ---------- */
+let emEdicao = null;   // {id} na edição, {m, campo} no novo
+function abrirItem(alvo){
+  const c = caso(); emEdicao = alvo;
+  const it = alvo.id ? c.itens.find(i => i.id === alvo.id) : null;
+  const m = MOD[it ? it.m : alvo.m], nomeCampo = it ? (it.c || "") : alvo.campo;
+  const campo = (m.campos || []).find(x => x[0] === nomeCampo);
+  $("it-titulo").textContent = it ? "Editar registro" : "Novo registro";
+  $("it-onde").textContent = m.nome + (nomeCampo ? " › " + nomeCampo : "");
+  $("it-texto").value = it ? it.texto : "";
+  $("it-texto").placeholder = (campo && campo[1]) || m.dica || "";
+  $("it-data").value = it ? (it.data || "") : hoje();
+  $("it-hip").value = (it ? it.hip : campo && campo[2]) ? "1" : "0";
+  $("it-apagar").classList.toggle("hidden", !it);
+  $("it-outro").classList.toggle("hidden", !!it);
+  $("it-mover-caixa").classList.toggle("hidden", !it);
+  if (it){
+    $("it-mover").innerHTML = ativos(c).concat(MOD[it.m].fixo || c.modulos.includes(it.m) ? [] : [MOD[it.m]]).flatMap(x =>
+      (x.campos ? x.campos.map(k => k[0]) : [""]).map(k => '<option value="' + x.id + "|" + esc(k) + '"' + (x.id === it.m && k === (it.c || "") ? " selected" : "") + ">" + esc(x.nome + (k ? " › " + k : "")) + "</option>")).join("");
+  }
+  if (!$("dlg-item").open) $("dlg-item").showModal();
+  $("it-texto").focus();
+}
+$("f-item").addEventListener("submit", e => {
+  e.preventDefault();
+  const c = caso(), texto = $("it-texto").value.trim();
+  if (!texto) return;
+  const outro = e.submitter && e.submitter.value === "outro";
+  if (emEdicao.id){
+    const it = c.itens.find(i => i.id === emEdicao.id), onde = $("it-mover").value.split("|");
+    it.texto = texto; it.data = $("it-data").value; it.hip = $("it-hip").value === "1"; it.m = onde[0]; it.c = onde.slice(1).join("|");
+  } else {
+    c.itens.push({id:uid(), m:emEdicao.m, c:emEdicao.campo, texto, data:$("it-data").value, hip:$("it-hip").value === "1"});
+  }
+  c.atualizado = hoje();
+  gravar();
+  if (outro) abrirItem({m:emEdicao.m, campo:emEdicao.campo}); else $("dlg-item").close();
+});
+$("it-apagar").addEventListener("click", () => {
+  const c = caso(), it = c.itens.find(i => i.id === emEdicao.id);
+  if (!confirm("Apagar este registro?\n\n" + curto(it.texto, 120))) return;
+  c.itens = c.itens.filter(i => i.id !== it.id);
+  c.relacoes = c.relacoes.filter(r => r.de !== it.id && r.para !== it.id);
+  $("dlg-item").close(); gravar();
+});
+
+/* ---------- relações ---------- */
+let ligando = null;
+function abrirLigar(id){
+  const c = caso(), it = c.itens.find(i => i.id === id);
+  ligando = id;
+  $("lg-de").textContent = curto(it.texto, 120);
+  $("lg-tipo").innerHTML = TIPOS_REL.map(t => "<option>" + t + "</option>").join("");
+  $("lg-busca").value = "";
+  listarAlvos();
+  $("dlg-ligar").showModal();
+}
+function listarAlvos(){
+  const c = caso(), q = $("lg-busca").value.trim().toLowerCase();
+  const alvos = MODULOS.flatMap(m => c.itens.filter(i => i.m === m.id)).filter(i => i.id !== ligando && (!q || i.texto.toLowerCase().includes(q)));
+  $("lg-lista").innerHTML = alvos.length
+    ? alvos.map(i => '<button type="button" data-alvo="' + i.id + '">' + esc(curto(i.texto, 100)) + "<small>" + esc(ondeFica(i)) + "</small></button>").join("")
+    : '<p class="vazio" style="padding:10px">' + (q ? "Nenhum registro com esse texto." : "Este caso ainda não tem outro registro para ligar.") + "</p>";
+}
+$("lg-busca").addEventListener("input", listarAlvos);
+$("lg-lista").addEventListener("click", e => {
+  const b = e.target.closest("[data-alvo]"); if (!b) return;
+  const c = caso(), tipo = $("lg-tipo").value;
+  if (!c.relacoes.some(r => r.de === ligando && r.para === b.dataset.alvo && r.tipo === tipo))
+    c.relacoes.push({id:uid(), de:ligando, para:b.dataset.alvo, tipo});
+  $("dlg-ligar").close(); gravar();
+});
+
+/* ---------- módulos ---------- */
+function listarModulos(){
+  const c = caso();
+  $("md-lista").innerHTML = MODULOS.map(m => {
+    const n = itensDe(c, m.id).length;
+    return '<label class="marcar"><input type="checkbox" value="' + m.id + '"' + (m.fixo || c.modulos.includes(m.id) ? " checked" : "") + (m.fixo ? " disabled" : "") + ">" +
+      esc(m.nome) + '<span class="q">' + (m.fixo ? "sempre ligado" : n ? plural(n, "registro", "registros") : "") + "</span></label>";
+  }).join("");
+}
+$("md-lista").addEventListener("change", e => {
+  const c = caso(), id = e.target.value;
+  c.modulos = e.target.checked ? c.modulos.concat(id) : c.modulos.filter(x => x !== id);
+  gravar();
+});
+$("md-todos").addEventListener("click", () => { caso().modulos = MODULOS.filter(m => !m.fixo).map(m => m.id); gravar(); listarModulos(); });
+function abrirModulos(){ listarModulos(); $("dlg-modulos").showModal(); }
+$("abrir-modulos").addEventListener("click", abrirModulos);
+
+/* ---------- casos ---------- */
+/* os pacientes da aba Clínica, se o Controle Único já foi aberto neste navegador (só leitura) */
+function pacientesDaClinica(){
+  try {
+    const d = JSON.parse(localStorage.getItem("controle-unico-clinica-cache"));
+    return (d.pacientes || []).filter(p => p.codigo && !livro.casos.some(c => c.codigo === p.codigo))
+      .map(p => ({codigo:p.codigo, nome:p.nomeCompleto || p.nome || ""})).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  } catch(e){ return []; }
+}
+$("novo-caso").addEventListener("click", () => {
+  const ps = pacientesDaClinica();
+  $("cs-clinica-caixa").classList.toggle("hidden", !ps.length);
+  $("cs-clinica").innerHTML = '<option value="">Outro, digito abaixo</option>' + ps.map((p, i) => '<option value="' + i + '">' + esc(p.nome + " · " + p.codigo) + "</option>").join("");
+  $("cs-clinica").onchange = e => { const p = ps[e.target.value]; $("cs-codigo").value = p ? p.codigo : ""; $("cs-nome").value = p ? p.nome : ""; };
+  $("cs-codigo").value = ""; $("cs-nome").value = "";
+  $("dlg-caso").showModal();
+});
+$("f-caso").addEventListener("submit", e => {
+  e.preventDefault();
+  const nome = $("cs-nome").value.trim(); if (!nome) return;
+  const c = {id:uid(), codigo:$("cs-codigo").value.trim(), nome, criado:hoje(), atualizado:hoje(), modulos:[], itens:[], relacoes:[]};
+  livro.casos.push(c);
+  $("dlg-caso").close(); vista = "formulacao"; abrirCaso(c.id); gravar();
+});
+$("caso").addEventListener("change", e => abrirCaso(e.target.value));
+$("apagar-caso").addEventListener("click", () => {
+  const c = caso();
+  if (!confirm("Apagar o caso de " + c.nome + ", com " + plural(c.itens.length, "registro", "registros") + "?\n\nNão dá para desfazer. Se quiser guardar, baixe o caso em texto antes.")) return;
+  livro.casos = livro.casos.filter(x => x.id !== c.id); abertoId = null; gravar();
+});
+
+/* ---------- saída: texto e cópia ---------- */
+function baixar(nome, conteudo, tipo){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([conteudo], {type:tipo})); a.download = nome; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function textoDoCaso(c){
+  const linha = i => "- " + i.texto.replace(/\n/g, "\n  ") + (i.hip ? " [hipótese]" : "") + (i.data ? " (" + dataBR(i.data) + ")" : "");
+  const partes = ["FORMULAÇÃO DE CASO", (c.codigo ? "Prontuário: " + c.codigo + "\n" : "") + "Nome: " + c.nome + "\nÚltima atualização: " + dataBR(c.atualizado || c.criado)];
+  MODULOS.filter(m => m.fixo || c.modulos.includes(m.id) || itensDe(c, m.id).length).forEach(m => {
+    const its = itensDe(c, m.id); if (!its.length) return;
+    let t = m.nome.toUpperCase();
+    const nomes = Array.from(new Set((m.campos || []).map(k => k[0]).concat(its.map(i => i.c || ""))));
+    nomes.forEach(k => { const doCampo = its.filter(i => (i.c || "") === k); if (doCampo.length) t += (k ? "\n\n" + k + ":" : "") + "\n" + doCampo.map(linha).join("\n"); });
+    partes.push(t);
+  });
+  const rels = c.relacoes.map(r => { const a = c.itens.find(i => i.id === r.de), b = c.itens.find(i => i.id === r.para); return a && b ? "- " + curto(a.texto, 90) + " → " + r.tipo + " → " + curto(b.texto, 90) : null; }).filter(Boolean);
+  if (rels.length) partes.push("RELAÇÕES\n" + rels.join("\n"));
+  return partes.join("\n\n") + "\n";
+}
+$("baixar-texto").addEventListener("click", () => { const c = caso(); baixar("Formulação de Caso - " + (c.codigo || c.nome) + ".txt", textoDoCaso(c), "text/plain;charset=utf-8"); });
+$("baixar-copia").addEventListener("click", () => baixar("Formulação de Caso - cópia " + hoje() + ".json", JSON.stringify(livro, null, 1), "application/json"));
+$("restaurar").addEventListener("click", () => $("arq-copia").click());
+$("arq-copia").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (!Array.isArray(j.casos)) throw new Error("sem casos");
+    if (!confirm("Trocar tudo o que está aqui pela cópia, com " + plural(j.casos.length, "caso", "casos") + "?")) return;
+    livro = normalizar(j); abertoId = null; gravar();
+  } catch(err){ alert("Esse arquivo não é uma cópia da Formulação de Caso."); }
+});
+
+/* ---------- cliques ---------- */
+$("vistas").addEventListener("click", e => { const b = e.target.closest("[data-vista]"); if (!b) return; vista = b.dataset.vista; history.replaceState(null, "", vista === "formulacao" ? location.pathname + location.search : "#" + vista); desenhar(); });
+$("conteudo").addEventListener("click", e => {
+  const t = e.target, li = t.closest("[data-item]");
+  if (t.closest("[data-tag]")){ tagAberta = t.closest("[data-tag]").dataset.tag; vista = "hashtags"; desenhar(); window.scrollTo(0, 0); return; }
+  if (t.closest("[data-novo]")){ const b = t.closest("[data-novo]"); abrirItem({m:b.dataset.novo, campo:b.dataset.campo}); return; }
+  if (t.closest("[data-editar]") && li){ abrirItem({id:li.dataset.item}); return; }
+  if (t.closest("[data-ligar]") && li){ abrirLigar(li.dataset.item); return; }
+  if (t.closest("[data-abrir-modulos]")){ abrirModulos(); return; }
+  if (t.closest("[data-desligar]")){ const c = caso(); c.relacoes = c.relacoes.filter(r => r.id !== t.closest("[data-desligar]").dataset.desligar); gravar(); }
+});
+$("conteudo").addEventListener("toggle", e => {
+  const d = e.target; if (!d.dataset || !d.dataset.modulo) return;
+  d.open ? fechados.delete(d.dataset.modulo) : fechados.add(d.dataset.modulo);
+}, true);
+document.querySelectorAll("dialog [data-fechar]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
+
+desenhar();
+Nuvem.iniciar();
+</script>
+</body>
+</html>
