@@ -120,6 +120,22 @@ dialog textarea{min-height:110px;resize:vertical}
 .so-explica{display:none}
 body.com-explicacao .so-explica{display:block}
 .b[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+/* rede */
+.rede-caixa{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-top:14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rede-caixa svg{display:block;width:100%;min-width:820px;height:auto;font-family:var(--font)}
+.rede-caixa .celula{fill:none;stroke:var(--line)}
+.rede-caixa .area{fill:var(--faint);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.rede-caixa .no rect{fill:var(--surface-2);stroke:var(--muted);stroke-width:1.3}
+.rede-caixa .no.hip rect{stroke:var(--accent);stroke-dasharray:6 4}
+.rede-caixa .no text{fill:var(--text);font-size:13.5px}
+.rede-caixa .no{cursor:pointer}
+.rede-caixa .no:hover rect{stroke:var(--accent);stroke-width:2}
+.rede-caixa .lig{fill:none;stroke:var(--muted);stroke-width:1.8}
+.rede-caixa .lig.reduz{stroke-dasharray:7 5}
+.rede-caixa .lig.mantem{stroke-width:2.8}
+.rede-caixa .rot-lig{fill:var(--accent);font-size:11.5px;font-weight:600;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.rede-caixa marker path{fill:var(--muted);stroke:var(--muted)}
+.legenda{font-size:12.5px;color:var(--faint);margin:8px 0 0}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .na-casca .marca{display:none}
 .na-casca #nuvem-entrar{display:none !important}
@@ -132,6 +148,7 @@ body.com-explicacao .so-explica{display:block}
   .campo{grid-template-columns:minmax(0,1fr)}
   .rel{grid-template-columns:minmax(0,1fr)}
   .linha2{grid-template-columns:1fr}
+  .vistas button{padding:9px 9px}
   select,input,textarea{font-size:16px !important}
 }
 @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
@@ -158,6 +175,7 @@ body.com-explicacao .so-explica{display:block}
     <button role="tab" data-vista="formulacao">Formulação</button>
     <button role="tab" data-vista="hashtags">Hashtags <span class="q" id="q-tags"></span></button>
     <button role="tab" data-vista="relacoes">Relações <span class="q" id="q-rels"></span></button>
+    <button role="tab" data-vista="rede">Rede</button>
   </div>
   <div id="conteudo"></div>
   <div class="pe" id="pe">
@@ -181,7 +199,8 @@ body.com-explicacao .so-explica{display:block}
       <div><label for="it-hip">É dado ou hipótese?</label>
         <select id="it-hip"><option value="0">Dado (relatado ou observado)</option><option value="1">Hipótese (minha leitura)</option></select></div>
     </div>
-    <div id="it-mover-caixa"><label for="it-mover">Onde fica</label><select id="it-mover"></select></div>
+    <div id="it-mover-caixa"><label for="it-mover">Onde fica</label><select id="it-mover"></select>
+      <label for="it-area">Área na rede de processos</label><select id="it-area"></select></div>
     <div class="pe-dlg">
       <button class="b perigo esq" type="button" id="it-apagar">Apagar</button>
       <button class="b" type="button" data-fechar>Cancelar</button>
@@ -319,7 +338,7 @@ function normalizar(d){
 }
 let livro = normalizar((() => { try { return JSON.parse(localStorage.getItem(CH)); } catch(e){ return null; } })());
 let abertoId = (() => { try { return localStorage.getItem(CH_ABERTO); } catch(e){ return null; } })();
-let vista = ["hashtags","relacoes"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "formulacao";
+let vista = ["hashtags","relacoes","rede"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "formulacao";
 let tagAberta = null;
 const fechados = new Set();
 const CH_EXPLICA = "controle-unico-formulacao-explicacao";
@@ -333,7 +352,8 @@ const AJUDA = {
     "<li>Toque em <b>Ligar</b> para dizer que um registro leva a outro, mantém, aumenta ou reduz.</li>" +
     "<li>Em <b>Módulos</b>, ligue só as partes que este caso pede. Desligar esconde, não apaga.</li></ol>",
   hashtags: "<p><b>O mesmo caso, por tema.</b> Escolha uma hashtag e veja todos os registros que a usam, de qualquer módulo. Serve para enxergar um padrão que atravessa o caso, como a mesma evitação aparecendo no trabalho, no sono e nas crenças.</p>",
-  relacoes: "<p><b>As ligações que você criou.</b> Leia cada linha como uma frase: o registro da esquerda leva a (ou mantém, aumenta, reduz) o da direita. São hipóteses de trabalho. Desfazer apaga só a ligação, não os registros.</p>"
+  relacoes: "<p><b>As ligações que você criou.</b> Leia cada linha como uma frase: o registro da esquerda leva a (ou mantém, aumenta, reduz) o da direita. São hipóteses de trabalho. Desfazer apaga só a ligação, não os registros.</p>",
+  rede: "<p><b>As ligações desenhadas como rede de processos.</b> Cada registro que tem ligação vira um nó, colocado numa das nove áreas (as mesmas da Rede PBT). A área é sugerida pelo lugar onde o registro mora: uma crença vai para Cognitivo ou Self, uma resposta para Comportamento, o sono para Biofisiológico. Se a sugestão não servir, toque no nó e troque em <b>Área na rede de processos</b>. Para criar ou desfazer ligações, use as abas Formulação e Relações.</p>"
 };
 const htmlAjuda = v => '<div class="ajuda so-explica">' + AJUDA[v] + "</div>";
 
@@ -421,6 +441,96 @@ function vistaRelacoes(c){
     '<div class="rel">' + lado(r.de) + '<span class="seta">' + esc(r.tipo) + " →</span>" + lado(r.para) +
     '<button type="button" class="b s liso" data-desligar="' + r.id + '">Desfazer</button></div>').join("") + "</div>";
 }
+/* ---------- rede de processos: as relações desenhadas na grade 3x3 da Rede PBT ---------- */
+const AREAS = [["atencao","Atenção"],["cognitivo","Cognitivo"],["self","Self"],["afeto","Afeto"],["comportamento","Comportamento"],["motivacao","Motivação"],["bio","Biofisiológico"],["contexto","Contexto"],["socio","Sociocultural"]];
+/* área sugerida pelo lugar do registro: primeiro pelo campo, depois pelo módulo; sem regra, Contexto */
+const AREA_CAMPO = {
+  "processos|Atenção":"atencao", "processos|Cognitivo":"cognitivo", "processos|Self":"self", "processos|Afeto":"afeto", "processos|Comportamento":"comportamento",
+  "processos|Motivação":"motivacao", "processos|Biofisiológico":"bio", "processos|Contexto":"contexto", "processos|Sociocultural":"socio",
+  "contexto|Relacionamentos e rede de apoio":"socio", "contexto|Condições de saúde física":"bio", "contexto|Medicamentos atuais":"bio", "contexto|Uso atual de substâncias":"bio",
+  "contexto|Sono":"bio", "contexto|Alimentação":"bio", "contexto|Atividade física":"bio",
+  "contingencias|Operações motivadoras":"motivacao", "contingencias|Respostas":"comportamento", "contingencias|Função hipotetizada":"comportamento",
+  "contingencias|Padrões comportamentais relevantes":"comportamento", "contingencias|Hipóteses funcionais":"comportamento",
+  "cognitivo|Precipitantes relevantes":"contexto", "cognitivo|Crenças nucleares":"self", "cognitivo|Crenças nucleares adaptativas":"self",
+  "cognitivo|Estratégias compensatórias e de enfrentamento":"comportamento",
+  "funcionamento|Comportamento":"comportamento", "funcionamento|Cognição":"cognitivo", "funcionamento|Afeto e humor":"afeto", "funcionamento|Biofisiológico":"bio",
+  "funcionamento|Existencial":"motivacao", "funcionamento|Social/interpessoal":"socio", "funcionamento|Na sociedade":"socio",
+  "sorc|Respostas (R)":"comportamento", "sorc|Vulnerabilidades (O)":"self",
+  "historico|Histórico de saúde física":"bio", "historico|Histórico de uso de substâncias":"bio"
+};
+const AREA_MODULO = {problemas:"comportamento", objetivos:"motivacao", valores:"motivacao", cognitivo:"cognitivo", historico:"socio", familia:"socio",
+  saudemental:"afeto", diagnostico:"afeto", participacao:"motivacao"};
+const areaSugerida = (m, c) => AREA_CAMPO[m + "|" + (c || "")] || AREA_MODULO[m] || "contexto";
+const areaDe = it => it.area || areaSugerida(it.m, it.c);
+const nomeArea = id => (AREAS.find(a => a[0] === id) || ["", ""])[1];
+
+function quebrar(texto){
+  const palavras = curto(texto.replace(/#/g, ""), 78).split(" "), linhas = [""];
+  palavras.forEach(w => { const i = linhas.length - 1; if ((linhas[i] + " " + w).trim().length > 25 && linhas[i]) linhas.push(w); else linhas[i] = (linhas[i] + " " + w).trim(); });
+  return linhas.slice(0, 4);
+}
+function vistaRede(c){
+  const rels = c.relacoes.filter(r => c.itens.some(i => i.id === r.de) && c.itens.some(i => i.id === r.para));
+  const nos = c.itens.filter(i => i.m === "processos" || rels.some(r => r.de === i.id || r.para === i.id));
+  if (!nos.length) return '<p class="sub">A rede se forma com as ligações. Em qualquer registro, toque em Ligar para dizer que ele leva a outro, mantém, aumenta ou reduz; os dois aparecem aqui, cada um na sua área.</p>';
+  const CW = 400, NW = 176, TIT = 34, pos = {};
+  let y0 = 0, grade = "";
+  for (let lin = 0; lin < 3; lin++){
+    let alturaFaixa = 150;
+    const celulas = [0, 1, 2].map(col => {
+      const area = AREAS[lin * 3 + col], daArea = nos.filter(n => areaDe(n) === area[0]);
+      let y = TIT + 8, hLinha = 0;
+      daArea.forEach((n, k) => {
+        const L = quebrar(n.texto), hh = 16 + L.length * 17, lado = k % 2;
+        if (lado === 0 && k) { y += hLinha + 28; hLinha = 0; }
+        /* o da direita desce um pouco: as setas entre vizinhos não ficam uma em cima da outra */
+        pos[n.id] = {x: col * CW + 16 + lado * (NW + 16), y: y0 + y + (lado ? 14 : 0), w: NW, h: hh, L, n};
+        hLinha = Math.max(hLinha, hh + (lado ? 14 : 0));
+      });
+      alturaFaixa = Math.max(alturaFaixa, y + hLinha + 26);
+      return area;
+    });
+    celulas.forEach((area, col) => {
+      grade += '<rect class="celula" x="' + (col * CW) + '" y="' + y0 + '" width="' + CW + '" height="' + alturaFaixa + '"/>' +
+               '<text class="area" x="' + (col * CW + 16) + '" y="' + (y0 + 22) + '">' + esc(area[1]) + "</text>";
+    });
+    y0 += alturaFaixa;
+  }
+  /* ponto onde a reta que sai do centro corta a borda do nó */
+  const naBorda = (p, alvoX, alvoY) => {
+    const cx = p.x + p.w / 2, cy = p.y + p.h / 2, dx = alvoX - cx, dy = alvoY - cy;
+    if (!dx && !dy) return {x: cx, y: cy};
+    const t = Math.min(dx ? (p.w / 2 + 3) / Math.abs(dx) : Infinity, dy ? (p.h / 2 + 3) / Math.abs(dy) : Infinity);
+    return {x: cx + dx * t, y: cy + dy * t};
+  };
+  let rotulos = "";
+  const ligs = rels.map(r => {
+    const a = pos[r.de], b = pos[r.para];
+    const ax = a.x + a.w / 2, ay = a.y + a.h / 2, bx = b.x + b.w / 2, by = b.y + b.h / 2;
+    const dist = Math.hypot(bx - ax, by - ay) || 1, curva = Math.min(46, 14 + dist * 0.08);
+    /* curva sempre para o mesmo lado do sentido: ida e volta entre dois nós não se sobrepõem */
+    const mx = (ax + bx) / 2 - (by - ay) / dist * curva, my = (ay + by) / 2 + (bx - ax) / dist * curva;
+    const s = naBorda(a, mx, my), e = naBorda(b, mx, my);
+    const classe = r.tipo === "reduz" ? " reduz" : r.tipo === "mantém" ? " mantem" : "";
+    const ponta = r.tipo === "reduz" ? ' marker-end="url(#rd-barra)"' : r.tipo === "está ligado a" ? "" : ' marker-end="url(#rd-seta)"';
+    /* o rótulo anda pela curva até um ponto que não caia em cima de um nó */
+    const naCurva = t => ({x: (1 - t) * (1 - t) * s.x + 2 * t * (1 - t) * mx + t * t * e.x, y: (1 - t) * (1 - t) * s.y + 2 * t * (1 - t) * my + t * t * e.y});
+    const livre = q => !Object.values(pos).some(n => q.x > n.x - 30 && q.x < n.x + n.w + 30 && q.y > n.y - 8 && q.y < n.y + n.h + 12);
+    const lugar = [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8].map(naCurva).find(livre) || naCurva(0.5);
+    rotulos += '<text class="rot-lig" text-anchor="middle" x="' + lugar.x.toFixed(1) + '" y="' + (lugar.y + 4).toFixed(1) + '">' + esc(r.tipo) + "</text>";
+    return '<path class="lig' + classe + '" d="M' + s.x.toFixed(1) + "," + s.y.toFixed(1) + " Q" + mx.toFixed(1) + "," + my.toFixed(1) + " " + e.x.toFixed(1) + "," + e.y.toFixed(1) + '"' + ponta + "/>";
+  }).join("");
+  const caixas = Object.values(pos).map(p =>
+    '<g class="no' + (p.n.hip ? " hip" : "") + '" data-item="' + p.n.id + '" data-editar tabindex="0" role="button"><title>' + esc(p.n.texto + " (" + ondeFica(p.n) + ")") + "</title>" +
+    '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="8"/>' +
+    p.L.map((l, k) => '<text x="' + (p.x + p.w / 2) + '" y="' + (p.y + 24 + k * 17) + '" text-anchor="middle">' + esc(l) + "</text>").join("") + "</g>").join("");
+  return '<div class="rede-caixa"><svg viewBox="0 0 1200 ' + y0 + '" role="img" aria-label="Rede de processos do caso">' +
+    '<defs><marker id="rd-seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker>' +
+    '<marker id="rd-barra" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="12" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M7,0 L9,0 L9,10 L7,10 z"/></marker></defs>' +
+    grade + ligs + caixas + rotulos + "</svg></div>" +
+    '<p class="legenda">Seta: leva a ou aumenta. Seta grossa: mantém. Tracejada com barra: reduz. Linha sem ponta: está ligado a. Borda tracejada: hipótese. ' +
+    plural(nos.length, "registro", "registros") + " e " + plural(rels.length, "ligação", "ligações") + ".</p>";
+}
 function desenhar(){
   const c = caso(), sel = $("caso");
   document.body.classList.toggle("com-explicacao", explica);
@@ -438,7 +548,7 @@ function desenhar(){
   document.querySelectorAll("#vistas button").forEach(b => b.setAttribute("aria-selected", b.dataset.vista === vista));
   const nt = contagemTags(c).length;
   $("q-tags").textContent = nt || ""; $("q-rels").textContent = c.relacoes.length || "";
-  $("conteudo").innerHTML = htmlAjuda(vista) + (vista === "hashtags" ? vistaHashtags(c) : vista === "relacoes" ? vistaRelacoes(c) : vistaFormulacao(c));
+  $("conteudo").innerHTML = htmlAjuda(vista) + (vista === "hashtags" ? vistaHashtags(c) : vista === "relacoes" ? vistaRelacoes(c) : vista === "rede" ? vistaRede(c) : vistaFormulacao(c));
 }
 
 /* ---------- registro: novo e edição ---------- */
@@ -457,6 +567,8 @@ function abrirItem(alvo){
   $("it-apagar").classList.toggle("hidden", !it);
   $("it-outro").classList.toggle("hidden", !!it);
   $("it-mover-caixa").classList.toggle("hidden", !it);
+  if (it) $("it-area").innerHTML = '<option value="">Sugerida pelo lugar do registro (' + esc(nomeArea(areaSugerida(it.m, it.c))) + ")</option>" +
+    AREAS.map(a => '<option value="' + a[0] + '"' + (it.area === a[0] ? " selected" : "") + ">" + esc(a[1]) + "</option>").join("");
   if (it){
     $("it-mover").innerHTML = ativos(c).concat(MOD[it.m].fixo || c.modulos.includes(it.m) ? [] : [MOD[it.m]]).flatMap(x =>
       (x.campos ? x.campos.map(k => k[0]) : [""]).map(k => '<option value="' + x.id + "|" + esc(k) + '"' + (x.id === it.m && k === (it.c || "") ? " selected" : "") + ">" + esc(x.nome + (k ? " › " + k : "")) + "</option>")).join("");
@@ -472,6 +584,7 @@ $("f-item").addEventListener("submit", e => {
   if (emEdicao.id){
     const it = c.itens.find(i => i.id === emEdicao.id), onde = $("it-mover").value.split("|");
     it.texto = texto; it.data = $("it-data").value; it.hip = $("it-hip").value === "1"; it.m = onde[0]; it.c = onde.slice(1).join("|");
+    if ($("it-area").value) it.area = $("it-area").value; else delete it.area;
   } else {
     c.itens.push({id:uid(), m:emEdicao.m, c:emEdicao.campo, texto, data:$("it-data").value, hip:$("it-hip").value === "1"});
   }
@@ -560,6 +673,8 @@ $("caso").addEventListener("change", e => abrirCaso(e.target.value));
 
 /* Caso de exemplo: paciente fictício, inventado para mostrar hashtags e ligações. Nenhum paciente de verdade. */
 const NOME_EXEMPLO = "Paciente Fictício (exemplo)";
+/* onde a área sugerida pelo lugar do registro não serve, o exemplo já traz a área escolhida */
+const AREAS_DO_EXEMPLO = {"Alívio imediato": "afeto", "É reconhecida": "socio", "A chefia aceita": "socio", "A chefia passa": "socio"};
 function casoDeExemplo(){
   const d = hoje(), ids = {};
   const R = (k, m, c, texto, hip) => { ids[k] = uid(); return {id:ids[k], m, c, texto, data:d, hip:!!hip}; };
@@ -589,6 +704,7 @@ function casoDeExemplo(){
     R("self", "processos", "Self", "Descreve-se como uma fraude que ainda não foi descoberta (#autocrítica).")
   ];
   const L = (de, tipo, para) => ({id:uid(), de:ids[de], para:ids[para], tipo});
+  Object.entries(AREAS_DO_EXEMPLO).forEach(([texto, area]) => { itens.find(i => i.texto.startsWith(texto)).area = area; });
   return {id:uid(), codigo:"EXEMPLO", nome:NOME_EXEMPLO, criado:d, atualizado:d,
     modulos:["contexto","recursos","valores","contingencias","cognitivo","processos"], itens,
     relacoes:[L("trab","aumenta","ant"), L("ant","leva a","resp"), L("resp","leva a","cons1"), L("cons1","mantém","resp"),
