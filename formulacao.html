@@ -114,6 +114,12 @@ dialog textarea{min-height:110px;resize:vertical}
 .marcar{display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-weight:400 !important;color:var(--text) !important;font-size:14.5px !important;margin:0 !important;cursor:pointer}
 .marcar input{width:20px;height:20px;accent-color:var(--accent);flex:none}
 .marcar .q{margin-left:auto;color:var(--faint);font-size:12.5px}
+.ajuda{background:var(--accent-soft);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin-top:14px;font-size:14px}
+.ajuda b{color:var(--accent)}
+.ajuda ol{margin:6px 0 0;padding-left:20px} .ajuda li{margin:3px 0} .ajuda p{margin:0}
+.so-explica{display:none}
+body.com-explicacao .so-explica{display:block}
+.b[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .na-casca .marca{display:none}
 .na-casca #nuvem-entrar{display:none !important}
@@ -146,6 +152,7 @@ dialog textarea{min-height:110px;resize:vertical}
     <select id="caso" aria-label="Caso aberto"></select>
     <button class="b p" id="novo-caso" type="button">＋ Novo caso</button>
     <button class="b" id="abrir-modulos" type="button">Módulos</button>
+    <button class="b" id="explicacao" type="button" aria-pressed="false">Explicação</button>
   </div>
   <div class="vistas" role="tablist" id="vistas">
     <button role="tab" data-vista="formulacao">Formulação</button>
@@ -168,7 +175,7 @@ dialog textarea{min-height:110px;resize:vertical}
     <p class="onde" id="it-onde"></p>
     <label for="it-texto">O que registrar</label>
     <textarea id="it-texto" required placeholder=""></textarea>
-    <p class="dica" style="margin-top:4px">Escreva #palavra no meio do texto para ligar este registro a outros com a mesma hashtag.</p>
+    <p class="dica so-explica" style="margin-top:4px">Dado é o que o paciente relatou ou você observou; hipótese é a sua leitura do caso. Escreva #palavra no meio do texto para ligar este registro a outros com a mesma hashtag.</p>
     <div class="linha2">
       <div><label for="it-data">Data</label><input type="date" id="it-data"></div>
       <div><label for="it-hip">É dado ou hipótese?</label>
@@ -187,6 +194,7 @@ dialog textarea{min-height:110px;resize:vertical}
 <dialog id="dlg-ligar">
   <h2>Ligar a outro registro</h2>
   <p class="onde" id="lg-de"></p>
+  <p class="dica so-explica">Escolha o tipo de ligação e depois o outro registro. A frase se lê assim: este registro leva a (ou mantém, aumenta, reduz) o que você escolher.</p>
   <label for="lg-tipo">Este registro</label>
   <select id="lg-tipo"></select>
   <label for="lg-busca">Qual registro?</label>
@@ -216,6 +224,7 @@ dialog textarea{min-height:110px;resize:vertical}
     </div>
     <div class="pe-dlg">
       <button class="b esq" type="button" data-fechar>Cancelar</button>
+      <button class="b" type="button" data-exemplo>Criar um caso de exemplo</button>
       <button class="b p" type="submit">Criar</button>
     </div>
   </form>
@@ -313,6 +322,20 @@ let abertoId = (() => { try { return localStorage.getItem(CH_ABERTO); } catch(e)
 let vista = ["hashtags","relacoes"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "formulacao";
 let tagAberta = null;
 const fechados = new Set();
+const CH_EXPLICA = "controle-unico-formulacao-explicacao";
+/* a explicação vem ligada na primeira visita, como na Rede PBT, e o aparelho lembra a escolha */
+let explica = (() => { try { return localStorage.getItem(CH_EXPLICA) !== "0"; } catch(e){ return true; } })();
+const AJUDA = {
+  formulacao: "<p><b>Como usar.</b> A formulação é feita de registros soltos, que você liga depois.</p><ol>" +
+    "<li>Toque em <b>＋ Registro</b> no assunto certo e escreva a informação uma vez só.</li>" +
+    "<li>Diga se é <b>dado</b> (o paciente relatou ou você observou) ou <b>hipótese</b> (a sua leitura). Hipótese aparece com a borda tracejada.</li>" +
+    "<li>Escreva <b>#palavra</b> no meio do texto para criar uma hashtag: ela junta registros de módulos diferentes que falam do mesmo tema.</li>" +
+    "<li>Toque em <b>Ligar</b> para dizer que um registro leva a outro, mantém, aumenta ou reduz.</li>" +
+    "<li>Em <b>Módulos</b>, ligue só as partes que este caso pede. Desligar esconde, não apaga.</li></ol>",
+  hashtags: "<p><b>O mesmo caso, por tema.</b> Escolha uma hashtag e veja todos os registros que a usam, de qualquer módulo. Serve para enxergar um padrão que atravessa o caso, como a mesma evitação aparecendo no trabalho, no sono e nas crenças.</p>",
+  relacoes: "<p><b>As ligações que você criou.</b> Leia cada linha como uma frase: o registro da esquerda leva a (ou mantém, aumenta, reduz) o da direita. São hipóteses de trabalho. Desfazer apaga só a ligação, não os registros.</p>"
+};
+const htmlAjuda = v => '<div class="ajuda so-explica">' + AJUDA[v] + "</div>";
 
 const caderno = Nuvem.caderno({
   id:"formulacao", nome:"Controle Único - formulação.json", rotulo:"a Formulação de Caso",
@@ -400,19 +423,22 @@ function vistaRelacoes(c){
 }
 function desenhar(){
   const c = caso(), sel = $("caso");
+  document.body.classList.toggle("com-explicacao", explica);
+  $("explicacao").setAttribute("aria-pressed", explica);
   sel.innerHTML = livro.casos.length
     ? livro.casos.slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map(x => '<option value="' + x.id + '"' + (c && x.id === c.id ? " selected" : "") + ">" + esc(x.nome) + (x.codigo ? " · " + esc(x.codigo) : "") + "</option>").join("")
     : "<option>Nenhum caso</option>";
   sel.disabled = !livro.casos.length;
   ["vistas", "pe", "abrir-modulos"].forEach(id => $(id).classList.toggle("hidden", !c));
   if (!c){
-    $("conteudo").innerHTML = '<p class="sub">Nenhum caso ainda. Comece por <b>＋ Novo caso</b>: ele nasce só com o mínimo (motivo da procura, problemas prioritários e objetivos) e você liga os módulos que o caso pedir.</p>';
+    $("conteudo").innerHTML = '<p class="sub">Nenhum caso ainda. Comece por <b>＋ Novo caso</b>: ele nasce só com o mínimo (motivo da procura, problemas prioritários e objetivos) e você liga os módulos que o caso pedir.</p>' +
+      '<p class="sub"><button type="button" class="b" data-exemplo>Criar um caso de exemplo</button> Um paciente fictício já preenchido, com hashtags e ligações, para ver como fica.</p>';
     return;
   }
   document.querySelectorAll("#vistas button").forEach(b => b.setAttribute("aria-selected", b.dataset.vista === vista));
   const nt = contagemTags(c).length;
   $("q-tags").textContent = nt || ""; $("q-rels").textContent = c.relacoes.length || "";
-  $("conteudo").innerHTML = vista === "hashtags" ? vistaHashtags(c) : vista === "relacoes" ? vistaRelacoes(c) : vistaFormulacao(c);
+  $("conteudo").innerHTML = htmlAjuda(vista) + (vista === "hashtags" ? vistaHashtags(c) : vista === "relacoes" ? vistaRelacoes(c) : vistaFormulacao(c));
 }
 
 /* ---------- registro: novo e edição ---------- */
@@ -531,6 +557,52 @@ $("f-caso").addEventListener("submit", e => {
   $("dlg-caso").close(); vista = "formulacao"; abrirCaso(c.id); gravar();
 });
 $("caso").addEventListener("change", e => abrirCaso(e.target.value));
+
+/* Caso de exemplo: paciente fictício, inventado para mostrar hashtags e ligações. Nenhum paciente de verdade. */
+const NOME_EXEMPLO = "Paciente Fictício (exemplo)";
+function casoDeExemplo(){
+  const d = hoje(), ids = {};
+  const R = (k, m, c, texto, hip) => { ids[k] = uid(); return {id:ids[k], m, c, texto, data:d, hip:!!hip}; };
+  const itens = [
+    R("motivo", "motivo", "", "Procura atendimento por #ansiedade antes de apresentações no #trabalho e medo de ser demitida."),
+    R("p1", "problemas", "", "Evita falar em reuniões e pede que colegas apresentem no lugar dela (#evitação)."),
+    R("p2", "problemas", "", "Dorme menos de seis horas na véspera de qualquer entrega (#sono)."),
+    R("p3", "problemas", "", "Revisa cada e-mail muitas vezes antes de enviar (#perfeccionismo)."),
+    R("o1", "objetivos", "", "Apresentar o relatório mensal sem pedir que um colega apresente. Prazo: três meses."),
+    R("o2", "objetivos", "", "Voltar a dormir sete horas nas noites antes de entregas (#sono). Prazo: dois meses."),
+    R("trab", "contexto", "Situação acadêmica/profissional", "Analista há dois anos. Uma promoção recente aumentou o número de apresentações (#trabalho)."),
+    R("sono", "contexto", "Sono", "Deita à meia-noite repassando o que vai falar e acorda às cinco nos dias de reunião (#sono)."),
+    R("rede", "contexto", "Relacionamentos e rede de apoio", "Mora com a irmã, com quem conversa sobre o trabalho. Poucos amigos na cidade."),
+    R("rec", "recursos", "Recursos atuais", "É reconhecida pela qualidade técnica dos relatórios e tem o apoio da irmã."),
+    R("obs", "recursos", "Obstáculos atuais", "A chefia aceita com facilidade que outra pessoa apresente, o que facilita a #evitação."),
+    R("val", "valores", "Valores", "Quer ser vista como alguém que contribui e crescer na carreira (#trabalho)."),
+    R("ant", "contingencias", "Antecedentes e contexto", "Convite para reunião com a diretoria."),
+    R("resp", "contingencias", "Respostas", "Pede a um colega que apresente no lugar dela (#evitação)."),
+    R("cons1", "contingencias", "Consequências", "Alívio imediato da #ansiedade."),
+    R("cons2", "contingencias", "Consequências", "A chefia passa a convidá-la menos para apresentar (#trabalho)."),
+    R("func", "contingencias", "Função hipotetizada", "A #evitação é mantida pelo alívio imediato da #ansiedade (reforço negativo).", true),
+    R("cn", "cognitivo", "Crenças nucleares", "Sou incompetente (#autocrítica).", true),
+    R("ci", "cognitivo", "Crenças intermediárias", "Se eu errar na frente dos outros, vão descobrir que não sou boa o bastante (#autocrítica, #perfeccionismo).", true),
+    R("pa", "cognitivo", "Pensamentos automáticos recorrentes", "Vão perceber que eu não sei nada (#autocrítica)."),
+    R("est", "cognitivo", "Estratégias compensatórias e de enfrentamento", "Preparar demais, revisar várias vezes e evitar exposição (#perfeccionismo, #evitação)."),
+    R("aten", "processos", "Atenção", "Na véspera, a atenção fica presa em imaginar o que pode dar errado (#ansiedade)."),
+    R("self", "processos", "Self", "Descreve-se como uma fraude que ainda não foi descoberta (#autocrítica).")
+  ];
+  const L = (de, tipo, para) => ({id:uid(), de:ids[de], para:ids[para], tipo});
+  return {id:uid(), codigo:"EXEMPLO", nome:NOME_EXEMPLO, criado:d, atualizado:d,
+    modulos:["contexto","recursos","valores","contingencias","cognitivo","processos"], itens,
+    relacoes:[L("trab","aumenta","ant"), L("ant","leva a","resp"), L("resp","leva a","cons1"), L("cons1","mantém","resp"),
+              L("resp","leva a","cons2"), L("cons2","aumenta","cn"), L("cn","leva a","ci"), L("ci","leva a","pa"),
+              L("pa","aumenta","aten"), L("aten","reduz","sono"), L("obs","mantém","resp"), L("rec","reduz","pa")]};
+}
+function criarExemplo(){
+  let c = livro.casos.find(x => x.nome === NOME_EXEMPLO);
+  if (!c){ c = casoDeExemplo(); livro.casos.push(c); }
+  if ($("dlg-caso").open) $("dlg-caso").close();
+  vista = "formulacao"; abrirCaso(c.id); gravar();
+}
+document.addEventListener("click", e => { if (e.target.closest("[data-exemplo]")) criarExemplo(); });
+$("explicacao").addEventListener("click", () => { explica = !explica; try { localStorage.setItem(CH_EXPLICA, explica ? "1" : "0"); } catch(e){} desenhar(); });
 $("apagar-caso").addEventListener("click", () => {
   const c = caso();
   if (!confirm("Apagar o caso de " + c.nome + ", com " + plural(c.itens.length, "registro", "registros") + "?\n\nNão dá para desfazer. Se quiser guardar, baixe o caso em texto antes.")) return;
