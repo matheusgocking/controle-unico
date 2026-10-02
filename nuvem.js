@@ -18,8 +18,11 @@ var Nuvem = (function(){
   var CH_TOKEN = "controle-unico-token";   // guardada neste aparelho até vencer (1 hora): no iPhone, fechar o app
                                             // apagava a chave da sessão e obrigava a passar pelo Google de novo
 
+  var CH_CONTA = "controle-unico-conta";   // o e-mail de quem entrou, só neste aparelho: diz ao Google qual conta renovar
+
   var token = null, expira = 0, cliente = null, iniciado = false, saindo = false;
   var cadernos = [], estados = {};
+  var relogio = null, renovando = false, estadoSilencioso = null, prazoRenovar = null;
 
   function $(id){ return document.getElementById(id); }
   function hora(){ return new Date().toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"}); }
@@ -34,6 +37,78 @@ var Nuvem = (function(){
   }
   function lerTokenGuardado(){
     try{ var s = JSON.parse(localStorage.getItem(CH_TOKEN)); if(s && s.e > Date.now() + 60000){ token = s.t; expira = s.e; } }catch(e){}
+  }
+  /* A chave do Google dura uma hora. Antes (até 01/10/2026) ela vencia calada: a casca continuava
+     dizendo "Conectado", o botão de entrar não voltava e o que ele lançasse ficava só no aparelho.
+     Agora cada página marca a hora em que a chave vence: nessa hora ela redesenha o estado e a
+     casca tenta renovar sem tela (renovar); se não der, o botão de entrar reaparece. */
+  function vigiarValidade(){
+    clearTimeout(relogio);
+    if(!token) return;
+    relogio = setTimeout(aoVencer, Math.max(1000, expira - 60000 - Date.now() + 500));
+  }
+  function aoVencer(){
+    temToken();
+    cadernos.forEach(function(c){ c.venceu(); });
+    desenhar();
+    renovar();
+  }
+  function invalidar(){
+    if(!token) return;
+    token = null; clearTimeout(relogio);
+    cadernos.forEach(function(c){ c.venceu(); });
+    desenhar();
+  }
+  /* Renovação sem tela: uma moldura escondida vai até o Google com prompt=none; se a sessão dele
+     no Google continua aberta, o Google devolve a chave nova no endereço da casca, e a casca
+     (index.html, dentro da moldura) passa a chave para cá por mensagem. Só quem já entrou antes
+     neste aparelho; no app instalado do iPhone a renovação é a de entrarSozinho. Navegador que
+     bloqueia cookie de terceiros (Safari) não renova assim: sobra o botão de entrar. */
+  function renovar(){
+    if(window.top !== window){ try{ if(window.top.Nuvem && window.top.Nuvem.renovar) window.top.Nuvem.renovar(); }catch(e){} return; }
+    if(renovando || temToken() || appNoIphone() || !le("controle-unico-ja-entrou") || !document.body) return;
+    if(Date.now() - Number(le("controle-unico-renovar-falhou") || 0) < 30 * 60 * 1000) return;
+    renovando = true;
+    estadoSilencioso = "s" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    var p = {client_id:CLIENT_ID, redirect_uri:enderecoDeVolta(), response_type:"token", scope:ESCOPO, state:estadoSilencioso, prompt:"none", include_granted_scopes:"true"};
+    if(le(CH_CONTA)) p.login_hint = le(CH_CONTA);
+    var f = document.createElement("iframe");
+    f.id = "nuvem-renovar"; f.hidden = true; f.setAttribute("aria-hidden", "true"); f.tabIndex = -1;
+    f.src = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams(p).toString();
+    document.body.appendChild(f);
+    prazoRenovar = setTimeout(function(){ fimDaRenovacao(false); }, 12000);
+    redesenharTudo();
+  }
+  function fimDaRenovacao(deuCerto){
+    clearTimeout(prazoRenovar); renovando = false; estadoSilencioso = null;
+    var f = $("nuvem-renovar"); if(f) f.remove();
+    guarda("controle-unico-renovar-falhou", deuCerto ? null : String(Date.now()));
+    redesenharTudo();
+  }
+  /* a linha de estado desta página e a das páginas dentro dela */
+  function redesenharTudo(){
+    desenhar();
+    outrasJanelas().forEach(function(w){ try{ if(w.Nuvem && w.Nuvem.redesenhar) w.Nuvem.redesenhar(); }catch(e){} });
+  }
+  window.addEventListener("message", function(e){
+    if(e.origin !== location.origin || !e.data || typeof e.data.cuOAuth !== "string" || !renovando) return;
+    var p = new URLSearchParams(e.data.cuOAuth);
+    if(p.get("state") !== estadoSilencioso || !p.get("access_token")) return fimDaRenovacao(false);
+    token = p.get("access_token");
+    expira = Date.now() + (Number(p.get("expires_in")) || 3600) * 1000;
+    try{ localStorage.setItem(CH_TOKEN, JSON.stringify({t:token, e:expira})); }catch(err){}
+    fimDaRenovacao(true);
+    vigiarValidade(); espalhar();
+    cadernos.forEach(function(c){ c.conectar(); });
+    desenhar();
+  });
+  /* guarda o e-mail de quem entrou, para a renovação saber qual conta pedir quando há mais de uma aberta */
+  function guardarConta(){
+    if(le(CH_CONTA) || !temToken()) return;
+    fetch("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)", {headers:{Authorization:"Bearer " + token}})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ if(j && j.user && j.user.emailAddress) guarda(CH_CONTA, j.user.emailAddress); })
+      .catch(function(){});
   }
   /* as outras páginas do Controle Único abertas nesta janela (a casca e os quadros dela) */
   function outrasJanelas(){
@@ -53,6 +128,7 @@ var Nuvem = (function(){
   function receberToken(t, e){
     var tinha = temToken();
     token = t; expira = e;
+    vigiarValidade();
     if(!tinha && temToken()) cadernos.forEach(function(c){ c.conectar(); });
     desenhar();
   }
@@ -118,6 +194,8 @@ var Nuvem = (function(){
           expira = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
           try{ localStorage.setItem(CH_TOKEN, JSON.stringify({t:token, e:expira})); }catch(e){}
           guarda("controle-unico-ja-entrou", "1");
+          guarda("controle-unico-renovar-falhou", null);
+          vigiarValidade(); guardarConta();
           espalhar();
           cadernos.forEach(function(c){ c.conectar(); });
           desenhar();
@@ -125,7 +203,9 @@ var Nuvem = (function(){
         error_callback: function(e){ avisoGeral("A janela do Google foi fechada ou bloqueada (" + e.type + ")."); }
       });
     }
-    cliente.requestAccessToken(le("controle-unico-ja-entrou") ? {prompt:""} : {});
+    var pedido = le("controle-unico-ja-entrou") ? {prompt:""} : {};
+    if(le(CH_CONTA)) pedido.hint = le(CH_CONTA);
+    cliente.requestAccessToken(pedido);
   }
 
   /* ---------------- conversa com o Drive ---------------- */
@@ -134,7 +214,12 @@ var Nuvem = (function(){
     if(!temToken()) return Promise.reject(new Error("expirou"));
     var cab = Object.assign({}, op.headers || {}, {Authorization:"Bearer " + token});
     return fetch(url, Object.assign({}, op, {headers:cab})).then(function(r){
-      if(r.status === 401){ token = null; throw new Error("expirou"); }
+      /* o Google recusou a chave antes da hora marcada: as outras páginas também precisam saber */
+      if(r.status === 401){
+        invalidar(); guarda(CH_TOKEN, null);
+        outrasJanelas().forEach(function(w){ try{ if(w.Nuvem && w.Nuvem.invalidar) w.Nuvem.invalidar(); }catch(e){} });
+        throw new Error("expirou");
+      }
       if(!r.ok) return r.text().then(function(t){ var e = new Error("o Drive respondeu " + r.status + ": " + t.slice(0, 200)); e.status = r.status; throw e; });
       return r;
     });
@@ -220,9 +305,13 @@ var Nuvem = (function(){
 
     function falhou(e){
       gravando = false; conectando = false;
-      if(e.message === "expirou") estado(pendente ? "O acesso ao Drive expirou. Suas mudanças estão guardadas aqui; entre de novo para enviar." : "O acesso ao Drive expirou. Entre de novo.", "erro");
+      if(e.message === "expirou"){ c.venceu(); renovar(); }
       else estado("Não consegui falar com o Drive (" + e.message + "). O que você mudou está guardado neste aparelho.", "erro");
     }
+    /* a chave de uma hora venceu: o que ele mudar daqui em diante fica no aparelho até entrar de novo */
+    c.venceu = function(){
+      estado(pendente ? "Há mudanças guardadas só neste aparelho. Entre com o Google para mandar ao Drive." : "A conexão com o Drive venceu. Entre com o Google de novo.", pendente ? "erro" : "");
+    };
 
     function trazer(id, recado){
       return baixar(id).then(function(d){
@@ -346,10 +435,14 @@ var Nuvem = (function(){
             lista.filter(function(x){ return x.tipo === "indo"; })[0] ||
             lista.slice().sort(function(a, b){ return b.t - a.t; })[0] ||
             {texto: temToken() ? "Conectado ao Google Drive." : "Entre com o Google para abrir seus cadernos.", tipo: temToken() ? "ok" : ""};
+    /* enquanto a renovação sem tela está no ar (a casca, ou a casca acima desta página), diz isso e guarda o botão */
+    var reconectando = renovando;
+    if(!reconectando && window.top !== window){ try{ reconectando = !!(window.top.Nuvem && window.top.Nuvem.renovando && window.top.Nuvem.renovando()); }catch(err){} }
+    if(reconectando && !temToken()) e = {texto:"Reconectando ao Drive…", tipo:"indo"};
     el.textContent = aviso || e.texto;
     aviso = null;
     if(pt) pt.className = "nuvem-ponto" + (e.tipo ? " " + (e.tipo === "escolha" ? "erro" : e.tipo) : "");
-    if(bt) bt.classList.toggle("hidden", temToken());
+    if(bt) bt.classList.toggle("hidden", temToken() || reconectando);
     if(ac){
       ac.innerHTML = "";
       (e.acoes || []).forEach(function(a){
@@ -373,7 +466,10 @@ var Nuvem = (function(){
     window.addEventListener("beforeunload", function(e){ if(!saindo && algumPendente() && temToken()){ e.preventDefault(); e.returnValue = ""; } });
     if(temToken()) cadernos.forEach(function(c){ c.conectar(); });
     else cadernos.forEach(function(c){ if(!estados[c.id]) c.conectar(); });
+    vigiarValidade(); guardarConta();
     desenhar();
+    /* abriu o app com a chave vencida: quem já entrou neste aparelho volta a entrar sem tocar em nada */
+    if(!temToken()) renovar();
   }
 
   lerVoltaDoGoogle();
@@ -382,6 +478,7 @@ var Nuvem = (function(){
     caderno: function(op){ var c = new Caderno(op); cadernos.push(c); return c; },
     entrarSozinho: entrarSozinho,
     iniciar: iniciar, entrar: entrar, receberToken: receberToken, aoMostrar: aoMostrar,
+    renovar: renovar, renovando: function(){ return renovando; }, redesenhar: function(){ desenhar(); }, invalidar: invalidar,
     /* recarrega a página de propósito, sem o aviso de mudança pendente (ela continua marcada) */
     recarregar: function(){ saindo = true; location.reload(); },
     conectado: temToken

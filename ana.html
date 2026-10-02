@@ -141,6 +141,8 @@ table.t input[type=number]{width:96px;padding:5px 8px;text-align:right}
 .so-cel{display:none}
 .x{border:0;background:transparent;color:var(--faint);cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
 .x:hover{color:var(--neg)}
+.x.lapis{font-size:14px} .x.lapis:hover{color:var(--accent)}
+td.c-x{white-space:nowrap}
 .selo-b{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
 .selo-b.extra{background:var(--accent-soft);color:var(--accent)}
 .vai{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
@@ -190,7 +192,8 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .stat b{font-size:17px}
   table.t:not(.valores) thead{display:none}
-  table.t:not(.valores) tr{display:grid;grid-template-columns:44px minmax(0,1fr) auto 22px;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+  table.t:not(.valores) tr{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+  td.c-x .x{padding:6px 5px}
   table.t:not(.valores) tr:last-child{border-bottom:0}
   table.t:not(.valores) td{border:0;padding:0 !important}
   table.plantoes tr{grid-template-columns:44px minmax(0,1fr) auto 30px 22px !important}
@@ -220,6 +223,7 @@ th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 <script>window.PERFIL = "ana";   /* a Casa (app.html), carregada aqui dentro, lê isto e só abre o caderno da casa */</script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="exportar-xlsx.js"></script>
+<script src="lancamento.js"></script>
 <script src="grafico-meses.js"></script>
 <script src="nuvem.js"></script>
 </head>
@@ -484,24 +488,35 @@ function telaPlantoes(){
 
 // Um botão só de lançamento, com a escolha dentro: Pessoal (este caderno) ou Casa (o caderno da
 // casa, que a aba Casa mantém aberto aqui dentro). Igual ao app dele (pedido dele, 01/10/2026).
-let ondeLanc = "pessoal", rascunho = null;
+// O desenho e o comportamento moram em lancamento.js, o mesmo formulário do app dele.
 const casaFora = () => { try { return document.getElementById("q-casa").contentWindow.casaParaFora || null; } catch(e){ return null; } };
-function formLancamento(k){
-  const cf = casaFora(), casa = ondeLanc === "casa" && !!cf, v = rascunho || {};
-  const op = (lista, sel) => lista.map(t => `<option${t === sel ? " selected" : ""}>${escH(t)}</option>`).join("");
-  const pessoas = cf ? cf.pessoas() : [];
+function formLancamento(){ return `<div class="lanc" data-lanc="pessoal"></div>`; }
+function configLancamento(){
+  const cf = casaFora(), pessoas = cf ? cf.pessoas() : [];
   const eu = (cad.nomeNaCasa && pessoas.includes(cad.nomeNaCasa)) ? cad.nomeNaCasa : (pessoas.find(p => /^ana/i.test(p)) || pessoas[1]);
-  return `<details class="novo"><summary>+ Novo lançamento</summary><form class="linha" id="fNovo" data-onde="${casa ? "casa" : "pessoal"}">
-    ${cf ? `<div class="largo" style="grid-column:1 / -1"><label>É de</label><div class="chave" role="group" aria-label="Pessoal ou da casa">
-      <button type="button" data-onde="pessoal" aria-pressed="${!casa}">Pessoal</button><button type="button" data-onde="casa" aria-pressed="${casa}">Casa</button></div></div>` : ""}
-    <div><label>Data</label><input type="date" name="data" value="${escH(v.data || (k === chaveMes(new Date()) ? hojeISO() : k + "-01"))}" required></div>
-    ${casa ? `<div><label>Quem comprou</label><select name="quem">${op(pessoas, eu)}</select></div>` : ""}
-    <div class="largo" style="grid-column:span 2"><label>Descrição</label><input name="descricao" value="${escH(v.descricao || "")}" ${casa ? 'placeholder="opcional"' : 'placeholder="o que foi" required'}></div>
-    <div><label>Categoria</label><select name="categoria">${op(casa ? cf.categorias() : cad.categorias)}</select></div>
-    ${casa ? "" : `<div><label>Forma</label><select name="forma">${op(FORMAS)}</select></div>`}
-    <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" value="${escH(v.valor || "")}" required></div>
-    <div><button class="b p" type="submit">Lançar</button></div></form>
-    ${casa ? `<p class="nota">Vai para a Casa, dividida com o Matheus; aparece na aba Casa.</p>` : ""}</details>`;
+  const outro = pessoas.find(p => p !== eu) || "";
+  return {
+    tela: "gastos", padrao: "pessoal",
+    dataPadrao: km() === chaveMes(new Date()) ? hojeISO() : km() + "-01",
+    pessoal: { explica: "Só meu. Entra nos meus gastos.", tipos: null, grupos: [["", cad.categorias]], formas: FORMAS },
+    casa: cf ? { explica: `Da casa, dividido com ${String(outro).split(" ")[0]}. Entra na balança.`, pessoas, eu,
+                 grupos: cf.grupos ? cf.grupos() : [["", cf.categorias()]] } : null,
+    lancar(onde, d){
+      if (onde === "casa" && cf) {
+        const id = cf.lancar(d); desenhar();
+        return () => { cf.desfazer(id); desenhar(); };
+      }
+      const id = novoId();
+      cad.lancamentos.push({ id, data:d.data, descricao:d.descricao, categoria:d.categoria, forma:d.forma, valor:d.valor });
+      salvar();
+      return () => { cad.lancamentos = cad.lancamentos.filter(x => x.id !== id); salvar(); };
+    },
+    alterar(onde, id, d){
+      const l = cad.lancamentos.find(x => x.id === id);
+      if (l) Object.assign(l, { data:d.data, descricao:d.descricao, categoria:d.categoria, forma:d.forma, valor:d.valor });
+      salvar();
+    }
+  };
 }
 
 // a ordem da lista de gastos: cabeçalho no computador, caixa de escolha no celular
@@ -532,10 +547,10 @@ function telaGastos(){
   const opCat = cad.categorias.map(c => `<option>${escH(c)}</option>`).join("");
   const form = formLancamento(k);
   const linhas = lst.map(l => `<tr><td class="c-data">${dataCurta(l.data)}</td>
-    <td class="c-desc"><b>${escH(l.descricao)}</b><span class="so-cel">${escH(l.categoria)} · ${escH(l.forma)}</span></td>
+    <td class="c-desc"><b>${escH(l.descricao || l.categoria)}</b><span class="so-cel">${escH(l.categoria)} · ${escH(l.forma)}</span></td>
     <td class="c-cat">${escH(l.categoria)}</td><td class="c-forma">${escH(l.forma)}</td>
     <td class="c-val dir">${dinheiro(l.valor)}</td>
-    <td class="c-x"><button class="x" data-apagar="lancamentos:${l.id}" aria-label="Apagar">×</button></td></tr>`).join("");
+    <td class="c-x"><button class="x lapis" data-editar="${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
   const fixos = cad.gastosFixos.slice().sort((a, b) => valorNoMes(b, k) - valorNoMes(a, k));
   const tFixos = fixos.length ? `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Valor em ${nome}</th><th></th></tr></thead><tbody>
     ${fixos.map(g => `<tr><td class="c-desc"><b>${escH(g.descricao)}</b><span class="so-cel">${escH(g.categoria)}</span></td><td class="c-cat">${escH(g.categoria)}</td>
@@ -569,7 +584,7 @@ function desenhar(){
   const abertos = [...t.querySelectorAll("details")].map(x => x.open), mesma = t.dataset.aba === aba;
   // redesenhar no meio de um lançamento (o Drive pode mandar) não apaga o que estava digitado
   const digitado = {};
-  if (mesma) t.querySelectorAll("form[id]").forEach(f => { if (!f.dataset.limpo) digitado[f.id] = [...f.elements].filter(e => e.name).map(e => [e.name, e.value]); });
+  if (mesma) t.querySelectorAll("form[id]").forEach(f => { if (!f.dataset.limpo) digitado[f.id] = [...f.elements].filter(e => e.name && (e.type !== "radio" || e.checked)).map(e => [e.name, e.value]); });
   t.innerHTML = aba === "plantoes" ? telaPlantoes() : aba === "gastos" ? telaGastos() : telaMes();
   t.dataset.aba = aba;
   if (mesma) t.querySelectorAll("details").forEach((x, i) => { if (abertos[i]) x.open = true; });
@@ -639,21 +654,13 @@ function ligar(){
     cad.locais.push({ nome, pagaMesSeguinte: d.paga === "1" }); salvar();
     const v = document.getElementById("dValores"); if (v) v.open = true;
   });
-  // o formulário único: trocar entre Pessoal e Casa guarda o que já estava digitado
-  const fn = document.getElementById("fNovo");
-  if (fn) {
-    fn.querySelectorAll("[data-onde]").forEach(b => b.onclick = () => {
-      rascunho = { data:fn.data.value, descricao:fn.descricao.value, valor:fn.valor.value };
-      ondeLanc = b.dataset.onde; fn.dataset.limpo = "1"; desenhar();
-    });
-    fn.onsubmit = e => {
-      e.preventDefault();
-      const d = pega(fn), cf = casaFora();
-      rascunho = null; fn.dataset.limpo = "1";
-      if (fn.dataset.onde === "casa" && cf) { cf.lancar(d); desenhar(); }
-      else { cad.lancamentos.push({ id:novoId(), data:d.data, descricao:d.descricao.trim(), categoria:d.categoria, forma:d.forma, valor:Number(d.valor) }); salvar(); }
-    };
-  }
+  // o formulário único de lançamento (lancamento.js); o lápis de cada linha abre o lançamento para alterar
+  document.querySelectorAll("[data-lanc]").forEach(el => FormLancamento.montar(el, configLancamento()));
+  document.querySelectorAll("[data-editar]").forEach(b => b.onclick = () => {
+    const l = cad.lancamentos.find(x => x.id === b.dataset.editar); if (!l) return;
+    FormLancamento.editar(configLancamento(), "pessoal", l); desenhar();
+    const el = document.querySelector("[data-lanc]"); if (el) el.scrollIntoView({ block:"start", behavior:"smooth" });
+  });
   document.querySelectorAll("[data-ord]").forEach(b => b.onclick = () => {
     const c = b.dataset.ord;
     ordem = ordem.c === c ? { c, d:-ordem.d } : { c, d: c === "data" || c === "valor" ? -1 : 1 };

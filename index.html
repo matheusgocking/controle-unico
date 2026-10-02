@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Controle Único</title>
+<script>
+/* Renovação sem tela da chave do Google (nuvem.js, renovar): esta página abre dentro de uma
+   moldura escondida, com a chave nova no endereço. Ela só entrega a chave à página de fora e
+   para de carregar: o app não é montado aqui dentro. */
+if (window.top !== window.self && /(^#|&)(access_token|error)=/.test(location.hash)) {
+  try { window.parent.postMessage({ cuOAuth: location.hash.slice(1) }, location.origin); } catch (e) {}
+  document.documentElement.setAttribute("data-renovando", "1");
+  window.stop();
+}
+</script>
 <meta name="description" content="Controle Único: carteira, casa e clínica num lugar só, guardados no Google Drive de quem usa.">
 <!-- instalar como app: Android pelo manifesto, iPhone por "Adicionar à Tela de Início" -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -160,6 +170,7 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 <main class="palco" id="palco"></main>
 
 <script>
+if (document.documentElement.hasAttribute("data-renovando")) throw new Error("moldura de renovação da chave: nada a montar");
 // Cada módulo é uma página própria, carregada dentro desta casca. Tudo, Carteira e Casa
 // dividem o app.html e trocam de tela pelo endereço, sem recarregar os cadernos.
 // A Carteira junta o dinheiro (app.html#carteira), a casa (app.html#casa) e a cripto (carteira.html),
