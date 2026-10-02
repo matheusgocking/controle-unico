@@ -209,6 +209,9 @@ th .ord:hover{color:var(--text)}
 th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 .ordem-cel{display:none;margin:0 0 6px;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
 .ordem-cel select{width:auto;flex:1;padding:6px 8px}
+.filtro-cat{display:flex;margin:0 0 6px;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.filtro-cat select{width:auto;flex:0 1 240px;min-width:0;padding:6px 8px}
+.filtro-cat span{color:var(--text);font-weight:600;white-space:nowrap}
 details.origem{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6}
 details.origem summary{cursor:pointer;color:var(--faint)}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -513,6 +516,21 @@ function cabecalho(qual){
   return `<thead><tr>${COLUNAS[qual].map(([c, n]) => `<th${c === "valor" ? ' class="dir"' : ""}><button type="button" class="ord" data-ord="${qual}:${c}" aria-pressed="${o.c === c}"
     title="Ordenar por ${n.toLowerCase()}">${n}${o.c === c ? (o.d > 0 ? " ▲" : " ▼") : ""}</button></th>`).join("")}<th></th></tr></thead>`;
 }
+// Filtro por categoria nas listas de lançamentos (pedido dele, 02/10/2026): só as categorias que
+// aparecem no mês; a escolha que não existe no mês aberto volta para "todas".
+const filtroCat = { lanc:"", casa:"" };
+function filtrar(lista, qual){
+  if (filtroCat[qual] && !lista.some(l => l.categoria === filtroCat[qual])) filtroCat[qual] = "";
+  return filtroCat[qual] ? lista.filter(l => l.categoria === filtroCat[qual]) : lista;
+}
+function filtroCategoria(todos, qual){
+  const cats = [...new Set(todos.map(l => l.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  if (cats.length < 2) return "";
+  const vistos = filtrar(todos, qual);
+  return `<label class="filtro-cat">Categoria <select data-filtrocat="${qual}" aria-label="Filtrar por categoria">
+    <option value="">todas</option>${cats.map(c => `<option value="${escH(c)}"${filtroCat[qual] === c ? " selected" : ""}>${escH(comPonto(c))}</option>`).join("")}</select>
+    ${filtroCat[qual] ? `<span>${vistos.length} de ${todos.length} · ${dinheiro(soma(vistos, l => l.valor))}</span>` : ""}</label>`;
+}
 function ordemCelular(qual){
   const o = ordem[qual], op = (c, d, n) => `<option value="${c}:${d}"${o.c === c && o.d === d ? " selected" : ""}>${n}</option>`;
   return `<label class="ordem-cel">Ordenar por <select data-ordsel="${qual}" aria-label="Ordenar a lista">
@@ -732,9 +750,11 @@ function linhaLanc(l){
   const cls = l.tipo === "Receita" || l.tipo === "Resgate" ? "pos" : "";
   const sinal = cls ? "+ " : l.tipo === "Despesa" ? "− " : "";
   const tipo = l.tipo !== "Despesa" ? ` · ${semPonto(l.tipo)}` : "";
+  // linha composta leva um ponto só, no fim: "Reserva · Resgate." (correção dele, 02/10/2026)
+  const cat = semPonto(l.categoria), forma = semPonto(l.forma);
   return `<tr><td class="c-data">${dataCurta(l.data)}</td>
-    <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : l.categoria))}</b><span class="so-cel">${escH(comPonto(l.categoria))} · ${escH(semPonto(l.forma))}${tipo}</span></td>
-    <td class="c-cat">${escH(comPonto(l.categoria))}${tipo}</td><td class="c-forma">${escH(semPonto(l.forma))}</td>
+    <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : l.categoria))}</b><span class="so-cel">${escH(comPonto([cat, forma].filter(Boolean).join(" · ") + tipo))}</span></td>
+    <td class="c-cat">${escH(comPonto(cat + tipo))}</td><td class="c-forma">${escH(comPonto(forma))}</td>
     <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
     <td class="c-x"><button class="x lapis" data-editar="matheus:${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="matheus:lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
 }
@@ -894,8 +914,8 @@ function telaDinheiro(){
 
   const form = formLancamento("pessoal");
 
-  const lista = doMes.length ? `${ordemCelular("lanc")}<table class="t">${cabecalho("lanc")}
-    <tbody>${doMes.map(linhaLanc).join("")}</tbody></table>`
+  const lista = doMes.length ? `${filtroCategoria(doMes, "lanc")}${ordemCelular("lanc")}<table class="t">${cabecalho("lanc")}
+    <tbody>${filtrar(doMes, "lanc").map(linhaLanc).join("")}</tbody></table>`
     : `<p class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</p>`;
 
   const formReserva = `<details class="novo"><summary>Ajustar a reserva</summary><form class="linha" id="fReserva">
@@ -983,9 +1003,9 @@ function telaCasa(){
   const form = formLancamento("casa");
 
   const quem = q => `<span class="quem"><i style="background:${cor(q)}"></i>${escH(primeiro(q))}</span>`;
-  const lista = doMes.length ? `${ordemCelular("casa")}<table class="t">${cabecalho("casa")}<tbody>
-    ${doMes.map(l => `<tr><td class="c-data">${dataCurta(l.data)}</td>
-      <td class="c-desc"><b>${escH(comPonto(l.categoria))}${l.descricao && l.descricao !== "-" && semPonto(l.descricao).toLowerCase() !== semPonto(l.categoria).toLowerCase() ? " · " + escH(comPonto(l.descricao)) : ""}</b><span class="so-cel">${quem(l.quem)}</span></td>
+  const lista = doMes.length ? `${filtroCategoria(doMes, "casa")}${ordemCelular("casa")}<table class="t">${cabecalho("casa")}<tbody>
+    ${filtrar(doMes, "casa").map(l => `<tr><td class="c-data">${dataCurta(l.data)}</td>
+      <td class="c-desc"><b>${escH(comPonto(semPonto(l.categoria) + (l.descricao && l.descricao !== "-" && semPonto(l.descricao).toLowerCase() !== semPonto(l.categoria).toLowerCase() ? " · " + l.descricao : "")))}</b><span class="so-cel">${quem(l.quem)}</span></td>
       <td class="c-quem">${quem(l.quem)}</td>
       <td class="c-val dir">${dinheiro(l.valor)}</td>
       <td class="c-x"><button class="x lapis" data-editar="casa:${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="casa:lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
@@ -1075,6 +1095,7 @@ function ligar(){
     ordem[qual] = o.c === c ? { c, d:-o.d } : { c, d: c === "data" || c === "valor" ? -1 : 1 };
     desenhar();
   });
+  document.querySelectorAll("[data-filtrocat]").forEach(s => s.onchange = () => { filtroCat[s.dataset.filtrocat] = s.value; desenhar(); });
   document.querySelectorAll("[data-ordsel]").forEach(s => s.onchange = () => {
     const [c, d] = s.value.split(":"); ordem[s.dataset.ordsel] = { c, d:Number(d) }; desenhar();
   });

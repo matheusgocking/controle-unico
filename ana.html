@@ -549,8 +549,8 @@ function telaGastos(){
   const opCat = cad.categorias.map(c => `<option value="${escH(c)}">${escH(comPonto(c))}</option>`).join("");
   const form = formLancamento(k);
   const linhas = lst.map(l => `<tr><td class="c-data">${dataCurta(l.data)}</td>
-    <td class="c-desc"><b>${escH(comPonto(l.descricao || l.categoria))}</b><span class="so-cel">${escH(comPonto(l.categoria))} · ${escH(l.forma)}</span></td>
-    <td class="c-cat">${escH(comPonto(l.categoria))}</td><td class="c-forma">${escH(l.forma)}</td>
+    <td class="c-desc"><b>${escH(comPonto(l.descricao || l.categoria))}</b><span class="so-cel">${escH(comPonto([l.categoria, l.forma].filter(Boolean).join(" · ")))}</span></td>
+    <td class="c-cat">${escH(comPonto(l.categoria))}</td><td class="c-forma">${escH(comPonto(l.forma))}</td>
     <td class="c-val dir">${dinheiro(l.valor)}</td>
     <td class="c-x"><button class="x lapis" data-editar="${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
   const fixos = cad.gastosFixos.slice().sort((a, b) => valorNoMes(b, k) - valorNoMes(a, k));
