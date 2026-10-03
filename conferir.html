@@ -6,8 +6,10 @@
 <title>Conferência · Controle Único</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"></noscript>
 <style>
+/* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
+button,a,summary,select,input,label{touch-action:manipulation}
 /* Mesmo desenho das outras telas (app.html): fundo cinza-azulado, painéis brancos de borda fina. */
 :root{
   --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;

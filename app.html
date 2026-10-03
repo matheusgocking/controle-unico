@@ -6,8 +6,10 @@
 <title>Dinheiro e Casa · Controle Único</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap"></noscript>
 <style>
+/* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
+button,a,summary,select,input,label{touch-action:manipulation}
 /* Mesmo desenho da Clínica e da Carteira (27/09/2026): fundo cinza-azulado, painéis brancos
    de borda fina, números em negrito e gráficos em rosca. O jeito de app fica só no celular. */
 :root{
@@ -252,7 +254,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   table.t thead{display:none}
   .ordem-cel{display:flex}
   table.t tr{display:grid;grid-template-columns:38px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
-  td.c-x .x{padding:6px 5px}
+  td.c-x .x{padding:0;min-width:34px;min-height:40px}   /* o lápis e o × cabem num toque de dedo */
   table.t tr:last-child{border-bottom:0}
   table.t td{border:0;padding:0 !important}
   table.t tbody tr:hover td{background:transparent}
@@ -265,6 +267,10 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   form.linha{grid-template-columns:repeat(2,minmax(0,1fr))}
   form.linha > div[style]{grid-column:1 / -1 !important}
   form.linha .b{width:100%}
+  .b:not(.redondo):not(.s){min-height:40px} .b.s{min-height:36px} .redondo{width:40px;height:40px}
+  summary{padding-block:8px}
+  [data-limite-x]{min-height:36px;padding:6px 10px}
+  .pe a{display:inline-block;padding:10px 8px}
   input,select{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
   .pd{grid-template-columns:minmax(0,1fr) auto} .pd .pd-acoes{grid-column:1 / -1}
   .pd .pd-quem b{white-space:normal} .pd .pd-val{white-space:normal;max-width:190px}
@@ -285,7 +291,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 }
 @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
 </style>
-<script src="https://accounts.google.com/gsi/client" async></script>
+<script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
 <script src="exportar-xlsx.js"></script>
 <script src="ler-xlsx.js"></script>
 <script src="categorias.js"></script>

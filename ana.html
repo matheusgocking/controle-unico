@@ -15,8 +15,10 @@
 <link rel="icon" href="icone-192.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"></noscript>
 <style>
+/* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
+button,a,summary,select,input,label{touch-action:manipulation}
 /* O controle da Ana (30/09/2026): o mesmo desenho do Dinheiro e da Casa do Controle Único,
    numa página própria, com link só dela. A Casa é a mesma do app dele, carregada ao lado. */
 :root{
@@ -193,7 +195,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .stat b{font-size:17px}
   table.t:not(.valores) thead{display:none}
   table.t:not(.valores) tr{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
-  td.c-x .x{padding:6px 5px}
+  td.c-x .x{padding:0;min-width:34px;min-height:40px}
   table.t:not(.valores) tr:last-child{border-bottom:0}
   table.t:not(.valores) td{border:0;padding:0 !important}
   table.plantoes tr{grid-template-columns:44px minmax(0,1fr) auto 30px 22px !important}
@@ -201,6 +203,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   table.fixos input{width:100% !important}
   table.entradas tr{grid-template-columns:minmax(0,1fr) auto 22px !important}
   table.porpac tr{grid-template-columns:minmax(0,1fr) auto auto !important}
+  table.atend td.c-desc b{white-space:normal;overflow:visible}   /* o nome do paciente quebra em duas linhas em vez de ser cortado */
   td.c-cat,td.c-forma{display:none}
   .so-cel{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   td.c-desc{min-width:0} td.c-desc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -208,6 +211,9 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   form.linha{grid-template-columns:repeat(2,minmax(0,1fr))}
   form.linha > div.largo{grid-column:1 / -1}
   form.linha .b{width:100%}
+  .b:not(.redondo):not(.s){min-height:40px} .b.s{min-height:36px} .redondo{width:40px;height:40px}
+  summary{padding-block:8px}
+  .pe a{display:inline-block;padding:10px 8px}
   input,select{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
 }
 /* iguais aos do app dele (01/10/2026): a escolha Pessoal ou Casa no lançamento e a ordem da lista */

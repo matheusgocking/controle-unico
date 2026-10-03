@@ -6,8 +6,10 @@
 <title>Clínica · Controle Único</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&display=swap"></noscript>
 <style>
+/* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
+button,a,summary,select,input,label{touch-action:manipulation}
 /* As cores da grade seguem a planilha: roxo para o que é clínico, laranja para falta
    e cinza-chumbo para a sessão que entra por encaixe. Dentro do roxo, o horário divulgado
    é pintado e o que está guardado sem divulgar é riscado em diagonal, para que os dois
@@ -211,6 +213,13 @@ button,input,select,textarea{font:inherit; color:inherit}
 .cell.cortesia{background:var(--t-sessao-bg); border-left-color:var(--t-sessao-bar); color:var(--t-sessao-fg); outline:2px dashed var(--t-sessao-bar); outline-offset:-5px}
 select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:12.5px; max-width:100%}
 @media (max-width:700px){ select.situacao{min-height:40px; font-size:16px} } /* área de toque; abaixo de 16 px o iPhone dá zoom */
+@media (max-width:700px){
+  .btn{min-height:40px} .btn.sm{min-height:36px}
+  #prev,#next,#ss-prev,#ss-next{min-width:44px}
+  .linknome{padding:8px 0;min-height:36px}
+  #ss-desde{font-size:16px; min-height:40px}
+  .wrap a[href="privacidade.html"]{display:inline-block; padding:10px 8px}
+}
 .ss-desde{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted)}
 .ss-desde input{padding:4px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:12.5px}
 /* paciente com pagamento vencido: uma tarja na borda direita, sem escrever nada na célula */
@@ -619,7 +628,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 }
 @media (prefers-reduced-motion: no-preference){ .cell,.btn,.tab{transition:background-color .12s ease} }
 </style>
-<script src="https://accounts.google.com/gsi/client" async></script>
+<script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
 <script src="nuvem.js"></script>
 <script src="modelos-prontuario.js"></script>
 <script src="categorias.js"></script>

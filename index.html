@@ -25,6 +25,8 @@ if (window.top !== window.self && /(^#|&)(access_token|error)=/.test(location.ha
 <link rel="apple-touch-icon" href="icone-180.png">
 <link rel="icon" href="icone-192.png" type="image/png">
 <style>
+/* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
+button,a,summary,select,input,label{touch-action:manipulation}
 :root{
   --bg:#f1f0f4; --surface:#ffffff; --line:#d8d5e0;
   --text:#1a1920; --muted:#57545f;
@@ -200,6 +202,10 @@ function quadro(k, src){
   f.id = "q-" + k; f.title = k; f.src = src; f.hidden = true;
   palco.appendChild(f);
   quadros[k] = f;
+  // a aba Tudo pergunta os números do mês à Clínica: quando ela carrega, a Tudo se redesenha
+  if (k === "clinica") f.addEventListener("load", function(){
+    try { quadros.app && quadros.app.contentWindow.desenhar(); } catch(e){}
+  });
   return f;
 }
 
@@ -274,10 +280,23 @@ if (!PAGINAS[inicial]) { try { inicial = localStorage.getItem("cu-painel-aba") |
 inicial = ANTIGOS[inicial] || inicial;
 if (!PAGINAS[inicial]) inicial = "tudo";
 mostrar(inicial);
-// A aba Tudo pergunta os números do mês à Clínica: ela abre junto, escondida, desde o começo.
-quadro("clinica", PAGINAS.clinica.src).addEventListener("load", function(){
-  try { quadros.app && quadros.app.contentWindow.desenhar(); } catch(e){}
-});
+// A aba Tudo pergunta os números do mês à Clínica, que abre escondida. No celular ela não disputa
+// a rede e o processador com a tela que está na frente: espera essa tela terminar de carregar
+// (a Clínica é a página mais pesada) e só então abre, quando o aparelho está livre.
+(function(){
+  if (quadros.clinica) return;
+  var aberta = false;
+  function abrir(){ if (aberta) return; aberta = true; quadro("clinica", PAGINAS.clinica.src); }
+  // a Tudo precisa dos números da Clínica na primeira tela: abre assim que ela termina de carregar; as outras esperam o aparelho ficar livre
+  function livre(){
+    if (atual === "tudo") setTimeout(abrir, 0);
+    else if (window.requestIdleCallback) requestIdleCallback(abrir, { timeout: 1200 });
+    else setTimeout(abrir, 600);
+  }
+  var frente = quadros[PAGINAS[atual].quadro];
+  frente.addEventListener("load", livre, { once: true });
+  setTimeout(abrir, 8000);   // rede ruim: não deixa a Tudo sem os números da Clínica para sempre
+})();
 
 Nuvem.iniciar();
 Nuvem.entrarSozinho();   // no app do iPhone, quem já entrou antes volta a entrar sozinho
