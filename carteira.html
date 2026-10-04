@@ -9,28 +9,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"></noscript>
+<link rel="stylesheet" href="tema.css">
 <style>
 /* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
 button,a,summary,select,input,label{touch-action:manipulation}
-:root{
-  color-scheme: light dark;
-  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
-  --accent:#7030a0; --accent-ink:#ffffff; --accent-soft:#f0e5fb; --area:#7030a0; --aporte:#6f7a8a;
-  --pos:#1f6b4f; --neg:#a3241f; --warn:#8a4b12; --warn-soft:#fbe8d4;
+:root{  color-scheme: light dark;
+  --accent-ink:#ffffff; --area:#7030a0; --aporte:#6f7a8a;
   /* cores das redes: as mesmas em todo o site, tiradas dos logotipos */
   --n-binance:#c99400; --n-bsc:#d9731a; --n-base:#0052ff; --n-pulsechain:#d6249f; --n-solana:#0fa37f; --n-banco:#6f7a8a; --n-fora:#8a94a3;
-  --font:"IBM Plex Sans",system-ui,sans-serif; --radius:8px;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
-  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140; --area:#c8a4f2; --aporte:#818d9d;
-  --pos:#7fd3ac; --neg:#f2a09b; --warn:#efb87c; --warn-soft:#3f2c15;
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){  --accent-ink:#1b1026; --area:#c8a4f2; --aporte:#818d9d;
   --n-binance:#f0b90b; --n-bsc:#f5a05a; --n-base:#5b8cff; --n-pulsechain:#f062c0; --n-solana:#3ddc97; --n-banco:#aab6c6; --n-fora:#818d9d;
 }}
-:root[data-theme="dark"]{
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
-  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140; --area:#c8a4f2; --aporte:#818d9d;
-  --pos:#7fd3ac; --neg:#f2a09b; --warn:#efb87c; --warn-soft:#3f2c15;
+:root[data-theme="dark"]{  --accent-ink:#1b1026; --area:#c8a4f2; --aporte:#818d9d;
   --n-binance:#f0b90b; --n-bsc:#f5a05a; --n-base:#5b8cff; --n-pulsechain:#f062c0; --n-solana:#3ddc97; --n-banco:#aab6c6; --n-fora:#818d9d;
 }
 *{ box-sizing:border-box; }
@@ -1277,7 +1268,7 @@ async function lote(url, chamadas){
 }
 async function posicoesAbertas(){
   // simulação: uma posição aberta de outra carteira, só para ver o layout (não entra no total). Vem do botão "Ver uma simulação" ou de ?posicao=uni:123 no link
-  const eu = h64(EU_EVM), simul = lsGet('cripto-v1-simulacao', 'uni:6094669'), teste = new URLSearchParams(location.search).get('posicao') || (simul !== 'nao' ? simul : null);
+  const eu = h64(EU_EVM), simul = lsGet('cripto-v1-simulacao', 'nao'), testeBruto = new URLSearchParams(location.search).get('posicao') || (simul !== 'nao' ? simul : null), teste = /^[a-z]+:\d+$/.test(testeBruto || '') ? testeBruto : null;   /* simulação desligada por padrão e só aceita tipo:número (04/10/2026) */
   const out = [];
   for(const G of GERENTES_CL){
     const [bal] = await lote(RPC_BASE, [[G.end, '0x70a08231' + eu]]);
@@ -1812,7 +1803,7 @@ document.getElementById('cabAtivos').addEventListener('click', e => { const th =
 // liga e desliga a simulação de pool (posição aberta nº 6094669 da Uniswap v3 na Base, de outra carteira)
 document.getElementById('posicoes').addEventListener('click', async e => {
   if(e.target.id !== 'btnSimular') return;
-  const ligada = lsGet('cripto-v1-simulacao', 'uni:6094669') !== 'nao';
+  const ligada = lsGet('cripto-v1-simulacao', 'nao') !== 'nao';
   lsSet('cripto-v1-simulacao', ligada ? 'nao' : 'uni:6094669');
   e.target.disabled = true; status('Buscando a posição…', true);
   try{ VIVO.posicoes = await posicoesAbertas(); status(ligada ? 'Simulação retirada.' : 'Simulação carregada.'); }catch(err){ status('Não consegui carregar a posição: ' + err.message); }

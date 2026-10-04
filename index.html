@@ -24,6 +24,9 @@ if (window.top !== window.self && /(^#|&)(access_token|error)=/.test(location.ha
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="icone-180.png">
 <link rel="icon" href="icone-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 /* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
 button,a,summary,select,input,label{touch-action:manipulation}
@@ -56,7 +59,7 @@ button,a,summary,select,input,label{touch-action:manipulation}
 html,body{height:100%}
 body{
   margin:0; background:var(--bg); color:var(--text);
-  font:15px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;
+  font:15px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   display:flex; flex-direction:column;
   -webkit-tap-highlight-color:transparent;
 }
@@ -90,6 +93,25 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 .nuvem-ponto{width:9px; height:9px; border-radius:50%; background:var(--muted); flex:none}
 .nuvem-ponto.ok{background:#2f9e5b} .nuvem-ponto.indo{background:#d49a1c} .nuvem-ponto.erro{background:#d0453a}
 .hidden{display:none !important}
+/* o texto do estado do Drive só aparece quando importa: erro, escolha ou aviso de login (04/10/2026) */
+#nuvem-texto{display:none; max-width:420px; font-size:13px}
+.nuvem[data-estado="erro"] #nuvem-texto{display:inline; color:#b3261e; font-weight:500}
+:root[data-theme="dark"] .nuvem[data-estado="erro"] #nuvem-texto{color:#f2a09b}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .nuvem[data-estado="erro"] #nuvem-texto{color:#f2a09b} }
+/* menu "mais": tema, privacidade, sair deste aparelho e a versão */
+.menu{position:relative}
+.menu > summary{list-style:none}
+.menu > summary::-webkit-details-marker{display:none}
+.menu-lista{position:absolute; right:0; top:calc(100% + 6px); z-index:20; min-width:230px; background:var(--surface); color:var(--text);
+  border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 28px rgba(0,0,0,.16); padding:6px; display:grid; gap:2px}
+.menu-lista button,.menu-lista a{display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0; background:transparent; color:var(--text);
+  font:inherit; font-size:14px; padding:10px 12px; border-radius:8px; cursor:pointer; text-decoration:none; min-height:42px}
+.menu-lista button:hover,.menu-lista a:hover{background:var(--bg)}
+.menu-lista svg{width:18px; height:18px; flex:none; color:var(--muted)}
+.menu-lista .sair{color:#b3261e}
+.menu-lista .sair svg{color:currentColor}
+.menu-lista .versao{padding:8px 12px 4px; border-top:1px solid var(--line); margin-top:4px; color:var(--muted); font-size:12px}
+.so-cel{display:none !important}
 /* versão do app: a data da publicação, lida de versao.json (pedido dele, 29/09/2026) */
 .versao{font-size:11px; color:var(--muted); opacity:.85; white-space:nowrap}
 .versao-nova{flex:none; display:flex; align-items:center; justify-content:center; gap:12px; padding:8px 12px; font-size:14px; background:#d49a1c; color:#1b1b1b}
@@ -114,13 +136,19 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   .titulo{display:block}
   /* sem login o botão "Entrar com o Google" não cabe ao lado dos outros: quebra a linha em vez de empurrar a tela para o lado */
   .dir{gap:6px; flex:1 1 0; min-width:0; flex-wrap:wrap; justify-content:flex-end}
-  .nuvem{flex-wrap:wrap; justify-content:flex-end}
+  .nuvem{display:contents}
+  .nuvem #nuvem-ponto{order:0}
+  /* erro no celular: uma faixa própria embaixo da barra, para ser lida (antes ficava escondido) */
+  .nuvem[data-estado="erro"] #nuvem-texto{display:block; order:9; flex-basis:100%; max-width:none; color:var(--barra-ink); background:rgba(0,0,0,.22); border-radius:8px; padding:6px 10px; font-weight:500}
+  header{flex-wrap:wrap}
+  .so-cel{display:flex !important}
+  .so-pc{display:none !important}
+  .bt.p{padding:5px 12px; font-size:13px}
   .bt{border-color:rgba(255,255,255,.35); color:var(--barra-ink); padding:6px 9px}
   .bt .rot{display:none}
-  .bt.p{background:#ffffff; color:#5b2a82; border-color:#ffffff}
+  .bt.p{background:#ffffff; color:#5b2a82; border-color:#ffffff; font-weight:600}
   .bt[aria-pressed="true"]{background:rgba(255,255,255,.18); color:var(--barra-ink); border-color:rgba(255,255,255,.7)}
   .nuvem-ponto{box-shadow:0 0 0 2px rgba(255,255,255,.55)}
-  .versao{color:var(--barra-ink); opacity:.8}
   nav{
     order:3; flex:none; display:grid; grid-template-columns:repeat(3,1fr); gap:0; overflow:visible;
     background:var(--surface); border-top:1px solid var(--line); border-bottom:0;
@@ -146,15 +174,20 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   <div class="marca"><div class="selo">CU</div><span>Controle Único</span></div>
   <div class="titulo" id="titulo">Controle Único</div>
   <div class="dir">
-    <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto" title="Estado do Google Drive"></span><span id="nuvem-texto" class="hidden"></span>
-      <button class="bt p" id="nuvem-entrar" type="button">Entrar com o Google</button>
-      <span class="versao" id="versao" title="Versão do app: quando foi publicada"></span></p>
-    <button class="bt" id="conferir" type="button" title="Conferir o app com as planilhas" aria-label="Conferir o app com as planilhas" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg><span class="rot">Conferir</span></button>
-    <button class="bt" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor"/></svg><span class="rot">Tema</span></button>
-    <a class="bt" href="privacidade.html" title="Privacidade" aria-label="Privacidade">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/></svg><span class="rot">Privacidade</span></a>
+    <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto" title="Estado do Google Drive" role="img" aria-label="Estado do Google Drive"></span><span id="nuvem-texto" role="status" aria-live="polite"></span>
+      <button class="bt p" id="nuvem-entrar" type="button">Entrar<span class="so-pc">&nbsp;com o Google</span></button></p>
+    <button class="bt so-pc" id="conferir" type="button" title="Conferir o app com as planilhas" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg><span>Conferir</span></button>
+    <details class="menu" id="menu">
+      <summary class="bt" title="Mais opções" aria-label="Mais opções"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></summary>
+      <div class="menu-lista">
+        <button type="button" class="so-cel" id="conferir-cel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg>Conferir com as planilhas</button>
+        <button type="button" id="tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor"/></svg><span id="tema-rot">Tema escuro</span></button>
+        <a href="privacidade.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/></svg>Privacidade</a>
+        <button type="button" class="sair" id="sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg>Sair deste aparelho</button>
+        <div class="versao" id="versao" title="Versão do app: quando foi publicada"></div>
+      </div>
+    </details>
   </div>
 </header>
 <div class="versao-nova hidden" id="versao-nova" role="status">Há uma versão nova do app. <button type="button" id="versao-atualizar">Atualizar</button></div>
@@ -239,10 +272,17 @@ function mostrar(p){
   try { history.replaceState(null, "", "#" + p); } catch(e){}
 }
 var antesDeConferir = "tudo";
-document.getElementById("conferir").addEventListener("click", function(){
+function alternarConferir(){
   if (atual === "conferir") mostrar(antesDeConferir);
   else { antesDeConferir = atual || "tudo"; mostrar("conferir"); }
-});
+}
+document.getElementById("conferir").addEventListener("click", alternarConferir);
+var menu = document.getElementById("menu");
+document.getElementById("conferir-cel").addEventListener("click", function(){ menu.open = false; alternarConferir(); });
+document.getElementById("sair").addEventListener("click", function(){ menu.open = false; Nuvem.sair(); });
+// o menu fecha ao tocar fora dele ou com Esc
+document.addEventListener("click", function(e){ if (menu.open && !menu.contains(e.target)) menu.open = false; });
+document.addEventListener("keydown", function(e){ if (e.key === "Escape" && menu.open){ menu.open = false; menu.querySelector("summary").focus(); } });
 
 document.getElementById("abas").addEventListener("click", function(e){
   var b = e.target.closest("button[data-p]");
@@ -257,8 +297,14 @@ document.getElementById("vistas").addEventListener("click", function(e){
 });
 
 /* o tema escolhido aqui vale para a casca e para os módulos abertos */
+function escuroAgora(){
+  var r = document.documentElement;
+  return r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function rotuloTema(){ document.getElementById("tema-rot").textContent = escuroAgora() ? "Tema claro" : "Tema escuro"; }
 function aplicarTema(v){
   document.documentElement.dataset.theme = v;
+  rotuloTema();
   for (var q in quadros) { try { quadros[q].contentDocument.documentElement.setAttribute("data-theme", v); } catch(e){} }
 }
 document.getElementById("tema").addEventListener("click", function(){
@@ -269,6 +315,7 @@ document.getElementById("tema").addEventListener("click", function(){
   try { localStorage.setItem("cu-painel-tema", v); localStorage.setItem("cu-tema", v); } catch(e){}
 });
 try { var t = localStorage.getItem("cu-painel-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+rotuloTema();
 palco.addEventListener("load", function(e){
   var t = document.documentElement.dataset.theme;
   if (t && e.target.tagName === "IFRAME") { try { e.target.contentDocument.documentElement.setAttribute("data-theme", t); } catch(err){} }
