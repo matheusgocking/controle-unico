@@ -258,8 +258,8 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   table.t tr{display:grid;grid-template-columns:38px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
   td.c-x .x{padding:0;min-width:34px;min-height:40px}   /* o × cabe num toque de dedo */
   /* no celular a linha toda abre o lançamento; o × some (apagar fica dentro do lançamento) e a descrição quebra a linha */
-  table.t tr.clic{grid-template-columns:42px minmax(0,1fr) auto}
-  tr.clic td.c-x{display:none}
+  table.t tr.clic,table.t tr.so-ver{grid-template-columns:42px minmax(0,1fr) auto}
+  tr.clic td.c-x,tr.so-ver td.c-x{display:none}
   tr.clic td.c-desc b{white-space:normal;overflow:visible;text-overflow:clip}
   tr.clic .so-cel{white-space:normal}
   tr.clic:active{background:var(--surface-2)}
@@ -592,6 +592,10 @@ function ordemCelular(qual){
 // dele, 01/10/2026). Dentro do controle da Ana esta página só tem a Casa, então não há escolha.
 // O desenho e o comportamento moram em lancamento.js (o mesmo do controle da Ana). Aqui fica só
 // o lugar onde ele entra e o que acontece com o lançamento pronto.
+// Dentro do controle da Ana ela altera e apaga só as compras dela na Casa; as dele ela só vê
+// (Matheus, 04/10/2026). No app dele nada muda.
+const euNaCasaAna = () => livro.casa.pessoas.find(x => /^ana/i.test(x)) || livro.casa.pessoas[1];
+const podeMexer = l => PERFIL !== "ana" || (l && l.quem === euNaCasaAna());
 function formLancamento(padrao){ return `<div class="lanc" data-lanc="${padrao || ""}"></div>`; }
 function configLancamento(padrao){
   const soCasa = PERFIL === "ana";
@@ -606,7 +610,7 @@ function configLancamento(padrao){
       grupos: Categorias.GRUPOS_DINHEIRO, formas: FORMAS },
     casa: {
       explica: `Da casa, dividido com ${primeiro(soCasa ? p1 : p2)}. Entra na balança.`,
-      pessoas: livro.casa.pessoas.slice(), eu: soCasa ? (livro.casa.pessoas.find(x => /^ana/i.test(x)) || p2) : p1,
+      pessoas: livro.casa.pessoas.slice(), eu: soCasa ? euNaCasaAna() : p1,
       grupos: Categorias.GRUPOS_CASA },
     lancar(onde, d){
       const id = novoId();
@@ -624,7 +628,7 @@ function configLancamento(padrao){
     alterar(onde, id, d){
       const cad = onde === "casa" ? "casa" : "matheus";
       const l = livro[cad].lancamentos.find(x => x.id === id);
-      if (!l) return null;
+      if (!l || (cad === "casa" && !podeMexer(l))) return null;
       const antes = JSON.parse(JSON.stringify(l));
       if (onde === "casa") Object.assign(l, { data:d.data, quem:d.quem, descricao:d.descricao || "-", categoria:d.categoria, valor:d.valor });
       else {
@@ -638,7 +642,7 @@ function configLancamento(padrao){
     },
     apagar(onde, id){
       const cad = onde === "casa" ? "casa" : "matheus";
-      const i = livro[cad].lancamentos.findIndex(x => x.id === id); if (i < 0) return null;
+      const i = livro[cad].lancamentos.findIndex(x => x.id === id); if (i < 0 || (cad === "casa" && !podeMexer(livro[cad].lancamentos[i]))) return null;
       const [tirado] = livro[cad].lancamentos.splice(i, 1);
       salvar(cad);
       return () => { if (!livro[cad].lancamentos.some(x => x.id === id)) livro[cad].lancamentos.splice(Math.min(i, livro[cad].lancamentos.length), 0, tirado); salvar(cad); };
@@ -647,7 +651,7 @@ function configLancamento(padrao){
 }
 // o lápis de cada linha abre o formulário com aquele lançamento, para alterar
 function alterarLancamento(cad, id){
-  const l = livro[cad].lancamentos.find(x => x.id === id); if (!l) return;
+  const l = livro[cad].lancamentos.find(x => x.id === id); if (!l || (cad === "casa" && !podeMexer(l))) return;
   const el = document.querySelector("[data-lanc]"); if (!el) return;
   FormLancamento.editar(configLancamento(el.dataset.lanc || null), cad === "casa" ? "casa" : "pessoal", l);
   desenhar();
@@ -1187,11 +1191,11 @@ function telaCasa(){
 
   const quem = q => `<span class="quem"><i style="background:${cor(q)}"></i>${escH(primeiro(q))}</span>`;
   const lista = doMes.length ? `${filtroCategoria(doMes, "casa")}${ordemCelular("casa")}<table class="t">${cabecalho("casa")}<tbody>
-    ${filtrar(doMes, "casa").map(l => `<tr class="clic" data-editar="casa:${escH(l.id)}" tabindex="0" title="Alterar"><td class="c-data">${dataCurta(l.data)}</td>
+    ${filtrar(doMes, "casa").map(l => `<tr${podeMexer(l) ? ` class="clic" data-editar="casa:${escH(l.id)}" tabindex="0" title="Alterar"` : ` class="so-ver"`}><td class="c-data">${dataCurta(l.data)}</td>
       <td class="c-desc"><b>${escH(comPonto(semPonto(l.categoria) + (l.descricao && l.descricao !== "-" && semPonto(l.descricao).toLowerCase() !== semPonto(l.categoria).toLowerCase() ? " · " + l.descricao : "")))}</b><span class="so-cel">${quem(l.quem)}</span></td>
       <td class="c-quem">${quem(l.quem)}</td>
       <td class="c-val dir">${dinheiro(l.valor)}</td>
-      <td class="c-x"><button class="x" data-apagar="casa:lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
+      <td class="c-x">${podeMexer(l) ? `<button class="x" data-apagar="casa:lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button>` : ""}</td></tr>`).join("")}</tbody></table>`
     : `<p class="vazio">Nenhuma compra em ${MESES[ref.getMonth()]}.</p>`;
 
   // Dentro do controle da Ana a divisão e os nomes só aparecem: quem muda é ele (Matheus, 04/10/2026),
@@ -1259,6 +1263,7 @@ function ligar(){
     e.stopPropagation();
     if (!confirm("Apagar esta linha?")) return;
     const [cad, lista, id] = b.dataset.apagar.split(":");
+    if (cad === "casa" && !podeMexer(livro.casa[lista].find(x => x.id === id))) return;
     livro[cad][lista] = livro[cad][lista].filter(x => x.id !== id); salvar(cad);
   });
   // tocar na linha abre o lançamento para alterar (e, de lá, apagar)

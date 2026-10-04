@@ -85,7 +85,7 @@ test("Ana, Plantões: o lápis altera o plantão sem duplicar, e Cancelar volta 
   await ctx.close();
 });
 
-test("Ana, Casa: sem Importar dados, e a divisão e os nomes só aparecem", async () => {
+test("Ana, Casa: sem Importar dados, a divisão só aparece e ela mexe só nas compras dela", async () => {
   const { ctx, p, erros } = await abrir();
   await p.click('#abas [data-a="casa"]'); await p.waitForTimeout(800);
   const f = p.frames().find(x => x.url().includes("app.html"));
@@ -96,6 +96,12 @@ test("Ana, Casa: sem Importar dados, e a divisão e os nomes só aparecem", asyn
   assert.equal(await f.locator("#fDivisao").count(), 0);
   assert.equal(await f.locator("#fPessoas").count(), 0);
   assert.match(await f.locator("text=só se mudam no app").textContent(), /50%/);
+  // ela altera e apaga só as compras dela; as dele ela só vê
+  assert.equal(await f.locator('[data-editar="casa:c2"]').count(), 1);
+  assert.equal(await f.locator('[data-apagar="casa:lancamentos:c2"]').count(), 1);
+  assert.equal(await f.locator('[data-editar="casa:c1"], [data-apagar="casa:lancamentos:c1"]').count(), 0);
+  assert.equal(await f.evaluate(() => configLancamento().apagar("casa", "c1")), null);
+  assert.equal(await f.evaluate(() => livro.casa.lancamentos.length), 3);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
