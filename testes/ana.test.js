@@ -96,3 +96,13 @@ test("Ana, Casa: sem Importar dados e sem trocar a ordem das pessoas às cegas",
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Ana: Sair deste aparelho apaga a cópia do caderno guardada no navegador", async () => {
+  const { ctx, p, erros } = await abrir();
+  assert.equal(await p.isVisible("#sair"), true);
+  await p.click("#sair"); await p.waitForLoadState("load"); await p.waitForTimeout(800);
+  const guardado = await p.evaluate(() => localStorage.getItem("controle-unico-ana-cache"));
+  assert.ok(!guardado || !JSON.parse(guardado).plantoes.length, "a cópia do caderno ficou no navegador");
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
