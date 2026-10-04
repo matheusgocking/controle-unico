@@ -230,8 +230,12 @@ var Nuvem = (function(){
     return api("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=drive&orderBy=createdTime&fields=files(id,modifiedTime)")
       .then(function(r){ return r.json(); }).then(function(j){ return j.files[0] || null; });
   }
-  function versaoDoArquivo(id){
-    return api("https://www.googleapis.com/drive/v3/files/" + id + "?fields=id,modifiedTime,trashed").then(function(r){ return r.json(); });
+  /* "urgente": a página está indo embora (aba fechando, app para o fundo). Com keepalive o navegador
+     termina o pedido mesmo depois de a página fechar; ele aceita até 64 KB por vez, então caderno
+     maior vai pelo caminho normal (e, se não der tempo, fica pendente para a próxima abertura). */
+  var LIMITE_KEEPALIVE = 60000;
+  function versaoDoArquivo(id, urgente){
+    return api("https://www.googleapis.com/drive/v3/files/" + id + "?fields=id,modifiedTime,trashed", urgente ? {keepalive:true} : null).then(function(r){ return r.json(); });
   }
   function baixar(id){
     return api("https://www.googleapis.com/drive/v3/files/" + id + "?alt=media").then(function(r){ return r.json(); });
@@ -284,10 +288,10 @@ var Nuvem = (function(){
     });
   }
 
-  function atualizar(id, conteudo){
-    return api("https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media&fields=id,modifiedTime", {
-      method:"PATCH", headers:{"Content-Type":"application/json; charset=UTF-8"}, body:conteudo
-    }).then(function(r){ return r.json(); });
+  function atualizar(id, conteudo, urgente){
+    var op = {method:"PATCH", headers:{"Content-Type":"application/json; charset=UTF-8"}, body:conteudo};
+    if(urgente && new Blob([conteudo]).size < LIMITE_KEEPALIVE) op.keepalive = true;
+    return api("https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media&fields=id,modifiedTime", op).then(function(r){ return r.json(); });
   }
 
   /* O Picker é a janela do Google para escolher um arquivo. Com o escopo drive.file o app só
@@ -617,21 +621,22 @@ var Nuvem = (function(){
       }).catch(falhou).then(function(){ conectando = false; });
     };
 
-    c.enviarAgora = function(){
+    c.enviarAgora = function(urgente){
+      urgente = urgente === true;
       clearTimeout(timer);
       if(gravando){ deNovo = true; return Promise.resolve(); }
       if(!temToken()){ falhou(new Error("expirou")); return Promise.resolve(); }
       if(!arquivo) return c.conectar();
       gravando = true;
       estado("Salvando no Drive…", "indo");
-      return versaoDoArquivo(arquivo.id).then(function(v){
+      return versaoDoArquivo(arquivo.id, urgente).then(function(v){
         /* mudou em outro aparelho desde a última troca: junta antes de gravar, em vez de escolher um lado */
         if(v.modifiedTime !== arquivo.modifiedTime){
           return baixar(arquivo.id).then(function(remoto){ receber(remoto, v); });
         }
       }).then(function(){
         var dados = op.obter(), texto = JSON.stringify(dados), g = geracao;
-        return atualizar(arquivo.id, paraEnviar(dados)).then(function(r){
+        return atualizar(arquivo.id, paraEnviar(dados), urgente).then(function(r){
           marcarArquivo(r); marcarBase(texto, r.modifiedTime);
           gravando = false; tentativas = 0; clearTimeout(novaTentativa);
           if(deNovo || g !== geracao){ deNovo = false; return c.enviarAgora(); }
@@ -652,7 +657,7 @@ var Nuvem = (function(){
       agendar();
     };
     /* o app foi para o fundo ou vai fechar: manda já o que está pendente, sem esperar */
-    c.enviarSeHouver = function(){ if(!saindo && pendente && iniciado && temToken() && arquivo && !gravando) c.enviarAgora(); };
+    c.enviarSeHouver = function(urgente){ if(!saindo && pendente && iniciado && temToken() && arquivo && !gravando) c.enviarAgora(urgente === true); };
 
     /* Duas abas (ou o app instalado e o Safari) com o mesmo caderno aberto: quando a outra troca
        com o Drive, ela anota a versão nova neste navegador; esta aba vê a anotação e traz do Drive,
@@ -730,9 +735,9 @@ var Nuvem = (function(){
     if(bt) bt.addEventListener("click", entrar);
     document.addEventListener("visibilitychange", function(){
       if(document.visibilityState === "visible") aoMostrar();
-      else cadernos.forEach(function(c){ c.enviarSeHouver(); });
+      else cadernos.forEach(function(c){ c.enviarSeHouver(true); });
     });
-    window.addEventListener("pagehide", function(){ cadernos.forEach(function(c){ c.enviarSeHouver(); }); });
+    window.addEventListener("pagehide", function(){ cadernos.forEach(function(c){ c.enviarSeHouver(true); }); });
     window.addEventListener("online", function(){ cadernos.forEach(function(c){ c.enviarSeHouver(); }); });
     window.addEventListener("beforeunload", function(e){ if(!saindo && algumPendente() && temToken()){ e.preventDefault(); e.returnValue = ""; } });
     if(temToken()) cadernos.forEach(function(c){ c.conectar(); });
