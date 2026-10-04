@@ -3230,7 +3230,7 @@ var cacheMes = {};
 function numerosDoMes(ref){
   var chave = ref.getFullYear()+"-"+ref.getMonth();
   if(cacheMes[chave]) return cacheMes[chave];
-  var cont = {}, ultimaCobrada = {}, sessoes = 0, aConfirmar = 0, previstas = 0, hojeN = hoje0();
+  var cont = {}, avulsas = {}, cicloDoMes = {}, sessoes = 0, aConfirmar = 0, previstas = 0, hojeN = hoje0();
   for(var i=0;i<31;i++){
     var d = new Date(ref.getFullYear(), ref.getMonth(), 1+i);
     if(d.getMonth()!==ref.getMonth()) break;
@@ -3240,7 +3240,15 @@ function numerosDoMes(ref){
       if(confirmada(s.estado)) sessoes++;
       else if(s.estado==="sessao"){ if(jaPassou(d, s.hora)) aConfirmar++; else previstas++; }
       /* a receita segue a cobrança: falta sem aviso cobra, cortesia não (regra das 24 horas) */
-      if(cobraSessao(s.estado)){ cont[s.paciente.id] = (cont[s.paciente.id]||0)+1; ultimaCobrada[s.paciente.id] = chaveData(d); }
+      if(cobraSessao(s.estado)){
+        cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
+        /* o preço é o do ciclo em que a sessão caiu: a avulsa soma sessão por sessão; o ciclo
+           mensal ou quinzenal entra uma vez, pelo valor do último ciclo do mês. Assim abrir um
+           ciclo novo não muda o previsto dos meses que já passaram (04/10/2026) */
+        var iso = chaveData(d), cic = cicloEm(s.paciente, iso);
+        if(cic.cobranca==="avulsa") avulsas[s.paciente.id] = (avulsas[s.paciente.id]||0) + valorSessao(cic);
+        else cicloDoMes[s.paciente.id] = cic;
+      }
     });
   }
   /* Matheus, 27/09/2026: o projetado geral é só de quem está ativo, como na planilha;
@@ -3248,9 +3256,7 @@ function numerosDoMes(ref){
   var previsto = 0, previstoTriagem = 0;
   dados.pacientes.forEach(function(p){
     var n = cont[p.id]||0; if(n<=0) return;
-    /* o preço é o do ciclo que valia no mês (a última sessão cobrada dele): abrir um ciclo novo
-       não muda mais o previsto dos meses que já passaram (04/10/2026) */
-    var r = receitaMensal(cicloEm(p, ultimaCobrada[p.id]), n);
+    var r = (avulsas[p.id]||0) + (cicloDoMes[p.id] ? Number(cicloDoMes[p.id].valor)||0 : 0);
     if(p.status === "Triagem.") previstoTriagem += r; else previsto += r;
   });
   /* o que entrou é tudo; o que falta receber compara só pacientes com pacientes (regra dele, 27/09/2026) */
