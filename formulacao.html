@@ -242,7 +242,8 @@ body.com-explicacao .so-explica{display:block}
 .rede-caixa .no.kernel rect{stroke:var(--accent)} .rede-caixa .no.kernel rect.fora{fill:none}
 .rede-caixa .no.hip rect{stroke-dasharray:6 4}
 .rede-caixa .no text{fill:var(--text);font-size:13.5px}
-.rede-caixa .no{cursor:pointer}
+.rede-caixa .no{cursor:grab;touch-action:none}
+.rede-caixa .no.arrastando{cursor:grabbing} .rede-caixa .no.arrastando rect{stroke-width:2.4}
 .rede-caixa .no:hover rect{stroke-width:2.4}
 .rede-caixa .lig{fill:none;stroke:var(--muted)}
 .rede-caixa .lig.reduz{stroke-dasharray:7 5}
@@ -1049,21 +1050,29 @@ function quebrar(texto){
   palavras.forEach(w => { const i = linhas.length - 1; if ((linhas[i] + " " + w).trim().length > 25 && linhas[i]) linhas.push(w); else linhas[i] = (linhas[i] + " " + w).trim(); });
   return linhas.slice(0, 4);
 }
-function svgDaRede(c, exportar){
+/* arrasto: {id, x, y} do nó que está sendo arrastado, desenhado ali sem mexer no resto */
+function svgDaRede(c, exportar, arrasto){
   /* objetivo não é processo: fica fora do desenho, com as ligações dele (aparecem na lista) */
   const vivos = new Set(c.itens.filter(i => statusDe(i) !== "descartada" && tipoDe(c, i) !== "objetivo").map(i => i.id));
   const rels = causais(c).filter(r => vivos.has(r.de) && vivos.has(r.para));
   const nos = c.itens.filter(i => vivos.has(i.id) && !foraDoModelo(c, i) && (tipoDe(c, i) === "intervencao" || i.m === "processos" || rels.some(r => r.de === i.id || r.para === i.id)));
   if (!nos.length) return null;
   const kernels = nos.filter(n => tipoDe(c, n) === "intervencao"), procs = nos.filter(n => tipoDe(c, n) !== "intervencao");
-  const CW = 400, NW = 176, TIT = 34, pos = {};
-  let y0 = 0, grade = "";
+  const CW = 400, NW = 176, TIT = 34, pos = {}, linhas = [];
+  let y0 = 0, grade = "", faixa = null;
+  /* nó arrastado guarda o lugar dentro da sua célula (it.rede = {dx, dy}); os outros se arrumam sozinhos */
+  const noLugar = (n, x0, yTopo, xMax) => {
+    const L = quebrar(n.texto), hh = 16 + L.length * 17;
+    pos[n.id] = {x: x0 + Math.max(4, Math.min(xMax - NW - 4, n.rede.dx)), y: yTopo + Math.max(TIT + 4, n.rede.dy), w: NW, h: hh, L, n};
+    return pos[n.id].y - yTopo + hh + 20;
+  };
   for (let lin = 0; lin < 3; lin++){
     let alturaFaixa = 150;
     [0, 1, 2].forEach(col => {
       const area = AREAS[lin * 3 + col], daArea = procs.filter(n => areaDe(c, n) === area[0]);
       let y = TIT + 8, hLinha = 0;
-      daArea.forEach((n, k) => {
+      daArea.filter(n => n.rede).forEach(n => { alturaFaixa = Math.max(alturaFaixa, noLugar(n, col * CW, y0, CW)); });
+      daArea.filter(n => !n.rede).forEach((n, k) => {
         const L = quebrar(n.texto), hh = 16 + L.length * 17, lado = k % 2;
         if (lado === 0 && k){ y += hLinha + 28; hLinha = 0; }
         /* o da direita desce um pouco: as setas entre vizinhos não ficam uma em cima da outra */
@@ -1076,21 +1085,25 @@ function svgDaRede(c, exportar){
       grade += '<rect class="celula" x="' + (col * CW) + '" y="' + y0 + '" width="' + CW + '" height="' + alturaFaixa + '"/>' +
                '<text class="area" x="' + (col * CW + 16) + '" y="' + (y0 + 22) + '">' + esc(AREAS[lin * 3 + col][1]) + "</text>";
     });
+    linhas.push({topo: y0, altura: alturaFaixa});
     y0 += alturaFaixa;
   }
   if (kernels.length){
     /* faixa de baixo: as intervenções, que miram os processos de cima */
-    let y = y0 + TIT + 8, hLinha = 0;
-    kernels.forEach((n, k) => {
+    let y = y0 + TIT + 8, hLinha = 0, minimo = 0;
+    kernels.filter(n => n.rede).forEach(n => { minimo = Math.max(minimo, noLugar(n, 0, y0, 1200)); });
+    kernels.filter(n => !n.rede).forEach((n, k) => {
       const L = quebrar(n.texto), hh = 16 + L.length * 17, col = k % 6;
       if (col === 0 && k){ y += hLinha + 22; hLinha = 0; }
       pos[n.id] = {x: 16 + col * (NW + 20), y, w: NW, h: hh, L, n};
       hLinha = Math.max(hLinha, hh);
     });
-    const alt = y - y0 + hLinha + 24;
+    const alt = Math.max(y - y0 + hLinha + 24, minimo);
+    faixa = {topo: y0, altura: alt};
     grade += '<rect class="celula faixa" x="0" y="' + y0 + '" width="1200" height="' + alt + '"/><text class="area" x="16" y="' + (y0 + 22) + '">Intervenções</text>';
     y0 += alt;
   }
+  if (arrasto && pos[arrasto.id]) Object.assign(pos[arrasto.id], {x: arrasto.x, y: arrasto.y});
   const naBorda = (p, alvoX, alvoY) => {
     const cx = p.x + p.w / 2, cy = p.y + p.h / 2, dx = alvoX - cx, dy = alvoY - cy;
     if (!dx && !dy) return {x: cx, y: cy};
@@ -1128,7 +1141,7 @@ function svgDaRede(c, exportar){
   }).join("");
   const caixas = Object.values(pos).map(p => {
     const kernel = tipoDe(c, p.n) === "intervencao", papel = papelDe(c, p.n);
-    return '<g class="no' + (p.n.hip ? " hip" : "") + (kernel ? " kernel" : papel !== "neutro" ? " " + papel : "") + '" data-item="' + p.n.id + '" data-editar="" tabindex="0" role="button">' +
+    return '<g class="no' + (p.n.hip ? " hip" : "") + (arrasto && arrasto.id === p.n.id ? " arrastando" : "") + (kernel ? " kernel" : papel !== "neutro" ? " " + papel : "") + '" data-item="' + p.n.id + '" data-editar="" tabindex="0" role="button">' +
       "<title>" + esc(p.n.texto + " (" + ondeFica(c, p.n) + ")") + "</title>" +
       (kernel ? '<rect class="fora" x="' + (p.x - 4) + '" y="' + (p.y - 4) + '" width="' + (p.w + 8) + '" height="' + (p.h + 8) + '" rx="10"/>' : "") +
       '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="8"/>' +
@@ -1143,7 +1156,8 @@ function svgDaRede(c, exportar){
   const grau = {}; rels.forEach(r => { grau[r.de] = (grau[r.de] || 0) + 1; grau[r.para] = (grau[r.para] || 0) + 1; });
   const centrais = Object.entries(grau).filter(x => x[1] >= 3).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(x => [c.itens.find(i => i.id === x[0]), x[1]]).filter(x => x[0] && tipoDe(c, x[0]) !== "intervencao");
-  return {svg, nos: nos.length, rels: rels.length, altura: y0, ciclos, centrais};
+  const movidos = nos.filter(n => n.rede).length;
+  return {svg, nos: nos.length, rels: rels.length, altura: y0, ciclos, centrais, linhas, faixa, CW, movidos};
 }
 function vistaRede(c){
   const r = svgDaRede(c, false), rels = causais(c);
@@ -1154,7 +1168,9 @@ function vistaRede(c){
     plural(r.nos, "registro", "registros") + " e " + plural(r.rels, "ligação", "ligações") + ".</p>" +
     (r.ciclos ? '<p class="legenda"><b style="color:var(--accent)">' + plural(r.ciclos, "ciclo que se retroalimenta", "ciclos que se retroalimentam") + "</b> (setas roxas): um processo leva a outro que volta a reforçar o primeiro. Costuma ser o que mantém o problema.</p>" : "") +
     (r.centrais.length ? '<p class="legenda">Mais ligados, candidatos a alvo (é hipótese: confira com a clínica, o acesso e o risco): ' + r.centrais.map(x => "<b>" + esc(curto(x[0].texto, 50)) + "</b> (" + x[1] + ")").join(" · ") + ".</p>" : "") +
-    '<p class="pe" style="margin-top:10px"><button type="button" class="b s" data-baixar-rede>Baixar a rede como imagem</button></p>' +
+    '<p class="legenda">Arraste um nó para arrumar o desenho. Soltar em outra área muda a área do registro.</p>' +
+    '<p class="pe" style="margin-top:10px"><button type="button" class="b s" data-baixar-rede>Baixar a rede como imagem</button>' +
+    (r.movidos ? ' <button type="button" class="b s liso" data-rede-auto>Arrumar sozinho de novo</button>' : "") + "</p>" +
     '<details class="painel" data-modulo="__ligacoes"' + (fechados.has("__ligacoes") ? "" : " open") + '><summary>Ligações em lista<span class="q">' + rels.length + '</span></summary><div class="corpo">' +
     rels.map(x => '<div class="rel" data-rel="' + x.id + '">' + lado(x.de) + '<span class="seta">' + esc(x.tipo) + " →</span>" + lado(x.para) +
       '<span class="fim"><select data-forca aria-label="Força da ligação">' + opcoes([[1,"Fraca"],[2,"Média"],[3,"Forte"]], x.forca || 2) + '</select><button type="button" class="b s liso" data-desligar="' + x.id + '">Desfazer</button></span></div>').join("") +
@@ -1346,7 +1362,9 @@ $("f-item").addEventListener("submit", e => {
     it.texto = texto; it.data = $("it-data").value; it.hip = hip;
     if (hip) it.status = $("it-status").value; else delete it.status;
     if (lugar && lugar !== "__fora"){ const p = lugar.split("|"); it.m = p[0]; it.c = p.slice(1).join("|"); ligarModulo(c, it.m); }
+    const areaAntes = areaDe(c, it);
     if ($("it-area").value) it.area = $("it-area").value; else delete it.area;
+    if (areaDe(c, it) !== areaAntes) delete it.rede; /* trocou de área: volta a ser arrumado sozinho na nova */
     if ($("it-papel").value) it.papel = $("it-papel").value; else delete it.papel;
   } else {
     let mm = emEdicao.m, cc = emEdicao.campo;
@@ -1707,6 +1725,11 @@ $("conteudo").addEventListener("click", e => {
   if (el("[data-ligar]") && li){ abrirLigar(li.dataset.item, false); return; }
   if (el("[data-desligar]")){ const c = caso(); c.relacoes = c.relacoes.filter(r => r.id !== el("[data-desligar]").dataset.desligar); mudouCaso(c); return; }
   if (el("[data-baixar-rede]")){ baixarImagemRede(); return; }
+  if (el("[data-rede-auto]")){
+    const c = caso();
+    if (!confirm("Voltar todos os nós para a arrumação automática? As áreas trocadas ao arrastar continuam.")) return;
+    c.itens.forEach(i => delete i.rede); mudouCaso(c); return;
+  }
   if (el("[data-nova-medida]")){ abrirMedida(); return; }
   if (el("[data-registrar-versao]")){
     const c = caso(), campo = $("conteudo").querySelector("[data-motivo]"), motivo = campo.value.trim();
@@ -1764,6 +1787,48 @@ $("conteudo").addEventListener("keydown", e => {
   const g = e.target.closest && e.target.closest("g.no");
   if (g && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); abrirItem({id:g.dataset.item}); }
 });
+/* nó da rede: arrastar muda o lugar; um toque sem arrastar continua abrindo o registro */
+let arrasto = null, semClique = false;
+$("conteudo").addEventListener("pointerdown", e => {
+  const g = e.target.closest && e.target.closest(".rede-caixa g.no");
+  if (!g || e.button > 0) return;
+  const caixa = g.closest(".rede-caixa"), r = g.querySelector("rect:not(.fora)");
+  arrasto = {id: g.dataset.item, caixa, x0: +r.getAttribute("x"), y0: +r.getAttribute("y"), w: +r.getAttribute("width"), h: +r.getAttribute("height"),
+             px: e.clientX, py: e.clientY, escala: 1200 / caixa.querySelector("svg").getBoundingClientRect().width, andou: false, ponteiro: e.pointerId};
+});
+window.addEventListener("pointermove", e => {
+  if (!arrasto || e.pointerId !== arrasto.ponteiro) return;
+  const dx = e.clientX - arrasto.px, dy = e.clientY - arrasto.py;
+  if (!arrasto.andou && Math.hypot(dx, dy) < 5) return;
+  arrasto.andou = true; e.preventDefault();
+  const c = caso(), alt = +arrasto.caixa.querySelector("svg").getAttribute("height");
+  arrasto.x = Math.max(0, Math.min(1200 - arrasto.w, arrasto.x0 + dx * arrasto.escala));
+  arrasto.y = Math.max(0, Math.min(alt - arrasto.h, arrasto.y0 + dy * arrasto.escala));
+  arrasto.caixa.innerHTML = svgDaRede(c, false, arrasto).svg;
+});
+function soltarNo(e){
+  if (!arrasto || e.pointerId !== arrasto.ponteiro) return;
+  const a = arrasto; arrasto = null;
+  if (!a.andou) return;
+  semClique = true; setTimeout(() => { semClique = false; }, 0);
+  const c = caso(), it = c.itens.find(i => i.id === a.id), r = svgDaRede(c, false);
+  if (e.type === "pointercancel" || !it || !r){ desenhar(); return; }
+  const cx = a.x + a.w / 2, cy = a.y + a.h / 2;
+  if (tipoDe(c, it) === "intervencao"){
+    /* intervenção fica na faixa de baixo */
+    it.rede = {dx: Math.round(a.x), dy: Math.round(Math.max(0, a.y - r.faixa.topo))};
+  } else {
+    const col = Math.max(0, Math.min(2, Math.floor(cx / r.CW)));
+    let lin = r.linhas.findIndex(l => cy < l.topo + l.altura); if (lin < 0) lin = 2;
+    const area = AREAS[lin * 3 + col][0];
+    if (area !== areaDe(c, it)) it.area = area;
+    it.rede = {dx: Math.round(a.x - col * r.CW), dy: Math.round(Math.max(0, Math.min(a.y, r.linhas[lin].topo + r.linhas[lin].altura - a.h) - r.linhas[lin].topo))};
+  }
+  mudouCaso(c);
+}
+window.addEventListener("pointerup", soltarNo);
+window.addEventListener("pointercancel", soltarNo);
+$("conteudo").addEventListener("click", e => { if (semClique){ e.stopPropagation(); e.preventDefault(); semClique = false; } }, true);
 $("conteudo").addEventListener("toggle", e => {
   const d = e.target; if (!d.dataset) return;
   if (d.dataset.modulo) d.open ? fechados.delete(d.dataset.modulo) : fechados.add(d.dataset.modulo);
