@@ -116,11 +116,11 @@ test("Ana: Sair deste aparelho apaga a cópia do caderno guardada no navegador",
   await ctx.close();
 });
 
-test("Ana, Mês: a moradia é a parte dela no total da casa, não o que ela pagou", async () => {
+test("Ana, Mês: a moradia é só o que ela pagou na casa, não metade do total", async () => {
   const { ctx, p, erros } = await abrir();
-  const c = await p.evaluate(() => saidas("2026-10").casa);
-  assert.equal(c.valor, (220 + 180 + 120) / 2);   // metade do total da casa no mês
-  assert.equal(c.pagou, 180);                      // o que ela pagou continua conhecido
+  const s = await p.evaluate(() => saidas("2026-10"));
+  assert.equal(s.casa.valor, 180);                 // só a compra dela, não (220 + 180 + 120) / 2
+  assert.deepEqual(s.porCat.find(e => e[0] === "Moradia (casa)"), ["Moradia (casa)", 180]);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
