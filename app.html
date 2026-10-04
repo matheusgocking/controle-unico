@@ -1194,17 +1194,21 @@ function telaCasa(){
       <td class="c-x"><button class="x" data-apagar="casa:lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
     : `<p class="vazio">Nenhuma compra em ${MESES[ref.getMonth()]}.</p>`;
 
-  const ajustes = `<details class="novo"><summary>Divisão e nomes</summary>
+  // Dentro do controle da Ana a divisão e os nomes só aparecem: quem muda é ele (Matheus, 04/10/2026),
+  // porque trocar a ordem dos nomes ou a parte de cada um mexe nas contas dos dois.
+  const ajustes = PERFIL === "ana"
+    ? `<p class="nota" style="margin:0">${escH(primeiro(p1))} responde por ${Math.round(parte * 100)}% da casa e ${escH(primeiro(p2))} por ${100 - Math.round(parte * 100)}%. A divisão e os nomes só se mudam no app de ${escH(primeiro(p1))}.</p>`
+    : `<details class="novo"><summary>Divisão e nomes</summary>
     <form class="linha" id="fDivisao">
       <div><label>Parte de ${escH(primeiro(p1))} (em %)</label>
         <input type="number" name="divisao" min="0" max="100" step="1" value="${Math.round(parte * 100)}"></div>
       <div><button class="b p" type="submit">Guardar</button></div>
     </form>
     <form class="linha" id="fPessoas" style="margin-top:10px">
-      <div><label>${PERFIL === "ana" ? "Primeira pessoa" : "Primeira pessoa (a do seu mês)"}</label><input name="p1" value="${escH(p1)}" required></div>
+      <div><label>Primeira pessoa (a do seu mês)</label><input name="p1" value="${escH(p1)}" required></div>
       <div><label>Segunda pessoa</label><input name="p2" value="${escH(p2)}" required></div>
       <div><button class="b p" type="submit">Guardar</button></div>
-    </form><p class="nota">Os nomes ficam só no caderno da casa, no Drive.${PERFIL === "ana" ? ` A ordem conta: a primeira pessoa é a do mês de ${escH(primeiro(p1))}. Aqui se corrige só a grafia do nome.` : ""}</p></details>`;
+    </form><p class="nota">Os nomes ficam só no caderno da casa, no Drive.</p></details>`;
 
   return barraMes() + cardCasa(c) + `
   <div class="duas larga">
@@ -1212,7 +1216,7 @@ function telaCasa(){
     <div class="coluna">
       <section class="painel"><h2>Quem pagou</h2>${roscaCasa(c)}</section>
       <section class="painel"><h2>Por categoria</h2>${rosca(itensCat, "casa no mês", "Compras da casa por categoria")}</section>
-      <section class="painel"><h2>Ajustes</h2>${ajustes}</section>
+      <section class="painel"><h2>${PERFIL === "ana" ? "Divisão" : "Ajustes"}</h2>${ajustes}</section>
     </div>
   </div>`;
 }
