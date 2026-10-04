@@ -24,6 +24,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .nuvem{font-size:12.5px;color:var(--faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0;min-width:0}
 .nuvem-ponto{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:none}
 .nuvem-ponto.ok{background:#2f9e5b} .nuvem-ponto.indo{background:#d49a1c} .nuvem-ponto.erro{background:#d0453a}
+#nuvem-texto{flex:1 1 12em;min-width:0}
 #nuvem-acoes{display:flex;gap:6px;flex-wrap:wrap}
 .b{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:7px 12px;cursor:pointer;font-size:14px;min-height:36px}
 .b:hover{border-color:var(--faint)}
@@ -84,7 +85,7 @@ ul.itens{list-style:none;margin:0;padding:0}
 .lg-v{font-weight:600;color:var(--text)}
 .lg-alvo{display:inline;border:0;background:none;padding:0;color:var(--accent);text-align:left;cursor:pointer;font:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .lg-alvo:hover{text-decoration-color:var(--accent)}
-.lg-x{border:0;background:none;color:var(--faint);cursor:pointer;padding:0 8px;font-size:16px;line-height:1;min-height:28px;border-radius:6px}
+.lg-x{border:0;background:none;color:var(--faint);cursor:pointer;padding:0 8px;font-size:16px;line-height:1;min-height:32px;min-width:32px;border-radius:6px}
 .lg-x:hover{color:var(--neg);background:var(--neg-soft)}
 .lg-mais summary{cursor:pointer;font-size:12.5px;color:var(--faint);padding:2px 0}
 .it-pe select{border:1px solid var(--line);background:var(--surface);border-radius:6px;font-size:12.5px;padding:2px 6px;min-height:28px}
@@ -702,7 +703,8 @@ const isoDe = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0"
 const hoje = () => isoDe(new Date());
 const diasAtras = n => { const d = new Date(); d.setDate(d.getDate() - n); return isoDe(d); };
 const num = v => String(Math.round(v * 100) / 100).replace(".", ",");
-const dataBR = iso => iso ? iso.slice(8,10) + "/" + iso.slice(5,7) + "/" + iso.slice(0,4) : "";
+/* só uma data de verdade vira texto: o que vier estranho do arquivo não entra na página (04/10/2026) */
+const dataBR = iso => /^\d{4}-\d{2}-\d{2}/.test(String(iso || "")) ? iso.slice(8,10) + "/" + iso.slice(5,7) + "/" + iso.slice(0,4) : "";
 const RE_TAG = /#([\p{L}\p{N}_-]+)/gu;
 const tagsDe = t => Array.from(String(t).matchAll(RE_TAG), m => m[1].toLowerCase());
 const curto = (t, n) => { t = String(t).replace(/\s+/g, " ").trim(); return t.length > (n || 70) ? t.slice(0, (n || 70) - 1) + "…" : t; };
@@ -714,7 +716,10 @@ function normalizar(d){
   if (!Array.isArray(d.casos)) d.casos = [];
   if (!Array.isArray(d.modelos)) d.modelos = [];
   /* versão 1 (02/10/2026): todo caso era do modelo que hoje se chama integrativo, com os mesmos ids */
-  d.casos.forEach(c => { c.itens = c.itens || []; c.relacoes = c.relacoes || []; c.modulos = c.modulos || []; c.medidas = c.medidas || []; c.revisoes = c.revisoes || []; if (!c.modelo) c.modelo = "integrativo"; });
+  d.casos.forEach(c => { c.itens = c.itens || []; c.relacoes = c.relacoes || []; c.modulos = c.modulos || []; c.medidas = c.medidas || []; c.revisoes = c.revisoes || []; if (!c.modelo) c.modelo = "integrativo";
+    /* cada anotação de medida ganha id, que é a própria data (uma anotação por dia): com ele, o que foi
+       anotado no celular e no computador se junta, em vez de uma lista apagar a outra (04/10/2026) */
+    c.medidas.forEach(m => { if (Array.isArray(m.pontos)) m.pontos.forEach(q => { if (q && q.data && q.id == null) q.id = q.data; }); }); });
   d.versao = 2;
   return d;
 }
@@ -812,8 +817,8 @@ const SEM_TAG = t => String(t).replace(/#/g, "");
 function htmlLigacoes(c, it){
   const linhas = ligacoesDe(c, it).map(r => {
     const saindo = r.de === it.id, outro = c.itens.find(i => i.id === (saindo ? r.para : r.de));
-    const alvo = '<button type="button" class="lg-alvo" data-ir="' + outro.id + '" title="Ir até este registro">' + esc(curto(SEM_TAG(outro.texto), 80)) + "</button>";
-    const x = '<button type="button" class="lg-x" data-desligar="' + r.id + '" title="Desfazer esta ligação" aria-label="Desfazer esta ligação">×</button>';
+    const alvo = '<button type="button" class="lg-alvo" data-ir="' + esc(outro.id) + '" title="Ir até este registro">' + esc(curto(SEM_TAG(outro.texto), 80)) + "</button>";
+    const x = '<button type="button" class="lg-x" data-desligar="' + esc(r.id) + '" title="Desfazer esta ligação" aria-label="Desfazer esta ligação">×</button>';
     return saindo ? '<li class="lg"><span class="lg-seta">→</span><span class="lg-corpo"><span class="lg-v">' + esc(r.tipo) + "</span> " + alvo + "</span>" + x + "</li>"
                   : '<li class="lg"><span class="lg-seta">←</span><span class="lg-corpo">' + alvo + ' <span class="lg-v">' + esc(r.tipo) + "</span> este</span>" + x + "</li>";
   });
@@ -828,14 +833,14 @@ function htmlEvidencias(c, it, completo){
   if (!completo) return '<p class="evid"><span class="a">' + a.length + " a favor</span> · " + '<span class="c">' + x.length + " contra</span></p>";
   const lista = (rs, cls, rot) => rs.length ? '<p class="evid"><span class="' + cls + '">' + rot + "</span></p><ul class=\"rels\">" + rs.map(r => {
     const d = c.itens.find(i => i.id === r.de);
-    return "<li>" + esc(curto(d.texto, 110)) + ' <button type="button" class="b s liso" data-desligar="' + r.id + '">Desfazer</button></li>';
+    return "<li>" + esc(curto(d.texto, 110)) + ' <button type="button" class="b s liso" data-desligar="' + esc(r.id) + '">Desfazer</button></li>';
   }).join("") + "</ul>" : "";
   return lista(a, "a", "A favor") + lista(x, "c", "Contra");
 }
 function htmlItem(c, it, op){
   op = op || {};
   const st = statusDe(it), papel = it.papel ? papelDe(c, it) : null;
-  return '<li class="item' + (it.hip ? " hip" : "") + (st === "descartada" ? " descartada" : "") + '" data-item="' + it.id + '">' +
+  return '<li class="item' + (it.hip ? " hip" : "") + (st === "descartada" ? " descartada" : "") + '" data-item="' + esc(it.id) + '">' +
     '<div class="it-texto">' + comTags(it.texto) + "</div>" + htmlLigacoes(c, it) + htmlEvidencias(c, it, op.completo) + htmlMedidasDoItem(c, it) +
     '<div class="it-pe">' + (op.origem ? "<span>" + esc(ondeFica(c, it)) + "</span>" : "") +
       (it.hip ? (op.completo ? '<select data-status aria-label="Situação da hipótese">' + opcoes(STATUS, st) + "</select>" : '<span class="selo hip">Hipótese · ' + esc(nomeStatus(st)) + "</span>") : "") +
@@ -927,7 +932,7 @@ function htmlRevisao(c){
     '<p class="nivel">Versões da formulação</p><p class="dica so-explica">Quando a formulação mudar de verdade (uma hipótese caiu, entrou um dado novo), registre a versão com o motivo. Ela fica guardada como estava, para comparar depois.</p>' +
     '<div class="anotar"><input type="text" data-motivo placeholder="Motivo da revisão" aria-label="Motivo da revisão" style="flex:1 1 220px"><button type="button" class="b s p" data-registrar-versao>Registrar versão</button></div>' +
     (c.revisoes.length ? '<ul class="rels" style="margin-top:8px">' + c.revisoes.slice().reverse().map(v => "<li>" + dataBR(v.data) + " · " + esc(v.motivo) +
-      ' <button type="button" class="b s liso" data-ver-versao="' + v.id + '">Ver como estava</button></li>').join("") + "</ul>" : "") +
+      ' <button type="button" class="b s liso" data-ver-versao="' + esc(v.id) + '">Ver como estava</button></li>').join("") + "</ul>" : "") +
     "</div></details>";
 }
 
@@ -997,7 +1002,7 @@ function vistaMedidas(c){
   if (!meds.length) return topo + '<p class="sub">Nenhuma medida ainda. Acompanhe com um número o que a formulação diz que precisa mudar: uma escala, um questionário ou uma nota de 0 a 10 anotada por sessão.</p>';
   return topo + meds.map(m => {
     const alvo = m.alvo && c.itens.find(i => i.id === m.alvo), p = pontosDe(m);
-    return '<div class="bloco medida" data-medida="' + m.id + '"><h2>' + esc(m.nome) + ' <span class="q">quanto maior, ' + (m.sentido === "melhor" ? "melhor" : "pior") +
+    return '<div class="bloco medida" data-medida="' + esc(m.id) + '"><h2>' + esc(m.nome) + ' <span class="q">quanto maior, ' + (m.sentido === "melhor" ? "melhor" : "pior") +
       (alvo ? " · mede: " + esc(curto(alvo.texto, 60)) : "") + "</span></h2>" + graficoMedida(m) + '<p class="evid">' + esc(resumoMedida(m)) + "</p>" +
       (foraDoRumo(m) ? '<p class="evid"><span class="c">Na direção de piora desde o início.</span> Quando o caso sai do rumo, vale rever a formulação: aliança, motivação, apoio social e acontecimentos recentes.</p>' : "") +
       '<div class="anotar"><input type="date" value="' + hoje() + '" data-me-data aria-label="Data da anotação"><input type="text" inputmode="decimal" placeholder="Valor" data-me-valor aria-label="Valor" autocomplete="off"><button type="button" class="b s p" data-anotar>Anotar</button></div>' +
@@ -1009,7 +1014,7 @@ function vistaMedidas(c){
 function abrirMedida(){
   const c = caso();
   $("me-nome").value = ""; $("me-sentido").value = "pior";
-  $("me-alvo").innerHTML = '<option value="">Nenhum, é geral</option>' + c.itens.filter(i => !foraDoModelo(c, i)).map(i => '<option value="' + i.id + '">' + esc(curto(i.texto, 70)) + "</option>").join("");
+  $("me-alvo").innerHTML = '<option value="">Nenhum, é geral</option>' + c.itens.filter(i => !foraDoModelo(c, i)).map(i => '<option value="' + esc(i.id) + '">' + esc(curto(i.texto, 70)) + "</option>").join("");
   $("dlg-medida").showModal(); $("me-nome").focus();
 }
 $("f-medida").addEventListener("submit", e => {
@@ -1122,7 +1127,7 @@ function svgDaRede(c, exportar){
   }).join("");
   const caixas = Object.values(pos).map(p => {
     const kernel = tipoDe(c, p.n) === "intervencao", papel = papelDe(c, p.n);
-    return '<g class="no' + (p.n.hip ? " hip" : "") + (kernel ? " kernel" : papel !== "neutro" ? " " + papel : "") + '" data-item="' + p.n.id + '" data-editar="" tabindex="0" role="button">' +
+    return '<g class="no' + (p.n.hip ? " hip" : "") + (kernel ? " kernel" : papel !== "neutro" ? " " + papel : "") + '" data-item="' + esc(p.n.id) + '" data-editar="" tabindex="0" role="button">' +
       "<title>" + esc(p.n.texto + " (" + ondeFica(c, p.n) + ")") + "</title>" +
       (kernel ? '<rect class="fora" x="' + (p.x - 4) + '" y="' + (p.y - 4) + '" width="' + (p.w + 8) + '" height="' + (p.h + 8) + '" rx="10"/>' : "") +
       '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="8"/>' +
@@ -1150,8 +1155,8 @@ function vistaRede(c){
     (r.centrais.length ? '<p class="legenda">Mais ligados, candidatos a alvo (é hipótese: confira com a clínica, o acesso e o risco): ' + r.centrais.map(x => "<b>" + esc(curto(x[0].texto, 50)) + "</b> (" + x[1] + ")").join(" · ") + ".</p>" : "") +
     '<p class="pe" style="margin-top:10px"><button type="button" class="b s" data-baixar-rede>Baixar a rede como imagem</button></p>' +
     '<details class="painel" data-modulo="__ligacoes"' + (fechados.has("__ligacoes") ? "" : " open") + '><summary>Ligações em lista<span class="q">' + rels.length + '</span></summary><div class="corpo">' +
-    rels.map(x => '<div class="rel" data-rel="' + x.id + '">' + lado(x.de) + '<span class="seta">' + esc(x.tipo) + " →</span>" + lado(x.para) +
-      '<span class="fim"><select data-forca aria-label="Força da ligação">' + opcoes([[1,"Fraca"],[2,"Média"],[3,"Forte"]], x.forca || 2) + '</select><button type="button" class="b s liso" data-desligar="' + x.id + '">Desfazer</button></span></div>').join("") +
+    rels.map(x => '<div class="rel" data-rel="' + esc(x.id) + '">' + lado(x.de) + '<span class="seta">' + esc(x.tipo) + " →</span>" + lado(x.para) +
+      '<span class="fim"><select data-forca aria-label="Força da ligação">' + opcoes([[1,"Fraca"],[2,"Média"],[3,"Forte"]], x.forca || 2) + '</select><button type="button" class="b s liso" data-desligar="' + esc(x.id) + '">Desfazer</button></span></div>').join("") +
     "</div></details>";
 }
 
@@ -1163,9 +1168,9 @@ function telaModelos(){
       (m.descricao ? "<p>" + esc(m.descricao) + "</p>" : "") +
       "<details><summary>" + plural(m.modulos.length, "módulo", "módulos") + "</summary><p>" + esc(m.modulos.map(x => x.nome).join(" · ")) + "</p></details>" +
       '<p class="nota">' + (usos ? plural(usos, "caso usa", "casos usam") + " este modelo." : "Nenhum caso usa este modelo.") + "</p>" +
-      '<div class="acoes">' + (m.pronto ? "" : '<button type="button" class="b s p" data-editar-modelo="' + m.id + '">Editar</button>') +
-      '<button type="button" class="b s" data-copiar-modelo="' + m.id + '">' + (m.pronto ? "Criar o meu a partir deste" : "Duplicar") + "</button>" +
-      (m.pronto ? "" : '<button type="button" class="b s perigo" data-apagar-modelo="' + m.id + '">Apagar</button>') + "</div></div>";
+      '<div class="acoes">' + (m.pronto ? "" : '<button type="button" class="b s p" data-editar-modelo="' + esc(m.id) + '">Editar</button>') +
+      '<button type="button" class="b s" data-copiar-modelo="' + esc(m.id) + '">' + (m.pronto ? "Criar o meu a partir deste" : "Duplicar") + "</button>" +
+      (m.pronto ? "" : '<button type="button" class="b s perigo" data-apagar-modelo="' + esc(m.id) + '">Apagar</button>') + "</div></div>";
   };
   return '<div class="cab-sec"><h2>Modelos de formulação</h2><button type="button" class="b" data-modelo-branco>＋ Modelo em branco</button></div>' +
     (livro.modelos.length ? '<p class="nivel">Meus modelos</p><div class="modelos">' + livro.modelos.map(cartao).join("") + "</div>" : "") +
@@ -1261,7 +1266,7 @@ function desenhar(){
   $("explicacao").setAttribute("aria-pressed", explica);
   const c = caso(), noCaso = tela === "caso", sel = $("caso");
   sel.innerHTML = livro.casos.length
-    ? livro.casos.slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map(x => '<option value="' + x.id + '"' + (c && x.id === c.id ? " selected" : "") + ">" + esc(x.nome) + (x.codigo ? " · " + esc(x.codigo) : "") + "</option>").join("")
+    ? livro.casos.slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map(x => '<option value="' + esc(x.id) + '"' + (c && x.id === c.id ? " selected" : "") + ">" + esc(x.nome) + (x.codigo ? " · " + esc(x.codigo) : "") + "</option>").join("")
     : "<option>Nenhum caso</option>";
   sel.disabled = !livro.casos.length;
   ["caso", "novo-caso", "abrir-modelos"].forEach(id => $(id).classList.toggle("hidden", !noCaso));
@@ -1300,7 +1305,7 @@ function abrirItem(alvo){
   const c = caso(); emEdicao = alvo;
   const it = alvo.id ? c.itens.find(i => i.id === alvo.id) : null;
   let m = null, k = null;
-  if (it){ const l = lugarDe(c, it); m = l.m; k = l.k; }
+  if (it){ const l = lugarDe(c, it); m = l.m; k = l.k; alvo.lugar = {m:it.m, c:it.c}; }
   else if (!alvo.livre){ m = modulosDo(c).find(x => x.id === alvo.m) || null; k = m ? m.campos.find(x => x.id === alvo.campo) || null : null; }
   $("it-titulo").textContent = it ? "Editar registro" : alvo.livre && alvo.hip ? "Nova hipótese" : "Novo registro";
   $("it-onde").textContent = alvo.livre ? "Escolha abaixo onde ela fica." : m && k ? m.nome + (k.nome ? " › " + k.nome : "") : "Fora do modelo";
@@ -1337,7 +1342,12 @@ $("f-item").addEventListener("submit", e => {
   if (!texto) return;
   const outro = e.submitter && e.submitter.value === "outro", hip = $("it-hip").value === "1", lugar = $("it-mover").value;
   if (emEdicao.id){
-    const it = c.itens.find(i => i.id === emEdicao.id);
+    let it = c.itens.find(i => i.id === emEdicao.id);
+    /* apagado em outro aparelho com a janela aberta: o que ele escreveu não se perde, volta como registro */
+    if (!it){
+      it = {id:emEdicao.id, m:(emEdicao.lugar || {}).m, c:(emEdicao.lugar || {}).c}; c.itens.push(it);
+      alert("Este registro tinha sido apagado em outro aparelho. Ele volta com o que você escreveu, sem as ligações.");
+    }
     it.texto = texto; it.data = $("it-data").value; it.hip = hip;
     if (hip) it.status = $("it-status").value; else delete it.status;
     if (lugar && lugar !== "__fora"){ const p = lugar.split("|"); it.m = p[0]; it.c = p.slice(1).join("|"); ligarModulo(c, it.m); }
@@ -1409,7 +1419,7 @@ function listarAlvos(){
   const alvos = c.itens.filter(i => i.id !== ligando && filtro(i) && (!q || (i.texto + " " + ondeFica(c, i)).toLowerCase().includes(q)))
     .sort((a, b) => (ordem.indexOf(a.m) + 1 || 999) - (ordem.indexOf(b.m) + 1 || 999));
   $("lg-lista").innerHTML = alvos.length
-    ? alvos.map(i => '<button type="button" data-alvo="' + i.id + '"' + (jaLigado(i) ? ' class="feito" disabled' : "") + ">" + esc(curto(SEM_TAG(i.texto), 100)) +
+    ? alvos.map(i => '<button type="button" data-alvo="' + esc(i.id) + '"' + (jaLigado(i) ? ' class="feito" disabled' : "") + ">" + esc(curto(SEM_TAG(i.texto), 100)) +
         "<small>" + esc(ondeFica(c, i)) + (i.hip ? " · hipótese" : "") + (jaLigado(i) ? ' · <span class="ok">✓ já ligado</span>' : "") + "</small></button>").join("")
     : '<p class="vazio" style="padding:10px">' + (q ? "Nenhum registro com esse texto." : ligarInverso ? "Este caso ainda não tem dados para ligar." : ehEvidencia(t) ? "Este caso ainda não tem hipóteses." : "Este caso ainda não tem outro registro para ligar.") + "</p>";
 }
@@ -1425,13 +1435,17 @@ $("lg-lista").addEventListener("click", e => {
     c.relacoes.push(r); ligadosAgora++;
   }
   $("lg-aviso").textContent = "✓ " + (ligadosAgora === 1 ? "1 ligação feita" : ligadosAgora + " ligações feitas") + ". Escolha outro registro ou toque em Pronto.";
+  /* o foco segue para o próximo da lista, para ligar vários pelo teclado sem voltar ao começo */
+  const pos = Array.from($("lg-lista").querySelectorAll("[data-alvo]")).indexOf(b);
   mudouCaso(c); listarAlvos();
+  const resto = Array.from($("lg-lista").querySelectorAll("[data-alvo]")).slice(Math.max(pos, 0)).find(x => !x.disabled);
+  if (resto) resto.focus(); else $("lg-busca").focus({preventScroll:true});
 });
 
 /* ---------- ir até um registro ligado ---------- */
 function irPara(id){
   const c = caso(), it = c.itens.find(i => i.id === id); if (!it) return;
-  const achar = () => $("conteudo").querySelector('li[data-item="' + id + '"]');
+  const achar = () => $("conteudo").querySelector('li[data-item="' + CSS.escape(id) + '"]');
   let el = achar();
   if (!el){ vista = "formulacao"; fechados.delete(it.m); history.replaceState(null, "", location.pathname + location.search); desenhar(); el = achar(); }
   if (!el) return;
@@ -1472,8 +1486,8 @@ $("it-sug").addEventListener("click", e => { const b = e.target.closest("[data-s
 /* ---------- módulos e modelo do caso ---------- */
 function listarModulos(){
   const c = caso(), mod = modeloDo(c);
-  $("md-modelo").innerHTML = '<optgroup label="Modelos prontos">' + MODELOS_PRONTOS.map(m => '<option value="' + m.id + '"' + (m.id === mod.id ? " selected" : "") + ">" + esc(m.nome) + "</option>").join("") + "</optgroup>" +
-    (livro.modelos.length ? '<optgroup label="Meus modelos">' + livro.modelos.map(m => '<option value="' + m.id + '"' + (m.id === mod.id ? " selected" : "") + ">" + esc(m.nome) + "</option>").join("") + "</optgroup>" : "");
+  $("md-modelo").innerHTML = '<optgroup label="Modelos prontos">' + MODELOS_PRONTOS.map(m => '<option value="' + esc(m.id) + '"' + (m.id === mod.id ? " selected" : "") + ">" + esc(m.nome) + "</option>").join("") + "</optgroup>" +
+    (livro.modelos.length ? '<optgroup label="Meus modelos">' + livro.modelos.map(m => '<option value="' + esc(m.id) + '"' + (m.id === mod.id ? " selected" : "") + ">" + esc(m.nome) + "</option>").join("") + "</optgroup>" : "");
   $("md-personalizar").textContent = mod.pronto ? "Personalizar este modelo" : "Editar este modelo";
   $("md-lista").innerHTML = mod.modulos.map(m => {
     const n = itensDe(c, m.id).length, sempre = m.modo === "sempre";
@@ -1702,7 +1716,13 @@ $("conteudo").addEventListener("click", e => {
   if (el("[data-evidencia]") && li){ abrirLigar(li.dataset.item, true); return; }
   if (el("[data-editar]") && li){ abrirItem({id:li.dataset.item}); return; }
   if (el("[data-ligar]") && li){ abrirLigar(li.dataset.item, false); return; }
-  if (el("[data-desligar]")){ const c = caso(); c.relacoes = c.relacoes.filter(r => r.id !== el("[data-desligar]").dataset.desligar); mudouCaso(c); return; }
+  if (el("[data-desligar]")){
+    /* desfazer uma ligação pergunta antes: o × fica colado no texto e é fácil tocar sem querer (04/10/2026) */
+    const c = caso(), r = c.relacoes.find(x => x.id === el("[data-desligar]").dataset.desligar); if (!r) return;
+    const nome = id => { const i = c.itens.find(x => x.id === id); return i ? "\"" + curto(SEM_TAG(i.texto), 50) + "\"" : "um registro"; };
+    if (!confirm("Desfazer esta ligação?\n\n" + nome(r.de) + " " + r.tipo + " " + nome(r.para))) return;
+    c.relacoes = c.relacoes.filter(x => x.id !== r.id); mudouCaso(c); return;
+  }
   if (el("[data-baixar-rede]")){ baixarImagemRede(); return; }
   if (el("[data-nova-medida]")){ abrirMedida(); return; }
   if (el("[data-registrar-versao]")){
@@ -1719,7 +1739,9 @@ $("conteudo").addEventListener("click", e => {
     const caixa = el("[data-medida]"), c = caso(), m = c.medidas.find(x => x.id === caixa.dataset.medida);
     const data = caixa.querySelector("[data-me-data]").value, v = parseFloat(String(caixa.querySelector("[data-me-valor]").value).replace(",", "."));
     if (!data || isNaN(v)){ caixa.querySelector("[data-me-valor]").focus(); return; }
-    m.pontos = (m.pontos || []).filter(q => q.data !== data).concat({data, valor:v});
+    const antes = (m.pontos || []).find(q => q.data === data);
+    if (antes && antes.valor !== v && !confirm("Já há " + num(antes.valor) + " anotado em " + dataBR(data) + ". Trocar por " + num(v) + "?")) return;
+    m.pontos = (m.pontos || []).filter(q => q.data !== data).concat({id:data, data, valor:v});
     mudouCaso(c); return;
   }
   if (el("[data-tirar-ponto]")){
@@ -1746,6 +1768,34 @@ $("conteudo").addEventListener("click", e => {
   }
   if (el("[data-voltar-modelos]")){ tela = "modelos"; editando = null; desenhar(); return; }
   if (el("[data-acao]")){ acaoModelo(el("[data-acao]").dataset.acao, el("[data-acao]")); return; }
+});
+/* Ao fechar uma janela, o foco do teclado volta para o botão que a abriu (04/10/2026). Como a página
+   é redesenhada depois de guardar, o botão é achado de novo pelo registro e pelo tipo dele. */
+let focoAntes = null;
+document.querySelectorAll("dialog").forEach(d => {
+  const abrir = d.showModal.bind(d);
+  d.showModal = () => {
+    const a = document.activeElement;
+    if (a && a !== document.body && !a.closest("dialog")){
+      const li = a.closest("[data-item]"), attr = Array.from(a.attributes).map(x => x.name).find(n => n.startsWith("data-") && n !== "data-item");
+      focoAntes = {el:a, id:a.id, item: li ? li.dataset.item : null, attr};
+    }
+    abrir();
+  };
+  d.addEventListener("close", () => {
+    const f = focoAntes; focoAntes = null; if (!f || document.querySelector("dialog[open]")) return;
+    let alvo = document.body.contains(f.el) ? f.el : f.id ? document.getElementById(f.id) : null;
+    if (!alvo && f.attr){
+      const li = f.item ? $("conteudo").querySelector('[data-item="' + CSS.escape(f.item) + '"]') : null;
+      alvo = li ? (li.matches("[" + f.attr + "]") ? li : li.querySelector("[" + f.attr + "]")) : $("conteudo").querySelector("[" + f.attr + "]");
+    }
+    if (alvo) alvo.focus({preventScroll:true});
+  });
+});
+/* o campo do editor de modelos grava ao sair dele; quem fecha o app com o cursor ainda no campo também não perde (04/10/2026) */
+document.addEventListener("visibilitychange", () => {
+  const t = document.activeElement;
+  if (document.visibilityState === "hidden" && t && t.dataset && t.dataset.ed && $("conteudo").contains(t)) t.blur();
 });
 $("conteudo").addEventListener("change", e => {
   const t = e.target;
