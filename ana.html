@@ -326,19 +326,16 @@ const emReais = v => Number(v) > 0 ? FormLancamento.mascara((Number(v) || 0).toF
 const deReais = s => FormLancamento.centavos(s);
 
 // ---------- contas ----------
-// A casa entra no mês dela pela parte dela no total da casa (Matheus, 04/10/2026), não pelo que
-// ela pagou: assim o mês dela não piora quando é ela quem faz o mercado. O que ela pagou continua
-// aparecendo, para conferir com a balança da Casa. Lido do caderno da Casa que a aba Casa mantém
-// atualizado neste aparelho.
+// A casa entra no mês dela só pelo que ela pagou na Casa no mês (Matheus, 04/10/2026: "não vai
+// metade do valor da casa, vai apenas o que ela pagou"), como a linha Moradia da planilha dela.
+// Lido do caderno da Casa que a aba Casa mantém atualizado neste aparelho.
 function casaDoMes(k){
   const c = lerLocal(CH_CASA);
   if (!c || !Array.isArray(c.lancamentos)) return null;
   const pessoas = c.pessoas || [];
   const nome = (cad.nomeNaCasa && pessoas.includes(cad.nomeNaCasa)) ? cad.nomeNaCasa : (pessoas.find(p => /^ana/i.test(p)) || pessoas[1] || "");
-  const div = Number(c.divisao), parte1 = Number.isFinite(div) && div >= 0 && div <= 1 ? div : 0.5;
-  const fatia = pessoas.indexOf(nome) === 0 ? parte1 : 1 - parte1;
-  const doMesCasa = c.lancamentos.filter(l => doMes(l, k));
-  return { nome, valor: soma(doMesCasa, l => l.valor) * fatia, pagou: soma(doMesCasa.filter(l => l.quem === nome), l => l.valor), fatia };
+  const pagou = soma(c.lancamentos.filter(l => doMes(l, k) && l.quem === nome), l => l.valor);
+  return { nome, valor: pagou, pagou };
 }
 // o mês em que o dinheiro do plantão cai
 const mesQueCai = (local, kPlantao) => { const L = cad.locais.find(x => x.nome === local); return L && L.pagaMesSeguinte ? mesDepois(kPlantao) : kPlantao; };
@@ -360,7 +357,7 @@ function saidas(k){
   const fixosMes = soma(cad.gastosFixos, g => valorNoMes(g, k));
   cad.gastosFixos.forEach(g => { const v = valorNoMes(g, k); if (v) s[g.categoria] = (s[g.categoria] || 0) + v; });
   const casa = casaDoMes(k);
-  if (casa && casa.valor) s["Moradia (parte na casa)"] = (s["Moradia (parte na casa)"] || 0) + casa.valor;
+  if (casa && casa.valor) s["Moradia (casa)"] = (s["Moradia (casa)"] || 0) + casa.valor;
   const lancado = soma(cad.lancamentos.filter(l => doMes(l, k)), l => l.valor);
   return { porCat: Object.entries(s).filter(e => e[1] > 0.005).sort((a, b) => b[1] - a[1]), lancado, fixosMes, casa, total: soma(Object.values(s)) };
 }
@@ -423,7 +420,7 @@ function telaMes(){
     : sobra >= -0.005
     ? `<div class="veredito pos"><b>${passado ? "Fechou positivo" : "Sobra no mês"}</b><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} com ${dinheiro(sobra)} a mais do que saiu, se tudo cair como está aqui.</p></div>`
     : `<div class="veredito neg"><b>${passado ? "Fechou negativo" : "Falta no mês"}</b><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} em ${sinalDin(sobra)}: sai mais do que entra.</p></div>`;
-  const semCasa = !s.casa ? `<p class="aviso">A parte da casa ainda não aparece: abra a aba <b>Casa</b> uma vez e toque em "Escolher o que foi compartilhado comigo".</p>` : "";
+  const semCasa = !s.casa ? `<p class="aviso">O que você pagou na casa ainda não aparece: abra a aba <b>Casa</b> uma vez e toque em "Escolher o que foi compartilhado comigo".</p>` : "";
 
   const linhasEnt = e.fixas.map(x => `<tr><td class="c-desc"><b>${escH(comPonto(x.rot))}</b></td>
       <td class="dir"><input type="text" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="—" class="val" data-receita="${escH(x.id)}" value="${emReais(x.valor)}" aria-label="${escH(x.rot)} em ${nome}"></td>
@@ -443,7 +440,7 @@ function telaMes(){
   <section class="painel"><h2>Situação do mês</h2>
     <div class="situ">${ver}<div class="linha-k">
       <div class="k"><span>Entra</span><b class="pos">${dinheiro(e.total)}</b><small>${dinheiro(soma(e.plantoes, x => x.valor))} de plantões${e.atend.valor ? " e " + dinheiro(e.atend.valor) + " de atendimentos" : ""}</small></div>
-      <div class="k"><span>Sai</span><b>${dinheiro(s.total)}</b><small>${dinheiro(s.lancado)} lançados, ${dinheiro(s.fixosMes)} de fixos${s.casa ? " e " + dinheiro(s.casa.valor) + " de parte na casa" : ""}</small></div>
+      <div class="k"><span>Sai</span><b>${dinheiro(s.total)}</b><small>${dinheiro(s.lancado)} lançados, ${dinheiro(s.fixosMes)} de fixos${s.casa ? " e " + dinheiro(s.casa.valor) + " pagos na casa" : ""}</small></div>
       <div class="k destaque"><span>Sobra</span><b class="${sobra < -0.005 ? "neg" : "pos"}">${sinalDin(sobra)}</b><small>entra menos sai</small></div>
     </div></div>
   </section>
