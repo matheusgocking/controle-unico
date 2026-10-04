@@ -903,7 +903,9 @@ async function importarPendencias(arquivo){
   aba.linhas.slice(1).forEach(l => {
     const nome = semPt(l[c.nome]), total = Number(l[c.total]);
     if (!nome || nome === "-" || !(total > 0)) return;
-    const p = { id:novoId(), nome, tipo: semAcento(l[c.tipo]).indexOf("pagar") >= 0 ? "pagar" : "receber", origem:semPt(l[c.origem]),
+    // Na planilha, "A pagar" e "A receber" são do ponto de vista de quem está no nome ("Hiago, A pagar" é o
+    // Hiago pagando a Matheus). No app, "a receber" e "a pagar" são de Matheus: por isso se inverte (correção dele, 03/10/2026).
+    const p = { id:novoId(), nome, tipo: semAcento(l[c.tipo]).indexOf("pagar") >= 0 ? "receber" : "pagar", origem:semPt(l[c.origem]),
       inicio:dataDe(l[c.inicio]), fim:dataDe(l[c.fim]), total, pago:Number(l[c.pago]) || 0, obs:semPt(l[c.obs]) === "-" ? "" : semPt(l[c.obs]) };
     if (semAcento(l[c.status]).indexOf("quitad") === 0) p.quitada = true;
     if (jaTem.has(chavePend(p))) { repetidas++; return; }
@@ -1293,7 +1295,7 @@ document.getElementById("exportar").onclick = () => {
     { nome:"Casa", linhas:[["Data","Quem Comprou?","Descrição","Categorias","Valor"],
       ...livro.casa.lancamentos.map(l => [l.data, l.quem, l.descricao, l.categoria, l.valor])] },
     { nome:"Pendências", linhas:[["Nome","Tipo","Origem","Início","Fim","Valor Total","Valor Pago","Restante","Status","Observações"],
-      ...pendencias().map(p => [p.nome, p.tipo === "pagar" ? "A pagar" : "A receber", p.origem || "-", p.inicio || "-", p.fim || "-", p.total, Number(p.pago) || 0, restantePend(p), pendQuitada(p) ? "Quitado" : "Pendente", p.obs || ""])] }
+      ...pendencias().map(p => [p.nome, p.tipo === "pagar" ? "A receber" : "A pagar", p.origem || "-", p.inicio || "-", p.fim || "-", p.total, Number(p.pago) || 0, restantePend(p), pendQuitada(p) ? "Quitado" : "Pendente", p.obs || ""])] }
   ];
   const w = janelaClinica();
   if (w) {
