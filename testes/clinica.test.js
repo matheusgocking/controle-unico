@@ -178,3 +178,26 @@ test("Clínica: o vencimento segue o saldo de sessões, não a data do pagamento
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Clínica: mudar o horário fixo vale dali em diante e não mexe no passado", async () => {
+  const { ctx, p, erros } = await abrir("clinica.html");
+  const r = await p.evaluate(() => {
+    const a = acharPaciente("pA");                                   // segunda, 9h
+    marcarSaida("2026-09-28|9", "realizada");
+    const antes = sessoesDoPaciente(a, new Date(2026, 8, 21), new Date(2026, 9, 3)).map(s => chaveData(s.data) + "|" + s.hora + "|" + s.estado);
+    abrirFicha(a);
+    const dia = document.getElementById("fi-dia"), hora = document.getElementById("fi-hora");
+    dia.value = "4"; dia.dispatchEvent(new Event("input"));           // quinta
+    hora.value = "15"; hora.dispatchEvent(new Event("input"));
+    fichaAberta.fechar();
+    const depoisPassado = sessoesDoPaciente(a, new Date(2026, 8, 21), new Date(2026, 9, 3)).map(s => chaveData(s.data) + "|" + s.hora + "|" + s.estado);
+    const futuro = sessoesDoPaciente(a, new Date(2026, 9, 5), new Date(2026, 9, 11)).map(s => chaveData(s.data) + "|" + s.hora);
+    return { antes, depoisPassado, futuro, antigos: a.horariosAntigos };
+  });
+  assert.deepEqual(r.depoisPassado, r.antes);
+  assert.deepEqual(r.antes, ["2026-09-21|9|sessao", "2026-09-28|9|realizada"]);
+  assert.deepEqual(r.futuro, ["2026-10-08|15"]);
+  assert.deepEqual(r.antigos, [{ ate:"2026-10-05", dia:1, hora:9, freq:"semanal" }]);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

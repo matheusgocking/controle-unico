@@ -1310,11 +1310,31 @@ function moeda(v){ v = Number(v)||0; var c = Math.round(v*100)/100; return "R$ "
 
 /* ---------------- sessões ---------------- */
 function pacienteEm(dia, hora, data){
-  var achado = null;
+  var achado = null, iso = chaveData(data);
   dados.pacientes.forEach(function(p){
-    if(p.dia===dia && p.hora===hora && ehSemanaDo(p, data)) achado = p;
+    var h = horarioEm(p, iso);
+    if(h.dia===dia && h.hora===hora && ehSemanaDo(h, data)) achado = p;
   });
   return achado;
+}
+/* Histórico de horários (pedido dele, 04/10/2026): mudar o dia, a hora ou a frequência vale dali em
+   diante. Antes a mudança refazia também as semanas passadas: as sessões confirmadas sumiam e
+   apareciam sessões falsas "a confirmar" no horário novo, que entravam na dívida.
+   p.horariosAntigos: [{ate:"aaaa-mm-dd", dia, hora, freq, semanaRef}], cada um valendo para as datas
+   antes de "ate"; da última "ate" em diante vale o horário atual do paciente (p.dia, p.hora...). */
+function horarioEm(p, iso){
+  var l = p.horariosAntigos, achado = null;
+  if(l) for(var i = 0; i < l.length; i++){ if(iso < l[i].ate && (!achado || l[i].ate < achado.ate)) achado = l[i]; }
+  return achado || p;
+}
+/* guarda o horário de agora como antigo, valendo até "ate" (sem incluir). Várias mudanças com a mesma
+   data (dia e depois hora, na ficha) guardam só a primeira, que é o horário de antes */
+function guardarHorario(p, ate){
+  if(!p.horariosAntigos) p.horariosAntigos = [];
+  if(p.horariosAntigos.some(function(x){ return x.ate >= ate; })) return;
+  var h = {ate:ate, dia:p.dia, hora:p.hora, freq:p.freq};
+  if(p.semanaRef) h.semanaRef = p.semanaRef;
+  p.horariosAntigos.push(h);
 }
 function excecao(data, hora){
   var e = dados.excecoes[chaveData(data)+"|"+hora];
@@ -1881,6 +1901,8 @@ function escolherRemarcacao(carga, destino, celula){
         porEntrada(kDest, {pacienteId:p.id, remarcada:true, de:{data:carga.data, hora:carga.hora}});
       } else if(a==="fixo"){
         if(carga.origem==="extra") tirarEntrada(kOrig);
+        /* o horário novo vale da primeira das duas datas (a de onde saiu e a de onde soltou) em diante */
+        guardarHorario(p, carga.data < destino.data ? carga.data : destino.data);
         p.dia = destino.dia; p.hora = destino.hora;
         /* quinzenal: a semana dele passa a ser a da data em que foi solto, senão a sessão aparecia
            uma semana antes ou depois de onde ele soltou (04/10/2026) */
@@ -2414,7 +2436,7 @@ function abrirFicha(p, foco){
           '<span style="display:flex; gap:8px">' +
             '<select id="fi-dia" data-campo="dia">'+DIAS.map(function(d,i){ return opc(i,d,p.dia); }).join("")+'</select>' +
             '<select id="fi-hora" data-campo="hora" aria-label="Hora">'+horasOpcoes(p.hora)+'</select>' +
-          '</span><span class="hint">Mudar aqui vale para as próximas semanas.</span></div>' +
+          '</span><span class="hint">Mudar aqui vale de amanhã em diante; o passado fica como era.</span></div>' +
       '</div>' +
       '<div class="field" id="fi-quinzena" hidden><label for="fi-qsem">Semana da quinzena</label>' +
         '<select id="fi-qsem"></select><span class="hint">Em qual das duas semanas ele vem.</span></div>' +
@@ -2750,6 +2772,8 @@ function abrirFicha(p, foco){
         dados.origens[el.value] = dados.origens[codigoDaOrigem]; delete dados.origens[codigoDaOrigem];
         codigoDaOrigem = el.value;
       }
+      /* o horário novo vale de amanhã em diante; o de hoje e o passado ficam como eram */
+      if(campo==="dia"||campo==="hora"||campo==="freq") guardarHorario(p, chaveData(somaDias(hoje0(), 1)));
       p[campo] = (campo==="valor"||campo==="dia"||campo==="hora") ? Number(el.value) : el.value;
       /* mexer na cobrança ou no valor aqui corrige o ciclo atual; para mudar dali em diante
          sem tocar no passado, é o "Abrir ciclo" do extrato */
@@ -4701,6 +4725,13 @@ function compararLeitura(leitura){
 }
 
 /* aplica mantendo o que é do site: id, link do Meet, pagamentos e as marcas da semana */
+/* a planilha também pode mudar o horário de alguém: o de antes continua valendo para o passado */
+function horariosDaLeitura(antigo, novo, leitura){
+  if(!antigo) return undefined;
+  var copia = JSON.parse(JSON.stringify({dia:antigo.dia, hora:antigo.hora, freq:antigo.freq, semanaRef:antigo.semanaRef, horariosAntigos:antigo.horariosAntigos || []}));
+  if(copia.dia !== novo.dia || copia.hora !== novo.hora || copia.freq !== novo.freq) guardarHorario(copia, chaveData(somaDias(hoje0(), 1)));
+  return copia.horariosAntigos.length ? copia.horariosAntigos : undefined;
+}
 function aplicarLeitura(leitura){
   var porCodigo = {};
   dados.pacientes.forEach(function(p){ porCodigo[p.codigo] = p; });
@@ -4715,6 +4746,7 @@ function aplicarLeitura(leitura){
       /* a semana da quinzena é escolhida na ficha e a planilha não sabe dela: ler a planilha não pode
          apagá-la (04/10/2026: antes todo quinzenal voltava para a semana de todos) */
       semanaRef: antigo && antigo.semanaRef && p.freq === "quinzenal" ? antigo.semanaRef : undefined,
+      horariosAntigos: horariosDaLeitura(antigo, p, leitura),
       genero: p.genero || (antigo ? (antigo.genero || "") : ""),
       /* a base do saldo devedor: quantas sessões a planilha contava no dia em que o arquivo foi
          salvo. Dali em diante quem conta é a agenda (ver devidoDe) */
