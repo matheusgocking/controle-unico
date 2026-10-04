@@ -428,6 +428,7 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
 /* a ficha pode ser mais alta que a tela: o overlay rola e o modal tem teto de altura,
    senão o fim da ficha fica fora da vista e a roda do mouse não alcança (25/09/2026) */
 .overlay{position:fixed; inset:0; background:rgba(20,16,26,.45); display:flex; align-items:flex-start; justify-content:center; padding:16px; z-index:60; overflow-y:auto; overscroll-behavior:contain}
+.modal:focus{outline:none}
 .modal{background:var(--surface); border:1px solid var(--border-strong); border-radius:14px; box-shadow:var(--shadow); max-width:620px; width:100%; padding:20px; margin:auto; max-height:calc(100vh - 32px); overflow-y:auto}
 .modal h2{font-size:18px; margin-bottom:6px}
 .modal textarea{width:100%; min-height:260px; padding:12px; border:1px solid var(--border-strong); border-radius:9px; background:var(--surface-2); font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; resize:vertical}
@@ -621,6 +622,13 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   #v-marketing .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (prefers-reduced-motion: no-preference){ .cell,.btn,.tab{transition:background-color .12s ease} }
+/* no celular, os botões pequenos ganham área para o dedo (04/10/2026): o "apagar" do recibo tinha
+   uns 18 px de altura; e o seletor do encaixe com letra menor que 16 px fazia o iPhone dar zoom */
+@media (max-width:700px){
+  .recibo .apagar{min-height:40px; min-width:44px; padding:6px 10px}
+  .menu button{min-height:40px}
+  .menu select{min-height:40px; font-size:16px}
+}
 </style>
 <script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
 <script src="nuvem.js"></script>
@@ -1204,7 +1212,11 @@ function carregar(){
 }
 function gravar(){
   try{ localStorage.setItem(CHAVE, JSON.stringify(dados)); }
-  catch(e){ /* navegador sem armazenamento: os dados valem só nesta aba */ }
+  catch(e){
+    /* navegador sem espaço ou sem armazenamento: os dados valem só nesta aba até o Drive receber.
+       Antes isso era calado; agora avisa uma vez, para ele não fechar a aba sem saber (04/10/2026) */
+    if(!gravar.avisou){ gravar.avisou = true; recado("Este aparelho não conseguiu guardar a cópia da Clínica. Não feche esta aba até a linha do Drive dizer que salvou."); }
+  }
   if(window.cadernoClinica) cadernoClinica.mudou();
 }
 
@@ -1289,7 +1301,8 @@ function semanaIndice(d){ return Math.round(isoSegunda(d).getTime()/604800000); 
 function ehSemanaDo(p, data){
   if(p.freq!=="quinzenal") return true;
   /* cada quinzenal pode ter a semana dele (p.semanaRef, escolhida na ficha); sem ela, vale a de todos */
-  var ref = p.semanaRef ? deISO(p.semanaRef) : (dados.config.semanaRefQuinzenal ? new Date(dados.config.semanaRefQuinzenal) : new Date());
+  /* a semana de todos pode estar gravada como data com hora (versão antiga): vale só o dia, igual em qualquer fuso */
+  var ref = p.semanaRef ? deISO(p.semanaRef) : (dados.config.semanaRefQuinzenal ? (dados.config.semanaRefQuinzenal instanceof Date ? dados.config.semanaRefQuinzenal : deISO(String(dados.config.semanaRefQuinzenal).slice(0,10))) : new Date());
   return (semanaIndice(data)-semanaIndice(ref))%2===0;
 }
 /* reais inteiros quando o valor é inteiro; com centavos quando não é (antes R$ 0,40 aparecia como "R$ 0") */
@@ -1297,11 +1310,31 @@ function moeda(v){ v = Number(v)||0; var c = Math.round(v*100)/100; return "R$ "
 
 /* ---------------- sessões ---------------- */
 function pacienteEm(dia, hora, data){
-  var achado = null;
+  var achado = null, iso = chaveData(data);
   dados.pacientes.forEach(function(p){
-    if(p.dia===dia && p.hora===hora && ehSemanaDo(p, data)) achado = p;
+    var h = horarioEm(p, iso);
+    if(h.dia===dia && h.hora===hora && ehSemanaDo(h, data)) achado = p;
   });
   return achado;
+}
+/* Histórico de horários (pedido dele, 04/10/2026): mudar o dia, a hora ou a frequência vale dali em
+   diante. Antes a mudança refazia também as semanas passadas: as sessões confirmadas sumiam e
+   apareciam sessões falsas "a confirmar" no horário novo, que entravam na dívida.
+   p.horariosAntigos: [{ate:"aaaa-mm-dd", dia, hora, freq, semanaRef}], cada um valendo para as datas
+   antes de "ate"; da última "ate" em diante vale o horário atual do paciente (p.dia, p.hora...). */
+function horarioEm(p, iso){
+  var l = p.horariosAntigos, achado = null;
+  if(l) for(var i = 0; i < l.length; i++){ if(iso < l[i].ate && (!achado || l[i].ate < achado.ate)) achado = l[i]; }
+  return achado || p;
+}
+/* guarda o horário de agora como antigo, valendo até "ate" (sem incluir). Várias mudanças com a mesma
+   data (dia e depois hora, na ficha) guardam só a primeira, que é o horário de antes */
+function guardarHorario(p, ate){
+  if(!p.horariosAntigos) p.horariosAntigos = [];
+  if(p.horariosAntigos.some(function(x){ return x.ate >= ate; })) return;
+  var h = {ate:ate, dia:p.dia, hora:p.hora, freq:p.freq};
+  if(p.semanaRef) h.semanaRef = p.semanaRef;
+  p.horariosAntigos.push(h);
 }
 function excecao(data, hora){
   var e = dados.excecoes[chaveData(data)+"|"+hora];
@@ -1433,8 +1466,10 @@ function sessoesDoDia(data, comCanceladas){
     var ex = excecao(data, h);
     var entra = entradaDa(ex);
     if(entra){
-      /* sessão que veio de outro horário: conta na hora em que vai acontecer, e é a única
-         que conta ali, porque quem era fixo naquela hora não vem */
+      /* sessão que veio de outro horário: conta na hora em que vai acontecer; quem era fixo
+         naquela hora não vem, mas a falta ou a remarcação dele continua contando (04/10/2026:
+         antes a falta cobrada sumia da receita e da dívida quando alguém era encaixado na hora) */
+      if(p && saiuDaHora(ex) && (ex.tipo!=="cancelada" || comCanceladas)) lista.push({paciente:p, hora:h, estado:ex.tipo, origem:"fixo"});
       var pe = acharPaciente(entra.pacienteId);
       if(pe) lista.push({paciente:pe, hora:h, estado:(entra.realizada ? "realizada" : "sessao"), origem:"extra"});
     } else if(p){
@@ -1601,6 +1636,38 @@ function estadoCelula(dia, hora, data){
   return {classe:"", nome:"", etiqueta:"", paciente:null};
 }
 function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+/* As janelas (ficha, mensagem, cobrança, anúncio, leitura da planilha) levam o teclado junto
+   (04/10/2026): ao abrir, o foco entra na janela, sem abrir o teclado do celular; o Tab circula
+   só dentro dela; o Esc fecha; e, ao fechar, o foco volta para onde estava. "primeiro" é o campo
+   que já deve receber o cursor (o anúncio novo); sem ele, o foco vai para a própria janela.
+   Devolve a função que a janela chama ao fechar, para o foco voltar. */
+var contaJanela = 0;
+function janela(fundo, fechar, primeiro){
+  var antes = document.activeElement, modal = fundo.querySelector(".modal");
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("tabindex", "-1");
+  var h = modal.querySelector("h2");
+  if(h && !modal.hasAttribute("aria-labelledby")){
+    if(!h.id) h.id = "janela-titulo-" + (++contaJanela);
+    modal.setAttribute("aria-labelledby", h.id);
+  }
+  function focaveis(){
+    return Array.prototype.filter.call(modal.querySelectorAll('button,[href],input,select,textarea,summary,[tabindex]:not([tabindex="-1"])'),
+      function(x){ return !x.disabled && !x.closest("[hidden]") && x.getClientRects().length > 0; });
+  }
+  fundo.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); fechar(); return; }
+    if(e.key !== "Tab") return;
+    var l = focaveis();
+    if(!l.length){ e.preventDefault(); modal.focus(); return; }
+    var ini = l[0], fim = l[l.length - 1];
+    if(e.shiftKey && (document.activeElement === ini || document.activeElement === modal)){ e.preventDefault(); fim.focus(); }
+    else if(!e.shiftKey && document.activeElement === fim){ e.preventDefault(); ini.focus(); }
+  });
+  if(primeiro) primeiro.focus(); else modal.focus({preventScroll:true});
+  return function(){ if(antes && antes.focus && document.body.contains(antes)) antes.focus({preventScroll:true}); };
+}
 /* "sex 14h": para a célula dizer de onde a sessão veio ou para onde ela foi */
 function quando(q){
   if(!q || !q.data) return "";
@@ -1630,7 +1697,42 @@ function nomeCurto(p){
 }
 
 /* ---------------- menu da célula ---------------- */
-function fecharMenu(){ if(menuAberto){ menuAberto.remove(); menuAberto=null; } }
+/* O menu da célula leva o teclado (04/10/2026): abre com o foco no primeiro botão, as setas andam
+   entre as opções, o Esc fecha e o foco volta para a célula, mesmo depois de a grade ser redesenhada.
+   Quem usa o mouse não vê diferença. */
+var voltaDoMenu = null;
+function fecharMenu(){
+  if(!menuAberto) return;
+  var tinhaFoco = menuAberto.contains(document.activeElement), v = voltaDoMenu;
+  menuAberto.remove(); menuAberto = null; voltaDoMenu = null;
+  if(!tinhaFoco || !v) return;
+  var achar = function(){ return document.querySelector('.cell[data-data="'+v.data+'"][data-hora="'+v.hora+'"]'); };
+  var c = achar(); if(c) c.focus({preventScroll:true});
+  setTimeout(function(){
+    if(document.querySelector(".overlay") || menuAberto) return;
+    var a = document.activeElement;
+    if(a && a !== document.body && document.body.contains(a)) return;
+    var c2 = achar(); if(c2) c2.focus({preventScroll:true});
+  }, 0);
+}
+function menuComTeclado(m, cel){
+  voltaDoMenu = {data:cel.dataset.data, hora:cel.dataset.hora};
+  m.setAttribute("role", "menu");
+  m.querySelectorAll("button[data-acao]").forEach(function(b){ b.setAttribute("role", "menuitem"); });
+  m.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); fecharMenu(); return; }
+    if(e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    if(e.target.tagName === "SELECT") return;
+    var l = Array.prototype.slice.call(m.querySelectorAll("button,select")), i = l.indexOf(document.activeElement);
+    if(!l.length) return;
+    e.preventDefault();
+    l[(i + (e.key === "ArrowDown" ? 1 : -1) + l.length) % l.length].focus();
+  });
+  /* o Tab que sai do menu fecha ele, como clicar fora */
+  m.addEventListener("focusout", function(e){ if(menuAberto === m && e.relatedTarget && !m.contains(e.relatedTarget)){ voltaDoMenu = null; fecharMenu(); } });
+  var primeiro = m.querySelector("button,select");
+  if(primeiro) primeiro.focus({preventScroll:true});
+}
 document.addEventListener("click", function(e){
   var cls = e.target && e.target.classList;
   if(menuAberto && !menuAberto.contains(e.target) && !(cls && cls.contains("cell"))) fecharMenu();
@@ -1686,7 +1788,7 @@ function abrirMenu(e){
   if(aceitaEncaixe){
     corpo += "<hr>";
     corpo += '<div style="padding:4px 8px 8px"><label style="font-size:12px;color:var(--muted)">Encaixe nesta data</label><select id="sel-extra"><option value="">escolher paciente…</option>'+
-      dados.pacientes.map(function(p){ return '<option value="'+p.id+'">'+esc(p.nome)+'</option>'; }).join("")+'</select></div>';
+      dados.pacientes.map(function(p){ return '<option value="'+esc(p.id)+'">'+esc(p.nome)+'</option>'; }).join("")+'</select></div>';
   }
 
   m.innerHTML = cab + corpo;
@@ -1696,6 +1798,7 @@ function abrirMenu(e){
   var esq = Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 220);
   m.style.top = topo+"px"; m.style.left = Math.max(8,esq)+"px";
   menuAberto = m;
+  menuComTeclado(m, cel);
 
   var sel = m.querySelector("#sel-extra");
   if(sel) sel.addEventListener("change", function(){
@@ -1786,6 +1889,7 @@ function escolherRemarcacao(carga, destino, celula){
   m.style.top = (window.scrollY + r.bottom + 4)+"px";
   m.style.left = Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 230))+"px";
   menuAberto = m;
+  menuComTeclado(m, celula);
 
   m.querySelectorAll("button[data-acao]").forEach(function(b){
     b.addEventListener("click", function(){
@@ -1797,7 +1901,13 @@ function escolherRemarcacao(carga, destino, celula){
         porEntrada(kDest, {pacienteId:p.id, remarcada:true, de:{data:carga.data, hora:carga.hora}});
       } else if(a==="fixo"){
         if(carga.origem==="extra") tirarEntrada(kOrig);
+        /* o horário novo vale da primeira das duas datas (a de onde saiu e a de onde soltou) em diante */
+        guardarHorario(p, carga.data < destino.data ? carga.data : destino.data);
         p.dia = destino.dia; p.hora = destino.hora;
+        /* quinzenal: a semana dele passa a ser a da data em que foi solto, senão a sessão aparecia
+           uma semana antes ou depois de onde ele soltou (04/10/2026) */
+        if(p.freq==="quinzenal") p.semanaRef = chaveData(isoSegunda(dDest));
+        avisarHorarioOcupado(p);
       }
       salvar(); fecharMenu(); renderTudo();
     });
@@ -2278,8 +2388,19 @@ var fichaAberta = null;
 function reabrirFicha(texto){
   if(!fichaAberta) return;
   var f = fichaAberta, novo = acharPaciente(f.p.id);
+  /* quem estava digitando continua no mesmo campo, com o cursor no mesmo lugar */
+  var ativo = document.activeElement, idAtivo = ativo && f.fundo.contains(ativo) ? ativo.id : "", ini = null, fim = null;
+  try{ if(idAtivo){ ini = ativo.selectionStart; fim = ativo.selectionEnd; } }catch(e){}
   f.fechar();
-  if(novo){ abrirFicha(novo, f.foco()); if(texto) recado(texto); }
+  if(novo){
+    abrirFicha(novo, f.foco());
+    var volta = idAtivo && document.getElementById(idAtivo);
+    if(volta && fichaAberta && fichaAberta.fundo.contains(volta)){
+      volta.focus({preventScroll:true});
+      try{ if(ini !== null) volta.setSelectionRange(ini, fim); }catch(e){}
+    }
+    if(texto) recado(texto);
+  }
 }
 document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "hidden" && fichaAberta) fichaAberta.gravarJa(); });
 function abrirFicha(p, foco){
@@ -2315,7 +2436,7 @@ function abrirFicha(p, foco){
           '<span style="display:flex; gap:8px">' +
             '<select id="fi-dia" data-campo="dia">'+DIAS.map(function(d,i){ return opc(i,d,p.dia); }).join("")+'</select>' +
             '<select id="fi-hora" data-campo="hora" aria-label="Hora">'+horasOpcoes(p.hora)+'</select>' +
-          '</span><span class="hint">Mudar aqui vale para as próximas semanas.</span></div>' +
+          '</span><span class="hint">Mudar aqui vale de amanhã em diante; o passado fica como era.</span></div>' +
       '</div>' +
       '<div class="field" id="fi-quinzena" hidden><label for="fi-qsem">Semana da quinzena</label>' +
         '<select id="fi-qsem"></select><span class="hint">Em qual das duas semanas ele vem.</span></div>' +
@@ -2499,7 +2620,7 @@ function abrirFicha(p, foco){
     if(sit==="realizada" || sit==="cortesia"){
       M.realizada.linhas.forEach(function(l){
         var fora = r.sem && r.sem[l.id];
-        if(l.opcional) h += '<label class="pchk"><input type="checkbox" data-linha="'+l.id+'"'+(fora ? "" : " checked")+'> '+esc(l.rotulo)+'</label>';
+        if(l.opcional) h += '<label class="pchk"><input type="checkbox" data-linha="'+esc(l.id)+'"'+(fora ? "" : " checked")+'> '+esc(l.rotulo)+'</label>';
         if(!fora) camposDoModelo(l.texto).forEach(function(c){ h += caixa(c); });
       });
     } else if(sit==="remarcada"){
@@ -2640,13 +2761,19 @@ function abrirFicha(p, foco){
   resumo();
   if(foco){ var alvoPront = document.getElementById("fi-pront"); if(alvoPront) alvoPront.scrollIntoView({block:"start"}); }
 
+  /* "como chegou" é guardado por prontuário: se o código muda, a marca vai junto. Ela sai do código onde
+     está guardada (não do que está meio digitado) e nunca cai em cima da marca de outro paciente: apagar
+     uma letra de "P10" passa por "P1", que pode ser de outra pessoa (04/10/2026) */
+  var codigoDaOrigem = p.codigo;
   fundo.querySelectorAll("[data-campo]").forEach(function(el){
     el.addEventListener("input", function(){
       var campo = el.dataset.campo;
-      /* "como chegou" é guardado por prontuário: se o código muda, a marca vai junto */
-      if(campo==="codigo" && dados.origens && dados.origens[p.codigo] && el.value !== p.codigo){
-        dados.origens[el.value] = dados.origens[p.codigo]; delete dados.origens[p.codigo];
+      if(campo==="codigo" && dados.origens && dados.origens[codigoDaOrigem] && el.value && el.value !== codigoDaOrigem && !dados.origens[el.value]){
+        dados.origens[el.value] = dados.origens[codigoDaOrigem]; delete dados.origens[codigoDaOrigem];
+        codigoDaOrigem = el.value;
       }
+      /* o horário novo vale de amanhã em diante; o de hoje e o passado ficam como eram */
+      if(campo==="dia"||campo==="hora"||campo==="freq") guardarHorario(p, chaveData(somaDias(hoje0(), 1)));
       p[campo] = (campo==="valor"||campo==="dia"||campo==="hora") ? Number(el.value) : el.value;
       /* mexer na cobrança ou no valor aqui corrige o ciclo atual; para mudar dali em diante
          sem tocar no passado, é o "Abrir ciclo" do extrato */
@@ -2671,14 +2798,15 @@ function abrirFicha(p, foco){
     var el = document.getElementById("fi-quinzena"); if(!el) return;
     el.hidden = p.freq !== "quinzenal";
     if(el.hidden) return;
-    var esta = isoSegunda(new Date()), proxima = somaDias(esta, 7);
+    /* "esta semana" é a da grade, que começa no domingo: no domingo, a segunda é amanhã, não a que passou */
+    var esta = somaDias(inicioSemana(hoje0()), 1), proxima = somaDias(esta, 7);
     var vemEsta = ehSemanaDo(p, esta);
     var sel = document.getElementById("fi-qsem");
     sel.innerHTML = opc("esta","Nesta semana (segunda, "+dataCurtaBR(esta)+")", vemEsta ? "esta" : "proxima") +
                     opc("proxima","Na próxima (segunda, "+dataCurtaBR(proxima)+")", vemEsta ? "esta" : "proxima");
   }
   document.getElementById("fi-qsem").addEventListener("change", function(e){
-    var esta = isoSegunda(new Date());
+    var esta = somaDias(inicioSemana(hoje0()), 1);
     p.semanaRef = chaveData(e.target.value === "esta" ? esta : somaDias(esta, 7));
     avisarHorarioOcupado(p);
     salvar(); renderTudo(); resumo();
@@ -2689,18 +2817,23 @@ function abrirFicha(p, foco){
     definirOrigem(p.codigo, e.target.value); salvar(); renderMarketing();
   });
 
-  function fechar(){ gravarJa(); fundo.remove(); document.removeEventListener("keydown", aoTeclar); if(fichaAberta && fichaAberta.fundo===fundo) fichaAberta = null; }
+  function fechar(){ gravarJa(); fundo.remove(); if(fichaAberta && fichaAberta.fundo===fundo) fichaAberta = null; devolverFoco(); }
   function gravarJa(){
     if(esperaSalvar){ clearTimeout(esperaSalvar); esperaSalvar = null; salvar(); }
     if(esperaCampo){ clearTimeout(esperaCampo); esperaCampo = null; salvar(); renderTudo(); }
   }
   fichaAberta = { p:p, fundo:fundo, fechar:fechar, gravarJa:gravarJa, foco:function(){ return abertoPront; } };
-  function aoTeclar(e){ if(e.key==="Escape") fechar(); }
-  document.addEventListener("keydown", aoTeclar);
+  var devolverFoco = janela(fundo, fechar);
   fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
   document.getElementById("fi-fechar").addEventListener("click", fechar);
   document.getElementById("fi-remover").addEventListener("click", function(){
-    if(!confirm("Tirar "+p.nome+" da agenda? A ficha na planilha continua lá.")) return;
+    /* registros de prontuário que ainda não foram para o Word ficam sem tela onde aparecer quando o
+       paciente sai da agenda: o aviso diz quantos são antes de ele confirmar (04/10/2026) */
+    var regs = dados.registros || {}, abertos = Object.keys(regs).filter(function(k){
+      return k.slice(-(p.id.length + 1)) === "|" + p.id && regs[k] && regs[k].estado !== "feito";
+    }).length;
+    if(!confirm("Tirar "+p.nome+" da agenda? A ficha na planilha continua lá." +
+      (abertos ? "\n\nAtenção: " + plural(abertos, "registro de prontuário ainda não foi", "registros de prontuário ainda não foram") + " para o Word. Fora da agenda, eles não aparecem mais aqui. Passe para o prontuário antes." : ""))) return;
     dados.pacientes = dados.pacientes.filter(function(x){ return x.id!==p.id; });
     salvar(); renderTudo(); fechar();
   });
@@ -2756,8 +2889,10 @@ function abrirMensagem(){
     '<div class="acoes"><button class="btn" id="msg-fechar">Fechar</button><button class="btn" id="msg-salvar">Salvar .txt</button><button class="btn primary" id="msg-copiar">Copiar</button></div></div>';
   document.body.appendChild(fundo);
   document.getElementById("msg-txt").value = textoDivulgacao();
-  fundo.addEventListener("click", function(e){ if(e.target===fundo) fundo.remove(); });
-  document.getElementById("msg-fechar").addEventListener("click", function(){ fundo.remove(); });
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
+  document.getElementById("msg-fechar").addEventListener("click", fechar);
   /* Salva a mensagem num .txt na pasta de downloads, para a IA ler sem ele copiar e colar.
      Sempre o mesmo nome; o Chrome numera as repetições, então a IA pega a mais recente. */
   document.getElementById("msg-salvar").addEventListener("click", function(){
@@ -2842,11 +2977,6 @@ function pagamentosDe(id){
 function ultimoPagamento(p){ var l = pagamentosDe(p.id); return l.length ? l[0] : null; }
 
 /* quantos dias um pagamento cobre; zero quer dizer "vence a cada sessão" */
-function diasDoCiclo(p){
-  if(p.cobranca==="mensal") return 28;
-  if(p.cobranca==="quinzenal") return 14;
-  return 0;
-}
 /* a primeira sessão depois de uma data, já respeitando quinzenal, remarcação e encaixe */
 function proximaSessaoApos(p, base){
   for(var i=1; i<=42; i++){
@@ -2858,12 +2988,60 @@ function proximaSessaoApos(p, base){
   }
   return null;
 }
+/* Vencimento pelo saldo de sessões (regra dele, 04/10/2026): o pagamento compra sessões (o ciclo
+   mensal, quatro; o quinzenal, duas; a avulsa, uma) e o paciente só passa a dever quando esse saldo
+   acabou e há sessão realizada, a confirmar ou falta cobrada. Antes o vencimento era a data do
+   pagamento mais 28 ou 14 dias: o quinzenal que pagou duas sessões aparecia atrasado no meio do que
+   já tinha pago, e feriado ou sessão desmarcada não empurravam a data.
+   Devolve o dia em que vence; no passado, o dia da primeira sessão que ficou sem pagar. */
+var vencCache = null;
+/* as sessões que cobram, de uma data em diante, na ordem; "futuras" deixa de fora as que já passaram */
+function sessoesQueCobram(p, desde, quantas, futuras){
+  var lista = [];
+  for(var i = 0; i <= 400 && lista.length < quantas; i++){
+    var d = somaDias(desde, i);
+    for(var h = dados.config.horaInicio; h <= dados.config.horaFim; h++){
+      var st = estadoSessaoDe(p, d, h);
+      if(st && cobraSessao(st.estado) && !(futuras && jaPassou(d, h))) lista.push(d);
+    }
+  }
+  return lista;
+}
 function proximoVencimento(p){
+  if(!vencCache) vencCache = {};
+  if(vencCache[p.id] !== undefined) return vencCache[p.id];
+  return (vencCache[p.id] = calcularVencimento(p));
+}
+function calcularVencimento(p){
+  var dv = devidoDe(p);
+  if(dv){
+    if(dv.sessoes > 0){
+      /* devendo: desde a primeira sessão que o saldo não cobriu */
+      if(dv.extrato){
+        var ls = extratoDe(p).linhas, desde = null;
+        for(var i = ls.length - 1; i >= 0 && ls[i].saldo > 0.005; i--) if(ls[i].cobrado > 0) desde = ls[i].data;
+        if(desde) return deISO(desde);
+      }
+      var passadas = [], hoje = hoje0();
+      for(var d = somaDias(hoje, -365); d <= hoje; d = somaDias(d, 1)){
+        for(var h = dados.config.horaInicio; h <= dados.config.horaFim; h++){
+          var st = estadoSessaoDe(p, d, h);
+          if(st && cobraSessao(st.estado) && jaPassou(d, h)) passadas.push(d);
+        }
+      }
+      var k = passadas.length - dv.sessoes;
+      return k >= 0 ? passadas[k] : deISO(dv.base);
+    }
+    /* em dia: o saldo cobre as próximas sessões; vence na primeira que ficar de fora */
+    var credito = -dv.sessoes, fut = sessoesQueCobram(p, hoje0(), credito + 1, true);
+    return fut.length > credito ? fut[credito] : null;
+  }
+  /* sem base para a conta da dívida: o último pagamento cobre as sessões do dia dele em diante */
   var u = ultimoPagamento(p);
   if(!u) return proximaSessaoApos(p, somaDias(hoje0(),-1)); /* nunca pagou: vence na próxima sessão */
-  var ciclo = diasDoCiclo(p);
-  if(ciclo) return somaDias(deISO(u.data), ciclo);
-  return proximaSessaoApos(p, deISO(u.data));
+  var vs = valorSessaoEm(p, u.data), cobre = vs > 0 ? Math.max(1, Math.round((Number(u.valor)||0) / vs)) : 1;
+  var l = sessoesQueCobram(p, deISO(u.data), cobre + 1, false);
+  return l.length > cobre ? l[cobre] : null;
 }
 /* peso ordena a tabela: atraso na frente, em dia no fim */
 function situacaoPagamento(p){
@@ -3027,13 +3205,13 @@ function renderPagamentos(){
     if(s.chave==="atraso" || dv.classe==="atraso") tr.className = "linha-atraso";
     tr.innerHTML =
       '<td><span class="quem"><span class="ini">'+esc(inicial1(p))+'</span>' +
-        '<button class="linknome" data-ficha="'+p.id+'">'+esc(p.nome)+'</button></span></td>' +
+        '<button class="linknome" data-ficha="'+esc(p.id)+'">'+esc(p.nome)+'</button></span></td>' +
       '<td><span class="sit '+dv.classe+'" title="'+esc(dv.titulo)+'">'+esc(dv.texto)+'</span></td>' +
       '<td>'+rotuloCobranca(p)+'<br><span class="hint">'+moeda(p.valor)+' por ciclo</span></td>' +
       '<td>'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio||"")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
       '<td>'+(s.venc ? dataLonga(s.venc)+'<br><span class="hint">'+DIAS_CURTO[s.venc.getDay()].toLowerCase()+'</span>' : "—")+'</td>' +
       '<td><span class="sit '+s.classe+'">'+esc(s.texto)+'</span></td>' +
-      '<td class="num"><button class="btn sm" data-recebi="'+p.id+'">Recebi hoje</button></td>';
+      '<td class="num"><button class="btn sm" data-recebi="'+esc(p.id)+'">Recebi hoje</button></td>';
     tb.appendChild(tr);
   });
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
@@ -3057,7 +3235,7 @@ function renderPagamentos(){
   sel.innerHTML = dados.pacientes.slice()
     .sort(function(a,b){ return (a.dia-b.dia) || (a.hora-b.hora); })
     .map(function(p){
-      return '<option value="'+p.id+'">'+esc(p.nome)+' · '+DIAS_CURTO[p.dia]+' '+String(p.hora).padStart(2,"0")+'h</option>';
+      return '<option value="'+esc(p.id)+'">'+esc(p.nome)+' · '+DIAS_CURTO[p.dia]+' '+String(p.hora).padStart(2,"0")+'h</option>';
     }).join("") + '<option value="">Outra pessoa, fora da agenda</option>';
   if(escolhido) sel.value = escolhido;
   if(!document.getElementById("pg-data").value) document.getElementById("pg-data").value = chaveData(hoje0());
@@ -3080,7 +3258,7 @@ function renderPagamentos(){
       (g.meio ? '<span class="meio">'+esc(MEIOS[g.meio]||g.meio)+'</span>' : "") +
       (g.obs ? '<span class="hint">'+esc(g.obs)+'</span>' : "") +
       '<span class="v">'+moeda(g.valor)+'</span>' +
-      '<button class="apagar" data-apagar="'+g.id+'" title="Apagar este registro">apagar</button>';
+      '<button class="apagar" data-apagar="'+esc(g.id)+'" title="Apagar este registro">apagar</button>';
     hist.appendChild(div);
   });
   hist.querySelectorAll("[data-apagar]").forEach(function(b){
@@ -3119,7 +3297,7 @@ var cacheMes = {};
 function numerosDoMes(ref){
   var chave = ref.getFullYear()+"-"+ref.getMonth();
   if(cacheMes[chave]) return cacheMes[chave];
-  var cont = {}, sessoes = 0, aConfirmar = 0, previstas = 0, hojeN = hoje0();
+  var cont = {}, avulsas = {}, cicloDoMes = {}, sessoes = 0, aConfirmar = 0, previstas = 0, hojeN = hoje0();
   for(var i=0;i<31;i++){
     var d = new Date(ref.getFullYear(), ref.getMonth(), 1+i);
     if(d.getMonth()!==ref.getMonth()) break;
@@ -3129,7 +3307,15 @@ function numerosDoMes(ref){
       if(confirmada(s.estado)) sessoes++;
       else if(s.estado==="sessao"){ if(jaPassou(d, s.hora)) aConfirmar++; else previstas++; }
       /* a receita segue a cobrança: falta sem aviso cobra, cortesia não (regra das 24 horas) */
-      if(cobraSessao(s.estado)) cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
+      if(cobraSessao(s.estado)){
+        cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
+        /* o preço é o do ciclo em que a sessão caiu: a avulsa soma sessão por sessão; o ciclo
+           mensal ou quinzenal entra uma vez, pelo valor do último ciclo do mês. Assim abrir um
+           ciclo novo não muda o previsto dos meses que já passaram (04/10/2026) */
+        var iso = chaveData(d), cic = cicloEm(s.paciente, iso);
+        if(cic.cobranca==="avulsa") avulsas[s.paciente.id] = (avulsas[s.paciente.id]||0) + valorSessao(cic);
+        else cicloDoMes[s.paciente.id] = cic;
+      }
     });
   }
   /* Matheus, 27/09/2026: o projetado geral é só de quem está ativo, como na planilha;
@@ -3137,7 +3323,8 @@ function numerosDoMes(ref){
   var previsto = 0, previstoTriagem = 0;
   dados.pacientes.forEach(function(p){
     var n = cont[p.id]||0; if(n<=0) return;
-    if(p.status === "Triagem.") previstoTriagem += receitaMensal(p, n); else previsto += receitaMensal(p, n);
+    var r = (avulsas[p.id]||0) + (cicloDoMes[p.id] ? Number(cicloDoMes[p.id].valor)||0 : 0);
+    if(p.status === "Triagem.") previstoTriagem += r; else previsto += r;
   });
   /* o que entrou é tudo; o que falta receber compara só pacientes com pacientes (regra dele, 27/09/2026) */
   var recebido = 0, recebidoPacientes = 0;
@@ -3181,9 +3368,9 @@ function contarSessoesDe(p, de, ate){
       if(s.estado==="realizada") c.realizadas++;
       else if(s.estado==="sessao"){ if(jaPassou(d, s.hora)) c.aConfirmar++; else c.previstas++; }
       else if(s.estado==="falta") c.faltas++;
-      else if(s.estado==="remarcada"){ c.remarcadas++; c.naoCobrado += valorSessao(p); }
-      else if(s.estado==="cancelada"){ c.canceladas++; c.naoCobrado += valorSessao(p); }
-      else if(s.estado==="cortesia"){ c.cortesias++; c.naoCobrado += valorSessao(p); }
+      else if(s.estado==="remarcada"){ c.remarcadas++; c.naoCobrado += valorSessaoEm(p, chaveData(d)); }
+      else if(s.estado==="cancelada"){ c.canceladas++; c.naoCobrado += valorSessaoEm(p, chaveData(d)); }
+      else if(s.estado==="cortesia"){ c.cortesias++; c.naoCobrado += valorSessaoEm(p, chaveData(d)); }
     });
   }
   return c;
@@ -3198,7 +3385,7 @@ function renderSessoes(){
   var lista = sessoesDoMes(ref);
   var realizadas = 0, aConfirmar = 0, previstas = 0, faltas = 0, desmarcadas = 0, cortesias = 0, naoCobrado = 0;
   lista.forEach(function(s){
-    var v = valorSessao(s.paciente);
+    var v = valorSessaoEm(s.paciente, chaveData(s.data));
     if(s.estado==="realizada") realizadas++;
     else if(s.estado==="sessao"){ if(jaPassou(s.data, s.hora)) aConfirmar++; else previstas++; }
     else if(s.estado==="falta") faltas++;
@@ -3264,9 +3451,9 @@ function renderSessoes(){
     tr.innerHTML =
       '<td>'+DIAS_CURTO[s.data.getDay()]+', '+dataCurta(s.data)+(feriadoEm(s.data) ? '<span class="chip-fer" title="'+esc(feriadoEm(s.data))+'">feriado</span>' : "")+'</td>' +
       '<td>'+String(s.hora).padStart(2,"0")+'h</td>' +
-      '<td><button class="linknome" data-ficha="'+s.paciente.id+'">'+esc(nomeCurto(s.paciente))+'</button></td>' +
+      '<td><button class="linknome" data-ficha="'+esc(s.paciente.id)+'">'+esc(nomeCurto(s.paciente))+'</button></td>' +
       '<td>'+situacao+'</td>' +
-      '<td class="num">'+(cobraSessao(s.estado) ? moeda(valorSessao(s.paciente)) : '<span class="hint">'+moeda(valorSessao(s.paciente))+' não cobrado</span>')+'</td>';
+      '<td class="num">'+(cobraSessao(s.estado) ? moeda(valorSessaoEm(s.paciente, chaveData(s.data))) : '<span class="hint">'+moeda(valorSessaoEm(s.paciente, chaveData(s.data)))+' não cobrado</span>')+'</td>';
     return tr;
   }
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
@@ -3343,7 +3530,7 @@ function renderPainel(){
     ? '<table class="tab"><thead><tr><th>Paciente</th><th>Atraso</th><th class="num">Valor</th></tr></thead><tbody>' +
       devendo.map(function(x){
         return '<tr class="linha-atraso"><td><div class="quem"><span class="ini">'+esc(inicial1(x.p))+'</span>' +
-          '<button class="linknome" data-ficha="'+x.p.id+'">'+esc(x.p.nome)+'</button></div></td>' +
+          '<button class="linknome" data-ficha="'+esc(x.p.id)+'">'+esc(x.p.nome)+'</button></div></td>' +
           '<td><span class="sit atraso">'+x.dias+(x.dias===1 ? " dia" : " dias")+'</span></td>' +
           '<td class="num">'+moeda(Number(x.p.valor)||0)+'</td></tr>';
       }).join("") +
@@ -3367,11 +3554,11 @@ function renderPainel(){
       ? '<table class="tab"><thead><tr><th>Paciente</th><th class="num">Sessões</th><th class="num">Valor</th><th>Pagamento</th></tr></thead><tbody>' +
         deve.map(function(x){
           return '<tr class="linha-atraso"><td><div class="quem"><span class="ini">'+esc(inicial1(x.p))+'</span>' +
-            '<button class="linknome" data-ficha="'+x.p.id+'">'+esc(x.p.nome)+'</button></div></td>' +
+            '<button class="linknome" data-ficha="'+esc(x.p.id)+'">'+esc(x.p.nome)+'</button></div></td>' +
             '<td class="num">'+String(x.d.sessoes).replace(".", ",")+'</td>' +
             '<td class="num"><b>'+moeda(x.d.valor)+'</b></td>' +
             '<td><span class="sit '+x.s.classe+'">'+esc(x.s.texto)+'</span>' +
-            '<button class="btn sm cobrar" data-cobrar="'+x.p.id+'">Cobrar</button></td></tr>';
+            '<button class="btn sm cobrar" data-cobrar="'+esc(x.p.id)+'">Cobrar</button></td></tr>';
         }).join("") +
         '<tr><td><b>Total</b></td><td class="num"><b>'+String(totalSess).replace(".", ",")+'</b></td><td class="num"><b>'+moeda(totalDeve)+'</b></td><td></td></tr></tbody></table>'
       : '<p class="pvazio">Ninguém devendo sessão.</p>';
@@ -3421,7 +3608,7 @@ function renderPainel(){
     if(!lista.length) return;
     hf += '<h3>'+t[1]+'</h3>' + lista.map(function(g){
       return '<div class="contagem"><span class="n">'+g.datas.length+'</span>' +
-        '<span class="quem"><button class="linknome" data-ficha="'+g.p.id+'">'+esc(g.p.nome)+'</button> <span class="hint">· '+g.datas.join(", ")+'</span></span>' +
+        '<span class="quem"><button class="linknome" data-ficha="'+esc(g.p.id)+'">'+esc(g.p.nome)+'</button> <span class="hint">· '+g.datas.join(", ")+'</span></span>' +
         (atraso[g.p.id] ? '<span class="sit atraso">também devendo</span>' : "") + '</div>';
     }).join("");
   });
@@ -3547,8 +3734,10 @@ function abrirCobranca(nome, sessoes, valor){
   document.body.appendChild(fundo);
   var ta = document.getElementById("cob-txt");
   ta.value = textoCobranca(nome, sessoes, valor);
-  fundo.addEventListener("click", function(e){ if(e.target===fundo) fundo.remove(); });
-  document.getElementById("cob-fechar").addEventListener("click", function(){ fundo.remove(); });
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
+  document.getElementById("cob-fechar").addEventListener("click", fechar);
   document.getElementById("cob-copiar").addEventListener("click", function(){
     ta.select();
     try{ document.execCommand("copy"); }catch(e){}
@@ -3875,15 +4064,13 @@ function abrirAnuncio(id){
     '</div>';
   document.body.appendChild(fundo);
   var el = function(i){ return document.getElementById(i); };
-  function fechar(){ fundo.remove(); document.removeEventListener("keydown", aoTeclar); }
-  function aoTeclar(e){
-    if(e.key === "Escape") fechar();
-    else if(e.key === "Enter" && e.target && e.target.tagName === "INPUT" && fundo.contains(e.target)){ e.preventDefault(); el("an-salvar").click(); }
-  }
-  document.addEventListener("keydown", aoTeclar);
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  fundo.addEventListener("keydown", function(e){
+    if(e.key === "Enter" && e.target && e.target.tagName === "INPUT"){ e.preventDefault(); el("an-salvar").click(); }
+  });
   fundo.addEventListener("click", function(e){ if(e.target === fundo) fechar(); });
   el("an-cancelar").addEventListener("click", fechar);
-  el("an-post").focus();
+  var devolverFoco = janela(fundo, fechar, a ? null : el("an-post"));
   var numero = function(i){ var t = el(i).value.trim(); return t === "" ? null : Number(t); };
   el("an-salvar").addEventListener("click", function(){
     var post = el("an-post").value.trim(), inicio = el("an-inicio").value, fim = el("an-fim").value;
@@ -4538,6 +4725,13 @@ function compararLeitura(leitura){
 }
 
 /* aplica mantendo o que é do site: id, link do Meet, pagamentos e as marcas da semana */
+/* a planilha também pode mudar o horário de alguém: o de antes continua valendo para o passado */
+function horariosDaLeitura(antigo, novo, leitura){
+  if(!antigo) return undefined;
+  var copia = JSON.parse(JSON.stringify({dia:antigo.dia, hora:antigo.hora, freq:antigo.freq, semanaRef:antigo.semanaRef, horariosAntigos:antigo.horariosAntigos || []}));
+  if(copia.dia !== novo.dia || copia.hora !== novo.hora || copia.freq !== novo.freq) guardarHorario(copia, chaveData(somaDias(hoje0(), 1)));
+  return copia.horariosAntigos.length ? copia.horariosAntigos : undefined;
+}
 function aplicarLeitura(leitura){
   var porCodigo = {};
   dados.pacientes.forEach(function(p){ porCodigo[p.codigo] = p; });
@@ -4549,6 +4743,10 @@ function aplicarLeitura(leitura){
       valor: p.valor, dia: p.dia, hora: p.hora,
       status: p.status || "", inicio: p.inicio || "", fim: p.fim || "",
       meet: antigo ? (antigo.meet || "") : "",
+      /* a semana da quinzena é escolhida na ficha e a planilha não sabe dela: ler a planilha não pode
+         apagá-la (04/10/2026: antes todo quinzenal voltava para a semana de todos) */
+      semanaRef: antigo && antigo.semanaRef && p.freq === "quinzenal" ? antigo.semanaRef : undefined,
+      horariosAntigos: horariosDaLeitura(antigo, p, leitura),
       genero: p.genero || (antigo ? (antigo.genero || "") : ""),
       /* a base do saldo devedor: quantas sessões a planilha contava no dia em que o arquivo foi
          salvo. Dali em diante quem conta é a agenda (ver devidoDe) */
@@ -4603,7 +4801,8 @@ function mostrarLeitura(leitura){
     '<div class="acoes"><button class="btn" id="lp-cancelar">Cancelar</button>' +
     '<button class="btn primary" id="lp-aplicar">Atualizar o site</button></div></div>';
   document.body.appendChild(fundo);
-  function fechar(){ fundo.remove(); }
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
   fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
   document.getElementById("lp-cancelar").addEventListener("click", fechar);
   document.getElementById("lp-aplicar").addEventListener("click", function(){
@@ -4658,7 +4857,7 @@ if(window.ResizeObserver) new ResizeObserver(function(){ dicaDeAbas(); }).observ
 function mesDaSemana(){ var q = somaDias(semana, 3); mesRef = new Date(q.getFullYear(), q.getMonth(), 1); }
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
-  atrasoCache = null; devidoCache = null; cacheMes = {}; cacheNomes = null;
+  atrasoCache = null; devidoCache = null; vencCache = null; cacheMes = {}; cacheNomes = null;
   conferirAprovados();
   renderSemana(); renderMes(); renderSessoes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos(); renderMarketing();
 }
