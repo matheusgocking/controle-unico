@@ -85,14 +85,17 @@ test("Ana, Plantões: o lápis altera o plantão sem duplicar, e Cancelar volta 
   await ctx.close();
 });
 
-test("Ana, Casa: sem Importar dados e sem trocar a ordem das pessoas às cegas", async () => {
+test("Ana, Casa: sem Importar dados, e a divisão e os nomes só aparecem", async () => {
   const { ctx, p, erros } = await abrir();
   await p.click('#abas [data-a="casa"]'); await p.waitForTimeout(800);
   const f = p.frames().find(x => x.url().includes("app.html"));
   assert.equal(await f.isVisible("#importarJson"), false);
   assert.equal(await f.isVisible("#exportarJson"), false);
   assert.equal(await f.isVisible("#exportar"), true);
-  assert.match(await f.textContent("#fPessoas + .nota"), /A ordem conta/);
+  // a divisão e os nomes só aparecem: quem muda é ele, no app dele
+  assert.equal(await f.locator("#fDivisao").count(), 0);
+  assert.equal(await f.locator("#fPessoas").count(), 0);
+  assert.match(await f.locator("text=só se mudam no app").textContent(), /50%/);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
@@ -104,5 +107,60 @@ test("Ana: Sair deste aparelho apaga a cópia do caderno guardada no navegador",
   const guardado = await p.evaluate(() => localStorage.getItem("controle-unico-ana-cache"));
   assert.ok(!guardado || !JSON.parse(guardado).plantoes.length, "a cópia do caderno ficou no navegador");
   assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Ana, Mês: a moradia é a parte dela no total da casa, não o que ela pagou", async () => {
+  const { ctx, p, erros } = await abrir();
+  const c = await p.evaluate(() => saidas("2026-10").casa);
+  assert.equal(c.valor, (220 + 180 + 120) / 2);   // metade do total da casa no mês
+  assert.equal(c.pagou, 180);                      // o que ela pagou continua conhecido
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Ana, Plantões fixos: a regra lança os que faltam, sem repetir, e Desfazer tira", async () => {
+  const { ctx, p, erros, caderno } = await abrir(1280);
+  await p.click('#abas [data-a="plantoes"]');
+  await p.click("#dRegras summary");
+  const regra = async (local, periodo, dia, quando) => {
+    await p.selectOption("#fRegra [name=local]", local); await p.selectOption("#fRegra [name=periodo]", periodo);
+    await p.selectOption("#fRegra [name=dia]", String(dia)); await p.selectOption("#fRegra [name=quando]", quando);
+    await p.click("#fRegra [type=submit]"); await p.waitForTimeout(150);
+  };
+  await regra("Local B", "Noturno", 5, "toda");    // toda sexta à noite
+  await regra("Local A", "Diurno", 6, "1");        // primeiro sábado do mês
+  assert.match(await p.textContent("ul.regras"), /Local B, noturno, toda sexta/);
+  assert.match(await p.textContent("ul.regras"), /Local A, diurno, 1º sábado do mês/);
+  // a primeira sexta da regra já tem plantão lançado: não pode repetir
+  await p.evaluate(() => { cad.plantoes.push({ id:"p4", data:"2026-10-09", periodo:"Noturno", local:"Local B", tipo:"Regular", valor:999, realizar:false }); salvar(); });
+  await p.selectOption("#fLancarRegras [name=ate]", "2026-12");
+  await p.click("#fLancarRegras [type=submit]"); await p.waitForTimeout(200);
+  let c = await caderno();
+  const novos = c.plantoes.filter(x => !["p1", "p2", "p3", "p4"].includes(x.id));
+  // sextas de 16/10 a 25/12 (11) e os primeiros sábados de novembro e dezembro (2); 03/10 já passou
+  assert.equal(novos.length, 13);
+  assert.ok(novos.every(x => x.data >= "2026-10-04" && x.realizar && x.tipo === "Regular"));
+  assert.deepEqual(novos.filter(x => x.local === "Local A").map(x => x.data), ["2026-11-07", "2026-12-05"]);
+  assert.ok(novos.filter(x => x.local === "Local B").every(x => x.valor === 500 && new Date(x.data + "T12:00").getDay() === 5));
+  assert.equal(c.plantoes.find(x => x.id === "p4").valor, 999);   // o que já existia não muda
+  // lançar de novo não repete nada
+  await p.click("#fLancarRegras [type=submit]"); await p.waitForTimeout(200);
+  assert.equal((await caderno()).plantoes.length, 4 + 13);
+  await p.click("#desfazerRegras"); await p.waitForTimeout(200);
+  assert.equal((await caderno()).plantoes.length, 4);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Ana, Plantões fixos: semana sim, semana não e última do mês", async () => {
+  const { ctx, p } = await abrir();
+  const r = await p.evaluate(() => {
+    const alt = { dia:6, quando:"alternada", inicio:"2026-10-10" }, ult = { dia:5, quando:"ultima", inicio:"2026-10-01" };
+    const sabados = ["2026-10-10", "2026-10-17", "2026-10-24", "2026-10-31"], sextas = ["2026-10-23", "2026-10-30", "2026-11-27"];
+    return { alt: sabados.filter(d => regraNoDia(alt, d)), ult: sextas.filter(d => regraNoDia(ult, d)) };
+  });
+  assert.deepEqual(r.alt, ["2026-10-10", "2026-10-24"]);
+  assert.deepEqual(r.ult, ["2026-10-30", "2026-11-27"]);
   await ctx.close();
 });

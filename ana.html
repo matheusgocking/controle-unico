@@ -216,6 +216,9 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 th .ord{border:0;background:transparent;color:inherit;font:inherit;padding:0;cursor:pointer}
 th .ord:hover{color:var(--text)}
 th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
+ul.regras{list-style:none;margin:8px 0 0;padding:0;font-size:14px;color:var(--text)}
+ul.regras li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+ul.regras li:first-child{border-top:0} ul.regras li span{flex:1;min-width:0}
 .ordem-cel{display:none;margin:0 0 6px;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
 .ordem-cel select{width:auto;flex:1;padding:6px 8px}
 @media (max-width:700px){ .ordem-cel{display:flex} }
@@ -266,10 +269,10 @@ const CATEGORIAS_PADRAO = ["Alimentação","Ifood","Transporte","Saúde","Entret
 const CH_CACHE = "controle-unico-ana-cache", CH_CASA = "controle-unico-casa-cache";
 
 const VAZIO = () => ({ versao:1, caderno:"ana", atualizadoEm:null, nomeNaCasa:"", categorias:CATEGORIAS_PADRAO.slice(),
-  locais:[], tabelaPlantao:{}, plantoes:[], atendimentos:[], lancamentos:[], gastosFixos:[], receitasFixas:[], emprestimos:[] });
+  locais:[], tabelaPlantao:{}, plantoes:[], atendimentos:[], lancamentos:[], gastosFixos:[], receitasFixas:[], emprestimos:[], regrasPlantao:[] });
 function arrumar(d){
   const n = Object.assign(VAZIO(), d || {});
-  ["locais","plantoes","atendimentos","lancamentos","gastosFixos","receitasFixas","emprestimos","categorias"].forEach(k => { if (!Array.isArray(n[k])) n[k] = []; });
+  ["locais","plantoes","atendimentos","lancamentos","gastosFixos","receitasFixas","emprestimos","categorias","regrasPlantao"].forEach(k => { if (!Array.isArray(n[k])) n[k] = []; });
   if (!n.categorias.length) n.categorias = CATEGORIAS_PADRAO.slice();
   if (!n.tabelaPlantao || typeof n.tabelaPlantao !== "object") n.tabelaPlantao = {};
   return n;
@@ -320,14 +323,19 @@ const emReais = v => Number(v) > 0 ? FormLancamento.mascara((Number(v) || 0).toF
 const deReais = s => FormLancamento.centavos(s);
 
 // ---------- contas ----------
-// A casa entra aqui só pelo que a Ana pagou no mês (como a linha Moradia da planilha dela),
-// lido do caderno da Casa que a aba Casa mantém atualizado neste aparelho.
+// A casa entra no mês dela pela parte dela no total da casa (Matheus, 04/10/2026), não pelo que
+// ela pagou: assim o mês dela não piora quando é ela quem faz o mercado. O que ela pagou continua
+// aparecendo, para conferir com a balança da Casa. Lido do caderno da Casa que a aba Casa mantém
+// atualizado neste aparelho.
 function casaDoMes(k){
   const c = lerLocal(CH_CASA);
   if (!c || !Array.isArray(c.lancamentos)) return null;
   const pessoas = c.pessoas || [];
   const nome = (cad.nomeNaCasa && pessoas.includes(cad.nomeNaCasa)) ? cad.nomeNaCasa : (pessoas.find(p => /^ana/i.test(p)) || pessoas[1] || "");
-  return { nome, valor: soma(c.lancamentos.filter(l => doMes(l, k) && l.quem === nome), l => l.valor) };
+  const div = Number(c.divisao), parte1 = Number.isFinite(div) && div >= 0 && div <= 1 ? div : 0.5;
+  const fatia = pessoas.indexOf(nome) === 0 ? parte1 : 1 - parte1;
+  const doMesCasa = c.lancamentos.filter(l => doMes(l, k));
+  return { nome, valor: soma(doMesCasa, l => l.valor) * fatia, pagou: soma(doMesCasa.filter(l => l.quem === nome), l => l.valor), fatia };
 }
 // o mês em que o dinheiro do plantão cai
 const mesQueCai = (local, kPlantao) => { const L = cad.locais.find(x => x.nome === local); return L && L.pagaMesSeguinte ? mesDepois(kPlantao) : kPlantao; };
@@ -349,7 +357,7 @@ function saidas(k){
   const fixosMes = soma(cad.gastosFixos, g => valorNoMes(g, k));
   cad.gastosFixos.forEach(g => { const v = valorNoMes(g, k); if (v) s[g.categoria] = (s[g.categoria] || 0) + v; });
   const casa = casaDoMes(k);
-  if (casa && casa.valor) s["Moradia (casa)"] = (s["Moradia (casa)"] || 0) + casa.valor;
+  if (casa && casa.valor) s["Moradia (parte na casa)"] = (s["Moradia (parte na casa)"] || 0) + casa.valor;
   const lancado = soma(cad.lancamentos.filter(l => doMes(l, k)), l => l.valor);
   return { porCat: Object.entries(s).filter(e => e[1] > 0.005).sort((a, b) => b[1] - a[1]), lancado, fixosMes, casa, total: soma(Object.values(s)) };
 }
@@ -432,7 +440,7 @@ function telaMes(){
   <section class="painel"><h2>Situação do mês</h2>
     <div class="situ">${ver}<div class="linha-k">
       <div class="k"><span>Entra</span><b class="pos">${dinheiro(e.total)}</b><small>${dinheiro(soma(e.plantoes, x => x.valor))} de plantões${e.atend.valor ? " e " + dinheiro(e.atend.valor) + " de atendimentos" : ""}</small></div>
-      <div class="k"><span>Sai</span><b>${dinheiro(s.total)}</b><small>${dinheiro(s.lancado)} lançados, ${dinheiro(s.fixosMes)} de fixos${s.casa ? " e " + dinheiro(s.casa.valor) + " da casa" : ""}</small></div>
+      <div class="k"><span>Sai</span><b>${dinheiro(s.total)}</b><small>${dinheiro(s.lancado)} lançados, ${dinheiro(s.fixosMes)} de fixos${s.casa ? " e " + dinheiro(s.casa.valor) + " de parte na casa" : ""}</small></div>
       <div class="k destaque"><span>Sobra</span><b class="${sobra < -0.005 ? "neg" : "pos"}">${sinalDin(sobra)}</b><small>entra menos sai</small></div>
     </div></div>
   </section>
@@ -505,8 +513,77 @@ function telaPlantoes(){
     ${form}
     ${lst.length ? `<table class="t plantoes"><thead><tr><th>Dia</th><th>Local</th><th>Período</th><th>Tipo</th><th class="dir">Valor</th><th>Vai?</th><th></th></tr></thead><tbody>${linhas}</tbody></table>`
       : `<p class="vazio">Nenhum plantão em ${nome}.</p>`}
+    ${regras()}
     ${valores}
   </section>`;
+}
+
+// ---------- plantões fixos (Matheus, 04/10/2026) ----------
+// Cada regra diz onde, em que período, em que dia da semana e com que frequência ela dá plantão
+// ("toda sexta à noite no hospital X", "um sábado sim, outro não", "primeira sexta do mês").
+// "Lançar até" cria os plantões que faltam, do dia de hoje até o fim do mês escolhido, com o valor
+// da tabela do local (ou o da regra). Nunca lança duas vezes o mesmo dia, local e período, e nunca
+// mexe nos que já existem, nem nos desmarcados.
+const FREQS = [["toda","toda semana"],["alternada","semana sim, semana não"],["1","1ª do mês"],["2","2ª do mês"],["3","3ª do mês"],["4","4ª do mês"],["ultima","última do mês"]];
+const DIAS_PLURAL = ["domingos","segundas","terças","quartas","quintas","sextas","sábados"];
+function fraseRegra(g){
+  const dia = DIAS[g.dia], quando = g.quando === "toda" ? `tod${g.dia === 0 || g.dia === 6 ? "o" : "a"} ${dia}`
+    : g.quando === "alternada" ? `${DIAS_PLURAL[g.dia]} alternados, a partir de ${dataCurta(g.inicio)}`
+    : g.quando === "ultima" ? `últim${g.dia === 0 || g.dia === 6 ? "o" : "a"} ${dia} do mês`
+    : `${g.quando}ª ${dia} do mês`.replace(/ª (domingo|sábado)/, "º $1");
+  return `${escH(g.local)}, ${escH(String(g.periodo).toLowerCase())}, ${quando}`;
+}
+// a regra vale para esta data?
+function regraNoDia(g, iso){
+  if (diaSemana(iso) !== Number(g.dia)) return false;
+  if (g.inicio && iso < g.inicio) return false;
+  const dia = Number(iso.slice(8, 10));
+  if (g.quando === "toda") return true;
+  if (g.quando === "alternada") { const sem = Math.round((Date.parse(iso) - Date.parse(g.inicio)) / 864e5 / 7); return sem % 2 === 0; }
+  if (g.quando === "ultima") return Number(somaDias(iso, 7).slice(5, 7)) !== Number(iso.slice(5, 7));
+  return Math.floor((dia - 1) / 7) + 1 === Number(g.quando);
+}
+// os plantões que "Lançar até" criaria, sem gravar nada
+function plantoesDasRegras(ate){
+  const novos = [], existe = new Set(cad.plantoes.map(p => p.data + "|" + p.local + "|" + p.periodo));
+  const fim = ate + "-31";
+  for (let d = hojeISO(); d <= fim; d = somaDias(d, 1)) {
+    cad.regrasPlantao.forEach(g => {
+      if (!regraNoDia(g, d)) return;
+      const chave = d + "|" + g.local + "|" + g.periodo; if (existe.has(chave)) return;
+      const valor = Number(g.valor) > 0 ? Number(g.valor) : Number((cad.tabelaPlantao[g.local] || {})[diaSemana(d)]) || 0;
+      existe.add(chave);
+      novos.push({ id:novoId(), data:d, periodo:g.periodo, local:g.local, tipo:"Regular", valor, realizar:true });
+    });
+  }
+  return novos;
+}
+let ultimosLancados = null;   // para o "Desfazer" logo depois de lançar pelas regras
+let ateEscolhido = null;      // o último "até" escolhido continua escolhido
+function regras(){
+  if (!cad.locais.length) return "";
+  const hoje = hojeISO(), anoQueVem = Number(hoje.slice(0, 4)) + 1;
+  const meses = []; for (let i = 0, k = hoje.slice(0, 7); i < 18; i++, k = mesDepois(k)) meses.push(k);
+  const padrao = ateEscolhido || anoQueVem + "-06";
+  const lista = cad.regrasPlantao.length
+    ? `<ul class="regras">${cad.regrasPlantao.map(g => `<li><span>${fraseRegra(g)}${Number(g.valor) > 0 ? ` · ${dinheiro(g.valor)}` : ""}</span><button class="x" data-apagar="regrasPlantao:${escH(g.id)}" aria-label="Apagar regra" title="Apagar regra">×</button></li>`).join("")}</ul>`
+    : `<p class="vazio">Nenhuma regra ainda. Exemplo: Hospital, noturno, toda sexta.</p>`;
+  const desfazer = ultimosLancados ? `<p class="aviso" style="background:var(--pos-soft)">${ultimosLancados.length} ${ultimosLancados.length === 1 ? "plantão lançado" : "plantões lançados"}. <button class="b s" type="button" id="desfazerRegras">Desfazer</button></p>` : "";
+  return `<details class="origem" id="dRegras"${ultimosLancados ? " open" : ""}><summary>Plantões fixos</summary>
+    <p>Diga como os plantões se repetem e o app lança os que faltam, até o mês escolhido. Os que já estão lançados não mudam.</p>
+    ${lista}
+    <form class="linha" id="fRegra" autocomplete="off" style="margin-top:10px">
+      <div><label>Local</label><select name="local">${cad.locais.map(L => `<option>${escH(L.nome)}</option>`).join("")}</select></div>
+      <div><label>Período</label><select name="periodo">${PERIODOS.map(p => `<option>${p}</option>`).join("")}</select></div>
+      <div><label>Dia</label><select name="dia">${DIAS.map((d, i) => `<option value="${i}">${d}</option>`).join("")}</select></div>
+      <div><label>Quando</label><select name="quando">${FREQS.map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select></div>
+      <div><label>A partir de</label><input type="date" name="inicio" value="${hoje}" required></div>
+      <div><label>Valor (vazio = tabela)</label><input name="valor" type="text" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="da tabela"></div>
+      <div><button class="b p" type="submit">Guardar regra</button></div></form>
+    ${cad.regrasPlantao.length ? `<form class="linha" id="fLancarRegras" style="margin-top:10px">
+      <div class="largo"><label>Lançar os que faltam até</label><select name="ate">${meses.map(k => `<option value="${k}"${k === padrao ? " selected" : ""}>${nomeMes(k)} de ${k.slice(0, 4)}</option>`).join("")}</select></div>
+      <div><button class="b p" type="submit">Lançar plantões</button></div></form>` : ""}
+    ${desfazer}</details>`;
 }
 
 // Atendimentos particulares (pedido dele, 03/10/2026): quem foi o paciente, quanto pagou e em que
@@ -755,6 +832,21 @@ function ligar(){
   });
   const fpe = document.getElementById("fPlantao");
   if (fpe && fpe.elements.id.value) modoEdicao(fpe, true, "Guardar alteração");
+  liga("fRegra", d => {
+    cad.regrasPlantao.push({ id:novoId(), local:d.local, periodo:d.periodo, dia:Number(d.dia), quando:d.quando, inicio:d.inicio || hojeISO(), valor:deReais(d.valor) || 0 });
+    ultimosLancados = null; salvar();
+  });
+  liga("fLancarRegras", d => {
+    ateEscolhido = d.ate;
+    const novos = plantoesDasRegras(d.ate);
+    if (!novos.length) { alert("Nenhum plantão novo: os dessas regras até " + nomeMes(d.ate) + " de " + d.ate.slice(0, 4) + " já estão lançados."); return; }
+    const semValor = novos.filter(p => !p.valor).length;
+    if (!confirm(`Lançar ${novos.length} ${novos.length === 1 ? "plantão" : "plantões"}, de ${dataCurta(novos[0].data)} até ${dataCurta(novos[novos.length - 1].data)}/${novos[novos.length - 1].data.slice(0, 4)}?`
+      + (semValor ? `\n\n${semValor} ficam sem valor: falta o valor desse dia na tabela do local.` : ""))) return;
+    cad.plantoes.push(...novos); ultimosLancados = novos.map(p => p.id); salvar();
+  });
+  const dr = document.getElementById("desfazerRegras");
+  if (dr) dr.onclick = () => { const ids = new Set(ultimosLancados || []); cad.plantoes = cad.plantoes.filter(p => !ids.has(p.id)); ultimosLancados = null; salvar(); };
   liga("fLocal", d => {
     const nome = d.nome.trim(); if (!nome || cad.locais.some(L => L.nome === nome)) return;
     cad.locais.push({ nome, pagaMesSeguinte: d.paga === "1" }); salvar();
