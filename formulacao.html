@@ -792,7 +792,16 @@ const AJUDA = {
 const htmlAjuda = v => '<div class="ajuda so-explica">' + AJUDA[v] + "</div>";
 
 /* ---------- desenho: registros e módulos ---------- */
-function comTags(t){ return esc(t).replace(RE_TAG, (tudo, nome) => '<button type="button" class="tag" data-tag="' + esc(nome.toLowerCase()) + '">#' + nome + '</button>'); }
+/* as hashtags se procuram no texto cru e cada pedaço é escapado depois: escapando antes, um apóstrofo
+   virava "&#39;" e aparecia uma hashtag "#39" que ninguém escreveu */
+function comTags(t){
+  const txt = String(t == null ? "" : t); let h = "", i = 0;
+  txt.replace(RE_TAG, (tudo, nome, pos) => {
+    h += esc(txt.slice(i, pos)) + '<button type="button" class="tag" data-tag="' + esc(nome.toLowerCase()) + '">#' + esc(nome) + '</button>';
+    i = pos + tudo.length; return tudo;
+  });
+  return h + esc(txt.slice(i));
+}
 
 /* as ligações que saem ou chegam num registro, sem as evidências que chegam numa hipótese (essas aparecem no resumo dela) */
 function ligacoesDe(c, it){
@@ -1296,6 +1305,7 @@ function abrirItem(alvo){
   $("it-titulo").textContent = it ? "Editar registro" : alvo.livre && alvo.hip ? "Nova hipótese" : "Novo registro";
   $("it-onde").textContent = alvo.livre ? "Escolha abaixo onde ela fica." : m && k ? m.nome + (k.nome ? " › " + k.nome : "") : "Fora do modelo";
   $("it-texto").value = it ? it.texto : "";
+  $("it-texto").dataset.antes = $("it-texto").value;
   $("it-texto").placeholder = (k && k.dica) || (m && m.dica) || "";
   $("it-data").value = it ? (it.data || "") : hoje();
   $("it-hip").value = (it ? it.hip : alvo.livre ? !!alvo.hip : !!(k && k.hip)) ? "1" : "0";
@@ -1595,6 +1605,8 @@ function criarExemplo(){
 }
 
 /* ---------- saída: texto, impressão, imagem e cópia ---------- */
+/* o nome do arquivo baixado leva só o código do caso: o arquivo pode ir parar numa pasta, num e-mail ou num pendrive */
+function nomeArquivo(c){ return String(c.codigo || "sem código " + hoje()).replace(/[\\/:*?"<>|]/g, "-"); }
 function baixar(nome, conteudo, tipo){
   const a = document.createElement("a");
   a.href = URL.createObjectURL(conteudo instanceof Blob ? conteudo : new Blob([conteudo], {type:tipo})); a.download = nome; a.click();
@@ -1650,12 +1662,12 @@ function baixarImagemRede(){
   img.onload = () => {
     const k = 2, cv = document.createElement("canvas"); cv.width = 1200 * k; cv.height = r.altura * k;
     const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0, cv.width, cv.height);
-    cv.toBlob(b => baixar("Rede de processos - " + (c.codigo || c.nome) + ".png", b, "image/png"));
+    cv.toBlob(b => baixar("Rede de processos - " + nomeArquivo(c) + ".png", b, "image/png"));
   };
   img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(r.svg);
 }
 $("imprimir").addEventListener("click", imprimir);
-$("baixar-texto").addEventListener("click", () => { const c = caso(); baixar("Formulação de Caso - " + (c.codigo || c.nome) + ".txt", textoDoCaso(c), "text/plain;charset=utf-8"); });
+$("baixar-texto").addEventListener("click", () => { const c = caso(); baixar("Formulação de Caso - " + nomeArquivo(c) + ".txt", textoDoCaso(c), "text/plain;charset=utf-8"); });
 $("baixar-copia").addEventListener("click", () => baixar("Formulação de Caso - cópia " + hoje() + ".json", JSON.stringify(livro, null, 1), "application/json"));
 $("restaurar").addEventListener("click", () => $("arq-copia").click());
 $("arq-copia").addEventListener("change", async e => {
@@ -1754,7 +1766,12 @@ $("conteudo").addEventListener("toggle", e => {
   if (d.dataset.modulo) d.open ? fechados.delete(d.dataset.modulo) : fechados.add(d.dataset.modulo);
   else if (d.classList.contains("ed-mod")) d.open ? edAbertos.add(d.dataset.mod) : edAbertos.delete(d.dataset.mod);
 }, true);
-document.querySelectorAll("dialog [data-fechar]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
+/* fechar o registro (Cancelar ou Esc) com texto novo pergunta antes, para não perder o que foi escrito */
+const perderTexto = () => { const t = $("it-texto"); return t.value.trim() !== (t.dataset.antes || "").trim() && !confirm("Descartar o que foi escrito neste registro?"); };
+$("dlg-item").addEventListener("cancel", e => { if (perderTexto()) e.preventDefault(); });
+document.querySelectorAll("dialog [data-fechar]").forEach(b => b.addEventListener("click", () => {
+  const d = b.closest("dialog"); if (d.id === "dlg-item" && perderTexto()) return; d.close();
+}));
 
 desenhar();
 Nuvem.iniciar();

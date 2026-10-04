@@ -127,10 +127,15 @@ var Categorias = (function(){
     n.categorias = 2;
     return n;
   }
+  // Como no Dinheiro, a troca de nomes roda uma vez só por caderno (marca categorias: 2). Antes rodava
+  // a cada abertura e desfazia escolhas feitas depois: uma compra posta em Mercado com "farmácia" na
+  // descrição voltava sozinha para Farmácia.
   function cadernoCasa(d){
     if (!d) return d;
+    if (d.categorias === 2) return d;
     var n = Object.assign({}, d);
     n.lancamentos = (d.lancamentos || []).map(lancCasa);
+    n.categorias = 2;
     return n;
   }
 

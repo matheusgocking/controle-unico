@@ -1136,18 +1136,28 @@ function normalizar(d){
    datas e valores ficam como estão. Pagamento: o segundo com o mesmo número ganha um novo (nada
    aponta para o número de um pagamento). Paciente: o segundo ganha um novo, e os pagamentos e
    encaixes dele (reconhecidos pelo código do prontuário) passam a apontar para o número novo. */
+/* Números de identificação repetidos (04/10/2026). O número novo é calculado a partir do antigo
+   (a segunda ocorrência de "g123" vira "g123~2"), e não sorteado: assim o celular e o computador,
+   consertando cada um a sua cópia, chegam ao mesmo número, e a junção das duas cópias não duplica
+   o pagamento. Só o número interno muda; nome, código, valores e datas ficam como estão. */
 function consertarIds(d){
   var trocas = 0;
+  function proximo(base, usados){ var n = 2, id; do { id = base + "~" + n++; } while(usados["k"+id]); return id; }
+  var usados = {};
+  d.pagamentos.forEach(function(g){ if(g.id) usados["k"+g.id] = (usados["k"+g.id]||0) + 1; });
   var vistos = {};
-  d.pagamentos.forEach(function(g){
-    if(!g.id || vistos["k"+g.id]){ g.id = novoId("g"); trocas++; }
+  d.pagamentos.forEach(function(g, i){
+    if(!g.id){ g.id = proximo("g-sem-numero-" + i, usados); usados["k"+g.id] = 1; trocas++; }
+    else if(vistos["k"+g.id]){ g.id = proximo(g.id, usados); usados["k"+g.id] = 1; trocas++; }
     vistos["k"+g.id] = true;
   });
+  usados = {};
+  d.pacientes.forEach(function(pc){ if(pc.id) usados["k"+pc.id] = 1; });
   vistos = {};
-  d.pacientes.forEach(function(pc){
+  d.pacientes.forEach(function(pc, i){
     if(pc.id && !vistos["k"+pc.id]){ vistos["k"+pc.id] = pc; return; }
     var antigo = pc.id, primeiro = antigo ? vistos["k"+antigo] : null;
-    pc.id = novoId("p"); trocas++;
+    pc.id = proximo(antigo || "p-sem-numero-" + i, usados); usados["k"+pc.id] = 1; trocas++;
     vistos["k"+pc.id] = pc;
     if(!antigo || !primeiro || !pc.codigo || pc.codigo === primeiro.codigo) return;
     d.pagamentos.forEach(function(g){ if(g.pacienteId===antigo && g.codigo && g.codigo===pc.codigo) g.pacienteId = pc.id; });
@@ -1830,7 +1840,12 @@ function renderMes(){
       (feriado ? '<span class="fer">Feriado · '+esc(feriado)+'</span>' : "") +
       '<span class="pill'+(ss.length?"":" vazio")+'">'+(ss.length ? '<b>'+ss.length+'</b>'+(ss.length>1?"sessões":"sessão") : "livre")+'</span>' +
       (ss.length ? '<div class="linha"><span>'+ss.map(function(s){ return String(s.hora)+"h"; }).join(" · ")+'</span></div>' : "");
-    cel.addEventListener("click", function(dd){ return function(){ semana = inicioSemana(dd); mostrarView("semana"); renderTudo(); }; }(d));
+    /* o dia também abre pelo teclado (Tab até ele e Enter) */
+    cel.tabIndex = 0; cel.setAttribute("role","button");
+    cel.setAttribute("aria-label", d.toLocaleDateString("pt-BR",{day:"numeric", month:"long"}) + ": " + (ss.length ? ss.length + (ss.length>1 ? " sessões" : " sessão") : "livre") + ". Abrir a semana");
+    var abreSemana = function(dd){ return function(){ semana = inicioSemana(dd); mostrarView("semana"); renderTudo(); }; }(d);
+    cel.addEventListener("click", abreSemana);
+    cel.addEventListener("keydown", function(f){ return function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); f(); } }; }(abreSemana));
     alvo.appendChild(cel);
   }
 

@@ -16,6 +16,8 @@
      dataPadrao: "AAAA-MM-DD",
      lancar:  function(onde, dados) → devolve a função que desfaz o lançamento,
      alterar: function(onde, id, dados) → grava a alteração de um lançamento que já existe
+              (se devolver uma função, ela desfaz a alteração),
+     apagar:  function(onde, id) → apaga o lançamento e devolve a função que o põe de volta (opcional)
    }
    Este arquivo é público: só desenho e regra, nenhum dado. */
 var FormLancamento = (function(){
@@ -48,7 +50,7 @@ var FormLancamento = (function(){
     ".lanc-chips input:checked + span{background:var(--text);border-color:var(--text);color:var(--surface);font-weight:600}" +
     ".lanc-grupo{display:grid;grid-template-columns:104px minmax(0,1fr);gap:4px 10px;align-items:start}" +
     ".lanc-grupo + .lanc-grupo{margin-top:8px}" +
-    ".lanc-grupo > i{font-style:normal;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding-top:9px}" +
+    ".lanc-grupo > i{font-style:normal;font-size:12px;color:var(--faint);padding-top:9px}" +
     ".lanc-grupo.solto{grid-template-columns:minmax(0,1fr)} .lanc-grupo.solto > i{display:none}" +
     ".lanc-duas{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}" +
     ".lanc-dia{display:flex;gap:6px;align-items:center;flex-wrap:wrap} .lanc-dia input{width:auto;flex:1 1 150px}" +
@@ -60,6 +62,8 @@ var FormLancamento = (function(){
     ".lanc-ok{border:0;font:inherit;font-size:15px;font-weight:600;padding:10px 18px;border-radius:var(--radius);cursor:pointer;color:#fff;background:var(--lanc-pessoal)}" +
     ".lanc-form.casa .lanc-ok{background:var(--lanc-casa)}" +
     ":root[data-theme=dark] .lanc-ok{color:#10141a} @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .lanc-ok{color:#10141a}}" +
+    ".lanc-apagar{margin-left:auto;border:1px solid transparent;background:transparent;color:var(--neg);font:inherit;font-size:14px;padding:9px 12px;border-radius:var(--radius);cursor:pointer}" +
+    ".lanc-apagar:hover{border-color:var(--neg)}" +
     ".lanc-cancelar{border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:14px;padding:9px 14px;border-radius:var(--radius);cursor:pointer}" +
     ".lanc-erro{color:var(--neg);font-size:13px;font-weight:500}" +
     ".lanc-feito{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--pos);background:var(--pos-soft);border-radius:var(--radius);padding:8px 12px}" +
@@ -71,7 +75,7 @@ var FormLancamento = (function(){
       ".lanc-grupo{grid-template-columns:1fr} .lanc-grupo > i{padding-top:0}" +
       ".lanc-chips span{min-height:38px;padding:6px 13px;font-size:14px}" +
       ".lanc-duas{grid-template-columns:1fr}" +
-      ".lanc-ok,.lanc-cancelar{width:100%;padding:12px}" +
+      ".lanc-ok,.lanc-cancelar{width:100%;padding:12px} .lanc-apagar{width:100%;margin-left:0;border-color:var(--line)}" +
     "}";
 
   var ICONE = {
@@ -109,8 +113,8 @@ var FormLancamento = (function(){
   };
   var centavos = function(s){ return Number(String(s == null ? "" : s).replace(/\D/g, "")) / 100; };
 
-  function chips(nome, itens, atual){
-    return '<div class="lanc-chips">' + itens.map(function(it){
+  function chips(nome, itens, atual, rotulo){
+    return '<div class="lanc-chips" role="radiogroup"' + (rotulo ? ' aria-label="' + esc(rotulo) + '"' : "") + '>' + itens.map(function(it){
       var v = Array.isArray(it) ? it[0] : it, r = Array.isArray(it) ? it[1] : it;
       return '<label><input type="radio" name="' + nome + '" value="' + esc(v) + '"' + (v === atual ? " checked" : "") + '><span>' + esc(r) + '</span></label>';
     }).join("") + '</div>';
@@ -150,7 +154,7 @@ var FormLancamento = (function(){
         h += '<p class="lanc-falta">Escolha primeiro de quem é. O resto do lançamento aparece em seguida.</p>';
       } else {
         if (tipos){
-          h += '<div><span class="lanc-rot">O que é</span>' + chips("tipo", tipos.map(function(t){ return [t[0], t[1]]; }), tipo) +
+          h += '<div><span class="lanc-rot">O que é</span>' + chips("tipo", tipos.map(function(t){ return [t[0], t[1]]; }), tipo, "O que é") +
             (function(){ var t = tipos.filter(function(x){ return x[0] === tipo; })[0]; return t && t[2] ? '<p class="lanc-nota" style="margin-top:6px">' + esc(t[2]) + '</p>' : ""; })() + '</div>';
         }
         h += '<div class="lanc-campo"><label for="lanc-data">Dia</label><div class="lanc-dia"><input type="date" id="lanc-data" name="data" value="' + esc(est.data) + '" required>' +
@@ -158,7 +162,7 @@ var FormLancamento = (function(){
           '<button type="button" class="lanc-mini" data-dia="' + ontem() + '" aria-pressed="' + (est.data === ontem()) + '">Ontem</button></div></div>';
         if (!semCategoria){
           h += '<div><span class="lanc-rot">Categoria</span>' + lado.grupos.map(function(g){
-            return '<div class="lanc-grupo' + (g[0] ? "" : " solto") + '"><i>' + esc(g[0]) + '</i>' + chips("categoria", g[1].map(function(c){ return [c, comPonto(c)]; }), est.cat[o]) + '</div>';
+            return '<div class="lanc-grupo' + (g[0] ? "" : " solto") + '"><i>' + esc(g[0]) + '</i>' + chips("categoria", g[1].map(function(c){ return [c, comPonto(c)]; }), est.cat[o], "Categoria" + (g[0] ? ": " + g[0] : "")) + '</div>';
           }).join("") + '</div>';
         }
         // a ordem que ele pediu: categoria, descrição (opcional), valor e, por fim, a forma de pagamento
@@ -166,10 +170,11 @@ var FormLancamento = (function(){
           '<div class="lanc-campo"><label for="lanc-desc">Descrição <small>(opcional)</small></label><input id="lanc-desc" name="descricao" autocomplete="off" placeholder="' +
             (semCategoria ? (tipo === "Receita" ? "de onde veio" : "para que foi") : "se quiser lembrar o que foi") + '" value="' + esc(est.descricao) + '"></div>' +
           '<div class="lanc-campo"><label for="lanc-valor">Valor</label><div class="lanc-valor"><i>R$</i><input type="text" id="lanc-valor" name="valor" inputmode="numeric" autocomplete="off" placeholder="0,00" value="' + esc(est.valor) + '" required></div></div></div>';
-        if (o === "pessoal") h += '<div><span class="lanc-rot">Forma de pagamento</span>' + chips("forma", cfg.pessoal.formas, est.forma) + '</div>';
-        else h += '<div><span class="lanc-rot">Quem comprou</span>' + chips("quem", cfg.casa.pessoas.map(function(p){ return [p, String(p).split(" ")[0]]; }), est.quem) + '</div>';
+        if (o === "pessoal") h += '<div><span class="lanc-rot">Forma de pagamento</span>' + chips("forma", cfg.pessoal.formas, est.forma, "Forma de pagamento") + '</div>';
+        else h += '<div><span class="lanc-rot">Quem comprou</span>' + chips("quem", cfg.casa.pessoas.map(function(p){ return [p, String(p).split(" ")[0]]; }), est.quem, "Quem comprou") + '</div>';
         h += '<div class="lanc-pe"><button type="submit" class="lanc-ok">' + (alterando ? "Guardar a alteração" : (o === "pessoal" ? "Lançar em Pessoal" : "Lançar na Casa")) + '</button>' +
           (alterando ? '<button type="button" class="lanc-cancelar">Cancelar</button>' : "") +
+          (alterando && typeof cfg.apagar === "function" ? '<button type="button" class="lanc-apagar">Apagar este lançamento</button>' : "") +
           '<span class="lanc-erro" role="alert">' + esc(est.erro) + '</span></div>';
       }
       if (est.feito) h += '<div class="lanc-feito" role="status"><span>' + esc(est.feito.texto) + '</span>' +
@@ -213,6 +218,17 @@ var FormLancamento = (function(){
     };
     var canc = form.querySelector(".lanc-cancelar");
     if (canc) canc.onclick = function(){ limpar(est, cfg); est.aberto = false; redesenhar(); };
+    var apg = form.querySelector(".lanc-apagar");
+    if (apg) apg.onclick = function(){
+      if (!confirm("Apagar este lançamento?")) return;
+      var id = est.editando, resumo = (est.cat[o] || tipo || "Lançamento") + (est.valor ? ", R$ " + est.valor : "") + ".";
+      limpar(est, cfg); est.aberto = true; est.onde = o;
+      var feito = { texto:"Apagado: " + resumo, desfaz:true, desfazer:null };
+      est.feito = feito;
+      feito.desfazer = cfg.apagar(o, id) || null;
+      if (!feito.desfazer){ feito.desfaz = false; if (el.isConnected) redesenhar(); }
+      if (el.isConnected) redesenhar();
+    };
     // o redesenho da página não pode tirar o cursor do campo em que ele está digitando
     if (est.foco && (!doc.activeElement || doc.activeElement === doc.body)){
       var campo = form.querySelector('[name="' + est.foco + '"]');
@@ -235,8 +251,11 @@ var FormLancamento = (function(){
       if (alterando){
         var id = est.editando;
         limpar(est, cfg); est.aberto = true; est.onde = o;
-        est.feito = { texto:"Alterado: " + resumo, desfaz:false };
-        cfg.alterar(o, id, dados);
+        // desfaz já marcado: a página se redesenha dentro do alterar, antes de a função de desfazer chegar
+        var alt = { texto:"Alterado: " + resumo, desfaz:true, desfazer:null };
+        est.feito = alt;
+        var volta = cfg.alterar(o, id, dados);
+        if (typeof volta === "function") alt.desfazer = volta; else alt.desfaz = false;
       } else {
         var feito = { texto:"Lançado " + (o === "pessoal" ? "em Pessoal" : "na Casa") + ": " + resumo, desfaz:true, desfazer:null };
         est.valor = ""; est.descricao = ""; est.cat[o] = ""; est.erro = ""; est.foco = ""; est.feito = feito;

@@ -642,3 +642,47 @@ var Nuvem = (function(){
     pior: pior, algumPendente: algumPendente, sair: sair
   };
 })();
+
+/* Aviso de erro na tela (04/10/2026). Antes, um erro de programa ou o navegador sem espaço para
+   guardar a cópia local passavam calados: a tela parava de responder ou a mudança só existia até
+   fechar a aba. Agora aparece uma faixa dizendo o que fazer. O Drive continua sendo o lugar seguro. */
+(function(){
+  var mostrado = {};
+  function faixa(chave, texto){
+    if(mostrado[chave]) return; mostrado[chave] = true;
+    var pinta = function(){
+      if(!document.body) return setTimeout(pinta, 200);
+      var d = document.createElement("div");
+      d.setAttribute("role", "alert");
+      d.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;max-width:560px;margin:0 auto;padding:12px 14px;border-radius:10px;" +
+        "background:#fbeaea;color:#7a1f1f;border:1px solid #e5b4b4;font:14px/1.4 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.18);display:flex;gap:12px;align-items:flex-start";
+      var p = document.createElement("span"); p.style.flex = "1"; p.textContent = texto;
+      var x = document.createElement("button"); x.type = "button"; x.textContent = "Fechar";
+      x.style.cssText = "border:1px solid currentColor;background:transparent;color:inherit;border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit";
+      x.onclick = function(){ d.remove(); };
+      d.appendChild(p); d.appendChild(x); document.body.appendChild(d);
+    };
+    pinta();
+  }
+  window.addEventListener("error", function(e){
+    // erro de imagem ou script de fora (Google) não é da tela
+    if(!e || !e.message || /^Script error/.test(e.message)) return;
+    faixa("erro", "Algo deu errado nesta tela. O que já foi guardado está a salvo; recarregue a página. Se repetir, avise com um print desta mensagem: " + e.message);
+  });
+  window.addEventListener("unhandledrejection", function(e){
+    var m = e && e.reason && (e.reason.message || String(e.reason));
+    if(!m || /Failed to fetch|NetworkError|Load failed|abort/i.test(m)) return;   // sem internet: a nuvem já avisa
+    faixa("erro", "Algo deu errado nesta tela. O que já foi guardado está a salvo; recarregue a página. Detalhe: " + m);
+  });
+  try{
+    var gravar = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k, v){
+      try{ return gravar.call(this, k, v); }
+      catch(e){
+        if(e && (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014))
+          faixa("cheio", "O navegador ficou sem espaço para guardar a cópia deste aparelho. Mantenha a conexão com o Google ativa: o que vai para o Drive continua seguro. Liberar espaço do navegador resolve.");
+        throw e;
+      }
+    };
+  }catch(e){}
+})();

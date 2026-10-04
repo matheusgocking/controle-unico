@@ -83,7 +83,8 @@ function zip(files) {
   return saida;
 }
 
-const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// tira os caracteres de controle que o XML não aceita (um deles colado numa descrição fazia o Excel recusar o arquivo)
+const esc = s => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const col = n => { let s = ""; n++; while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = (n - 1 - r) / 26; } return s; };
 
 function folha(linhas) {
@@ -136,5 +137,6 @@ function baixar(bytes, nomeArquivo) {
   a.href = url;
   a.download = nomeArquivo;
   a.click();
-  URL.revokeObjectURL(url);
+  // revogar na hora corta o download em alguns navegadores (Safari, Firefox)
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
