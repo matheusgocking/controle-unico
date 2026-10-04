@@ -216,6 +216,9 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 th .ord{border:0;background:transparent;color:inherit;font:inherit;padding:0;cursor:pointer}
 th .ord:hover{color:var(--text)}
 th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
+.botoes-plantao{display:flex;flex-wrap:wrap;gap:0 8px;align-items:flex-start}
+.botoes-plantao > details{flex:0 1 auto} .botoes-plantao > details[open]{flex:1 1 100%;order:-1}
+#dRegras > p{font-size:13px;color:var(--muted);margin:0 0 6px}
 ul.regras{list-style:none;margin:8px 0 0;padding:0;font-size:14px;color:var(--text)}
 ul.regras li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
 ul.regras li:first-child{border-top:0} ul.regras li span{flex:1;min-width:0}
@@ -510,10 +513,9 @@ function telaPlantoes(){
       <div class="stat"><span>Total do mês</span><b class="pos">${dinheiro(cp.total)}</b><small>regulares menos os que não vai, mais extras</small></div>
     </div>
     ${quando ? `<ul class="nota" style="margin:0 0 12px;padding-left:18px">${quando}</ul>` : ""}
-    ${form}
+    <div class="botoes-plantao">${form}${regras()}</div>
     ${lst.length ? `<table class="t plantoes"><thead><tr><th>Dia</th><th>Local</th><th>Período</th><th>Tipo</th><th class="dir">Valor</th><th>Vai?</th><th></th></tr></thead><tbody>${linhas}</tbody></table>`
       : `<p class="vazio">Nenhum plantão em ${nome}.</p>`}
-    ${regras()}
     ${valores}
   </section>`;
 }
@@ -569,7 +571,7 @@ function regras(){
     ? `<ul class="regras">${cad.regrasPlantao.map(g => `<li><span>${fraseRegra(g)}${Number(g.valor) > 0 ? ` · ${dinheiro(g.valor)}` : ""}</span><button class="x" data-apagar="regrasPlantao:${escH(g.id)}" aria-label="Apagar regra" title="Apagar regra">×</button></li>`).join("")}</ul>`
     : `<p class="vazio">Nenhuma regra ainda. Exemplo: Hospital, noturno, toda sexta.</p>`;
   const desfazer = ultimosLancados ? `<p class="aviso" style="background:var(--pos-soft)">${ultimosLancados.length} ${ultimosLancados.length === 1 ? "plantão lançado" : "plantões lançados"}. <button class="b s" type="button" id="desfazerRegras">Desfazer</button></p>` : "";
-  return `<details class="origem" id="dRegras"${ultimosLancados ? " open" : ""}><summary>Plantões fixos</summary>
+  return `<details class="novo" id="dRegras"${ultimosLancados ? " open" : ""}><summary>↻ Plantões que se repetem</summary>
     <p>Diga como os plantões se repetem e o app lança os que faltam, até o mês escolhido. Os que já estão lançados não mudam.</p>
     ${lista}
     <form class="linha" id="fRegra" autocomplete="off" style="margin-top:10px">
