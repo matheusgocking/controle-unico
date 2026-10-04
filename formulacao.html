@@ -85,14 +85,30 @@ ul.itens{list-style:none;margin:0;padding:0}
 .it-texto{white-space:pre-wrap;overflow-wrap:anywhere}
 .it-pe{display:flex;gap:4px 10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--faint);margin-top:2px}
 .it-pe .acoes{margin-left:auto;display:flex;gap:2px;flex-wrap:wrap}
-.it-pe .acoes button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:12.5px;padding:3px 7px;border-radius:6px;min-height:28px}
-.it-pe .acoes button:hover{background:var(--surface);color:var(--text)}
+.it-pe .acoes{gap:6px}
+.it-pe .acoes button{border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer;font-size:12.5px;padding:3px 11px;border-radius:99px;min-height:32px}
+.it-pe .acoes button:hover{border-color:var(--accent);color:var(--accent)}
+.it-pe .acoes button .n{color:var(--faint);font-size:12px}
+.item.pisca{animation:pisca 1.5s ease-out}
+@keyframes pisca{from{box-shadow:0 0 0 4px var(--accent)}to{box-shadow:0 0 0 4px transparent}}
+/* ligações de um registro: cada uma se lê como frase, e o outro registro é um atalho para ir até ele */
+.lgs{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--muted)}
+.lg{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:0 4px;align-items:baseline}
+.lg-seta{color:var(--accent);font-weight:700}
+.lg-corpo{min-width:0;overflow-wrap:anywhere}
+.lg-v{font-weight:600;color:var(--text)}
+.lg-alvo{display:inline;border:0;background:none;padding:0;color:var(--accent);text-align:left;cursor:pointer;font:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.lg-alvo:hover{text-decoration-color:var(--accent)}
+.lg-x{border:0;background:none;color:var(--faint);cursor:pointer;padding:0 8px;font-size:16px;line-height:1;min-height:28px;border-radius:6px}
+.lg-x:hover{color:var(--neg);background:var(--neg-soft)}
+.lg-mais summary{cursor:pointer;font-size:12.5px;color:var(--faint);padding:2px 0}
 .it-pe select{border:1px solid var(--line);background:var(--surface);border-radius:6px;font-size:12.5px;padding:2px 6px;min-height:28px}
 .selo{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--surface);color:var(--muted)}
 .selo.hip{background:var(--accent-soft);color:var(--accent)}
 .selo.prob{background:var(--neg-soft);color:var(--neg)}
 .selo.rec{background:var(--pos-soft);color:var(--pos)}
-.tag{border:0;background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:0 7px;cursor:pointer;font-weight:500;font-size:inherit}
+.tag{border:0;background:var(--accent-soft);color:var(--accent);border-radius:5px;padding:0 3px;margin:0;cursor:pointer;font-weight:500;font-size:inherit}
+.tag:hover{text-decoration:underline}
 .rels{margin:4px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)}
 .rels b{font-weight:600;color:var(--text)}
 .evid{font-size:12.5px;color:var(--muted);margin:4px 0 0}
@@ -185,6 +201,29 @@ dialog textarea{min-height:110px;resize:vertical}
 .marcar{display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-weight:400 !important;color:var(--text) !important;font-size:14.5px !important;margin:0 !important;cursor:pointer}
 .marcar input{width:20px;height:20px;accent-color:var(--accent);flex:none}
 .marcar .q{margin-left:auto;color:var(--faint);font-size:12.5px}
+/* hashtags sugeridas ao escrever um registro */
+.sug{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.sug .rot{font-size:12.5px;color:var(--faint);flex:1 1 100%}
+.sug button{border:1px solid var(--line);background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:2px 11px;font-size:13.5px;cursor:pointer;min-height:32px}
+.sug button:hover{border-color:var(--accent)}
+.sug .nova{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:99px;padding:3px 11px}
+/* escolha do tipo de ligação */
+dialog .tipos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+dialog .tipos label{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:var(--radius);padding:8px 10px;cursor:pointer;margin:0;font-weight:400;color:var(--text);font-size:14px}
+dialog .tipos label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+dialog .tipos input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+dialog .tipos b{display:block;font-weight:600}
+dialog .tipos small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35}
+dialog .grupo-tipos{font-size:12px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 4px}
+.frase{background:var(--surface-2);border-radius:var(--radius);padding:8px 12px;font-size:14px;margin:10px 0 0}
+.frase b{color:var(--accent)}
+.citacao{border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 6px 6px 0;padding:6px 10px;margin:0 0 4px;font-size:14px}
+.lista-alvo button.feito{opacity:.6;cursor:default}
+.lista-alvo button.feito:hover{background:none}
+.lista-alvo button .ok{color:var(--pos);font-weight:600}
+#dlg-ligar .pe-dlg{position:sticky;bottom:-18px;background:var(--surface);padding:10px 0 2px;margin-top:6px}
+#dlg-ligar details.mais-tipos summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);margin:12px 0 4px}
+.aviso-lg{margin:8px 0 0;font-size:13px;color:var(--pos);font-weight:600;min-height:1.4em}
 .ajuda{background:var(--accent-soft);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin-top:14px;font-size:14px}
 .ajuda b{color:var(--accent)}
 .ajuda ol{margin:6px 0 0;padding-left:20px} .ajuda li{margin:3px 0} .ajuda p{margin:0} .ajuda p + p{margin-top:6px}
@@ -225,6 +264,10 @@ body.com-explicacao .so-explica{display:block}
   .campo{grid-template-columns:minmax(0,1fr)}
   .rel{grid-template-columns:minmax(0,1fr)}
   .linha2{grid-template-columns:1fr}
+  dialog .tipos{grid-template-columns:1fr}
+  dialog .tipos label{padding:6px 10px;align-items:center}
+  dialog .tipos small{display:none}
+  dialog .tipos label:has(input:checked) small{display:block}
   .vistas button{padding:9px 9px}
   .modelos,.ed-topo,.ed-cab{grid-template-columns:1fr}
   .ed-cols{display:none}
@@ -232,7 +275,7 @@ body.com-explicacao .so-explica{display:block}
   .ed-campo .larga{grid-column:1/-1}
   select,input,textarea{font-size:16px !important}
 }
-@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} .item.pisca{animation:none;outline:2px solid var(--accent)} }
 @media print{
   @page{margin:15mm}
   body{background:#fff !important;color:#000;font:10.5pt/1.45 var(--font)}
@@ -292,7 +335,8 @@ body.com-explicacao .so-explica{display:block}
     <p class="onde" id="it-onde"></p>
     <label for="it-texto">O que registrar</label>
     <textarea id="it-texto" required placeholder=""></textarea>
-    <p class="dica so-explica" style="margin-top:4px">Dado é o que o paciente relatou ou você observou; hipótese é a sua leitura do caso, para ser posta à prova. Escreva #palavra no texto para juntar registros do mesmo tema.</p>
+    <div class="sug" id="it-sug" aria-live="polite"></div>
+    <p class="dica so-explica" style="margin-top:4px">Dado é o que o paciente relatou ou você observou; hipótese é a sua leitura do caso, para ser posta à prova. Escreva # e uma palavra, ou toque numa hashtag da lista, para juntar registros do mesmo tema.</p>
     <div class="linha2">
       <div><label for="it-data">Data</label><input type="date" id="it-data"></div>
       <div><label for="it-hip">É dado ou hipótese?</label>
@@ -315,17 +359,18 @@ body.com-explicacao .so-explica{display:block}
 
 <dialog id="dlg-ligar">
   <h2 id="lg-titulo">Ligar a outro registro</h2>
-  <p class="onde" id="lg-de"></p>
+  <p class="citacao" id="lg-de"></p>
   <p class="dica so-explica" id="lg-dica"></p>
-  <div class="linha2">
-    <div><label for="lg-tipo" id="lg-tipo-rot">Este registro</label><select id="lg-tipo"></select></div>
-    <div id="lg-forca-caixa"><label for="lg-forca">Força da ligação</label>
-      <select id="lg-forca"><option value="1">Fraca</option><option value="2" selected>Média</option><option value="3">Forte</option></select></div>
-  </div>
-  <label for="lg-busca">Qual registro?</label>
-  <input type="search" id="lg-busca" placeholder="Procurar no texto">
+  <label id="lg-tipo-rot">1. Como eles se relacionam?</label>
+  <div id="lg-tipos"></div>
+  <p class="frase" id="lg-frase"></p>
+  <div id="lg-forca-caixa"><label for="lg-forca">Força da ligação</label>
+    <select id="lg-forca"><option value="1">Fraca</option><option value="2" selected>Média</option><option value="3">Forte</option></select></div>
+  <label for="lg-busca">2. Com qual registro? <span style="font-weight:400">Toque nele para ligar.</span></label>
+  <input type="search" id="lg-busca" placeholder="Buscar texto ou #hashtag" autocomplete="off">
   <div class="lista-alvo" id="lg-lista"></div>
-  <div class="pe-dlg"><button class="b" type="button" data-fechar>Fechar</button></div>
+  <p class="aviso-lg" id="lg-aviso" aria-live="polite"></p>
+  <div class="pe-dlg"><button class="b p" type="button" data-fechar>Pronto</button></div>
 </dialog>
 
 <dialog id="dlg-modulos">
@@ -692,7 +737,8 @@ let livro = normalizar((() => { try { return JSON.parse(localStorage.getItem(CH)
 let abertoId = (() => { try { return localStorage.getItem(CH_ABERTO); } catch(e){ return null; } })();
 let vista = (() => { const h = location.hash.slice(1); return h === "relacoes" ? "rede" : ["hipoteses","rede","medidas","hashtags"].includes(h) ? h : "formulacao"; })();
 let tela = "caso", editando = null, tagAberta = null;
-const fechados = new Set(), edAbertos = new Set();
+/* a Revisão começa fechada: o que o terapeuta registrou vem antes; o placar continua à vista */
+const fechados = new Set(["__revisao"]), edAbertos = new Set();
 /* a explicação vem ligada na primeira visita, como na Rede PBT, e o aparelho lembra a escolha */
 let explica = (() => { try { return localStorage.getItem(CH_EXPLICA) !== "0"; } catch(e){ return true; } })();
 
@@ -747,8 +793,8 @@ const AJUDA = {
   formulacao: "<p><b>Como usar.</b> A formulação é feita de registros soltos, que você liga depois.</p><ol>" +
     "<li>Toque em <b>＋ Registro</b> no assunto certo e escreva a informação uma vez só.</li>" +
     "<li>Diga se é <b>dado</b> (o paciente relatou ou você observou) ou <b>hipótese</b> (a sua leitura). Hipótese aparece com a borda tracejada e vai para a aba Hipóteses, para ser posta à prova.</li>" +
-    "<li>Escreva <b>#palavra</b> no texto para criar uma hashtag: ela junta registros de módulos diferentes que falam do mesmo tema.</li>" +
-    "<li>Toque em <b>Ligar</b> para dizer que um registro leva a outro, mantém, aumenta ou reduz, ou que um dado sustenta ou contradiz uma hipótese.</li>" +
+    "<li>Escreva <b>#</b> e uma palavra para criar uma hashtag, ou toque numa das que o caso já tem: ela junta registros de módulos diferentes que falam do mesmo tema. Toque numa hashtag para ver todos os registros dela.</li>" +
+    "<li>Toque em <b>Ligar</b> para dizer que um registro leva a outro, mantém, aumenta ou reduz, ou que um dado sustenta ou contradiz uma hipótese. As ligações aparecem embaixo do registro: toque no nome do outro para ir até ele.</li>" +
     "<li>A <b>Revisão</b>, no alto, lê o que você já registrou e aponta o que costuma faltar numa formulação útil. Não é nota.</li></ol>",
   hipoteses: "<p><b>Hipótese é para ser testada.</b> Ligue a cada uma os dados que a sustentam ou a contradizem (<b>＋ Evidência</b>) e mude a situação quando o caso mostrar: em aberto, sustentada, revista ou descartada. A hipótese descartada sai da rede, mas continua guardada, com a data, para você ver como a formulação mudou.</p>",
   rede: "<p><b>As ligações desenhadas como rede de processos.</b> Cada registro com ligação vira um nó numa das nove áreas (as mesmas da Rede PBT). A área é sugerida pelo lugar do registro e você troca em Editar. Vermelho é problema, verde é recurso, borda dupla é intervenção e borda tracejada é hipótese; a espessura da seta é a força da ligação. Objetivos, hipóteses descartadas e ligações de evidência não entram no desenho; ficam na lista embaixo.</p>",
@@ -763,17 +809,23 @@ const htmlAjuda = v => '<div class="ajuda so-explica">' + AJUDA[v] + "</div>";
 /* ---------- desenho: registros e módulos ---------- */
 function comTags(t){ return esc(t).replace(RE_TAG, (tudo, nome) => '<button type="button" class="tag" data-tag="' + esc(nome.toLowerCase()) + '">#' + nome + '</button>'); }
 
+/* as ligações que saem ou chegam num registro, sem as evidências que chegam numa hipótese (essas aparecem no resumo dela) */
+function ligacoesDe(c, it){
+  return c.relacoes.filter(r => (r.de === it.id || r.para === it.id) && !(ehEvidencia(r.tipo) && r.para === it.id) &&
+    c.itens.some(i => i.id === (r.de === it.id ? r.para : r.de)));
+}
+const SEM_TAG = t => String(t).replace(/#/g, "");
 function htmlLigacoes(c, it){
-  const linhas = [];
-  c.relacoes.forEach(r => {
-    if (r.de !== it.id && r.para !== it.id) return;
-    if (ehEvidencia(r.tipo) && r.para === it.id) return;   // as evidências que chegam numa hipótese aparecem no resumo dela
-    const outro = c.itens.find(i => i.id === (r.de === it.id ? r.para : r.de));
-    if (!outro) return;
-    linhas.push(r.de === it.id ? "<li>→ <b>" + esc(r.tipo) + "</b>: " + esc(curto(outro.texto)) + "</li>"
-                               : "<li>← " + esc(curto(outro.texto)) + " <b>" + esc(r.tipo) + "</b> este</li>");
+  const linhas = ligacoesDe(c, it).map(r => {
+    const saindo = r.de === it.id, outro = c.itens.find(i => i.id === (saindo ? r.para : r.de));
+    const alvo = '<button type="button" class="lg-alvo" data-ir="' + outro.id + '" title="Ir até este registro">' + esc(curto(SEM_TAG(outro.texto), 80)) + "</button>";
+    const x = '<button type="button" class="lg-x" data-desligar="' + r.id + '" title="Desfazer esta ligação" aria-label="Desfazer esta ligação">×</button>';
+    return saindo ? '<li class="lg"><span class="lg-seta">→</span><span class="lg-corpo"><span class="lg-v">' + esc(r.tipo) + "</span> " + alvo + "</span>" + x + "</li>"
+                  : '<li class="lg"><span class="lg-seta">←</span><span class="lg-corpo">' + alvo + ' <span class="lg-v">' + esc(r.tipo) + "</span> este</span>" + x + "</li>";
   });
-  return linhas.length ? '<ul class="rels">' + linhas.join("") + "</ul>" : "";
+  if (!linhas.length) return "";
+  return '<ul class="lgs">' + linhas.slice(0, 3).join("") + "</ul>" +
+    (linhas.length > 3 ? '<details class="lg-mais"><summary>Mais ' + (linhas.length - 3) + (linhas.length - 3 === 1 ? " ligação" : " ligações") + '</summary><ul class="lgs">' + linhas.slice(3).join("") + "</ul></details>" : "");
 }
 function htmlEvidencias(c, it, completo){
   if (!it.hip) return "";
@@ -796,7 +848,7 @@ function htmlItem(c, it, op){
       (papel === "problema" ? '<span class="selo prob">Problema</span>' : papel === "recurso" ? '<span class="selo rec">Recurso</span>' : "") +
       (it.data ? "<span>" + dataBR(it.data) + "</span>" : "") +
       '<span class="acoes">' + (it.hip ? '<button type="button" data-evidencia>＋ Evidência</button>' : "") +
-      '<button type="button" data-ligar>Ligar</button><button type="button" data-editar>Editar</button></span></div></li>';
+      '<button type="button" data-ligar>Ligar' + (ligacoesDe(c, it).length ? ' <span class="n">· ' + ligacoesDe(c, it).length + "</span>" : "") + '</button><button type="button" data-editar>Editar</button></span></div></li>';
 }
 function htmlCampo(c, m, k){
   const itens = itensDe(c, m.id, k.id);
@@ -1281,7 +1333,7 @@ function abrirItem(alvo){
   $("it-apagar").classList.toggle("hidden", !it);
   $("it-outro").classList.toggle("hidden", !!it);
   if (!$("dlg-item").open) $("dlg-item").showModal();
-  $("it-texto").focus();
+  $("it-texto").focus(); mostrarSugestoes();
 }
 $("it-hip").addEventListener("change", mostrarStatus);
 $("f-item").addEventListener("submit", e => {
@@ -1316,53 +1368,111 @@ $("it-apagar").addEventListener("click", () => {
 });
 
 /* ---------- ligações e evidências ---------- */
-let ligando = null, ligarInverso = false;
+/* a janela explica cada tipo em palavras comuns, mostra a frase que vai ficar e deixa ligar vários de uma vez */
+let ligando = null, ligarInverso = false, ligadosAgora = 0;
+const DESC_LIGAR = {
+  "leva a":["Leva a","um provoca o outro"], "aumenta":["Aumenta","deixa o outro mais forte ou mais frequente"],
+  "mantém":["Mantém","faz o outro continuar acontecendo"], "reduz":["Reduz","deixa o outro menor ou mais raro"],
+  "está ligado a":["Está ligado a","têm relação, sem dizer qual causa qual"]
+};
+const FRASE_LIGAR = {"leva a":"leva ao", "aumenta":"aumenta o", "mantém":"mantém o", "reduz":"reduz o", "está ligado a":"está ligado ao"};
+const tipoLigar = () => { const r = document.querySelector('#lg-tipos input[name="lg-t"]:checked'); return r ? r.value : ""; };
+function cartaoTipo(v, nome, desc, marcado){
+  return '<label><input type="radio" name="lg-t" value="' + esc(v) + '"' + (marcado ? " checked" : "") + '><span><b>' + esc(nome) + "</b><small>" + esc(desc) + "</small></span></label>";
+}
 function abrirLigar(id, inverso){
   const c = caso(), it = c.itens.find(i => i.id === id);
-  ligando = id; ligarInverso = !!inverso;
-  $("lg-titulo").textContent = inverso ? "Evidência para esta hipótese" : "Ligar a outro registro";
-  $("lg-de").textContent = curto(it.texto, 120);
-  $("lg-tipo-rot").textContent = inverso ? "O dado escolhido é" : "Este registro";
-  $("lg-tipo").innerHTML = inverso
-    ? '<option value="sustenta">A favor (sustenta a hipótese)</option><option value="contradiz">Contra (contradiz a hipótese)</option>'
-    : '<optgroup label="Como um afeta o outro">' + LIG_CAUSAIS.map(t => "<option>" + t + "</option>").join("") + "</optgroup>" +
-      '<optgroup label="Evidência para uma hipótese">' + LIG_EVIDENCIA.map(t => "<option>" + t + "</option>").join("") + "</optgroup>";
+  ligando = id; ligarInverso = !!inverso; ligadosAgora = 0;
+  $("lg-titulo").textContent = inverso ? "Dado a favor ou contra esta hipótese" : "Ligar a outro registro";
+  $("lg-de").textContent = curto(SEM_TAG(it.texto), 160);
+  $("lg-tipo-rot").textContent = inverso ? "1. O dado que você escolher…" : "1. Como eles se relacionam?";
+  $("lg-tipos").innerHTML = inverso
+    ? '<div class="tipos">' + cartaoTipo("sustenta", "Sustenta", "apoia esta hipótese: é um dado a favor", true) + cartaoTipo("contradiz", "Contradiz", "enfraquece esta hipótese: é um dado contra", false) + "</div>"
+    : '<div class="tipos">' + LIG_CAUSAIS.map((t, k) => cartaoTipo(t, DESC_LIGAR[t][0], DESC_LIGAR[t][1], k === 0)).join("") + "</div>" +
+      (c.itens.some(i => i.hip && i.id !== id) ? '<details class="mais-tipos"><summary>Este registro é um dado e o outro é uma hipótese</summary><div class="tipos">' +
+        cartaoTipo("sustenta", "Sustenta", "este dado apoia a hipótese que você escolher", false) + cartaoTipo("contradiz", "Contradiz", "este dado enfraquece a hipótese que você escolher", false) + "</div></details>" : "");
   $("lg-forca").value = "2";
-  $("lg-busca").value = "";
+  $("lg-busca").value = ""; $("lg-aviso").textContent = "";
   ajustarLigar();
   $("dlg-ligar").showModal();
 }
 function ajustarLigar(){
-  const t = $("lg-tipo").value, evid = ligarInverso || ehEvidencia(t);
+  const t = tipoLigar(), evid = ligarInverso || ehEvidencia(t);
   $("lg-forca-caixa").classList.toggle("hidden", evid || t === "está ligado a");
-  $("lg-dica").textContent = ligarInverso ? "Escolha um dado que apoia ou enfraquece esta hipótese. Uma hipótese boa é a que os dados do caso sustentam."
-    : evid ? "Escolha a hipótese que este registro sustenta ou contradiz."
-    : "A frase se lê assim: este registro " + t + " o registro que você escolher.";
+  $("lg-frase").innerHTML = ligarInverso ? "O dado que você escolher <b>" + (t === "contradiz" ? "contradiz" : "sustenta") + "</b> esta hipótese."
+    : evid ? "Este registro <b>" + t + "</b> a hipótese que você escolher."
+    : "Este registro <b>" + (FRASE_LIGAR[t] || t) + "</b> outro registro, o que você escolher abaixo.";
+  $("lg-dica").textContent = ligarInverso ? "Uma hipótese boa é a que os dados do caso sustentam. Ligue também o que não encaixa: ele mostra onde a formulação precisa mudar."
+    : "Toque em Pronto quando acabar. Dá para ligar vários registros sem fechar esta janela.";
   listarAlvos();
 }
 function listarAlvos(){
-  const c = caso(), q = $("lg-busca").value.trim().toLowerCase(), t = $("lg-tipo").value;
+  const c = caso(), q = $("lg-busca").value.trim().toLowerCase(), t = tipoLigar();
   const filtro = ligarInverso ? (i => !i.hip) : ehEvidencia(t) ? (i => i.hip) : (() => true);
   const ordem = modulosDo(c).map(m => m.id);
-  const alvos = c.itens.filter(i => i.id !== ligando && filtro(i) && (!q || i.texto.toLowerCase().includes(q)))
+  const jaLigado = i => c.relacoes.some(r => r.tipo === t && (ligarInverso ? (r.de === i.id && r.para === ligando) : (r.de === ligando && r.para === i.id)));
+  const alvos = c.itens.filter(i => i.id !== ligando && filtro(i) && (!q || (i.texto + " " + ondeFica(c, i)).toLowerCase().includes(q)))
     .sort((a, b) => (ordem.indexOf(a.m) + 1 || 999) - (ordem.indexOf(b.m) + 1 || 999));
   $("lg-lista").innerHTML = alvos.length
-    ? alvos.map(i => '<button type="button" data-alvo="' + i.id + '">' + esc(curto(i.texto, 100)) + "<small>" + esc(ondeFica(c, i)) + (i.hip ? " · hipótese" : "") + "</small></button>").join("")
+    ? alvos.map(i => '<button type="button" data-alvo="' + i.id + '"' + (jaLigado(i) ? ' class="feito" disabled' : "") + ">" + esc(curto(SEM_TAG(i.texto), 100)) +
+        "<small>" + esc(ondeFica(c, i)) + (i.hip ? " · hipótese" : "") + (jaLigado(i) ? ' · <span class="ok">✓ já ligado</span>' : "") + "</small></button>").join("")
     : '<p class="vazio" style="padding:10px">' + (q ? "Nenhum registro com esse texto." : ligarInverso ? "Este caso ainda não tem dados para ligar." : ehEvidencia(t) ? "Este caso ainda não tem hipóteses." : "Este caso ainda não tem outro registro para ligar.") + "</p>";
 }
-$("lg-tipo").addEventListener("change", ajustarLigar);
+$("lg-tipos").addEventListener("change", ajustarLigar);
 $("lg-busca").addEventListener("input", listarAlvos);
 $("lg-lista").addEventListener("click", e => {
-  const b = e.target.closest("[data-alvo]"); if (!b) return;
-  const c = caso(), tipo = $("lg-tipo").value;
+  const b = e.target.closest("[data-alvo]"); if (!b || b.disabled) return;
+  const c = caso(), tipo = tipoLigar();
   const de = ligarInverso ? b.dataset.alvo : ligando, para = ligarInverso ? ligando : b.dataset.alvo;
   if (!c.relacoes.some(r => r.de === de && r.para === para && r.tipo === tipo)){
     const r = {id:uid(), de, para, tipo};
     if (!ehEvidencia(tipo) && tipo !== "está ligado a") r.forca = +$("lg-forca").value;
-    c.relacoes.push(r);
+    c.relacoes.push(r); ligadosAgora++;
   }
-  $("dlg-ligar").close(); mudouCaso(c);
+  $("lg-aviso").textContent = "✓ " + (ligadosAgora === 1 ? "1 ligação feita" : ligadosAgora + " ligações feitas") + ". Escolha outro registro ou toque em Pronto.";
+  mudouCaso(c); listarAlvos();
 });
+
+/* ---------- ir até um registro ligado ---------- */
+function irPara(id){
+  const c = caso(), it = c.itens.find(i => i.id === id); if (!it) return;
+  const achar = () => $("conteudo").querySelector('li[data-item="' + id + '"]');
+  let el = achar();
+  if (!el){ vista = "formulacao"; fechados.delete(it.m); history.replaceState(null, "", location.pathname + location.search); desenhar(); el = achar(); }
+  if (!el) return;
+  for (let d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
+  el.scrollIntoView({block:"center", behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth"});
+  el.classList.remove("pisca"); void el.offsetWidth; el.classList.add("pisca");
+  setTimeout(() => el.classList.remove("pisca"), 1600);
+}
+
+/* ---------- hashtags sugeridas ao escrever ---------- */
+/* a palavra com # que está sob o cursor, se houver */
+function tagSobOCursor(){
+  const ta = $("it-texto"), pos = ta.selectionStart, m = ta.value.slice(0, pos).match(/(?:^|[\s(])#([\p{L}\p{N}_-]*)$/u);
+  return m ? {ini: pos - m[1].length - 1, fim: pos, parcial: m[1].toLowerCase()} : null;
+}
+function mostrarSugestoes(){
+  const c = caso(); if (!c) return;
+  const tok = tagSobOCursor(), todas = contagemTags(c).map(t => t[0]), usadas = new Set(tagsDe($("it-texto").value));
+  const lista = (tok ? todas.filter(t => t.startsWith(tok.parcial) && t !== tok.parcial) : todas.filter(t => !usadas.has(t))).slice(0, 8);
+  const nova = tok && tok.parcial && !lista.length && !todas.includes(tok.parcial);
+  const rot = tok ? (lista.length ? "Hashtags do caso, toque para completar:" : "")
+    : todas.length ? "Hashtags do caso: toque para juntar este registro ao tema." : "Ainda não há hashtag neste caso. Escreva # e uma palavra (por exemplo, #sono) para criar a primeira.";
+  $("it-sug").innerHTML = (rot ? '<span class="rot">' + esc(rot) + "</span>" : "") +
+    lista.map(t => '<button type="button" data-sug="' + esc(t) + '">#' + esc(t) + "</button>").join("") +
+    (nova ? '<span class="nova">Nova hashtag: #' + esc(tok.parcial) + "</span>" : "");
+}
+function inserirTag(tag){
+  const ta = $("it-texto"), tok = tagSobOCursor();
+  if (tok) ta.setRangeText("#" + tag + " ", tok.ini, tok.fim, "end");
+  else { const pos = ta.selectionStart, antes = ta.value.slice(0, pos); ta.setRangeText((antes && !/\s$/.test(antes) ? " " : "") + "#" + tag + " ", pos, ta.selectionEnd, "end"); }
+  ta.focus(); mostrarSugestoes();
+}
+["input", "keyup", "click", "focus"].forEach(ev => $("it-texto").addEventListener(ev, mostrarSugestoes));
+/* mousedown não tira o foco do campo: o cursor fica onde estava */
+$("it-sug").addEventListener("mousedown", e => { if (e.target.closest("[data-sug]")) e.preventDefault(); });
+$("it-sug").addEventListener("click", e => { const b = e.target.closest("[data-sug]"); if (b) inserirTag(b.dataset.sug); });
 
 /* ---------- módulos e modelo do caso ---------- */
 function listarModulos(){
@@ -1588,6 +1698,7 @@ document.addEventListener("click", e => {
 });
 $("conteudo").addEventListener("click", e => {
   const t = e.target, li = t.closest("[data-item]"), el = s => t.closest(s);
+  if (el("[data-ir]")){ irPara(el("[data-ir]").dataset.ir); return; }
   if (el("[data-tag]")){ tagAberta = el("[data-tag]").dataset.tag; vista = "hashtags"; desenhar(); window.scrollTo(0, 0); return; }
   if (el("[data-novo]")){ const b = el("[data-novo]"); abrirItem({m:b.dataset.novo, campo:b.dataset.campo}); return; }
   if (el("[data-nova-hipotese]")){ abrirItem({livre:true, hip:true}); return; }
