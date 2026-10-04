@@ -781,8 +781,21 @@ async function montarPools(ev){
 }
 
 /* ================= contabilidade ================= */
-function contabilizar(ev, precos){
+function contabilizar(ev, precos, todos){
   const P = (g, d) => g === 'BRL' ? 1 : precoEm(precos[g], d);
+  // Fração da pool que cada retirada leva: LP queimado ÷ LP que existia antes (criado menos queimado).
+  // Assim a retirada parcial abate só a parte proporcional do custo (antes zerava o custo inteiro e a
+  // retirada seguinte contava tudo como lucro). Sem os dados de LP, vale a retirada inteira, como antes.
+  const fracaoRet = {}, lpTem = {};
+  for(const e of (todos || []).filter(e => e.lp).sort((a, b) => a.t - b.t)){
+    const contra = e.q > 0 ? e.de : e.para;
+    if(e.q > 0 && contra === ZERO) lpTem[e.k] = (lpTem[e.k] || 0) + e.q;
+    else if(e.q < 0 && (contra === e.k || contra === ZERO)){
+      const antes = lpTem[e.k] || 0, q = -e.q, chave = e.h + '|' + e.k;
+      if(antes > 1e-18) fracaoRet[chave] = Math.min(1, (fracaoRet[chave] || 0) + q / antes);
+      lpTem[e.k] = Math.max(0, antes - q);
+    }
+  }
   const txs = []; const porH = {};
   for(const e of ev){ let x = porH[e.h]; if(!x){ x = porH[e.h] = { h:e.h, t:e.t, rede:e.rede, inic:!!e.inic, op:e.op, ev:[] }; txs.push(x); } x.ev.push(e); if(e.op === 'aporte') x.op = 'aporte'; }
   txs.sort((a, b) => a.t - b.t);
@@ -841,7 +854,7 @@ function contabilizar(ev, precos){
       valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0); valIn = ins.reduce((a, [g, q]) => a + q * P(g, d), 0);
       outs.forEach(([g, q]) => { cx.custo += sair(g, q).custo; });
       ins.forEach(([g, q]) => entrar(g, q, q * P(g, d)));
-      if(x.ev.some(e => e.poolRem)){ cx.resultado += valIn - cx.custo; cx.custo = 0; }
+      if(x.ev.some(e => e.poolRem)){ const f = fracaoRet[x.h + '|' + par] ?? 1, c = cx.custo * f; cx.resultado += valIn - c; cx.custo -= c; }
       else cx.custo = Math.max(0, cx.custo - valIn); // sobra devolvida na entrada
       tipo = x.ev.some(e => e.poolRem) ? 'poolSaida' : 'pool';
       mov.push({ id:x.h, t:x.t, rede:x.rede, tipo, pool:x.ev.find(e => e.poolTx).poolTx, outs, ins, valOut, valIn });
@@ -924,7 +937,7 @@ async function refazerHistorico(){
   const inicio = Math.min(...ev.map(e => e.t));
   const precos = await atualizarPrecos(usados.concat(['USD']), Date.parse(dia(inicio)), aviso);
   aviso('calculando');
-  const conta = contabilizar(ev.filter(e => !e.excluido), precos);
+  const conta = contabilizar(ev.filter(e => !e.excluido), precos, ev);
   const serie = montarSerie(ev, precos);
   // quantidade que o histórico diz existir hoje, por rede e grupo
   const fim = {}; ev.filter(e => !e.excluido).forEach(e => { const k = e.rede + '|' + e.g; fim[k] = (fim[k] || 0) + e.q; });
@@ -1075,14 +1088,25 @@ function linhasVivas(){
   if(!VIVO) return [];
   return VIVO.saldos.map(s => ({ ...s, p: VIVO.precos[s.g] || 0, v: s.q * (VIVO.precos[s.g] || 0) }));
 }
+let csvAteCache = null;
+function ultimoCsvBinance(){
+  const csv = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
+  if(!csv) return null;
+  if(csvAteCache && csvAteCache.n === csv.length) return csvAteCache.t;
+  let t = null; try{ const ev = eventosBinance(csv); t = ev.length ? ev[ev.length - 1].t : null; }catch(e){}
+  csvAteCache = { n:csv.length, t }; return t;
+}
 function totalVivo(){ return linhasVivas().reduce((a, x) => a + x.v, 0); }
 
 function desenharTopo(){
   const total = totalVivo(), ap = HIST ? HIST.aportado : 0;
   document.getElementById('total').textContent = VIVO ? din(total) : '—';
   const nRedes = new Set(linhasVivas().filter(x => x.v >= 1).map(x => x.rede)).size;
-  document.getElementById('subtotal').textContent = VIVO ? `Patrimônio agora, em ${nRedes} lugares. Cotações de ${new Date(VIVO.t).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}.` : 'Buscando saldos…';
-  document.getElementById('mudou').innerHTML = VIVO ? [[1, '24 h'], [7, '7 dias']].map(([d, rot]) => { const x = variacao(d); return x ? `<span>${rot}<b class="num v ${sinal(x.dif)}">${x.dif > 0 ? '+' : ''}${din(x.dif)} (${pct(x.pct)})</b></span>` : ''; }).join('') : '';
+  // a Binance não tem leitura ao vivo: o saldo dela é a soma do último CSV, e a tela diz de quando
+  const temBinance = VIVO && VIVO.saldos.some(s => s.rede === 'binance' && s.q * (VIVO.precos[s.g] || 0) >= 1);
+  const csvAte = temBinance ? ultimoCsvBinance() : null;
+  document.getElementById('subtotal').textContent = VIVO ? `Patrimônio agora, em ${nRedes} lugares. Cotações de ${new Date(VIVO.t).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}.${csvAte ? ` Binance: saldo do CSV, com movimentos até ${new Date(csvAte).toLocaleDateString('pt-BR')}.` : ''}` : 'Buscando saldos…';
+  document.getElementById('mudou').innerHTML = VIVO ? [[1, 'Desde ontem'], [7, '7 dias']].map(([d, rot]) => { const x = variacao(d); return x ? `<span>${rot}<b class="num v ${sinal(x.dif)}">${x.dif > 0 ? '+' : ''}${din(x.dif)} (${pct(x.pct)})</b></span>` : ''; }).join('') : '';
   const serie = serieVisivel();
   const pv = document.getElementById('periodoVar');
   // em "Tudo" a variação partiria do primeiro aporte e só repetiria o Resultado
@@ -1720,12 +1744,12 @@ function calcularAlertas(){
   const total = totalVivo();
   (VIVO.posicoes || []).filter(x => !x.teste && !x.dentro).forEach(x => add('urgente', 'faixa:' + x.id, `Pool ${simDe(x.g0)} / ${simDe(x.g1)} fora da faixa`, `O preço saiu da sua faixa (${x.p < x.pa ? 'abaixo' : 'acima'}); a posição parou de render taxas.`, 'pools'));
   const d1 = variacao(1), d7 = variacao(7);
-  if(d1 && d1.pct <= -0.10) add('urgente', 'queda24', `Patrimônio caiu ${pct(d1.pct).replace('−', '')} em 24 h`, `Queda de ${din(-d1.dif)} desde o fechamento de ontem.`, 'geral');
+  if(d1 && d1.pct <= -0.10) add('urgente', 'queda24', `Patrimônio caiu ${pct(d1.pct).replace('−', '')} desde ontem`, `Queda de ${din(-d1.dif)} desde o fechamento de ontem.`, 'geral');
   else if(d7 && d7.pct <= -0.15) add('atencao', 'queda7', `Patrimônio caiu ${pct(d7.pct).replace('−', '')} em 7 dias`, `Queda de ${din(-d7.dif)} na semana.`, 'geral');
   const por = {}; linhasVivas().forEach(x => { const o = por[x.g] || (por[x.g] = { v:0, p:x.p }); o.v += x.v; });
   for(const [g, o] of Object.entries(por)){
     const peso = total ? o.v / total : 0, p1 = precoAntes(g, 1);
-    if(peso >= 0.05 && p1 && o.p / p1 - 1 <= -0.15) add('urgente', 'moeda24:' + g, `${simDe(g)} caiu ${pct(o.p / p1 - 1).replace('−', '')} em 24 h`, `É ${(peso * 100).toLocaleString('pt-BR', { maximumFractionDigits:1 })}% da sua carteira.`, 'ativos');
+    if(peso >= 0.05 && p1 && o.p / p1 - 1 <= -0.15) add('urgente', 'moeda24:' + g, `${simDe(g)} caiu ${pct(o.p / p1 - 1).replace('−', '')} desde ontem`, `É ${(peso * 100).toLocaleString('pt-BR', { maximumFractionDigits:1 })}% da sua carteira.`, 'ativos');
     if(peso >= 0.05 && liquidezBaixa(g, o.v)) add('atencao', 'liq:' + g, `${simDe(g)} tem liquidez baixa`, `${din(o.v)} numa moeda difícil de vender pelo preço mostrado.`, 'ativos');
   }
   const f = VIVO.mercado && VIVO.mercado.fng && VIVO.mercado.fng[0];
