@@ -270,7 +270,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   td.c-data{font-size:12.5px}
   .so-cel{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   td.c-desc{min-width:0} td.c-desc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  table.fixos tr{grid-template-columns:minmax(0,1fr) 54px 84px 22px}
+  table.fixos tr{grid-template-columns:minmax(0,1fr) 50px 108px 30px;gap:0 6px}   /* 108px: cabe "1.500,00" em 16px */
   table.fixos input{width:100%}
   form.linha{grid-template-columns:repeat(2,minmax(0,1fr))}
   form.linha > div[style]{grid-column:1 / -1 !important}
@@ -403,6 +403,12 @@ const primeiro = n => String(n || "").split(" ")[0];
 // Gasto fixo guarda o valor de cada mês ("2026-07": 509), como a aba Gastos Fixos da planilha:
 // há conta de todo mês e conta de um mês só (anuidade, assinatura anual).
 const valorFixo = (g, chave) => g.valores ? (Number(g.valores[chave]) || 0) : (Number(g.valor) || 0);
+// Fixo com dia 29, 30 ou 31 num mês mais curto cobra no último dia do mês (antes, no dia 30 de um
+// mês de 30 dias, o fixo do dia 31 ficava em "Ainda vai sair" até o mês acabar). 0 = sem dia marcado.
+const ultimoDia = km => new Date(Number(km.slice(0, 4)), Number(km.slice(5, 7)), 0).getDate();
+const diaFixo = (g, km) => Number(g.dia) > 0 ? Math.min(Number(g.dia), ultimoDia(km)) : 0;
+// valor guardado (número) para o campo com a vírgula automática ("509,00")
+const valorCampo = v => Number(v) > 0 ? FormLancamento.mascara(Number(v).toFixed(2)) : "";
 const lerLocal = k => { try { const t = localStorage.getItem(k); return t ? JSON.parse(t) : null; } catch(e){ return null; } };
 
 // ---------- o que vem das outras páginas ----------
@@ -481,15 +487,17 @@ function contasDinheiro(){
   const entrou = receitaSolta + cl.recebido;
   // Moradia fica de fora para não contar duas vezes: ela vem da casa.
   // Os gastos fixos do mês contam como despesa do mês, como na planilha.
-  const fixosDoMes = livro.matheus.gastosFixos.filter(g => valorFixo(g, chaveMes(ref)) > 0);
-  const agora = new Date();
-  const faltaSair = chaveMes(ref) === chaveMes(agora)
-    ? soma(fixosDoMes.filter(g => Number(g.dia) > agora.getDate()), g => valorFixo(g, chaveMes(ref))) : null;
+  const km = chaveMes(ref), agora = new Date(), kHoje = chaveMes(agora);
+  const fixosDoMes = livro.matheus.gastosFixos.filter(g => valorFixo(g, km) > 0);
+  // Mês futuro: nenhum fixo saiu ainda, todos ficam em "Ainda vai sair" (antes entravam em "Gastei"
+  // como se já tivessem sido pagos, e a tela Gastos fixos dizia o contrário).
+  const faltaSair = km === kHoje ? soma(fixosDoMes.filter(g => diaFixo(g, km) > agora.getDate()), g => valorFixo(g, km))
+    : km > kHoje ? soma(fixosDoMes, g => valorFixo(g, km)) : null;
   const semDia = fixosDoMes.filter(g => !Number(g.dia)).length;
   // No mês corrente, o fixo cujo dia ainda não chegou fica só em "Ainda vai sair": antes ele entrava
   // também em "Gastei" e era descontado duas vezes no fim do mês (corrigido em 01/10/2026).
   // Fixo sem dia marcado conta como já pago.
-  const fixosMes = soma(fixosDoMes, g => valorFixo(g, chaveMes(ref))) - (faltaSair || 0);
+  const fixosMes = soma(fixosDoMes, g => valorFixo(g, km)) - (faltaSair || 0);
   const saiu = soma(doMes.filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor) + fixosMes + minhaCasa;
 
   // Aporte e resgate mexem sempre na reserva, seja qual for a categoria (01/10/2026).
@@ -517,11 +525,21 @@ function serieMeses(){
   const pags = w ? w.dados.pagamentos || [] : (cache && cache.pagamentos) || [];
   const eu = livro.casa.pessoas[0];
   const doK = k => l => (l.data || "").slice(0, 7) === k;
-  return GraficoMeses.meses(12, chaveMes(ref)).map(k => ({ k,
-    entrou: soma(livro.matheus.lancamentos.filter(doK(k)).filter(l => l.tipo === "Receita"), l => l.valor) + soma(pags.filter(doK(k)), g => g.valor),
-    saiu: soma(livro.matheus.lancamentos.filter(doK(k)).filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor)
-        + soma(livro.matheus.gastosFixos, g => valorFixo(g, k))
-        + soma(livro.casa.lancamentos.filter(doK(k)).filter(l => l.quem === eu), l => l.valor) }));
+  return GraficoMeses.meses(12, chaveMes(ref)).map(k => {
+    const lk = livro.matheus.lancamentos.filter(doK(k));
+    const m = { k,
+      entrou: soma(lk.filter(l => l.tipo === "Receita"), l => l.valor) + soma(pags.filter(doK(k)), g => g.valor),
+      saiu: soma(lk.filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor)
+          + soma(livro.matheus.gastosFixos, g => valorFixo(g, k))
+          + soma(livro.casa.lancamentos.filter(doK(k)).filter(l => l.quem === eu), l => l.valor),
+      aportes: soma(lk.filter(l => l.tipo === "Aporte"), l => l.valor),
+      resgates: soma(lk.filter(l => l.tipo === "Resgate"), l => l.valor) };
+    // o que sobrou é a mesma conta do "Saldo" da Situação do mês: o que foi para a reserva saiu do
+    // caixa, o que voltou dela entrou (04/10/2026: antes a lista dizia "faltou" num mês que a
+    // Situação dizia ter fechado positivo, como setembro, pago com o resgate de 30/09)
+    m.sobra = m.entrou - m.saiu - m.aportes + m.resgates;
+    return m;
+  });
 }
 
 // ---------- ordenar as listas ----------
@@ -763,8 +781,15 @@ function veredito(d){
   if (km < hoje) return d.sobra >= 0
     ? caixa("pos", true, "Fechou positivo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${dinheiro(d.sobra)} de sobra.`)
     : caixa("neg", false, "Fechou negativo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${sinalDin(d.sobra)}.`);
-  const semPrevisto = d.falta === null ? " (sem o previsto da Clínica, que ainda não abriu neste aparelho)" : "";
   const fim = d.fimDoMes;
+  // Sem o previsto da Clínica não dá para dizer "mesmo que entre tudo o que falta": não se sabe quanto falta
+  // (antes a caixa podia dizer "Não pode gastar" só porque a Clínica ainda não tinha aberto).
+  if (d.falta === null) return `<div class="veredito"><div class="topo-v"><b>Ainda sem previsão</b></div><p>Hoje está em ${sinalDin(d.sobra)}. Para dizer se dá para gastar falta o previsto da Clínica, que ainda não abriu neste aparelho.</p></div>`;
+  const semPrevisto = "";
+  // mês que ainda não começou: é previsão, não "hoje"
+  if (km > hoje) return fim < -0.005
+    ? caixa("neg", false, "Previsão no vermelho", `Com o previsto da agenda e os fixos marcados, ${nome} fecha em ${sinalDin(fim)}.`)
+    : caixa("pos", true, "Previsão no azul", `Com o previsto da agenda e os fixos marcados, ${nome} fecha em ${dinheiro(fim)}.`);
   if (fim < -0.005) return caixa("neg", false, "Não pode gastar",
     `Mesmo que entre tudo o que falta, ${nome} fecha em ${sinalDin(fim)}${semPrevisto}.`);
   // saldo zerado também é "segure": o que fecha o mês no azul ainda não entrou (01/10/2026: com saldo
@@ -792,7 +817,7 @@ function cardSituacao(d){
       </div>
       <div class="linha-k">
         <div class="k"><span>Ainda vou receber</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>previsto da agenda menos o que os pacientes já pagaram</small>`}</div>
-        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("só no mês corrente") : `<b>${dinheiro(d.faltaSair)}</b><small>fixos que vencem depois de hoje${d.semDia ? `, ${d.semDia} sem dia marcado` : ""}</small>`}</div>
+        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("mês fechado") : `<b>${dinheiro(d.faltaSair)}</b><small>${corrente ? `fixos que vencem depois de hoje${d.semDia ? `, ${d.semDia} sem dia marcado` : ""}` : "fixos do mês"}</small>`}</div>
         <div class="k destaque"><span>Fecha o mês em</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>saldo mais o que vou receber, menos o que vai sair</small></div>
       </div>
     </div></div>
@@ -922,8 +947,8 @@ function painelPendencias(){
     <div style="grid-column:span 2"><label>De quem, ou para quem</label><input name="nome" required autocomplete="off"></div>
     <div><label>Origem</label><input name="origem" list="pendOrigens" placeholder="opcional" autocomplete="off">
       <datalist id="pendOrigens"><option>Prática Clínica</option><option>Empréstimo</option><option>Viagem</option><option>Multa</option><option>Outro</option></datalist></div>
-    <div><label>Valor total</label><input type="number" name="total" step="0.01" min="0" inputmode="decimal" required></div>
-    <div><label>Já foi pago</label><input type="number" name="pago" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></div>
+    <div><label>Valor total</label><input type="text" name="total" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="0,00" required></div>
+    <div><label>Já foi pago</label><input type="text" name="pago" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="0,00"></div>
     <div><label>Desde</label><input type="date" name="inicio" value="${hojeISO()}"></div>
     <div style="grid-column:span 2"><label>Observação</label><input name="obs" placeholder="opcional" autocomplete="off"></div>
     <div><button class="b p" type="submit">Guardar</button></div></form></details>`;
@@ -989,31 +1014,38 @@ function vistaFixos(){
   const cobra = livro.matheus.gastosFixos.filter(g => valorFixo(g, km) > 0).sort(porDia);
   const fora = livro.matheus.gastosFixos.filter(g => !(valorFixo(g, km) > 0)).sort(porDia);
   // a mesma regra da Situação do mês: fixo sem dia conta como já saiu; mês futuro, nada saiu ainda
-  const saiu = g => mesPassado || (mesCorrente && (!Number(g.dia) || Number(g.dia) <= hojeD.getDate()));
+  const saiu = g => mesPassado || (mesCorrente && (!diaFixo(g, km) || diaFixo(g, km) <= hojeD.getDate()));
   const jaSaiu = cobra.filter(saiu), vaiSair = cobra.filter(g => !saiu(g));
   const total = l => soma(l, g => valorFixo(g, km));
   const tabela = lista => `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Dia</th><th class="dir">Valor em ${nome}</th><th></th></tr></thead><tbody>
       ${lista.map(g => `<tr${valorFixo(g, km) > 0 ? "" : ' class="fx-fora"'}><td class="c-desc"><b>${escH(comPonto(g.descricao))}</b>${!Number(g.dia) && valorFixo(g, km) > 0 ? `<span class="fx-sit">sem dia marcado${mesCorrente ? ": conta como já saiu" : ""}</span>` : ""}<span class="so-cel">${escH(comPonto(g.categoria))}</span></td>
         <td class="c-cat">${escH(comPonto(g.categoria))}</td>
         <td class="dir"><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${escH(g.id)}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês"></td>
-        <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${escH(g.id)}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor em ${nome}"></td>
+        <td class="dir"><input type="text" inputmode="numeric" autocomplete="off" data-dinheiro data-valorfixo="${escH(g.id)}" value="${valorCampo(valorFixo(g, km))}" placeholder="—" aria-label="Valor em ${nome}"></td>
         <td class="c-x"><button class="x" data-apagar="matheus:gastosFixos:${escH(g.id)}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`;
+  // Conta da casa cadastrada também como fixo (ex.: condomínio): se no mesmo mês houver compra dele na
+  // Casa com essa categoria, o valor pode estar entrando duas vezes no mês. Só avisa; nada muda sozinho.
+  const txt = s => semPonto(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const contasDaCasa = (Categorias.GRUPOS_CASA.find(x => x[0] === "Contas da casa") || [, []])[1];
+  const naCasa = new Set(livro.casa.lancamentos.filter(noMes).filter(l => l.quem === livro.casa.pessoas[0]).map(l => txt(l.categoria)));
+  const dobra = cobra.map(g => [g, contasDaCasa.find(c => naCasa.has(txt(c)) && new RegExp("\\b" + txt(c) + "\\b").test(txt(g.descricao) + " " + txt(g.categoria)))]).filter(x => x[1]);
+  const avisoDobra = dobra.length ? `<section class="painel bloco aviso-fx"><p>Confira se não está contando duas vezes: ${dobra.map(([g, c]) => `${escH(semPonto(g.descricao))} está nos fixos e você também lançou ${escH(c)} na Casa em ${nome}`).join("; ")}. Os dois entram no seu mês.</p></section>` : "";
   const grupo = (titulo, lista) => lista.length ? `<section class="painel bloco"><h2>${titulo}<span class="dir">${lista.length} · ${dinheiro(total(lista))}</span></h2>${tabela(lista)}</section>` : "";
 
   const formFixo = `<details class="novo"><summary>+ Novo gasto fixo</summary><form class="linha" id="fFixo">
     <div style="grid-column:span 2"><label>Gasto fixo</label><input name="descricao" placeholder="assinatura, conta" required></div>
     <div><label>Categoria</label><select name="categoria" required><option value="" disabled selected hidden>escolha…</option>${CATEGORIAS.filter(t => t !== "Reserva" && t !== "Outras entradas").map(t => `<option value="${t}">${comPonto(t)}</option>`).join("")}</select></div>
     <div><label>Dia do mês</label><input type="number" name="dia" min="1" max="31" inputmode="numeric" required></div>
-    <div><label>Valor por mês</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
+    <div><label>Valor por mês</label><input type="text" name="valor" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="0,00" required></div>
     <div><button class="b p" type="submit">Cadastrar deste mês até dezembro</button></div>
   </form></details>`;
 
   return `<div class="stats tres" style="margin-top:0">
       <div class="stat"><span>Fixos de ${nome}</span><b>${dinheiro(total(cobra))}</b><small>${cobra.length} ${cobra.length === 1 ? "conta" : "contas"}</small></div>
       <div class="stat"><span>Já saiu</span><b>${dinheiro(total(jaSaiu))}</b><small>${jaSaiu.length} de ${cobra.length}</small></div>
-      <div class="stat"><span>Ainda vai sair</span><b class="${vaiSair.length ? "warn" : ""}">${dinheiro(total(vaiSair))}</b><small>${vaiSair.length ? (mesCorrente ? "próximo: dia " + vaiSair[0].dia : vaiSair.length + " de " + cobra.length) : "nada a vencer"}</small></div>
+      <div class="stat"><span>Ainda vai sair</span><b class="${vaiSair.length ? "warn" : ""}">${dinheiro(total(vaiSair))}</b><small>${vaiSair.length ? (mesCorrente && diaFixo(vaiSair[0], km) ? "próximo: dia " + diaFixo(vaiSair[0], km) : vaiSair.length + " de " + cobra.length) : "nada a vencer"}</small></div>
     </div>
-    ${copiaFixos(km, cobra.length)}
+    ${copiaFixos(km, cobra.length)}${avisoDobra}
     <div class="bloco">${formFixo}</div>
     ${livro.matheus.gastosFixos.length ? "" : `<section class="painel"><p class="vazio">Nenhum gasto fixo cadastrado.</p></section>`}
     <div class="fx-grupos">${grupo(mesCorrente ? "Ainda vai sair" : "Vai sair em " + nome, vaiSair)}${grupo(mesCorrente ? "Já saiu" : "Saiu em " + nome, jaSaiu)}</div>
@@ -1039,15 +1071,19 @@ function copiaFixos(km, jaTem){
 // Mês a mês: o gráfico e, embaixo, a mesma conta em lista, com o que sobrou em cada mês.
 function vistaHistorico(){
   const serie = serieMeses();
-  const linhas = serie.slice().reverse().filter(m => m.entrou > 0.005 || m.saiu > 0.005).map(m => {
-    const sobra = m.entrou - m.saiu;
+  const kHoje = chaveMes(new Date());
+  const linhas = serie.slice().reverse().filter(m => m.entrou > 0.005 || m.saiu > 0.005 || m.aportes > 0.005 || m.resgates > 0.005).map(m => {
+    const sobra = m.sobra;
+    const det = [`entrou ${dinheiro(m.entrou)}`, `saiu ${dinheiro(m.saiu)}`,
+      m.aportes > 0.005 ? `foi para a reserva ${dinheiro(m.aportes)}` : "", m.resgates > 0.005 ? `veio da reserva ${dinheiro(m.resgates)}` : "",
+      m.k === kHoje ? "mês em andamento" : ""].filter(Boolean).join(" · ");
     return `<button type="button" class="hm" data-irmes="${m.k}"><span class="hm-m">${MESES[Number(m.k.slice(5, 7)) - 1]} ${m.k.slice(0, 4)}</span>
-      <span class="hm-d">entrou ${dinheiro(m.entrou)} · saiu ${dinheiro(m.saiu)}</span>
+      <span class="hm-d">${det}</span>
       <b class="${sobra < -0.005 ? "neg" : "pos"}"><small>${sobra < -0.005 ? "faltou" : "sobrou"}</small>${dinheiro(Math.abs(sobra))}</b></button>`;
   }).join("");
   return `<section class="painel bloco"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serie, { aberto:chaveMes(ref) })}</section>
     ${linhas ? `<section class="painel bloco"><h2>Cada mês<span class="dir">últimos 12 meses</span></h2>${linhas}</section>` : ""}
-    <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos (no mês corrente, também os que ainda vão vencer) e o que você pagou na casa. Aporte e resgate não entram.</p>`;
+    <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos (no mês corrente, também os que ainda vão vencer) e o que você pagou na casa. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela, a mesma conta do saldo da Situação do mês. As barras mostram só o que entrou e saiu.</p>`;
 }
 
 function telaDinheiro(){
@@ -1065,9 +1101,9 @@ function telaDinheiro(){
     : `<p class="vazio">Nenhum lançamento em ${MESES[ref.getMonth()]}.</p>`;
 
   const formReserva = `<details class="novo"><summary>Ajustar a reserva de emergência</summary><form class="linha" id="fReserva">
-    <div><label>Saldo conferido</label><input type="number" name="saldoBase" step="0.01" inputmode="decimal" value="${r.saldoBase || ""}"></div>
+    <div><label>Saldo conferido</label><input type="text" name="saldoBase" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="0,00" value="${valorCampo(r.saldoBase)}" required></div>
     <div><label>Conferido em</label><input type="date" name="dataBase" value="${escH(r.dataBase || "")}"></div>
-    <div><label>Meta</label><input type="number" name="meta" step="0.01" inputmode="decimal" value="${r.meta || ""}"></div>
+    <div><label>Meta</label><input type="text" name="meta" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="0,00" value="${valorCampo(r.meta)}"></div>
     <div><button class="b p" type="submit">Guardar</button></div>
   </form></details>`;
 
@@ -1082,7 +1118,7 @@ function telaDinheiro(){
           <div class="stat"><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
           <div class="stat"><span>Meta</span><b>${r.meta ? dinheiro(r.meta) : "—"}</b></div>
         </div>${formReserva}
-        <p class="nota">Todo aporte e todo resgate contam a partir da data conferida${r.dataBase ? " (" + dataCurta(r.dataBase) + "/" + r.dataBase.slice(0, 4) + ")" : ""}.</p></section>
+        <p class="nota">${r.dataBase ? `Contam os aportes e resgates lançados a partir de ${dataCurta(r.dataBase)}/${r.dataBase.slice(0, 4)}, inclusive esse dia. Por isso, confira o saldo antes de lançar os movimentos do dia.` : "Todo aporte e todo resgate lançado mexe no saldo. Marque a data em que conferiu o saldo no banco."}</p></section>
     </div>
   </div>`;
 }
@@ -1230,7 +1266,7 @@ function ligar(){
   document.querySelectorAll("[data-valorfixo]").forEach(i => i.onchange = () => {
     const g = livro.matheus.gastosFixos.find(x => x.id === i.dataset.valorfixo); if (!g) return;
     if (!g.valores) g.valores = {};
-    const n = Number(i.value), k = chaveMes(ref);
+    const n = FormLancamento.centavos(i.value), k = chaveMes(ref);
     if (n > 0) g.valores[k] = n; else delete g.valores[k];
     salvar("matheus");
   });
@@ -1267,13 +1303,17 @@ function ligar(){
   document.querySelectorAll("[data-lanc]").forEach(el => FormLancamento.montar(el, configLancamento(el.dataset.lanc || null)));
   vigiarFab();
   liga("fFixo", (f, d) => {
+    const v = FormLancamento.centavos(d.valor); if (!(v > 0)) { alert("Falta o valor."); return; }
     const valores = {};
-    for (let m = ref.getMonth(); m < 12; m++) valores[ref.getFullYear() + "-" + String(m + 1).padStart(2, "0")] = Number(d.valor);
+    for (let m = ref.getMonth(); m < 12; m++) valores[ref.getFullYear() + "-" + String(m + 1).padStart(2, "0")] = v;
     livro.matheus.gastosFixos.push({ id:novoId(), descricao:d.descricao, categoria:d.categoria, dia:Number(d.dia), valores });
     salvar("matheus"); });
   liga("fPend", (f, d) => {
+    const total = FormLancamento.centavos(d.total), pago = FormLancamento.centavos(d.pago);
+    if (!(total > 0)) { alert("Falta o valor total."); return; }
+    if (pago > total + 0.005) { alert("O que já foi pago passa do valor total."); return; }
     pendencias().push({ id:novoId(), nome:d.nome.trim(), tipo:d.tipo === "pagar" ? "pagar" : "receber", origem:(d.origem || "").trim(),
-      inicio:d.inicio || "", fim:"", total:Number(d.total) || 0, pago:Number(d.pago) || 0, obs:(d.obs || "").trim() });
+      inicio:d.inicio || "", fim:"", total, pago, obs:(d.obs || "").trim() });
     salvar("matheus"); });
   // campo de dinheiro em que a vírgula anda sozinha (o mesmo jeito do formulário de lançamento)
   document.querySelectorAll("[data-dinheiro]").forEach(i => i.oninput = () => { const v = FormLancamento.mascara(i.value); if (i.value !== v) i.value = v; });
@@ -1286,7 +1326,10 @@ function ligar(){
     if (t === null) return;
     const v = lerValorBR(t);
     if (!(v > 0)) { alert("Não entendi o valor."); return; }
-    p.pago = Math.round(((Number(p.pago) || 0) + v) * 100) / 100; salvar("matheus");
+    if (v > restantePend(p) + 0.005 && !confirm(`${dinheiro(v)} passa do que falta (${dinheiro(restantePend(p))}). Registrar assim mesmo?`)) return;
+    p.pago = Math.round(((Number(p.pago) || 0) + v) * 100) / 100;
+    if (restantePend(p) < 0.005) { p.quitada = true; p.fim = p.fim || hojeISO(); }
+    salvar("matheus");
   });
   document.querySelectorAll("[data-pend-quitar]").forEach(b => b.onclick = () => {
     const p = daPend(b.dataset.pendQuitar); if (!p) return;
@@ -1311,11 +1354,13 @@ function ligar(){
       catch(err){ alert("Não consegui ler: " + err.message); }
     };
   }
-  liga("fReserva", (f, d) => { livro.matheus.reserva = { saldoBase:Number(d.saldoBase) || 0,
-    dataBase:d.dataBase || null, meta:Number(d.meta) || 0 }; salvar("matheus"); });
+  liga("fReserva", (f, d) => { livro.matheus.reserva = { saldoBase:FormLancamento.centavos(d.saldoBase),
+    dataBase:d.dataBase || null, meta:FormLancamento.centavos(d.meta) }; salvar("matheus"); });
   liga("fDivisao", (f, d) => { const n = Number(d.divisao); livro.casa.divisao = Math.min(Math.max(Number.isFinite(n) && String(d.divisao).trim() !== "" ? n : 50, 0), 100) / 100; salvar("casa"); });
   liga("fPessoas", (f, d) => {
     const antigos = livro.casa.pessoas.slice(), novos = [d.p1.trim(), d.p2.trim()];
+    // dois nomes iguais juntariam as compras das duas pessoas numa só, sem volta
+    if (!novos[0] || !novos[1] || novos[0].toLowerCase() === novos[1].toLowerCase()) { alert("Os dois nomes precisam ser diferentes."); return; }
     // quem já comprou continua sendo a mesma pessoa, com o nome novo
     livro.casa.lancamentos.forEach(l => { const i = antigos.indexOf(l.quem); if (i >= 0) l.quem = novos[i]; });
     livro.casa.pessoas = novos; salvar("casa");
