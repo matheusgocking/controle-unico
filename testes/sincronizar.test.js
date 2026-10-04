@@ -113,3 +113,24 @@ test("Duas abas no mesmo aparelho: o que uma lança aparece na outra sem recarre
   assert.deepEqual(A.erros, []);
   await A.ctx.close();
 });
+
+test("Fechando a aba logo depois de lançar: o envio sai com keepalive e chega ao Drive", async () => {
+  const drive = criarDrive();
+  drive.novo({ name:"Controle Único - dinheiro.json" }, JSON.stringify(D.dinheiro));
+  drive.novo({ name:"Controle Único - casa.json" }, JSON.stringify(D.casa));
+  const A = await aparelho(drive, "A");
+  await A.f().evaluate(() => {
+    window.__pedidos = [];
+    const original = window.fetch;
+    window.fetch = (url, op) => { window.__pedidos.push({ url:String(url), metodo:(op && op.method) || "GET", keepalive:!!(op && op.keepalive) }); return original(url, op); };
+  });
+  await lancar(A.f, "antesDeFechar", 9);
+  await A.f().evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  assert.ok(await ate(() => drive.ler("Controle Único - dinheiro.json").lancamentos.some(l => l.id === "antesDeFechar")));
+  const pedidos = await A.f().evaluate(() => window.__pedidos);
+  const envio = pedidos.find(p => p.metodo === "PATCH");
+  assert.ok(envio && envio.keepalive, "o PATCH do fechamento deveria ir com keepalive: " + JSON.stringify(pedidos));
+  // a conferência de versão que vem antes desse envio também
+  assert.ok(pedidos.slice(0, pedidos.indexOf(envio)).filter(p => p.metodo === "GET" && /fields=id,modifiedTime,trashed/.test(p.url)).every(p => p.keepalive));
+  await A.ctx.close();
+});
