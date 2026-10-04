@@ -856,8 +856,10 @@ function contabilizar(ev, precos){
       ins.forEach(([g, q]) => entrar(g, q, valIn ? base * (q * P(g, d)) / valIn : base / ins.length));
     } else if(outs.length){
       // saque da Binance que não chegou em nenhuma carteira sua fica registrado como pendência
-      tipo = x.rede === 'binance' ? 'saque' : 'envio'; valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0);
-      outs.forEach(([g, q]) => { sair(g, q); if(x.rede === 'binance'){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += q; t.datas.push(x.t); } });
+      // só o saque de verdade (op "saque" do CSV); taxa ou saída avulsa na Binance não é dinheiro "a caminho"
+      const saque = x.rede === 'binance' && x.op === 'saque';
+      tipo = saque ? 'saque' : 'envio'; valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0);
+      outs.forEach(([g, q]) => { sair(g, q); if(saque){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += q; t.datas.push(x.t); } });
     } else if(ins.length){
       tipo = x.rede === 'binance' || !x.inic ? 'recebimento' : 'resgate'; valIn = ins.reduce((a, [g, q]) => a + q * P(g, d), 0);
       ins.forEach(([g, q]) => entrar(g, q, q * P(g, d)));
@@ -956,10 +958,14 @@ async function saldosAgora(hist){
         for(let i = 0; i < req.length; i += 10){ // o servidor aceita até 10 consultas por lote
           const resp = await pegar(RPC, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(req.slice(i, i + 10)) });
           if(!Array.isArray(resp)) throw new Error('resposta inesperada da Base');
-          resp.forEach(r => porId[r.id] = r.result);
+          // consulta recusada no lote vira erro da rede (fica o último saldo, com aviso), não saldo zero calado
+          resp.forEach(r => { if(r.error) throw new Error('a Base recusou uma consulta'); porId[r.id] = r.result; });
         }
         const big = h => h && h !== '0x' ? BigInt(h) : 0n;
-        lista = arr.map((c, i) => ({ contractAddress:c, balance: big(porId[2*i]).toString(), decimals: porId[2*i+1] && porId[2*i+1] !== '0x' ? Number(big(porId[2*i+1])) : 18, symbol:(infoToken['base:' + c] || {}).sim }));
+        // sem as casas decimais não dá para saber quanto é (supor 18 fazia 1.000 USDC virar 0,000000001)
+        lista = arr.map((c, i) => { const temDec = porId[2*i+1] && porId[2*i+1] !== '0x';
+          if(!temDec && big(porId[2*i]) > 0n) throw new Error('sem as casas decimais de um token da Base');
+          return { contractAddress:c, balance: big(porId[2*i]).toString(), decimals: temDec ? Number(big(porId[2*i+1])) : 18, symbol:(infoToken['base:' + c] || {}).sim }; });
       } else {
         nativo = (await pegar(`${R.api}?module=account&action=balance&address=${EU_EVM}`)).result || '0';
         lista = (await pegar(`${R.api}?module=account&action=tokenlist&address=${EU_EVM}`)).result || [];
@@ -980,6 +986,7 @@ async function saldosAgora(hist){
     if(cs.length){
       const resp = await pegar(REDES.bsc.rpc, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(cs.map((c, i) => ({ jsonrpc:'2.0', id:i, method:'eth_call', params:[{ to:c, data:'0x70a08231' + pad }, 'latest'] }))) });
       if(!Array.isArray(resp)) throw new Error('resposta inesperada da BNB Chain');
+      if(resp.some(r => r.error)) throw new Error('a BNB Chain recusou uma consulta');
       resp.forEach(r => { const c = cs[r.id]; add('bsc', 'bsc:' + c, un(r.result && r.result !== '0x' ? BigInt(r.result).toString() : '0', TOKENS_BSC[c].dec)); });
     }
   }catch(e){ erros.push('BNB Chain'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'bsc' && !s.pool).forEach(s => add('bsc', s.g, s.q)); }
@@ -1323,7 +1330,8 @@ function desenharPosicoes(){
   if(!ps.length){ el.innerHTML = `<p class="vazio" style="margin:0 0 10px">Nenhuma posição aberta agora. Quando você abrir uma na Uniswap v3 ou na Aerodrome (Base), ela aparece aqui sozinha: o gráfico do preço com a sua faixa, se está dentro ou fora dela, quanto vale e o link para administrar.</p><button class="btn" id="btnSimular">Ver uma simulação</button>`; return; }
   el.innerHTML = ps.map(x => {
     const s0 = simDe(x.g0), s1 = simDe(x.g1), base = x.inverte ? s1 : s0, cot = x.inverte ? s0 : s1;
-    const pr = VIVO.precos, valor = x.a0 * (pr[x.g0] || 0) + x.a1 * (pr[x.g1] || 0);
+    // moeda da posição sem cotação: o valor aparece como "—", não como a metade que tem preço
+    const pr = VIVO.precos, semP = (x.a0 > 0 && !(pr[x.g0] > 0)) || (x.a1 > 0 && !(pr[x.g1] > 0)), valor = semP ? 0 : x.a0 * (pr[x.g0] || 0) + x.a1 * (pr[x.g1] || 0);
     const fmtP = v => v.toLocaleString('pt-BR', { maximumSignificantDigits:5 });
     const lo = Math.min(x.pa, x.p) * 0.92, hi = Math.max(x.pb, x.p) * 1.08, pc = v => ((v - lo) / (hi - lo) * 100).toFixed(2);
     const borda = x.dentro ? Math.min(x.p / x.pa - 1, 1 - x.p / x.pb) : null;
