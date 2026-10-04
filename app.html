@@ -1165,10 +1165,10 @@ function telaCasa(){
       <div><button class="b p" type="submit">Guardar</button></div>
     </form>
     <form class="linha" id="fPessoas" style="margin-top:10px">
-      <div><label>Primeira pessoa (a do seu mês)</label><input name="p1" value="${escH(p1)}" required></div>
+      <div><label>${PERFIL === "ana" ? "Primeira pessoa" : "Primeira pessoa (a do seu mês)"}</label><input name="p1" value="${escH(p1)}" required></div>
       <div><label>Segunda pessoa</label><input name="p2" value="${escH(p2)}" required></div>
       <div><button class="b p" type="submit">Guardar</button></div>
-    </form><p class="nota">Os nomes ficam só no caderno da casa, no Drive.</p></details>`;
+    </form><p class="nota">Os nomes ficam só no caderno da casa, no Drive.${PERFIL === "ana" ? ` A ordem conta: a primeira pessoa é a do mês de ${escH(primeiro(p1))}. Aqui se corrige só a grafia do nome.` : ""}</p></details>`;
 
   return barraMes() + cardCasa(c) + `
   <div class="duas larga">
@@ -1433,6 +1433,9 @@ window.casaParaFora = {
 
 try { const t = localStorage.getItem("cu-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
 { const k = abaDoEndereco(); if (k) aba = k; }
+// Dentro do controle da Ana só a Casa está aberta: "Importar dados" trocaria o caderno da casa inteiro
+// por um arquivo, e "Exportar dados" sairia com o caderno do dinheiro vazio. Fica só a planilha.
+if (PERFIL === "ana") ["exportarJson", "importarJson"].forEach(id => { const b = document.getElementById(id); if (b) b.hidden = true; });
 // Dentro da casca quem manda nas abas é a barra de cima: a daqui sairia repetida.
 try { if (window.top !== window.self) document.getElementById("abas").hidden = true; } catch(e){}
 desenhar();
