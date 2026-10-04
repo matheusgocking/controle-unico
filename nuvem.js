@@ -654,6 +654,16 @@ var Nuvem = (function(){
     /* o app foi para o fundo ou vai fechar: manda já o que está pendente, sem esperar */
     c.enviarSeHouver = function(){ if(!saindo && pendente && iniciado && temToken() && arquivo && !gravando) c.enviarAgora(); };
 
+    /* Duas abas (ou o app instalado e o Safari) com o mesmo caderno aberto: quando a outra troca
+       com o Drive, ela anota a versão nova neste navegador; esta aba vê a anotação e traz do Drive,
+       juntando com o que tiver aqui. Antes, cada aba só conhecia a própria cópia até recarregar. */
+    window.addEventListener("storage", function(e){
+      if(e.key !== CH_A || !e.newValue || !arquivo || !temToken() || gravando || conectando || saindo) return;
+      var outra; try{ outra = JSON.parse(e.newValue); }catch(x){ return; }
+      if(!outra || outra.id !== arquivo.id || outra.modifiedTime === arquivo.modifiedTime) return;
+      trazer(arquivo.id, "Atualizado com o que mudou em outra aba, às " + hora() + ".").catch(falhou);
+    });
+
     /* voltou para a tela: se nada daqui está pendente e o Drive mudou, traz o do Drive */
     c.aoVoltar = function(){
       if(!arquivo || !temToken() || gravando || conectando) return;

@@ -92,3 +92,24 @@ test("Cópia da semana: uma por caderno, numa pasta própria, igual ao caderno",
   assert.equal(drive.nomes().filter(n => n === "Controle Único - dinheiro.json").length, 1);
   await A.ctx.close(); await B.ctx.close();
 });
+
+test("Duas abas no mesmo aparelho: o que uma lança aparece na outra sem recarregar", async () => {
+  const drive = criarDrive();
+  drive.novo({ name:"Controle Único - dinheiro.json" }, JSON.stringify(D.dinheiro));
+  drive.novo({ name:"Controle Único - casa.json" }, JSON.stringify(D.casa));
+  const A = await aparelho(drive, "aba 1");
+  const p2 = await A.ctx.newPage();
+  p2.on("pageerror", e => A.erros.push("aba 2: " + e.message));
+  await p2.goto(srv.url + "index.html");
+  const f2 = () => p2.frames().find(x => x.url().includes("app.html"));
+  await ate(async () => f2() && await f2().evaluate(() => !Nuvem.algumPendente()).catch(() => false));
+  await espera(1500);
+  await lancar(A.f, "naAba1", 7);
+  assert.ok(await ate(async () => (await ids(f2)).includes("naAba1")), "a aba 2 deveria receber o lançamento da aba 1");
+  await lancar(f2, "naAba2", 8);
+  assert.ok(await ate(async () => (await ids(A.f)).includes("naAba2")), "e a aba 1 o da aba 2");
+  const noDrive = drive.ler("Controle Único - dinheiro.json").lancamentos.map(l => l.id);
+  assert.ok(noDrive.includes("naAba1") && noDrive.includes("naAba2"));
+  assert.deepEqual(A.erros, []);
+  await A.ctx.close();
+});
