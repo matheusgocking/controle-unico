@@ -885,6 +885,12 @@ function linhaLanc(l){
 // Era a última aba viva da planilha congelada (decisão dele de 01/10/2026: vira lista própria do
 // app). É só acompanhamento: nenhuma conta do mês lê esta lista. O dinheiro que entra ou sai por
 // conta de uma pendência continua sendo lançado no lugar de sempre.
+// valor digitado à mão: "1.250,50", "1.250" e "1250.5" valem. Com vírgula, ou com ponto seguido
+// de três dígitos, o ponto é separador de milhar.
+function lerValorBR(t){
+  const limpo = String(t == null ? "" : t).replace(/[^0-9.,]/g, "");
+  return Number(limpo.indexOf(",") >= 0 || /^\d{1,3}(\.\d{3})+$/.test(limpo) ? limpo.replace(/\./g, "").replace(",", ".") : limpo);
+}
 const pendencias = () => livro.matheus.pendencias || (livro.matheus.pendencias = []);
 const restantePend = p => Math.max(0, (Number(p.total) || 0) - (Number(p.pago) || 0));
 const pendQuitada = p => !!p.quitada || restantePend(p) < 0.005;
@@ -1278,9 +1284,7 @@ function ligar(){
     const p = daPend(b.dataset.pendPago); if (!p) return;
     const t = prompt(`Quanto ${p.tipo === "receber" ? "você recebeu" : "você pagou"} agora? Faltam ${dinheiro(restantePend(p))}.`);
     if (t === null) return;
-    // "1.250,50", "1.250" e "1250.5" valem: com vírgula, ou com ponto seguido de três dígitos, o ponto é separador de milhar
-    const limpo = String(t).replace(/[^0-9.,]/g, "");
-    const v = Number(limpo.indexOf(",") >= 0 || /^\d{1,3}(\.\d{3})+$/.test(limpo) ? limpo.replace(/\./g, "").replace(",", ".") : limpo);
+    const v = lerValorBR(t);
     if (!(v > 0)) { alert("Não entendi o valor."); return; }
     p.pago = Math.round(((Number(p.pago) || 0) + v) * 100) / 100; salvar("matheus");
   });
@@ -1404,6 +1408,9 @@ document.getElementById("arquivoJson").onchange = async e => {
   catch(err){ alert("Não consegui ler esse arquivo: " + err.message); }
 };
 function importarCadernos(j){
+  // a cópia da semana no Drive é o próprio caderno, sem o envelope do "Exportar dados"
+  if (j && j.caderno === "dinheiro" && !j.dinheiro) j = { dinheiro:j };
+  else if (j && j.caderno === "casa" && !j.casa) j = { casa:j };
   const vem = [];
   if (j.dinheiro && Array.isArray(j.dinheiro.lancamentos)) vem.push(["matheus", j.dinheiro, `${j.dinheiro.lancamentos.length} lançamentos e ${(j.dinheiro.gastosFixos || []).length} gastos fixos`]);
   if (j.casa && Array.isArray(j.casa.lancamentos)) vem.push(["casa", j.casa, `${j.casa.lancamentos.length} compras da casa`]);

@@ -1,0 +1,11 @@
+{
+  "name": "controle-unico",
+  "private": true,
+  "description": "Testes automáticos do Controle Único. O app em si não precisa de nada daqui: é HTML e JavaScript puro.",
+  "scripts": {
+    "test": "node --test testes/*.test.js"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

@@ -230,25 +230,68 @@ var Nuvem = (function(){
     return api("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=drive&orderBy=createdTime&fields=files(id,modifiedTime)")
       .then(function(r){ return r.json(); }).then(function(j){ return j.files[0] || null; });
   }
-  function versaoDoArquivo(id){
-    return api("https://www.googleapis.com/drive/v3/files/" + id + "?fields=id,modifiedTime,trashed").then(function(r){ return r.json(); });
+  /* "urgente": a página está indo embora (aba fechando, app para o fundo). Com keepalive o navegador
+     termina o pedido mesmo depois de a página fechar; ele aceita até 64 KB por vez, então caderno
+     maior vai pelo caminho normal (e, se não der tempo, fica pendente para a próxima abertura). */
+  var LIMITE_KEEPALIVE = 60000;
+  function versaoDoArquivo(id, urgente){
+    return api("https://www.googleapis.com/drive/v3/files/" + id + "?fields=id,modifiedTime,trashed", urgente ? {keepalive:true} : null).then(function(r){ return r.json(); });
   }
   function baixar(id){
     return api("https://www.googleapis.com/drive/v3/files/" + id + "?alt=media").then(function(r){ return r.json(); });
   }
-  function criar(nome, conteudo){
+  function criar(nome, conteudo, pasta){
     var limite = "controleunico" + Date.now();
+    var meta = {name:nome, mimeType:"application/json"};
+    if(pasta) meta.parents = [pasta];
     var corpo = "--" + limite + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" +
-      JSON.stringify({name:nome, mimeType:"application/json"}) +
+      JSON.stringify(meta) +
       "\r\n--" + limite + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + conteudo + "\r\n--" + limite + "--";
     return api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime", {
       method:"POST", headers:{"Content-Type":"multipart/related; boundary=" + limite}, body:corpo
     }).then(function(r){ return r.json(); });
   }
-  function atualizar(id, conteudo){
-    return api("https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media&fields=id,modifiedTime", {
-      method:"PATCH", headers:{"Content-Type":"application/json; charset=UTF-8"}, body:conteudo
-    }).then(function(r){ return r.json(); });
+  /* ---------------- cópia da semana (04/10/2026) ----------------
+     Uma vez por semana, cada caderno ganha uma cópia datada numa pasta própria do Drive,
+     "Controle Único - cópias". Serve para voltar atrás se algo der errado: o arquivo da cópia
+     é igual ao do caderno e pode ser trazido de volta pelo "Importar dados" de cada tela.
+     A cópia só acrescenta arquivos; nunca apaga nem muda o caderno. Se falhar, tenta na
+     próxima vez que o caderno for salvo, sem incomodar. */
+  var PASTA_COPIAS = "Controle Único - cópias";
+  function segundaDaSemana(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7);
+    return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); }
+  /* uma busca só por vez para a pasta, mesmo com vários cadernos (e vários quadros da casca)
+     salvando ao mesmo tempo: senão cada um criava a sua pasta */
+  function acharPasta(){
+    var dono = window; try{ if(window.top.Nuvem) dono = window.top; }catch(e){}
+    if(dono.__pastaCopias) return dono.__pastaCopias;
+    var q = encodeURIComponent("name='" + PASTA_COPIAS + "' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+    var p = api("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=drive&orderBy=createdTime&fields=files(id)").then(function(r){ return r.json(); }).then(function(j){
+      if(j.files && j.files[0]) return j.files[0].id;
+      return api("https://www.googleapis.com/drive/v3/files?fields=id", {method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name:PASTA_COPIAS, mimeType:"application/vnd.google-apps.folder"})})
+        .then(function(r){ return r.json(); }).then(function(f){ return f.id; });
+    });
+    dono.__pastaCopias = p;
+    p.catch(function(){ if(dono.__pastaCopias === p) dono.__pastaCopias = null; });
+    return p;
+  }
+  function copiaDaSemana(nomeCaderno, conteudo){
+    var semana = segundaDaSemana(new Date());
+    var nome = nomeCaderno.replace(/\.json$/i, "") + " - semana de " + semana + ".json";
+    return acharPasta().then(function(pasta){
+      var q = encodeURIComponent("name='" + nome.replace(/'/g, "\\'") + "' and '" + pasta + "' in parents and trashed=false");
+      return api("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=drive&fields=files(id)").then(function(r){ return r.json(); }).then(function(j){
+        if(j.files && j.files.length) return semana;   // outro aparelho já fez a desta semana
+        return criar(nome, conteudo, pasta).then(function(){ return semana; });
+      });
+    });
+  }
+
+  function atualizar(id, conteudo, urgente){
+    var op = {method:"PATCH", headers:{"Content-Type":"application/json; charset=UTF-8"}, body:conteudo};
+    if(urgente && new Blob([conteudo]).size < LIMITE_KEEPALIVE) op.keepalive = true;
+    return api("https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media&fields=id,modifiedTime", op).then(function(r){ return r.json(); });
   }
 
   /* O Picker é a janela do Google para escolher um arquivo. Com o escopo drive.file o app só
@@ -304,26 +347,75 @@ var Nuvem = (function(){
     }
     return true;
   }
-  function juntar(base, local, remoto, semBase){
+  /* Junção em três vias: base (a última versão que este aparelho e o Drive tinham em comum),
+     local (este aparelho) e remoto (o Drive agora).
+
+     Apagados (04/10/2026): quando dois aparelhos gravam quase juntos, o segundo pode gravar
+     por cima do primeiro sem ter visto o que ele lançou. Do lado do primeiro, o lançamento
+     "sumiu do Drive" e parecia ter sido apagado lá. Por isso cada arquivo leva a lista do que
+     foi apagado de propósito (APAGADOS, caminho -> quando). Algo que está aqui e na base mas
+     não está no Drive só sai se o Drive disser que apagou; senão, volta. Um arquivo sem a
+     lista (gravado por uma versão antiga do app) segue a regra antiga. */
+  var APAGADOS = "__apagados";
+  var GUARDA_APAGADOS = 180 * 86400000;   // a marca de apagado vale seis meses
+  function semApagados(d){ if(ehObjeto(d) && APAGADOS in d){ var c = Object.assign({}, d); delete c[APAGADOS]; return c; } return d; }
+  function apagadosDe(d){ return ehObjeto(d) && ehObjeto(d[APAGADOS]) ? d[APAGADOS] : null; }
+  /* o que estava na base e não está mais aqui: foi apagado neste aparelho */
+  function marcarApagados(base, local, caminho, saida, agora){
+    if(ehObjeto(base) && ehObjeto(local)){
+      Object.keys(base).forEach(function(k){
+        var c = caminho + "/" + k;
+        if(!(k in local)) saida[c] = agora; else marcarApagados(base[k], local[k], c, saida, agora);
+      });
+    } else if(listaComId(base) && listaComId(local)){
+      var aqui = {}; local.forEach(function(x){ aqui["k" + x.id] = x; });
+      base.forEach(function(x){
+        var c = caminho + "/#" + x.id;
+        if(!aqui["k" + x.id]) saida[c] = agora; else marcarApagados(x, aqui["k" + x.id], c, saida, agora);
+      });
+    }
+    return saida;
+  }
+  /* tudo o que existe nos dados, como caminhos: uma marca de apagado de algo que voltou (desfazer) cai */
+  function caminhos(d, caminho, saida){
+    if(ehObjeto(d)) Object.keys(d).forEach(function(k){ var c = caminho + "/" + k; saida[c] = true; caminhos(d[k], c, saida); });
+    else if(listaComId(d)) d.forEach(function(x){ var c = caminho + "/#" + x.id; saida[c] = true; caminhos(x, c, saida); });
+    return saida;
+  }
+  function podarApagados(ap, dados, agora){
+    var existe = caminhos(dados, "", {}), r = {};
+    Object.keys(ap || {}).forEach(function(c){ if(!existe[c] && agora - ap[c] < GUARDA_APAGADOS) r[c] = ap[c]; });
+    return r;
+  }
+
+  /* apagadosLa: as marcas do Drive (null = arquivo antigo, sem marcas: a ausência conta como apagado) */
+  function juntar(base, local, remoto, semBase, caminho, apagadosLa){
+    caminho = caminho || "";
+    if(apagadosLa === undefined) apagadosLa = null;
     if(semBase){
-      if(ehObjeto(local) && ehObjeto(remoto)) return juntarObjetos({}, local, remoto, true);
-      if(listaComId(local) && listaComId(remoto)) return juntarListas([], local, remoto, true);
+      if(ehObjeto(local) && ehObjeto(remoto)) return juntarObjetos({}, local, remoto, true, caminho, apagadosLa);
+      if(listaComId(local) && listaComId(remoto)) return juntarListas([], local, remoto, true, caminho, apagadosLa);
       return remoto === undefined ? local : remoto;
     }
-    if(igual(local, base)) return remoto;
+    var semMudarAqui = igual(local, base);
+    /* nada mudou aqui: vale o Drive. Com a lista de apagados do Drive, as listas e objetos ainda
+       passam pela junção, para não perder o que o Drive deixou de ter sem dizer que apagou */
+    if(semMudarAqui && (!apagadosLa || !(ehObjeto(local) || Array.isArray(local)))) return remoto;
     if(igual(remoto, base) || igual(local, remoto)) return local;
-    if(ehObjeto(local) && ehObjeto(remoto)) return juntarObjetos(ehObjeto(base) ? base : {}, local, remoto, false);
-    if(listaComId(local) && listaComId(remoto) && (base === undefined || listaComId(base))) return juntarListas(base || [], local, remoto, false);
-    return local;
+    if(ehObjeto(local) && ehObjeto(remoto)) return juntarObjetos(ehObjeto(base) ? base : {}, local, remoto, false, caminho, apagadosLa);
+    if(listaComId(local) && listaComId(remoto) && (base === undefined || listaComId(base))) return juntarListas(base || [], local, remoto, false, caminho, apagadosLa);
+    return semMudarAqui ? remoto : local;
   }
-  function juntarObjetos(base, local, remoto, semBase){
+  function apagadoLa(apagadosLa, c){ return apagadosLa ? !!apagadosLa[c] : true; }
+  function juntarObjetos(base, local, remoto, semBase, caminho, apagadosLa){
     var r = {}, chaves = {};
     [local, remoto, base].forEach(function(o){ Object.keys(o).forEach(function(k){ chaves[k] = true; }); });
     Object.keys(chaves).forEach(function(k){
+      var c = caminho + "/" + k;
       var naBase = !semBase && k in base, aqui = k in local, la = k in remoto;
-      if(aqui && la){ r[k] = juntar(naBase ? base[k] : undefined, local[k], remoto[k], semBase); return; }
+      if(aqui && la){ r[k] = juntar(naBase ? base[k] : undefined, local[k], remoto[k], semBase, c, apagadosLa); return; }
       if(aqui){   // não está no Drive: acrescentado aqui, ou apagado lá
-        if(naBase && igual(local[k], base[k])) return;
+        if(naBase && igual(local[k], base[k]) && apagadoLa(apagadosLa, c)) return;
         r[k] = local[k]; return;
       }
       if(la){     // não está aqui: acrescentado lá, ou apagado aqui
@@ -333,12 +425,12 @@ var Nuvem = (function(){
     });
     return r;
   }
-  function juntarListas(base, local, remoto, semBase){
+  function juntarListas(base, local, remoto, semBase, caminho, apagadosLa){
     var porId = function(l){ var m = {}; l.forEach(function(x){ m["k" + x.id] = x; }); return m; };
     var b = semBase ? {} : porId(base), aqui = porId(local), res = [];
     remoto.forEach(function(x){
       var k = "k" + x.id;
-      if(aqui[k]) res.push(juntar(b[k], aqui[k], x, semBase));
+      if(aqui[k]) res.push(juntar(b[k], aqui[k], x, semBase, caminho + "/#" + x.id, apagadosLa));
       else if(!b[k]) res.push(x);                       // acrescentado lá
       /* senão: apagado aqui */
     });
@@ -346,7 +438,8 @@ var Nuvem = (function(){
     local.forEach(function(x){
       var k = "k" + x.id;
       if(la[k]) return;
-      if(!b[k] || !igual(x, b[k])) res.push(x);         // acrescentado aqui (ou mudado aqui e apagado lá)
+      // acrescentado aqui, mudado aqui, ou o Drive não diz que apagou (gravaram por cima sem ver)
+      if(!b[k] || !igual(x, b[k]) || !apagadoLa(apagadosLa, caminho + "/#" + x.id)) res.push(x);
     });
     return res;
   }
@@ -360,6 +453,44 @@ var Nuvem = (function(){
     var CH_B = "controle-unico-" + op.id + "-base";     // a última versão que o Drive e este aparelho tinham em comum
     var arquivo = null, pendente = le(CH_P) === "1", timer = null, gravando = false, deNovo = false, conectando = false;
     var geracao = 0, base = null, tentativas = 0, novaTentativa = null;
+    var CH_C = "controle-unico-" + op.id + "-copia";      // a semana da última cópia datada feita por este aparelho
+    var CH_T = "controle-unico-" + op.id + "-apagados";   // o que foi apagado de propósito (daqui ou de outro aparelho)
+    var apagados = {};
+    try{ apagados = JSON.parse(le(CH_T)) || {}; }catch(e){ apagados = {}; }
+    function guardarApagados(){ guarda(CH_T, Object.keys(apagados).length ? JSON.stringify(apagados) : null); }
+    var baseDados = function(){ return base == null ? undefined : semApagados(JSON.parse(base)); };
+    /* o que vai para o Drive: os dados e a lista do que foi apagado desde a última troca */
+    function paraEnviar(dados){
+      var agora = Date.now();
+      if(base != null) Object.assign(apagados, marcarApagados(baseDados(), dados, "", {}, agora));
+      apagados = podarApagados(apagados, dados, agora); guardarApagados();
+      if(!ehObjeto(dados)) return JSON.stringify(dados);
+      var envio = Object.assign({}, dados); envio[APAGADOS] = apagados;
+      return JSON.stringify(envio);
+    }
+    /* uma conferida alguns segundos depois de gravar: se outro aparelho gravou quase junto, por cima, junta de novo */
+    var conferencia = null;
+    function conferirDepois(){
+      clearTimeout(conferencia);
+      conferencia = setTimeout(function(){
+        if(gravando || conectando || pendente || !arquivo || !temToken()) return;
+        if(document.visibilityState && document.visibilityState !== "visible") return;
+        versaoDoArquivo(arquivo.id).then(function(v){
+          if(v.modifiedTime !== arquivo.modifiedTime) return trazer(arquivo.id, "Atualizado com o que mudou em outro aparelho, às " + hora() + ".");
+        }).catch(function(){});
+      }, 5000);
+    }
+    var copiando = false;
+    /* depois de uma troca bem-sucedida com o Drive: se a cópia desta semana ainda não foi feita, faz */
+    function talvezCopiar(){
+      if(copiando || op.copiaSemanal === false || !arquivo || !temToken()) return;
+      if(le(CH_C) === segundaDaSemana(new Date())) return;
+      var local = op.obter(); if(!op.temDados(local)) return;
+      copiando = true;
+      copiaDaSemana(op.nome, JSON.stringify(local)).then(function(semana){ guarda(CH_C, semana); })
+        .catch(function(e){ try{ console.info("Cópia da semana fica para depois:", e.message); }catch(x){} })
+        .then(function(){ copiando = false; });
+    }
     try{ arquivo = JSON.parse(le(CH_A)); }catch(e){ arquivo = null; }
     /* a base guardada só vale se for a da versão do Drive que este aparelho conhece */
     try{ var bg = JSON.parse(le(CH_B)); if(bg && arquivo && bg.mt === arquivo.modifiedTime) base = bg.s; }catch(e){ base = null; }
@@ -369,11 +500,13 @@ var Nuvem = (function(){
     }
     /* põe na tela a versão do Drive juntada com o que está neste aparelho agora (inclusive o que
        ele lançou enquanto o Drive era baixado); se sobrou algo daqui, manda de volta */
-    function receber(remoto, v){
+    function receber(bruto, v){
+      var remoto = semApagados(bruto), apagadosLa = apagadosDe(bruto);
+      if(apagadosLa){ Object.keys(apagadosLa).forEach(function(k){ if(!(k in apagados)) apagados[k] = apagadosLa[k]; }); guardarApagados(); }
       var textoRemoto = JSON.stringify(remoto);
       var local = op.obter();
-      var juntado = (pendente || geracao) && op.temDados(local)
-        ? juntar(base == null ? undefined : JSON.parse(base), local, remoto, base == null)
+      var juntado = (pendente || geracao || apagadosLa) && op.temDados(local)
+        ? juntar(baseDados(), local, remoto, base == null, "", apagadosLa)
         : remoto;
       var sobrou = juntado !== remoto && JSON.stringify(juntado) !== textoRemoto;
       op.aplicar(juntado);
@@ -422,7 +555,7 @@ var Nuvem = (function(){
       return versaoDoArquivo(id).then(function(v){
         return baixar(id).then(function(d){
           if(receber(d, v)) estado("Juntei o que mudou no outro aparelho com o que está aqui. Salvando…", "indo");
-          else estado(recado || ("Salvo no Drive · aberto às " + hora()), "ok");
+          else { estado(recado || ("Salvo no Drive · aberto às " + hora()), "ok"); talvezCopiar(); }
         });
       });
     }
@@ -430,7 +563,8 @@ var Nuvem = (function(){
     function criarNovo(){
       estado("Criando o caderno no Drive…", "indo");
       var local = op.obter(), texto = JSON.stringify(local), g = geracao;
-      return criar(op.nome, texto).then(function(novo){
+      var envio = ehObjeto(local) ? JSON.stringify(Object.assign({}, local, (function(){ var o = {}; o[APAGADOS] = {}; return o; })())) : texto;
+      return criar(op.nome, envio).then(function(novo){
         marcarArquivo(novo); marcarBase(texto, novo.modifiedTime);
         if(g === geracao) marcarPendente(false); else agendar();
         estado(op.temDados(local) ? "Caderno criado no Drive com o que estava neste aparelho." : "Caderno criado no Drive, ainda vazio.", "ok");
@@ -482,32 +616,34 @@ var Nuvem = (function(){
         return baixar(achado.id).then(function(remoto){
           if(!op.temDados(remoto) && op.temDados(op.obter())){ marcarArquivo(achado); conectando = false; return c.enviarAgora(); }
           if(receber(remoto, achado)) estado("Juntei o que mudou no outro aparelho com o que está aqui. Salvando…", "indo");
-          else estado("Salvo no Drive · aberto às " + hora(), "ok");
+          else { estado("Salvo no Drive · aberto às " + hora(), "ok"); talvezCopiar(); }
         });
       }).catch(falhou).then(function(){ conectando = false; });
     };
 
-    c.enviarAgora = function(){
+    c.enviarAgora = function(urgente){
+      urgente = urgente === true;
       clearTimeout(timer);
       if(gravando){ deNovo = true; return Promise.resolve(); }
       if(!temToken()){ falhou(new Error("expirou")); return Promise.resolve(); }
       if(!arquivo) return c.conectar();
       gravando = true;
       estado("Salvando no Drive…", "indo");
-      return versaoDoArquivo(arquivo.id).then(function(v){
+      return versaoDoArquivo(arquivo.id, urgente).then(function(v){
         /* mudou em outro aparelho desde a última troca: junta antes de gravar, em vez de escolher um lado */
         if(v.modifiedTime !== arquivo.modifiedTime){
           return baixar(arquivo.id).then(function(remoto){ receber(remoto, v); });
         }
       }).then(function(){
-        var texto = JSON.stringify(op.obter()), g = geracao;
-        return atualizar(arquivo.id, texto).then(function(r){
+        var dados = op.obter(), texto = JSON.stringify(dados), g = geracao;
+        return atualizar(arquivo.id, paraEnviar(dados), urgente).then(function(r){
           marcarArquivo(r); marcarBase(texto, r.modifiedTime);
           gravando = false; tentativas = 0; clearTimeout(novaTentativa);
           if(deNovo || g !== geracao){ deNovo = false; return c.enviarAgora(); }
           clearTimeout(timer);
           marcarPendente(false);
           estado("Salvo no Drive às " + hora(), "ok");
+          talvezCopiar(); conferirDepois();
         });
       }).catch(falhou);
     };
@@ -521,7 +657,17 @@ var Nuvem = (function(){
       agendar();
     };
     /* o app foi para o fundo ou vai fechar: manda já o que está pendente, sem esperar */
-    c.enviarSeHouver = function(){ if(!saindo && pendente && iniciado && temToken() && arquivo && !gravando) c.enviarAgora(); };
+    c.enviarSeHouver = function(urgente){ if(!saindo && pendente && iniciado && temToken() && arquivo && !gravando) c.enviarAgora(urgente === true); };
+
+    /* Duas abas (ou o app instalado e o Safari) com o mesmo caderno aberto: quando a outra troca
+       com o Drive, ela anota a versão nova neste navegador; esta aba vê a anotação e traz do Drive,
+       juntando com o que tiver aqui. Antes, cada aba só conhecia a própria cópia até recarregar. */
+    window.addEventListener("storage", function(e){
+      if(e.key !== CH_A || !e.newValue || !arquivo || !temToken() || gravando || conectando || saindo) return;
+      var outra; try{ outra = JSON.parse(e.newValue); }catch(x){ return; }
+      if(!outra || outra.id !== arquivo.id || outra.modifiedTime === arquivo.modifiedTime) return;
+      trazer(arquivo.id, "Atualizado com o que mudou em outra aba, às " + hora() + ".").catch(falhou);
+    });
 
     /* voltou para a tela: se nada daqui está pendente e o Drive mudou, traz o do Drive */
     c.aoVoltar = function(){
@@ -589,9 +735,9 @@ var Nuvem = (function(){
     if(bt) bt.addEventListener("click", entrar);
     document.addEventListener("visibilitychange", function(){
       if(document.visibilityState === "visible") aoMostrar();
-      else cadernos.forEach(function(c){ c.enviarSeHouver(); });
+      else cadernos.forEach(function(c){ c.enviarSeHouver(true); });
     });
-    window.addEventListener("pagehide", function(){ cadernos.forEach(function(c){ c.enviarSeHouver(); }); });
+    window.addEventListener("pagehide", function(){ cadernos.forEach(function(c){ c.enviarSeHouver(true); }); });
     window.addEventListener("online", function(){ cadernos.forEach(function(c){ c.enviarSeHouver(); }); });
     window.addEventListener("beforeunload", function(e){ if(!saindo && algumPendente() && temToken()){ e.preventDefault(); e.returnValue = ""; } });
     if(temToken()) cadernos.forEach(function(c){ c.conectar(); });
@@ -639,7 +785,9 @@ var Nuvem = (function(){
     /* recarrega a página de propósito, sem o aviso de mudança pendente (ela continua marcada) */
     recarregar: function(){ saindo = true; location.reload(); },
     conectado: temToken,
-    pior: pior, algumPendente: algumPendente, sair: sair
+    pior: pior, algumPendente: algumPendente, sair: sair,
+    /* a junção das duas cópias, exposta para os testes automáticos (testes/) */
+    juntar: juntar
   };
 })();
 
