@@ -11,6 +11,16 @@
    O login vale para todas as abas do Controle Único abertas na mesma janela: quem entra
    passa a chave de acesso para as outras páginas (mesmo site, mesma aba do navegador). */
 var Nuvem = (function(){
+  /* Saiu do aparelho: a limpeza roda de novo na abertura seguinte, antes de qualquer página ler
+     a cópia guardada. Algum quadro pode ter gravado alguma coisa enquanto a página fechava. */
+  var GUARDADO = /^(controle-unico|cu-|cripto-|rede-pbt)/, CH_SAIU = "cu-saiu-limpar";
+  function limparGuardado(){
+    var chaves = [];
+    for(var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if(GUARDADO.test(k)) chaves.push(k); }
+    chaves.forEach(function(k){ localStorage.removeItem(k); });
+  }
+  try{ if(localStorage.getItem(CH_SAIU)) limparGuardado(); }catch(e){}
+
   var CLIENT_ID = "185782688251-p74qi2gguclcosk33f8p653dmb1dtt2a.apps.googleusercontent.com";
   var ESCOPO = "https://www.googleapis.com/auth/drive.file";
   var PROJETO = "185782688251";   // número do projeto no Google Cloud: o Picker exige
@@ -657,6 +667,8 @@ var Nuvem = (function(){
       agendar();
     };
     /* o app foi para o fundo ou vai fechar: manda já o que está pendente, sem esperar */
+    /* sair do aparelho: nada mais vai ao Drive nem ao navegador por este caderno */
+    c.parar = function(){ clearTimeout(timer); clearTimeout(novaTentativa); clearTimeout(conferencia); };
     c.enviarSeHouver = function(urgente){ if(!saindo && pendente && iniciado && temToken() && arquivo && !gravando) c.enviarAgora(urgente === true); };
 
     /* Duas abas (ou o app instalado e o Safari) com o mesmo caderno aberto: quando a outra troca
@@ -750,7 +762,9 @@ var Nuvem = (function(){
 
   /* Sair deste aparelho (04/10/2026): devolve a chave ao Google e apaga deste navegador tudo o que o
      Controle Único guardou (cópias dos cadernos, agenda, rascunhos de prontuário, formulações,
-     carteira cripto). Os cadernos no Drive não são tocados. Só a casca chama. */
+     carteira cripto). Os cadernos no Drive não são tocados. Qualquer página que carrega este arquivo pode
+     chamar Nuvem.sair() (a casca, pelo menu; o controle da Ana, sozinho): dentro da casca, quem
+     recarrega é a casca inteira, e todos os quadros param de gravar antes da limpeza. */
   function temPendente(){
     if(algumPendente()) return true;
     return outrasJanelas().some(function(w){ try{ return !!(w.Nuvem && w.Nuvem.algumPendente && w.Nuvem.algumPendente()); }catch(e){ return false; } });
@@ -758,18 +772,17 @@ var Nuvem = (function(){
   function sair(){
     var aviso = temPendente()
       ? "ATENÇÃO: há mudanças que ainda não chegaram ao Google Drive. Se sair agora, elas se perdem.\n\nEspere o ponto ficar verde (\"Salvo no Drive\") e tente de novo, ou toque em OK para sair assim mesmo."
-      : "Sair deste aparelho?\n\nO app apaga deste navegador as cópias dos cadernos (dinheiro, casa, clínica, carteira, formulações) e a conexão com o Google. Nada é apagado do seu Google Drive: é só entrar de novo para ver tudo.";
+      : "Sair deste aparelho?\n\nO app apaga deste navegador as cópias dos cadernos guardadas aqui e a conexão com o Google. Nada é apagado do seu Google Drive: é só entrar de novo para ver tudo.";
     if(!confirm(aviso)) return;
     var t = token;
+    /* nenhuma janela do app (esta, a casca e os quadros) grava mais nada daqui em diante */
+    var topo = window; try{ if(window.top.location.origin === location.origin) topo = window.top; }catch(e){}
+    [window, topo].concat(outrasJanelas()).forEach(function(w){ try{ if(w.Nuvem && w.Nuvem.pararDeGravar) w.Nuvem.pararDeGravar(); }catch(e){} });
     saindo = true;
     var apagar = function(){
-      try{
-        var chaves = [];
-        for(var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if(/^(controle-unico|cu-|cripto-|rede-pbt)/.test(k)) chaves.push(k); }
-        chaves.forEach(function(k){ localStorage.removeItem(k); });
-      }catch(e){}
+      try{ limparGuardado(); localStorage.setItem(CH_SAIU, "1"); }catch(e){}
       try{ sessionStorage.clear(); }catch(e){}
-      location.replace(location.pathname);
+      topo.location.replace(topo.location.pathname);
     };
     if(t) fetch("https://oauth2.googleapis.com/revoke?token=" + encodeURIComponent(t), {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}}).catch(function(){}).then(apagar);
     else apagar();
@@ -786,6 +799,7 @@ var Nuvem = (function(){
     recarregar: function(){ saindo = true; location.reload(); },
     conectado: temToken,
     pior: pior, algumPendente: algumPendente, sair: sair,
+    pararDeGravar: function(){ saindo = true; cadernos.forEach(function(c){ c.parar(); }); },
     /* a junção das duas cópias, exposta para os testes automáticos (testes/) */
     juntar: juntar
   };
