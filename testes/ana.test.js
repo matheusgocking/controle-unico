@@ -128,7 +128,7 @@ test("Ana, Mês: a moradia é a parte dela no total da casa, não o que ela pago
 test("Ana, Plantões fixos: a regra lança os que faltam, sem repetir, e Desfazer tira", async () => {
   const { ctx, p, erros, caderno } = await abrir(1280);
   await p.click('#abas [data-a="plantoes"]');
-  await p.click("#dRegras summary");
+  await p.click("#dRegras > summary");
   const regra = async (local, periodo, dia, quando) => {
     await p.selectOption("#fRegra [name=local]", local); await p.selectOption("#fRegra [name=periodo]", periodo);
     await p.selectOption("#fRegra [name=dia]", String(dia)); await p.selectOption("#fRegra [name=quando]", quando);
