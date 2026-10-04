@@ -16,29 +16,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"></noscript>
+<link rel="stylesheet" href="tema.css">
 <style>
 /* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
 button,a,summary,select,input,label{touch-action:manipulation}
 /* O controle da Ana (30/09/2026): o mesmo desenho do Dinheiro e da Casa do Controle Único,
    numa página própria, com link só dela. A Casa é a mesma do app dele, carregada ao lado. */
-:root{
-  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
-  --accent:#7030a0; --accent-soft:#f0e5fb; --barra:#5b2a82; --barra-ink:#ffffff;
-  --pos:#1f6b4f; --pos-soft:#dcefe6; --neg:#a3241f; --neg-soft:#fbdedd; --warn:#8a4b12; --warn-soft:#fbe8d4;
-  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300; --c7:#4a3aa7; --c8:#8a94a3;
-  --font:"IBM Plex Sans",system-ui,sans-serif; --radius:8px; color-scheme:light;
+:root{  --barra:#5b2a82; --barra-ink:#ffffff;
+  color-scheme:light;
 }
-@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
-  --accent:#c8a4f2; --accent-soft:#2e2140; --barra:#2c1840; --barra-ink:#f2eaf9;
-  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
-  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d; color-scheme:dark;
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){  --barra:#2c1840; --barra-ink:#f2eaf9;
+  color-scheme:dark;
 }}
-:root[data-theme="dark"]{
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
-  --accent:#c8a4f2; --accent-soft:#2e2140; --barra:#2c1840; --barra-ink:#f2eaf9;
-  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
-  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d; color-scheme:dark;
+:root[data-theme="dark"]{  --barra:#2c1840; --barra-ink:#f2eaf9;
+  color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -92,6 +83,7 @@ nav button[aria-pressed="true"]{background:var(--bg);color:var(--text);font-weig
 
 /* situação do mês */
 .situ{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;align-items:stretch}
+.situ > .veredito{order:2}   /* no celular vem primeiro; no computador, à direita */
 .linha-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .k span{display:block;color:var(--muted);font-size:13px}
 .k b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-top:2px;white-space:nowrap}
@@ -166,7 +158,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
 .pe a{color:var(--faint);font-size:13px}
 
-@media (max-width:960px){ .duas,.duas.larga{grid-template-columns:1fr} .situ{grid-template-columns:1fr} }
+@media (max-width:960px){ .duas,.duas.larga{grid-template-columns:1fr} .situ{grid-template-columns:1fr;gap:16px} .situ > .veredito{order:0} }
 /* ---------- celular: barra roxa em cima, abas embaixo, como o app dele ---------- */
 @media (max-width:700px){
   header{background:var(--barra);color:var(--barra-ink);border-bottom:0;padding:6px 12px;padding-top:calc(6px + env(safe-area-inset-top,0px))}
@@ -402,14 +394,17 @@ function telaMes(){
   const k = km(), e = entradas(k), s = saidas(k), sobra = e.total - s.total;
   const passado = k < chaveMes(new Date());
   const nome = MESES[ref.getMonth()];
-  const ver = sobra >= -0.005
+  // mês sem nada lançado: diz isso, em vez de "sobra R$ 0,00"
+  const ver = e.total < 0.005 && s.total < 0.005
+    ? `<div class="veredito"><b>Nada lançado ainda</b><p>Quando entrar um plantão, uma entrada ou um gasto de ${nome}, a conta do mês aparece aqui.</p></div>`
+    : sobra >= -0.005
     ? `<div class="veredito pos"><b>${passado ? "Fechou positivo" : "Sobra no mês"}</b><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} com ${dinheiro(sobra)} a mais do que saiu, se tudo cair como está aqui.</p></div>`
     : `<div class="veredito neg"><b>${passado ? "Fechou negativo" : "Falta no mês"}</b><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} em ${sinalDin(sobra)}: sai mais do que entra.</p></div>`;
   const semCasa = !s.casa ? `<p class="aviso">A parte da casa ainda não aparece: abra a aba <b>Casa</b> uma vez e toque em "Escolher o que foi compartilhado comigo".</p>` : "";
 
   const linhasEnt = e.fixas.map(x => `<tr><td class="c-desc"><b>${escH(comPonto(x.rot))}</b></td>
-      <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-receita="${x.id}" value="${x.valor || ""}" placeholder="—" aria-label="${escH(x.rot)} em ${nome}"></td>
-      <td class="c-x"><button class="x" data-apagar="receitasFixas:${x.id}" aria-label="Apagar">×</button></td></tr>`).join("")
+      <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-receita="${escH(x.id)}" value="${escH(x.valor || "")}" placeholder="—" aria-label="${escH(x.rot)} em ${nome}"></td>
+      <td class="c-x"><button class="x" data-apagar="receitasFixas:${escH(x.id)}" aria-label="Apagar">×</button></td></tr>`).join("")
     + e.plantoes.map(x => `<tr><td class="c-desc"><b>${escH(x.rot)}</b><small class="nota" style="display:block">${x.n ? (x.n > 1 ? x.n + " plantões" : "1 plantão") + " de " + nomeMes(x.de) : "nenhum plantão de " + nomeMes(x.de)}</small></td>
       <td class="dir c-val">${x.valor ? dinheiro(x.valor) : "—"}</td><td></td></tr>`).join("")
     + (e.atend.n ? `<tr><td class="c-desc"><b>${e.atend.rot}</b><small class="nota" style="display:block">${e.atend.n > 1 ? e.atend.n + " atendimentos pagos" : "1 atendimento pago"} em ${nome}</small></td>
@@ -423,11 +418,11 @@ function telaMes(){
   const cp = contasPlantoes(k);
   return barraMes() + `
   <section class="painel"><h2>Situação do mês</h2>
-    <div class="situ"><div class="linha-k">
+    <div class="situ">${ver}<div class="linha-k">
       <div class="k"><span>Entra</span><b class="pos">${dinheiro(e.total)}</b><small>${dinheiro(soma(e.plantoes, x => x.valor))} de plantões${e.atend.valor ? " e " + dinheiro(e.atend.valor) + " de atendimentos" : ""}</small></div>
       <div class="k"><span>Sai</span><b>${dinheiro(s.total)}</b><small>${dinheiro(s.lancado)} lançados, ${dinheiro(s.fixosMes)} de fixos${s.casa ? " e " + dinheiro(s.casa.valor) + " da casa" : ""}</small></div>
       <div class="k destaque"><span>Sobra</span><b class="${sobra < -0.005 ? "neg" : "pos"}">${sinalDin(sobra)}</b><small>entra menos sai</small></div>
-    </div>${ver}</div>
+    </div></div>
   </section>
   <div class="duas">
     <section class="painel"><h2>Entradas de ${nome}</h2>${formEnt}
@@ -460,7 +455,7 @@ function telaPlantoes(){
     <div><label>Período</label><select name="periodo">${PERIODOS.map(p => `<option>${p}</option>`).join("")}</select></div>
     <div><label>Tipo</label><select name="tipo"><option>Regular</option><option>Extra</option></select></div>
     <div><label>Valor</label><input type="number" name="valor" step="0.01" min="0" inputmode="decimal" required></div>
-    <div><label>Repetir por</label><select name="semanas">${[1,2,3,4,5,6,8,10,12].map(n => `<option value="${n}">${n === 1 ? "só este dia" : n + " semanas"}</option>`).join("")}</select></div>
+    <div><label>Repetir por</label><select name="semanas">${[1,2,3,4,5,6,8,10,12].map(n => `<option value="${escH(n)}">${n === 1 ? "só este dia" : n + " semanas"}</option>`).join("")}</select></div>
     <div><button class="b p" type="submit">Lançar plantão</button></div></form></details>`
     : `<p class="aviso">Cadastre primeiro um local em "Valores e locais", embaixo.</p>`;
   const linhas = lst.map(p => {
@@ -469,14 +464,14 @@ function telaPlantoes(){
       <td class="c-desc"><b>${escH(p.local)}</b><span class="so-cel">${escH(p.periodo)}${extra ? " · extra" : ""}</span></td>
       <td class="c-cat">${escH(p.periodo)}</td><td class="c-forma"><span class="selo-b ${extra ? "extra" : ""}">${extra ? "Extra" : "Regular"}</span></td>
       <td class="c-val dir">${dinheiro(p.valor)}</td>
-      <td><label class="vai" title="Vai fazer este plantão"><input type="checkbox" data-vai="${p.id}" ${p.realizar ? "checked" : ""}><span class="rot">vai fazer</span></label></td>
-      <td class="c-x"><button class="x" data-apagar="plantoes:${p.id}" aria-label="Apagar">×</button></td></tr>`;
+      <td><label class="vai" title="Vai fazer este plantão"><input type="checkbox" data-vai="${escH(p.id)}" ${p.realizar ? "checked" : ""}><span class="rot">vai fazer</span></label></td>
+      <td class="c-x"><button class="x" data-apagar="plantoes:${escH(p.id)}" aria-label="Apagar">×</button></td></tr>`;
   }).join("");
   const valores = `<details class="origem" id="dValores"><summary>Valores e locais</summary>
     <div class="rolar"><table class="t valores"><thead><tr><th>Local</th><th>Cai no mês seguinte</th>${DIAS_CURTOS.map(d => `<th class="dir">${d}</th>`).join("")}<th></th></tr></thead><tbody>
     ${cad.locais.map((L, i) => `<tr><td><b>${escH(L.nome)}</b></td>
       <td><label class="vai"><input type="checkbox" data-paga="${i}" ${L.pagaMesSeguinte ? "checked" : ""}><span>sim</span></label></td>
-      ${DIAS_CURTOS.map((d, j) => `<td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-tab="${i}:${j}" value="${(cad.tabelaPlantao[L.nome] || {})[j] || ""}" aria-label="${escH(L.nome)} ${d}"></td>`).join("")}
+      ${DIAS_CURTOS.map((d, j) => `<td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-tab="${i}:${j}" value="${escH((cad.tabelaPlantao[L.nome] || {})[j] || "")}" aria-label="${escH(L.nome)} ${d}"></td>`).join("")}
       <td class="c-x"><button class="x" data-apagar-local="${i}" aria-label="Apagar local">×</button></td></tr>`).join("")}
     </tbody></table></div>
     <form class="linha" id="fLocal" style="margin-top:10px">
@@ -521,7 +516,7 @@ function telaAtendimentos(){
   const linhas = lst.map(a => `<tr><td class="c-data">${dataCurta(a.data)}<small>${DIAS_CURTOS[diaSemana(a.data)]}</small></td>
     <td class="c-desc"><b>${escH(a.paciente)}</b></td>
     <td class="c-val dir">${dinheiro(a.valor)}</td>
-    <td class="c-x"><button class="x lapis" data-editar-atend="${a.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="atendimentos:${a.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
+    <td class="c-x"><button class="x lapis" data-editar-atend="${escH(a.id)}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="atendimentos:${escH(a.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
   return barraMes() + `
   <div class="duas larga">
     <section class="painel"><h2>Atendimentos de ${nome}<span class="dir">${lst.length} no mês · ${dinheiro(soma(lst, a => a.valor))}</span></h2>
@@ -564,9 +559,17 @@ function configLancamento(){
       return () => { cad.lancamentos = cad.lancamentos.filter(x => x.id !== id); salvar(); };
     },
     alterar(onde, id, d){
-      const l = cad.lancamentos.find(x => x.id === id);
-      if (l) Object.assign(l, { data:d.data, descricao:d.descricao, categoria:d.categoria, forma:d.forma, valor:d.valor });
+      const l = cad.lancamentos.find(x => x.id === id); if (!l) return null;
+      const antes = JSON.parse(JSON.stringify(l));
+      Object.assign(l, { data:d.data, descricao:d.descricao, categoria:d.categoria, forma:d.forma, valor:d.valor });
       salvar();
+      return () => { const i = cad.lancamentos.findIndex(x => x.id === id); if (i >= 0) cad.lancamentos[i] = antes; salvar(); };
+    },
+    // só os gastos dela se alteram por aqui; as compras da casa ficam na tela da Casa
+    apagar(onde, id){
+      const i = cad.lancamentos.findIndex(x => x.id === id); if (i < 0) return null;
+      const [tirado] = cad.lancamentos.splice(i, 1); salvar();
+      return () => { if (!cad.lancamentos.some(x => x.id === id)) cad.lancamentos.splice(Math.min(i, cad.lancamentos.length), 0, tirado); salvar(); };
     }
   };
 }
@@ -593,6 +596,15 @@ function ordemCelular(){
     ${op("descricao", 1, "descrição, de A a Z")}${op("categoria", 1, "categoria, de A a Z")}${op("forma", 1, "forma, de A a Z")}</select></label>`;
 }
 
+// Os fixos novos vão só até dezembro. Num mês sem nenhum fixo, se o mês anterior tinha, oferece
+// copiar os valores dele. Só preenche o mês vazio; nada do que já existe muda.
+const paraCopiar = (lista, k) => lista.filter(g => g.valores && Number(g.valores[mesAntes(k)]) > 0 && g.valores[k] === undefined);
+function copiaFixos(k){
+  if (cad.gastosFixos.concat(cad.receitasFixas).some(g => valorNoMes(g, k) > 0)) return "";
+  const n = paraCopiar(cad.gastosFixos, k).length + paraCopiar(cad.receitasFixas, k).length; if (!n) return "";
+  const ant = MESES[Number(mesAntes(k).slice(5, 7)) - 1];
+  return `<p class="aviso">Este mês ainda não tem fixos. ${n} ${n === 1 ? "vinha" : "vinham"} de ${ant}. <button class="b s p" type="button" id="copiarFixos">Copiar os fixos de ${ant}</button></p>`;
+}
 function telaGastos(){
   const k = km(), nome = MESES[ref.getMonth()];
   const lst = ordenar(cad.lancamentos.filter(l => doMes(l, k)));
@@ -602,12 +614,12 @@ function telaGastos(){
     <td class="c-desc"><b>${escH(comPonto(l.descricao || l.categoria))}</b><span class="so-cel">${escH(comPonto([l.categoria, l.forma].filter(Boolean).join(" · ")))}</span></td>
     <td class="c-cat">${escH(comPonto(l.categoria))}</td><td class="c-forma">${escH(comPonto(l.forma))}</td>
     <td class="c-val dir">${dinheiro(l.valor)}</td>
-    <td class="c-x"><button class="x lapis" data-editar="${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
+    <td class="c-x"><button class="x lapis" data-editar="${escH(l.id)}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
   const fixos = cad.gastosFixos.slice().sort((a, b) => valorNoMes(b, k) - valorNoMes(a, k));
   const tFixos = fixos.length ? `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Valor em ${nome}</th><th></th></tr></thead><tbody>
     ${fixos.map(g => `<tr><td class="c-desc"><b>${escH(comPonto(g.descricao))}</b><span class="so-cel">${escH(comPonto(g.categoria))}</span></td><td class="c-cat">${escH(comPonto(g.categoria))}</td>
-      <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-fixo="${g.id}" value="${valorNoMes(g, k) || ""}" placeholder="—" aria-label="${escH(g.descricao)} em ${nome}"></td>
-      <td class="c-x"><button class="x" data-apagar="gastosFixos:${g.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
+      <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-fixo="${escH(g.id)}" value="${valorNoMes(g, k) || ""}" placeholder="—" aria-label="${escH(g.descricao)} em ${nome}"></td>
+      <td class="c-x"><button class="x" data-apagar="gastosFixos:${escH(g.id)}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
     : `<p class="vazio">Nenhum gasto fixo.</p>`;
   const formFixo = `<details class="novo"><summary>+ Novo gasto fixo</summary><form class="linha" id="fFixo">
     <div class="largo" style="grid-column:span 2"><label>Gasto fixo</label><input name="descricao" placeholder="financiamento, conta" required></div>
@@ -622,7 +634,7 @@ function telaGastos(){
     <section class="painel"><h2>Gastos de ${nome}<span class="dir">${lst.length} no mês · ${dinheiro(soma(lst, l => l.valor))}</span></h2>${form}
       ${lst.length ? `${ordemCelular()}<table class="t">${cabecalho()}<tbody>${linhas}</tbody></table>`
         : `<p class="vazio">Nenhum gasto lançado em ${nome}.</p>`}${formCat}</section>
-    <section class="painel"><h2>Gastos fixos<span class="dir">${dinheiro(soma(fixos, g => valorNoMes(g, k)))} em ${nome}</span></h2>${formFixo}${tFixos}</section>
+    <section class="painel"><h2>Gastos fixos<span class="dir">${dinheiro(soma(fixos, g => valorNoMes(g, k)))} em ${nome}</span></h2>${copiaFixos(k)}${formFixo}${tFixos}</section>
   </div>`;
 }
 
@@ -720,6 +732,12 @@ function ligar(){
   });
   document.querySelectorAll("[data-ordsel]").forEach(s => s.onchange = () => { const [c, d] = s.value.split(":"); ordem = { c, d:Number(d) }; desenhar(); });
   GraficoMeses.ligar(document.getElementById("tela"), k => { ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1); desenhar(); });
+  const cf = document.getElementById("copiarFixos");
+  if (cf) cf.onclick = () => {
+    const k = km(), a = mesAntes(k);
+    paraCopiar(cad.gastosFixos, k).concat(paraCopiar(cad.receitasFixas, k)).forEach(g => { g.valores[k] = Number(g.valores[a]); });
+    salvar();
+  };
   liga("fFixo", d => { cad.gastosFixos.push({ id:novoId(), descricao:d.descricao.trim(), categoria:d.categoria, valores:ateDezembro(Number(d.valor)) }); salvar(); });
   liga("fReceita", d => {
     const v = Number(d.valor);
@@ -829,7 +847,9 @@ setInterval(tentarCompartilhar, 5000);
 (async () => {
   const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
   const pacote = h.get("importar"); if (!pacote) return;
-  const com = h.get("com");
+  // o link pode pedir para compartilhar o controle com alguém: só vale um e-mail, e só depois de ela confirmar
+  const comBruto = (h.get("com") || "").trim();
+  const com = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(comBruto) ? comBruto : "";
   try { history.replaceState(null, "", location.pathname + "#mes"); } catch(e){}
   const caixa = document.getElementById("chegou");
   let dados;
@@ -840,9 +860,10 @@ setInterval(tentarCompartilhar, 5000);
   document.getElementById("trazer").onclick = () => {
     const temAlgo = cad.lancamentos.length || cad.plantoes.length || cad.gastosFixos.length;
     if (temAlgo && !confirm("Isto troca o que já está no app pelo que chegou no link. Seguir?")) return;
+    const compartilhar = com && confirm(`O link também pede para compartilhar o seu controle com ${com}. Compartilhar?`);
     ["plantoes","atendimentos","lancamentos","gastosFixos","receitasFixas","emprestimos"].forEach(k => (dados[k] || []).forEach(x => { if (!x.id) x.id = novoId(); }));
     cad = arrumar(dados); salvar();
-    if (com) { try { localStorage.setItem(CH_COMPARTILHAR, com); } catch(e){} }
+    if (compartilhar) { try { localStorage.setItem(CH_COMPARTILHAR, com); } catch(e){} }
     caixa.innerHTML = `<p class="aviso">Trazido. ${Nuvem.conectado() ? "Mandando para o seu Google…" : "Agora toque em <b>Entrar com o Google</b>, lá em cima, para guardar no seu Google."}</p>`;
     setTimeout(tentarCompartilhar, 3000);
   };

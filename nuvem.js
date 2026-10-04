@@ -183,6 +183,7 @@ var Nuvem = (function(){
   }
 
   function entrar(){
+    aviso = null;
     if(appNoIphone()){ entrarPorRedirecionamento(false); return; }
     if(!(window.google && google.accounts && google.accounts.oauth2)){ avisoGeral("O Google ainda não carregou. Tente de novo em um segundo."); return; }
     if(!cliente){
@@ -281,16 +282,113 @@ var Nuvem = (function(){
       });
   }
 
+  /* ---------------- juntar duas versões de um caderno (04/10/2026) ----------------
+     Antes, quando o Drive e este aparelho tinham mudado, era preciso escolher um dos dois e o
+     outro se perdia; e o que ele lançava enquanto o app baixava o Drive sumia. Agora as duas
+     versões são juntadas a partir da última versão que os dois tinham em comum (a "base"):
+     - listas em que toda linha tem id (lançamentos, pagamentos, pacientes...): entra o que foi
+       acrescentado de cada lado, sai o que foi apagado de cada lado, e a linha mudada dos dois
+       lados é juntada campo a campo;
+     - valor que só um lado mudou: fica o mudado; mudado dos dois lados: fica o deste aparelho.
+     Sem base conhecida (aparelho novo ou navegador limpo), nada do Drive se perde: as listas
+     com id somam as duas versões e o resto fica como está no Drive. */
+  function igual(a, b){ return a === b || JSON.stringify(a) === JSON.stringify(b); }
+  function ehObjeto(v){ return v !== null && typeof v === "object" && !Array.isArray(v); }
+  function listaComId(l){
+    if(!Array.isArray(l)) return false;
+    var vistos = {};
+    for(var i = 0; i < l.length; i++){
+      var x = l[i];
+      if(!ehObjeto(x) || x.id == null || x.id === "" || vistos["k" + x.id]) return false;   // id repetido: a lista vai inteira
+      vistos["k" + x.id] = true;
+    }
+    return true;
+  }
+  function juntar(base, local, remoto, semBase){
+    if(semBase){
+      if(ehObjeto(local) && ehObjeto(remoto)) return juntarObjetos({}, local, remoto, true);
+      if(listaComId(local) && listaComId(remoto)) return juntarListas([], local, remoto, true);
+      return remoto === undefined ? local : remoto;
+    }
+    if(igual(local, base)) return remoto;
+    if(igual(remoto, base) || igual(local, remoto)) return local;
+    if(ehObjeto(local) && ehObjeto(remoto)) return juntarObjetos(ehObjeto(base) ? base : {}, local, remoto, false);
+    if(listaComId(local) && listaComId(remoto) && (base === undefined || listaComId(base))) return juntarListas(base || [], local, remoto, false);
+    return local;
+  }
+  function juntarObjetos(base, local, remoto, semBase){
+    var r = {}, chaves = {};
+    [local, remoto, base].forEach(function(o){ Object.keys(o).forEach(function(k){ chaves[k] = true; }); });
+    Object.keys(chaves).forEach(function(k){
+      var naBase = !semBase && k in base, aqui = k in local, la = k in remoto;
+      if(aqui && la){ r[k] = juntar(naBase ? base[k] : undefined, local[k], remoto[k], semBase); return; }
+      if(aqui){   // não está no Drive: acrescentado aqui, ou apagado lá
+        if(naBase && igual(local[k], base[k])) return;
+        r[k] = local[k]; return;
+      }
+      if(la){     // não está aqui: acrescentado lá, ou apagado aqui
+        if(naBase) return;
+        r[k] = remoto[k];
+      }
+    });
+    return r;
+  }
+  function juntarListas(base, local, remoto, semBase){
+    var porId = function(l){ var m = {}; l.forEach(function(x){ m["k" + x.id] = x; }); return m; };
+    var b = semBase ? {} : porId(base), aqui = porId(local), res = [];
+    remoto.forEach(function(x){
+      var k = "k" + x.id;
+      if(aqui[k]) res.push(juntar(b[k], aqui[k], x, semBase));
+      else if(!b[k]) res.push(x);                       // acrescentado lá
+      /* senão: apagado aqui */
+    });
+    var la = porId(remoto);
+    local.forEach(function(x){
+      var k = "k" + x.id;
+      if(la[k]) return;
+      if(!b[k] || !igual(x, b[k])) res.push(x);         // acrescentado aqui (ou mudado aqui e apagado lá)
+    });
+    return res;
+  }
+
   /* ---------------- um caderno = um arquivo no Drive ---------------- */
   function Caderno(op){
     var c = this;
     c.id = op.id;
     var CH_P = "controle-unico-" + op.id + "-pendente";   // mudança feita aqui que o Drive ainda não tem
     var CH_A = "controle-unico-" + op.id + "-arquivo";    // id e versão do arquivo na última troca
+    var CH_B = "controle-unico-" + op.id + "-base";     // a última versão que o Drive e este aparelho tinham em comum
     var arquivo = null, pendente = le(CH_P) === "1", timer = null, gravando = false, deNovo = false, conectando = false;
+    var geracao = 0, base = null, tentativas = 0, novaTentativa = null;
     try{ arquivo = JSON.parse(le(CH_A)); }catch(e){ arquivo = null; }
+    /* a base guardada só vale se for a da versão do Drive que este aparelho conhece */
+    try{ var bg = JSON.parse(le(CH_B)); if(bg && arquivo && bg.mt === arquivo.modifiedTime) base = bg.s; }catch(e){ base = null; }
+    function marcarBase(texto, mt){
+      base = texto;
+      try{ localStorage.setItem(CH_B, JSON.stringify({mt:mt, s:texto})); }catch(e){ try{ localStorage.removeItem(CH_B); }catch(e2){} }
+    }
+    /* põe na tela a versão do Drive juntada com o que está neste aparelho agora (inclusive o que
+       ele lançou enquanto o Drive era baixado); se sobrou algo daqui, manda de volta */
+    function receber(remoto, v){
+      var textoRemoto = JSON.stringify(remoto);
+      var local = op.obter();
+      var juntado = (pendente || geracao) && op.temDados(local)
+        ? juntar(base == null ? undefined : JSON.parse(base), local, remoto, base == null)
+        : remoto;
+      var sobrou = juntado !== remoto && JSON.stringify(juntado) !== textoRemoto;
+      op.aplicar(juntado);
+      marcarArquivo(v); marcarBase(textoRemoto, v.modifiedTime);
+      if(sobrou){ marcarPendente(true); agendar(); return true; }
+      marcarPendente(false);
+      return false;
+    }
+    function agendar(){ clearTimeout(timer); timer = setTimeout(c.enviarAgora, 1200); }
 
-    function estado(texto, tipo, acoes){ estados[c.id] = {texto:texto, tipo:tipo || "", acoes:acoes || null, t:Date.now()}; desenhar(); }
+    function estado(texto, tipo, acoes){
+      estados[c.id] = {texto:texto, tipo:tipo || "", acoes:acoes || null, t:Date.now()}; desenhar();
+      /* a casca mostra o pior estado entre os módulos: um erro aqui dentro não pode ficar com o ponto verde lá em cima */
+      if(window.top !== window){ try{ if(window.top.Nuvem && window.top.Nuvem.redesenhar) window.top.Nuvem.redesenhar(); }catch(e){} }
+    }
     function marcarPendente(v){ pendente = v; guarda(CH_P, v ? "1" : null); }
     function marcarArquivo(a){ arquivo = a ? {id:a.id, modifiedTime:a.modifiedTime} : null; guarda(CH_A, arquivo ? JSON.stringify(arquivo) : null); }
     c.pendente = function(){ return pendente; };
@@ -305,8 +403,15 @@ var Nuvem = (function(){
 
     function falhou(e){
       gravando = false; conectando = false;
-      if(e.message === "expirou"){ c.venceu(); renovar(); }
-      else estado("Não consegui falar com o Drive (" + e.message + "). O que você mudou está guardado neste aparelho.", "erro");
+      if(e.message === "expirou"){ c.venceu(); renovar(); return; }
+      estado("Não consegui falar com o Drive (" + e.message + "). O que você mudou está guardado neste aparelho" + (pendente ? " e vai de novo sozinho." : "."), "erro");
+      /* tenta de novo sozinho, com espera crescente: 15 s, 1 min, 4 min, depois a cada 10 min */
+      if(pendente){
+        clearTimeout(novaTentativa);
+        var espera = [15000, 60000, 240000][tentativas] || 600000;
+        tentativas++;
+        novaTentativa = setTimeout(function(){ if(pendente && temToken()) c.enviarAgora(); }, espera);
+      }
     }
     /* a chave de uma hora venceu: o que ele mudar daqui em diante fica no aparelho até entrar de novo */
     c.venceu = function(){
@@ -314,19 +419,20 @@ var Nuvem = (function(){
     };
 
     function trazer(id, recado){
-      return baixar(id).then(function(d){
-        return versaoDoArquivo(id).then(function(v){
-          op.aplicar(d); marcarArquivo(v); marcarPendente(false);
-          estado(recado || ("Salvo no Drive · aberto às " + hora()), "ok");
+      return versaoDoArquivo(id).then(function(v){
+        return baixar(id).then(function(d){
+          if(receber(d, v)) estado("Juntei o que mudou no outro aparelho com o que está aqui. Salvando…", "indo");
+          else estado(recado || ("Salvo no Drive · aberto às " + hora()), "ok");
         });
       });
     }
 
     function criarNovo(){
       estado("Criando o caderno no Drive…", "indo");
-      var local = op.obter();
-      return criar(op.nome, JSON.stringify(local)).then(function(novo){
-        marcarArquivo(novo); marcarPendente(false);
+      var local = op.obter(), texto = JSON.stringify(local), g = geracao;
+      return criar(op.nome, texto).then(function(novo){
+        marcarArquivo(novo); marcarBase(texto, novo.modifiedTime);
+        if(g === geracao) marcarPendente(false); else agendar();
         estado(op.temDados(local) ? "Caderno criado no Drive com o que estava neste aparelho." : "Caderno criado no Drive, ainda vazio.", "ok");
       }).catch(falhou);
     }
@@ -367,17 +473,16 @@ var Nuvem = (function(){
           return criarNovo();
         }
         var driveMudou = !arquivo || arquivo.id !== achado.id || arquivo.modifiedTime !== achado.modifiedTime;
-        if(pendente && op.temDados(local)){
-          if(!driveMudou || confirm("Este aparelho tem mudanças em " + (op.rotulo || "um caderno") + " que ainda não foram para o Drive, e o Drive também mudou em outro aparelho.\n\nOK: fico com o deste aparelho (grava por cima do Drive).\nCancelar: fico com o do Drive (perde as mudanças daqui).")){
-            marcarArquivo(achado);
-            conectando = false;
-            return c.enviarAgora();
-          }
+        if(pendente && op.temDados(local) && !driveMudou){
+          conectando = false;
+          return c.enviarAgora();
         }
+        /* o Drive mudou (ou este aparelho ainda não o conhecia): traz e junta com o que há aqui */
+        if(!arquivo || arquivo.id !== achado.id) base = null;
         return baixar(achado.id).then(function(remoto){
-          if(!op.temDados(remoto) && op.temDados(local)){ marcarArquivo(achado); conectando = false; return c.enviarAgora(); }
-          op.aplicar(remoto); marcarArquivo(achado); marcarPendente(false);
-          estado("Salvo no Drive · aberto às " + hora(), "ok");
+          if(!op.temDados(remoto) && op.temDados(op.obter())){ marcarArquivo(achado); conectando = false; return c.enviarAgora(); }
+          if(receber(remoto, achado)) estado("Juntei o que mudou no outro aparelho com o que está aqui. Salvando…", "indo");
+          else estado("Salvo no Drive · aberto às " + hora(), "ok");
         });
       }).catch(falhou).then(function(){ conectando = false; });
     };
@@ -390,15 +495,17 @@ var Nuvem = (function(){
       gravando = true;
       estado("Salvando no Drive…", "indo");
       return versaoDoArquivo(arquivo.id).then(function(v){
-        if(v.modifiedTime !== arquivo.modifiedTime &&
-           !confirm((op.rotulo || "O caderno") + " foi mudado em outro aparelho depois que você abriu aqui.\n\nOK: gravo por cima com o deste aparelho.\nCancelar: trago o do Drive (perde a última mudança feita aqui).")){
-          gravando = false;
-          return trazer(arquivo.id, "Trouxe o caderno do Drive, com o que mudou no outro aparelho.");
+        /* mudou em outro aparelho desde a última troca: junta antes de gravar, em vez de escolher um lado */
+        if(v.modifiedTime !== arquivo.modifiedTime){
+          return baixar(arquivo.id).then(function(remoto){ receber(remoto, v); });
         }
-        return atualizar(arquivo.id, JSON.stringify(op.obter())).then(function(r){
-          marcarArquivo(r);
-          gravando = false;
-          if(deNovo){ deNovo = false; return c.enviarAgora(); }
+      }).then(function(){
+        var texto = JSON.stringify(op.obter()), g = geracao;
+        return atualizar(arquivo.id, texto).then(function(r){
+          marcarArquivo(r); marcarBase(texto, r.modifiedTime);
+          gravando = false; tentativas = 0; clearTimeout(novaTentativa);
+          if(deNovo || g !== geracao){ deNovo = false; return c.enviarAgora(); }
+          clearTimeout(timer);
           marcarPendente(false);
           estado("Salvo no Drive às " + hora(), "ok");
         });
@@ -406,13 +513,15 @@ var Nuvem = (function(){
     };
 
     c.mudou = function(){
+      geracao++;
       marcarPendente(true);
       if(!iniciado) return;
       if(!temToken()){ estado("Guardado só neste aparelho. Entre com o Google para mandar ao Drive.", "erro"); return; }
       estado("Salvando no Drive…", "indo");
-      clearTimeout(timer);
-      timer = setTimeout(c.enviarAgora, 1200);
+      agendar();
     };
+    /* o app foi para o fundo ou vai fechar: manda já o que está pendente, sem esperar */
+    c.enviarSeHouver = function(){ if(!saindo && pendente && iniciado && temToken() && arquivo && !gravando) c.enviarAgora(); };
 
     /* voltou para a tela: se nada daqui está pendente e o Drive mudou, traz o do Drive */
     c.aoVoltar = function(){
@@ -425,23 +534,39 @@ var Nuvem = (function(){
   }
 
   /* ---------------- a linha de estado da página ---------------- */
-  var aviso = null;
-  function avisoGeral(t){ aviso = t; desenhar(); }
+  /* aviso de login (janela bloqueada, Google recusou): fica na tela até a próxima tentativa de entrar
+     ou por 20 s, em vez de sumir no primeiro redesenho (04/10/2026) */
+  var aviso = null, avisoAte = 0;
+  function avisoGeral(t){ aviso = t; avisoAte = Date.now() + 20000; desenhar(); setTimeout(desenhar, 20100); }
+  function pior(){
+    var lista = cadernos.map(function(c){ return estados[c.id]; }).filter(Boolean);
+    return lista.filter(function(x){ return x.tipo === "escolha"; })[0] || lista.filter(function(x){ return x.tipo === "erro"; })[0] ||
+           lista.filter(function(x){ return x.tipo === "indo"; })[0] ||
+           lista.slice().sort(function(a, b){ return b.t - a.t; })[0] || null;
+  }
   function desenhar(){
     var el = $("nuvem-texto"), pt = $("nuvem-ponto"), bt = $("nuvem-entrar"), ac = $("nuvem-acoes");
     if(!el) return;
-    var lista = cadernos.map(function(c){ return estados[c.id]; }).filter(Boolean);
-    var e = lista.filter(function(x){ return x.tipo === "escolha"; })[0] || lista.filter(function(x){ return x.tipo === "erro"; })[0] ||
-            lista.filter(function(x){ return x.tipo === "indo"; })[0] ||
-            lista.slice().sort(function(a, b){ return b.t - a.t; })[0] ||
+    if(!el.hasAttribute("role")){ el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite"); }
+    var lista = [pior()];
+    /* a casca não tem caderno: o estado dela é o dos módulos abertos dentro dela */
+    if(!cadernos.length) outrasJanelas().forEach(function(w){ try{ if(w !== window.top && w.Nuvem && w.Nuvem.pior) lista.push(w.Nuvem.pior()); }catch(err){} });
+    lista = lista.filter(Boolean);
+    var ordem = {escolha:0, erro:1, indo:2};
+    lista.sort(function(a, b){ return ((a.tipo in ordem ? ordem[a.tipo] : 3) - (b.tipo in ordem ? ordem[b.tipo] : 3)) || (b.t - a.t); });
+    var e = lista[0] ||
             {texto: temToken() ? "Conectado ao Google Drive." : "Entre com o Google para abrir seus cadernos.", tipo: temToken() ? "ok" : ""};
+    if(!cadernos.length && e.acoes) e = {texto:e.texto, tipo:e.tipo, t:e.t};   // os botões de escolha ficam no módulo
     /* enquanto a renovação sem tela está no ar (a casca, ou a casca acima desta página), diz isso e guarda o botão */
     var reconectando = renovando;
     if(!reconectando && window.top !== window){ try{ reconectando = !!(window.top.Nuvem && window.top.Nuvem.renovando && window.top.Nuvem.renovando()); }catch(err){} }
     if(reconectando && !temToken()) e = {texto:"Reconectando ao Drive…", tipo:"indo"};
+    if(aviso && Date.now() > avisoAte) aviso = null;
     el.textContent = aviso || e.texto;
-    aviso = null;
-    if(pt) pt.className = "nuvem-ponto" + (e.tipo ? " " + (e.tipo === "escolha" ? "erro" : e.tipo) : "");
+    var tipo = aviso ? "erro" : (e.tipo === "escolha" ? "erro" : e.tipo);
+    if(pt){ pt.className = "nuvem-ponto" + (tipo ? " " + tipo : ""); pt.title = el.textContent; }
+    /* a casca usa isto para mostrar o texto só quando ele importa (erro ou aviso) */
+    if(el.parentNode && el.parentNode.dataset) el.parentNode.dataset.estado = tipo || "nada";
     if(bt) bt.classList.toggle("hidden", temToken() || reconectando);
     if(ac){
       ac.innerHTML = "";
@@ -462,7 +587,12 @@ var Nuvem = (function(){
     lerTokenGuardado();
     var bt = $("nuvem-entrar");
     if(bt) bt.addEventListener("click", entrar);
-    document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") aoMostrar(); });
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState === "visible") aoMostrar();
+      else cadernos.forEach(function(c){ c.enviarSeHouver(); });
+    });
+    window.addEventListener("pagehide", function(){ cadernos.forEach(function(c){ c.enviarSeHouver(); }); });
+    window.addEventListener("online", function(){ cadernos.forEach(function(c){ c.enviarSeHouver(); }); });
     window.addEventListener("beforeunload", function(e){ if(!saindo && algumPendente() && temToken()){ e.preventDefault(); e.returnValue = ""; } });
     if(temToken()) cadernos.forEach(function(c){ c.conectar(); });
     else cadernos.forEach(function(c){ if(!estados[c.id]) c.conectar(); });
@@ -470,6 +600,33 @@ var Nuvem = (function(){
     desenhar();
     /* abriu o app com a chave vencida: quem já entrou neste aparelho volta a entrar sem tocar em nada */
     if(!temToken()) renovar();
+  }
+
+  /* Sair deste aparelho (04/10/2026): devolve a chave ao Google e apaga deste navegador tudo o que o
+     Controle Único guardou (cópias dos cadernos, agenda, rascunhos de prontuário, formulações,
+     carteira cripto). Os cadernos no Drive não são tocados. Só a casca chama. */
+  function temPendente(){
+    if(algumPendente()) return true;
+    return outrasJanelas().some(function(w){ try{ return !!(w.Nuvem && w.Nuvem.algumPendente && w.Nuvem.algumPendente()); }catch(e){ return false; } });
+  }
+  function sair(){
+    var aviso = temPendente()
+      ? "ATENÇÃO: há mudanças que ainda não chegaram ao Google Drive. Se sair agora, elas se perdem.\n\nEspere o ponto ficar verde (\"Salvo no Drive\") e tente de novo, ou toque em OK para sair assim mesmo."
+      : "Sair deste aparelho?\n\nO app apaga deste navegador as cópias dos cadernos (dinheiro, casa, clínica, carteira, formulações) e a conexão com o Google. Nada é apagado do seu Google Drive: é só entrar de novo para ver tudo.";
+    if(!confirm(aviso)) return;
+    var t = token;
+    saindo = true;
+    var apagar = function(){
+      try{
+        var chaves = [];
+        for(var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if(/^(controle-unico|cu-|cripto-|rede-pbt)/.test(k)) chaves.push(k); }
+        chaves.forEach(function(k){ localStorage.removeItem(k); });
+      }catch(e){}
+      try{ sessionStorage.clear(); }catch(e){}
+      location.replace(location.pathname);
+    };
+    if(t) fetch("https://oauth2.googleapis.com/revoke?token=" + encodeURIComponent(t), {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}}).catch(function(){}).then(apagar);
+    else apagar();
   }
 
   lerVoltaDoGoogle();
@@ -481,6 +638,51 @@ var Nuvem = (function(){
     renovar: renovar, renovando: function(){ return renovando; }, redesenhar: function(){ desenhar(); }, invalidar: invalidar,
     /* recarrega a página de propósito, sem o aviso de mudança pendente (ela continua marcada) */
     recarregar: function(){ saindo = true; location.reload(); },
-    conectado: temToken
+    conectado: temToken,
+    pior: pior, algumPendente: algumPendente, sair: sair
   };
+})();
+
+/* Aviso de erro na tela (04/10/2026). Antes, um erro de programa ou o navegador sem espaço para
+   guardar a cópia local passavam calados: a tela parava de responder ou a mudança só existia até
+   fechar a aba. Agora aparece uma faixa dizendo o que fazer. O Drive continua sendo o lugar seguro. */
+(function(){
+  var mostrado = {};
+  function faixa(chave, texto){
+    if(mostrado[chave]) return; mostrado[chave] = true;
+    var pinta = function(){
+      if(!document.body) return setTimeout(pinta, 200);
+      var d = document.createElement("div");
+      d.setAttribute("role", "alert");
+      d.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;max-width:560px;margin:0 auto;padding:12px 14px;border-radius:10px;" +
+        "background:#fbeaea;color:#7a1f1f;border:1px solid #e5b4b4;font:14px/1.4 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.18);display:flex;gap:12px;align-items:flex-start";
+      var p = document.createElement("span"); p.style.flex = "1"; p.textContent = texto;
+      var x = document.createElement("button"); x.type = "button"; x.textContent = "Fechar";
+      x.style.cssText = "border:1px solid currentColor;background:transparent;color:inherit;border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit";
+      x.onclick = function(){ d.remove(); };
+      d.appendChild(p); d.appendChild(x); document.body.appendChild(d);
+    };
+    pinta();
+  }
+  window.addEventListener("error", function(e){
+    // erro de imagem ou script de fora (Google) não é da tela
+    if(!e || !e.message || /^Script error/.test(e.message)) return;
+    faixa("erro", "Algo deu errado nesta tela. O que já foi guardado está a salvo; recarregue a página. Se repetir, avise com um print desta mensagem: " + e.message);
+  });
+  window.addEventListener("unhandledrejection", function(e){
+    var m = e && e.reason && (e.reason.message || String(e.reason));
+    if(!m || /Failed to fetch|NetworkError|Load failed|abort/i.test(m)) return;   // sem internet: a nuvem já avisa
+    faixa("erro", "Algo deu errado nesta tela. O que já foi guardado está a salvo; recarregue a página. Detalhe: " + m);
+  });
+  try{
+    var gravar = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k, v){
+      try{ return gravar.call(this, k, v); }
+      catch(e){
+        if(e && (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014))
+          faixa("cheio", "O navegador ficou sem espaço para guardar a cópia deste aparelho. Mantenha a conexão com o Google ativa: o que vai para o Drive continua seguro. Liberar espaço do navegador resolve.");
+        throw e;
+      }
+    };
+  }catch(e){}
 })();

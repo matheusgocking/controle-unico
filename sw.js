@@ -5,7 +5,7 @@
    atualizando a cópia para a próxima vez). Nada do Google nem dos serviços de cotação passa por
    aqui, e os dados continuam no Drive e no navegador. O versao.json nunca é guardado: é ele que
    diz se saiu versão nova. */
-var CACHE = "controle-unico-v2";
+var CACHE = "controle-unico-v3";
 var ESPERA = 3000;
 
 self.addEventListener("install", function(){ self.skipWaiting(); });
@@ -24,8 +24,13 @@ self.addEventListener("fetch", function(e){
   e.respondWith(daRedeOuDaCopia(req));
 });
 
+/* a página inicial só substitui uma PÁGINA que falta; um arquivo de código que falta não vira
+   a página inicial (antes um .js sem cópia voltava como index.html e quebrava a tela, 04/10/2026) */
 function copia(req){
-  return caches.match(req, { ignoreSearch: true }).then(function(r){ return r || caches.match("./"); });
+  return caches.match(req, { ignoreSearch: true }).then(function(r){
+    if (r) return r;
+    return req.mode === "navigate" ? caches.match("./") : undefined;
+  });
 }
 
 function daRedeOuDaCopia(req){
@@ -37,5 +42,5 @@ function daRedeOuDaCopia(req){
   var demora = new Promise(function(ok){
     setTimeout(function(){ copia(req).then(function(r){ if (r) ok(r); }); }, ESPERA);
   });
-  return Promise.race([rede.catch(function(){ return copia(req); }), demora]);
+  return Promise.race([rede.catch(function(){ return copia(req).then(function(r){ return r || Response.error(); }); }), demora]);
 }

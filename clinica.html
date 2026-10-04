@@ -6,7 +6,8 @@
 <title>Clínica · Controle Único</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&display=swap"></noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"></noscript>
+<link rel="stylesheet" href="tema.css">
 <style>
 /* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
 button,a,summary,select,input,label{touch-action:manipulation}
@@ -15,13 +16,10 @@ button,a,summary,select,input,label{touch-action:manipulation}
    é pintado e o que está guardado sem divulgar é riscado em diagonal, para que os dois
    nunca se confundam. As cores de estudo, academia, tarefas e almoço continuam aqui
    só para ler agendas antigas: a grade hoje mostra apenas a clínica. */
-:root{
-  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --surface-3:#e3e8ef;
+:root{  --surface-3:#e3e8ef;
   --border:#d3dae3; --border-strong:#97a3b3;
-  --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
-  --accent:#7030a0; --accent-ink:#ffffff; --accent-soft:#f0e5fb; --accent-line:#b98fe0;
+  --accent-ink:#ffffff; --accent-line:#b98fe0;
   --ok:#1f6b4f; --ok-soft:#dcefe6;
-  --warn:#8a4b12; --warn-soft:#fbe8d4;
   --info:#1f4f85; --info-soft:#dde8f6;
   --neutral-chip:#e3e8ef;
   --devendo:#a3241f; --devendo-soft:#fbdedd; --devendo-line:#e0908b;
@@ -47,13 +45,10 @@ button,a,summary,select,input,label{touch-action:manipulation}
   --radius:10px;
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --surface-3:#28303b;
+  :root:not([data-theme="light"]){    --surface-3:#28303b;
     --border:#303845; --border-strong:#4a5463;
-    --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
-    --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140; --accent-line:#7f5faf;
+    --accent-ink:#1b1026; --accent-line:#7f5faf;
     --ok:#7fd3ac; --ok-soft:#183a2e;
-    --warn:#efb87c; --warn-soft:#3f2c15;
     --info:#9dc4f0; --info-soft:#1b2f47;
     --neutral-chip:#28303b;
     --devendo:#f2a09b; --devendo-soft:#3d1a18; --devendo-line:#8c3b35;
@@ -74,15 +69,12 @@ button,a,summary,select,input,label{touch-action:manipulation}
     --t-encaixe-bg:#39414f;  --t-encaixe-fg:#ffffff; --t-encaixe-bar:#c8a4f2;
     --t-realizada-bg:#1d5a43; --t-realizada-fg:#eafff4; --t-realizada-bar:#7fd3ac;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
-  }
 }
-:root[data-theme="dark"]{
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --surface-3:#28303b;
+}
+:root[data-theme="dark"]{  --surface-3:#28303b;
   --border:#303845; --border-strong:#4a5463;
-  --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
-  --accent:#c8a4f2; --accent-ink:#1b1026; --accent-soft:#2e2140; --accent-line:#7f5faf;
+  --accent-ink:#1b1026; --accent-line:#7f5faf;
   --ok:#7fd3ac; --ok-soft:#183a2e;
-  --warn:#efb87c; --warn-soft:#3f2c15;
   --info:#9dc4f0; --info-soft:#1b2f47;
   --neutral-chip:#28303b;
   --devendo:#f2a09b; --devendo-soft:#3d1a18; --devendo-line:#8c3b35;
@@ -107,10 +99,10 @@ button,a,summary,select,input,label{touch-action:manipulation}
 html,body{height:100%}
 body{
   margin:0; background:var(--bg); color:var(--text);
-  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font:14px/1.5 var(--font); -webkit-font-smoothing:antialiased;
   font-variant-numeric:tabular-nums;
 }
-h1,h2,h3{font-family:Literata,Georgia,"Times New Roman",serif; font-weight:600; margin:0; text-wrap:balance}
+h1,h2,h3{font-family:var(--font); font-weight:700; margin:0; text-wrap:balance; letter-spacing:-.005em}
 button,input,select,textarea{font:inherit; color:inherit}
 .wrap{max-width:1180px; margin:0 auto; padding-block:20px 48px; padding-left:16px; padding-right:16px}
 
@@ -136,31 +128,33 @@ button,input,select,textarea{font:inherit; color:inherit}
 .subvista .tabs{display:inline-flex}
 .tab:focus-visible,.btn:focus-visible,.cell:focus-visible,.menu button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 
-.btn{border:1px solid var(--border-strong); background:var(--surface); color:var(--text); padding:7px 12px; border-radius:8px; cursor:pointer}
-.btn:hover{background:var(--surface-2)}
+.btn{border:1px solid var(--border); background:var(--surface); color:var(--text); padding:7px 12px; border-radius:var(--radius); cursor:pointer; font-size:14px}
+.btn:hover{border-color:var(--faint)}
 .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600}
 .btn.ghost{border-color:transparent; background:transparent; color:var(--muted)}
 .btn.ghost:hover{color:var(--text); background:var(--surface-2)}
 .btn.sm{padding:4px 9px; font-size:12.5px}
+/* setas de mês e semana: o mesmo botão quadrado do resto do app */
+#prev,#next,#m-prev,#m-next,#ss-prev,#ss-next,#pn-prev,#pn-next,#pg-prev,#pg-next{min-width:34px; font-size:17px; line-height:1; padding:5px 0}
 .btn.cobrar{display:block; margin-top:5px}
 
 /* ---------- barra da semana ---------- */
 .bar{display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px}
 .nav{display:flex; align-items:center; gap:8px}
-.range{font-family:Literata,Georgia,serif; font-size:17px}
-.range small{display:block; font-family:inherit; font-size:12px; color:var(--muted); font-family:-apple-system,"Segoe UI",sans-serif}
+.range{font-family:var(--font); font-weight:700; font-size:17px}
+.range small{display:block; font-family:inherit; font-size:12px; color:var(--muted); font-family:inherit}
 
 .stats{display:flex; gap:10px; flex-wrap:wrap}
 .stat{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:8px 12px; min-width:104px}
-.stat b{display:block; font-size:18px; font-family:Literata,Georgia,serif}
-.stat span{color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.06em}
+.stat b{display:block; font-size:18px; font-family:var(--font); font-weight:700}
+.stat span{color:var(--muted); font-size:12.5px}
 
 /* ---------- grade ---------- */
 .gridwrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow)}
 .grid{display:grid; grid-template-columns:64px repeat(7, minmax(116px,1fr)); min-width:860px}
 .gh{position:sticky; top:0; z-index:3; background:var(--head-bg); color:var(--head-fg); padding:9px 6px; text-align:center}
 .gh .d{font-size:11px; text-transform:uppercase; letter-spacing:.09em; opacity:.72}
-.gh .n{font-family:Literata,Georgia,serif; font-size:17px}
+.gh .n{font-family:var(--font); font-weight:700; font-size:17px}
 .gh.fds .d,.gh.fds .n{opacity:.45}
 .gh.today{background:var(--accent); color:var(--accent-ink)}
 .gh.today .d{opacity:.85}
@@ -202,7 +196,7 @@ button,input,select,textarea{font:inherit; color:inherit}
 /* realizada (confirmada por ele): a célula inteira fica verde (pedido dele, 28/09/2026) */
 .cell.sessao.realizada{background:var(--t-realizada-bg); border-left-color:var(--t-realizada-bar); color:var(--t-realizada-fg); cursor:pointer}
 /* código do paciente no canto de cima da célula, pequeno, para achar o prontuário */
-.cell .cod{position:absolute; top:2px; right:8px; font-size:9px; line-height:1; font-weight:600; letter-spacing:.02em; opacity:.7; pointer-events:none}
+.cell .cod{position:absolute; top:2px; right:8px; font-size:10px; line-height:1; font-weight:600; letter-spacing:.02em; opacity:.7; pointer-events:none}
 .cell.falta{background:var(--t-falta-bg); border-left-color:var(--t-falta-bar); color:var(--t-falta-fg)}
 .cell.falta .nm{text-decoration:line-through}
 /* remarcada: a sessão SAI daqui. Célula fantasma, tracejada dos quatro lados e com o nome riscado,
@@ -241,7 +235,7 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 /* ---------- menu de célula ---------- */
 .menu{position:absolute; z-index:40; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:var(--shadow); padding:6px; min-width:206px}
 .menu .head{padding:6px 8px 8px; border-bottom:1px solid var(--border); margin-bottom:6px}
-.menu .head b{font-family:Literata,Georgia,serif; font-size:14px}
+.menu .head b{font-family:var(--font); font-weight:700; font-size:14px}
 .menu .head span{display:block; color:var(--muted); font-size:12px}
 .menu button{display:flex; align-items:center; gap:8px; width:100%; border:0; background:transparent; padding:7px 8px; border-radius:7px; cursor:pointer; text-align:left}
 .menu button:hover{background:var(--surface-2)}
@@ -259,12 +253,12 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 .day.fds .num{color:var(--faint); font-weight:400}
 .day.fora{background:transparent; border-style:dashed; opacity:.5}
 .day.hoje{border-color:var(--accent-line); box-shadow:0 0 0 2px var(--accent-soft)}
-.day .num{font-family:Literata,Georgia,serif; font-size:15px}
+.day .num{font-family:var(--font); font-weight:700; font-size:15px}
 .day .linha{font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; gap:6px}
 /* a contagem de sessões é o que ele procura no mês: âmbar cheio, número maior que o resto */
 .day .pill{align-self:flex-start; display:inline-flex; align-items:baseline; gap:5px; background:var(--quente-bg); color:var(--quente-fg);
   border:1px solid var(--quente-line); border-radius:20px; padding:2px 10px; font-size:11.5px; font-weight:600}
-.day .pill b{font-family:Literata,Georgia,serif; font-size:16px; font-weight:700; line-height:1}
+.day .pill b{font-family:var(--font); font-weight:700; font-size:16px; font-weight:700; line-height:1}
 .day .pill.vazio{background:var(--neutral-chip); border-color:transparent; color:var(--faint); font-weight:400}
 .day .livre{font-size:11px; color:var(--ok)}
 
@@ -275,7 +269,7 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 .panel .sub{color:var(--muted); font-size:12.5px; margin:0 0 14px}
 .cols{display:grid; grid-template-columns:minmax(300px,1fr) minmax(300px,1.1fr); gap:16px; align-items:start}
 .field{display:flex; flex-direction:column; gap:4px; margin-bottom:12px}
-.field label{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+.field label{font-size:12.5px; color:var(--muted)}
 .field input,.field select{padding:8px 10px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2)}
 .field .hint,.hint{font-size:11.5px; color:var(--faint)}
 .grid2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px}
@@ -283,8 +277,8 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 @media (max-width:700px){ .grid2{grid-template-columns:minmax(0,1fr)} .field input,.field select{min-width:0; width:100%} }
 
 .result{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:16px}
-.result .big{font-family:Literata,Georgia,serif; font-size:26px; line-height:1.2}
-.result .big small{font-size:13px; color:var(--muted); font-family:-apple-system,"Segoe UI",sans-serif}
+.result .big{font-family:var(--font); font-weight:700; font-size:26px; line-height:1.2}
+.result .big small{font-size:13px; color:var(--muted); font-family:inherit}
 .result p{margin:10px 0 0}
 .result .destaque{color:var(--accent); font-weight:600}
 .linhas{margin-top:14px; border-top:1px solid var(--border)}
@@ -300,7 +294,7 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 @media (prefers-reduced-motion: reduce){ .recado{transition:none} }
 
 table.tab{width:100%; border-collapse:collapse; margin-top:12px; font-size:13px}
-table.tab th{text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border-strong)}
+table.tab th{text-align:left; font-size:12.5px; color:var(--muted); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border-strong)}
 table.tab td{padding:7px 8px; border-bottom:1px solid var(--border)}
 table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:600}
 .tabwrap{overflow-x:auto}
@@ -309,7 +303,7 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .pgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:10px}
 .pcard{display:flex; align-items:center; gap:11px; width:100%; text-align:left; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:10px 12px; cursor:pointer}
 .pcard:hover{background:var(--surface-3); border-color:var(--accent-line)}
-.ini{flex:0 0 auto; width:38px; height:38px; border-radius:50%; background:var(--t-sessao-bg); color:var(--t-sessao-fg); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; font-family:Literata,Georgia,serif}
+.ini{flex:0 0 auto; width:38px; height:38px; border-radius:50%; background:var(--t-sessao-bg); color:var(--t-sessao-fg); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; font-family:var(--font); font-weight:700}
 .ini.grande{width:46px; height:46px; font-size:19px}
 .pcard .corpo{display:flex; flex-direction:column; min-width:0; gap:1px}
 .pcard .n{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -336,7 +330,7 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .linhas.movs div{font-size:12.5px}
 .pdia + .pdia{margin-top:18px}
 .pdia-cab{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; padding:6px 8px; margin-bottom:9px; border-bottom:1px solid var(--border); border-radius:8px 8px 0 0}
-.pdia-nome{font-family:Literata,Georgia,serif; font-size:15px; font-weight:600}
+.pdia-nome{font-family:var(--font); font-weight:700; font-size:15px; font-weight:600}
 .pdia-meta{margin-left:auto; color:var(--muted); font-size:12px}
 /* hoje: fundo e linha do acento, mais a etiqueta escrita, para achar o dia de relance */
 .pdia.hoje .pdia-cab{background:var(--accent-soft); border-bottom-color:var(--accent-line)}
@@ -394,7 +388,7 @@ details.tabela summary:hover{color:var(--text)}
 .blocos .panel + .panel{margin-top:0}
 .contagem{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px}
 .contagem:last-child{border-bottom:0}
-.contagem .n{font-family:Literata,Georgia,serif; font-size:17px; min-width:34px}
+.contagem .n{font-family:var(--font); font-weight:700; font-size:17px; min-width:34px}
 .contagem .trilho{flex:1; height:8px; border-radius:20px; background:var(--surface-2); overflow:hidden}
 .contagem .trilho span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
 .contagem .lado{color:var(--muted); font-size:12px; white-space:nowrap}
@@ -464,12 +458,12 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
   .stats{grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px}
   .stat{padding:6px 7px}
   .stat b{font-size:14px; white-space:nowrap}
-  .stat span{font-size:9px; letter-spacing:.03em; line-height:1.2; display:block}
+  .stat span{font-size:11px; letter-spacing:.03em; line-height:1.2; display:block}
   #msg{width:100%; padding:8px}
   .gridwrap{overflow-x:hidden}
   .grid{grid-template-columns:28px repeat(7, minmax(0,1fr)); min-width:0}
   .gh{padding:5px 0}
-  .gh .d{font-size:9px; letter-spacing:0}
+  .gh .d{font-size:10.5px; letter-spacing:0}
   .gh .n{font-size:14px}
   .hour{padding:0 3px 0 0; font-size:9.5px; line-height:44px}
   .cell{padding:0 1px; height:44px; border-left-width:2px}
@@ -529,7 +523,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .peditor{padding:4px 12px 12px; border-top:1px solid var(--border)}
 .peditor .aviso{border-left:3px solid var(--warn); background:var(--warn-soft); color:var(--warn); border-radius:0 8px 8px 0; padding:7px 10px; font-size:12.5px; margin:10px 0 0}
 .pcampo{display:flex; flex-direction:column; gap:5px; margin-top:10px}
-.pcampo .rot{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+.pcampo .rot{font-size:12.5px; font-weight:600; color:var(--muted)}
 .pchips{display:flex; flex-wrap:wrap; gap:6px}
 .chip-sit{border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:20px; padding:5px 12px; font-size:13px; cursor:pointer}
 .chip-sit:hover{background:var(--surface-2)}
@@ -542,25 +536,25 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 /* ".modal textarea" é a caixa grande de colar texto: aqui as caixas são pequenas e em letra comum */
 .modal .pf textarea,.pf input,.pf select{min-height:0; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); padding:7px 9px; color:var(--text); font-size:13.5px; line-height:1.45; font-family:inherit; resize:vertical}
 .pchk{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text); margin-top:4px; cursor:pointer}
-.modal .ptexto{min-height:120px; width:100%; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); padding:9px 11px; font:13.5px/1.55 Literata,Georgia,serif; color:var(--text); resize:vertical}
+.modal .ptexto{min-height:120px; width:100%; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); padding:9px 11px; font:14px/1.55 var(--font); color:var(--text); resize:vertical}
 .modal .ptexto[readonly]{background:var(--surface); border-style:dashed}
 .peditor .acoes{display:flex; gap:8px; justify-content:flex-end; margin-top:10px}
 /* painel: o mês em dinheiro, quem deve, faltas, horários livres e o ano com a meta */
 .trilho-grande{height:14px; border-radius:20px; background:var(--surface-3); overflow:hidden}
 .trilho-grande span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
 .prog-legenda{display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; margin-top:8px; font-size:13px; color:var(--muted)}
-.prog-legenda b{color:var(--text); font-family:Literata,Georgia,serif; font-size:18px}
+.prog-legenda b{color:var(--text); font-family:var(--font); font-weight:700; font-size:18px}
 .cifras{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:16px}
 .cifras .result{padding:12px 14px}
 .cifras .big{font-size:22px}
-.cifras .rotulo{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+.cifras .rotulo{font-size:12.5px; color:var(--muted)}
 .cifras .hint{margin:4px 0 0}
 .cifras .result.bateu{background:var(--ok-soft); border-color:var(--ok)}
 .cifras .result.bateu .big,.cifras .result.bateu .rotulo{color:var(--ok)}
 .horarios{display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 12px}
 .horarios span{background:var(--t-divulgado-bg); color:var(--t-divulgado-fg); border-left:4px solid var(--t-divulgado-bar); border-radius:8px; padding:5px 10px; font-size:12.5px; font-weight:600}
-.pn-fora-t{font-size:13px; margin:18px 0 6px; color:var(--muted); font-family:inherit; text-transform:uppercase; letter-spacing:.05em; font-weight:500}
-.falt h3{font-size:13px; margin:10px 0 2px; color:var(--muted); font-family:inherit; text-transform:uppercase; letter-spacing:.05em; font-weight:500}
+.pn-fora-t{font-size:14px; margin:18px 0 6px; color:var(--muted); font-family:inherit; font-weight:600}
+.falt h3{font-size:14px; margin:10px 0 2px; color:var(--muted); font-family:inherit; font-weight:600}
 .falt .contagem .quem{flex:1; min-width:0}
 .plot{position:relative; height:190px; display:flex; align-items:flex-end; gap:6px; border-bottom:1px solid var(--border-strong); margin-top:18px}
 .plot .col{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px}
@@ -590,8 +584,8 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .mk-an .acoes{margin-left:auto}
 .mk-nums{display:grid; grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); gap:10px 14px}
 .mk-nums div{display:flex; flex-direction:column; min-width:0}
-.mk-nums b{font-family:Literata,Georgia,serif; font-size:16px; white-space:nowrap}
-.mk-nums span{color:var(--muted); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em}
+.mk-nums b{font-family:var(--font); font-weight:700; font-size:16px; white-space:nowrap}
+.mk-nums span{color:var(--muted); font-size:12px}
 .mk-nums .vazio b{color:var(--faint); font-weight:400}
 .mk-uso{display:flex; align-items:center; gap:10px; margin-top:10px; font-size:12px; color:var(--muted)}
 .mk-uso .trilho{flex:1; height:8px; border-radius:20px; background:var(--surface-3); overflow:hidden}
@@ -668,9 +662,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   <section id="v-semana">
     <div class="bar">
       <div class="nav">
-        <button class="btn sm" id="prev" aria-label="Semana anterior">←</button>
+        <button class="btn sm" id="prev" aria-label="Semana anterior">‹</button>
         <button class="btn sm" id="hoje">Hoje</button>
-        <button class="btn sm" id="next" aria-label="Próxima semana">→</button>
+        <button class="btn sm" id="next" aria-label="Próxima semana">›</button>
         <div class="range"><span id="range-txt"></span><small id="range-sub"></small></div>
       </div>
       <div class="stats">
@@ -708,9 +702,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   <section id="v-mes" class="hidden">
     <div class="bar">
       <div class="nav">
-        <button class="btn sm" id="m-prev" aria-label="Mês anterior">←</button>
+        <button class="btn sm" id="m-prev" aria-label="Mês anterior">‹</button>
         <button class="btn sm" id="m-hoje">Mês atual</button>
-        <button class="btn sm" id="m-next" aria-label="Próximo mês">→</button>
+        <button class="btn sm" id="m-next" aria-label="Próximo mês">›</button>
         <div class="range"><span id="m-titulo"></span></div>
       </div>
       <div class="stats">
@@ -735,9 +729,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   <section id="v-sessoes" class="hidden">
     <div class="bar">
       <div class="nav">
-        <button class="btn sm" id="ss-prev" aria-label="Mês anterior">←</button>
+        <button class="btn sm" id="ss-prev" aria-label="Mês anterior">‹</button>
         <button class="btn sm" id="ss-hoje">Mês atual</button>
-        <button class="btn sm" id="ss-next" aria-label="Próximo mês">→</button>
+        <button class="btn sm" id="ss-next" aria-label="Próximo mês">›</button>
         <div class="range"><span id="ss-titulo"></span><small id="ss-sub"></small></div>
       </div>
       <div class="stats">
@@ -795,9 +789,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   <section id="v-painel" class="hidden">
     <div class="bar">
       <div class="nav">
-        <button class="btn sm" id="pn-prev" aria-label="Mês anterior">←</button>
+        <button class="btn sm" id="pn-prev" aria-label="Mês anterior">‹</button>
         <button class="btn sm" id="pn-hoje">Mês atual</button>
-        <button class="btn sm" id="pn-next" aria-label="Próximo mês">→</button>
+        <button class="btn sm" id="pn-next" aria-label="Próximo mês">›</button>
         <div class="range"><span id="pn-titulo"></span><small id="pn-sub"></small></div>
       </div>
     </div>
@@ -946,9 +940,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   <section id="v-pagamentos" class="hidden">
     <div class="bar">
       <div class="nav">
-        <button class="btn sm" id="pg-prev" aria-label="Mês anterior">←</button>
+        <button class="btn sm" id="pg-prev" aria-label="Mês anterior">‹</button>
         <button class="btn sm" id="pg-hoje">Mês atual</button>
-        <button class="btn sm" id="pg-next" aria-label="Próximo mês">→</button>
+        <button class="btn sm" id="pg-next" aria-label="Próximo mês">›</button>
         <div class="range"><span id="pg-titulo"></span><small id="pg-sub"></small></div>
       </div>
       <div class="stats">
@@ -1122,6 +1116,55 @@ function blocosIniciais(){
 /* Agenda vazia: este arquivo é público (GitHub Pages), então nenhum paciente mora no código.
    A agenda chega pelo caderno do Google Drive, pela planilha ("Ler a planilha") ou pelo
    backup da Agenda antiga ("Importar dados"). */
+/* identificação de cada registro (04/10/2026): antes era a hora em milissegundos mais um número
+   sorteado pequeno, e registros criados no mesmo instante (a leitura da planilha cria dezenas de
+   uma vez) podiam sair com o mesmo número. Agora é um identificador aleatório de verdade. */
+function novoId(pref){ return pref + (window.crypto && crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2))); }
+/* o que todo caderno da Clínica precisa ter, venha de onde vier (aparelho, Drive, arquivo de backup) */
+function normalizar(d){
+  if(!d.config) d.config = inicial().config;
+  if(!d.pacientes) d.pacientes = [];
+  if(!d.blocos) d.blocos = blocosIniciais();
+  if(!d.pagamentos) d.pagamentos = [];
+  if(!d.arquivados) d.arquivados = [];
+  if(!d.formulacoes) d.formulacoes = {};
+  if(!d.excecoes) d.excecoes = {};
+  consertarIds(d);
+  return d;
+}
+/* Conserto dos números repetidos (04/10/2026). Só a identificação interna muda; nome, código,
+   datas e valores ficam como estão. Pagamento: o segundo com o mesmo número ganha um novo (nada
+   aponta para o número de um pagamento). Paciente: o segundo ganha um novo, e os pagamentos e
+   encaixes dele (reconhecidos pelo código do prontuário) passam a apontar para o número novo. */
+/* Números de identificação repetidos (04/10/2026). O número novo é calculado a partir do antigo
+   (a segunda ocorrência de "g123" vira "g123~2"), e não sorteado: assim o celular e o computador,
+   consertando cada um a sua cópia, chegam ao mesmo número, e a junção das duas cópias não duplica
+   o pagamento. Só o número interno muda; nome, código, valores e datas ficam como estão. */
+function consertarIds(d){
+  var trocas = 0;
+  function proximo(base, usados){ var n = 2, id; do { id = base + "~" + n++; } while(usados["k"+id]); return id; }
+  var usados = {};
+  d.pagamentos.forEach(function(g){ if(g.id) usados["k"+g.id] = (usados["k"+g.id]||0) + 1; });
+  var vistos = {};
+  d.pagamentos.forEach(function(g, i){
+    if(!g.id){ g.id = proximo("g-sem-numero-" + i, usados); usados["k"+g.id] = 1; trocas++; }
+    else if(vistos["k"+g.id]){ g.id = proximo(g.id, usados); usados["k"+g.id] = 1; trocas++; }
+    vistos["k"+g.id] = true;
+  });
+  usados = {};
+  d.pacientes.forEach(function(pc){ if(pc.id) usados["k"+pc.id] = 1; });
+  vistos = {};
+  d.pacientes.forEach(function(pc, i){
+    if(pc.id && !vistos["k"+pc.id]){ vistos["k"+pc.id] = pc; return; }
+    var antigo = pc.id, primeiro = antigo ? vistos["k"+antigo] : null;
+    pc.id = proximo(antigo || "p-sem-numero-" + i, usados); usados["k"+pc.id] = 1; trocas++;
+    vistos["k"+pc.id] = pc;
+    if(!antigo || !primeiro || !pc.codigo || pc.codigo === primeiro.codigo) return;
+    d.pagamentos.forEach(function(g){ if(g.pacienteId===antigo && g.codigo && g.codigo===pc.codigo) g.pacienteId = pc.id; });
+  });
+  if(trocas) try{ console.info("Clínica: " + trocas + " números de identificação repetidos foram trocados."); }catch(e){}
+  return trocas;
+}
 function inicial(){
   return {
     versao:2,
@@ -1151,12 +1194,9 @@ function carregar(){
         /* só descarta o que está salvo se ainda forem os pacientes de exemplo da primeira versão */
         var soExemplo = (d.versao||1) < 2 && d.pacientes.every(function(p){ return (p.nome||"").indexOf("(exemplo)") >= 0; });
         /* quem já usava o site antes dos pagamentos não perde nada: a lista nasce vazia */
-        if(!d.pagamentos) d.pagamentos = [];
-        /* o mesmo vale para o que veio depois: carteira fora da agenda e formulação de caso,
-           que só aparecem depois de ler a planilha */
-        if(!d.arquivados) d.arquivados = [];
-        if(!d.formulacoes) d.formulacoes = {};
-        if(!soExemplo) return d;
+        /* o mesmo vale para o que veio depois (carteira fora da agenda, formulação de caso...):
+           normalizar() completa o que falta e conserta números repetidos */
+        if(!soExemplo) return normalizar(d);
       }
     }
   }catch(e){}
@@ -1201,11 +1241,13 @@ function aplicarEstado(json, recadoTexto){
   recado(recadoTexto);
 }
 function desfazer(){
+  if(fichaAberta){ recado("Feche a ficha para desfazer."); return; }
   if(!historico || !historico.length){ recado("Nada para desfazer."); return; }
   refeitos.push(instantaneo == null ? JSON.stringify(dados) : instantaneo);
   aplicarEstado(historico.pop(), "Desfeito." + (historico.length ? " Ctrl+Z desfaz mais." : ""));
 }
 function refazer(){
+  if(fichaAberta){ recado("Feche a ficha para refazer."); return; }
   if(!refeitos || !refeitos.length){ recado("Nada para refazer."); return; }
   historico.push(instantaneo == null ? JSON.stringify(dados) : instantaneo);
   aplicarEstado(refeitos.pop(), "Refeito.");
@@ -1246,10 +1288,12 @@ function mesmoDia(a,b){ return chaveData(a)===chaveData(b); }
 function semanaIndice(d){ return Math.round(isoSegunda(d).getTime()/604800000); }
 function ehSemanaDo(p, data){
   if(p.freq!=="quinzenal") return true;
-  var ref = dados.config.semanaRefQuinzenal ? new Date(dados.config.semanaRefQuinzenal) : new Date();
+  /* cada quinzenal pode ter a semana dele (p.semanaRef, escolhida na ficha); sem ela, vale a de todos */
+  var ref = p.semanaRef ? deISO(p.semanaRef) : (dados.config.semanaRefQuinzenal ? new Date(dados.config.semanaRefQuinzenal) : new Date());
   return (semanaIndice(data)-semanaIndice(ref))%2===0;
 }
-function moeda(v){ return "R$ " + Math.round(v).toLocaleString("pt-BR"); }
+/* reais inteiros quando o valor é inteiro; com centavos quando não é (antes R$ 0,40 aparecia como "R$ 0") */
+function moeda(v){ v = Number(v)||0; var c = Math.round(v*100)/100; return "R$ " + (c % 1 ? c.toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2}) : c.toLocaleString("pt-BR")); }
 
 /* ---------------- sessões ---------------- */
 function pacienteEm(dia, hora, data){
@@ -1556,7 +1600,7 @@ function estadoCelula(dia, hora, data){
   if(bloco) return {classe:"pessoal "+bloco, nome:"", etiqueta:TIPOS_PESSOAIS[bloco]||bloco, paciente:null};
   return {classe:"", nome:"", etiqueta:"", paciente:null};
 }
-function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 /* "sex 14h": para a célula dizer de onde a sessão veio ou para onde ela foi */
 function quando(q){
   if(!q || !q.data) return "";
@@ -1617,7 +1661,7 @@ function abrirMenu(e){
       /* aqui o que está marcado é a sessão que veio de outro horário */
       var entrou = entradaDa(ex);
       corpo += botao(entrou && entrou.realizada ? "desconfirmar-extra" : "realizada-extra", entrou && entrou.realizada ? "Tirar a confirmação" : "✓ Sessão realizada", "var(--t-realizada-bg)");
-      corpo += botao("tirar-entrada", (ex && ex.entra ? "Tirar esta sessão daqui (volta a marca de "+nomeCurto(fixoDaHora)+")" : "Tirar esta sessão daqui"), "var(--faint)");
+      corpo += botao("tirar-entrada", (ex && ex.entra ? "Tirar esta sessão daqui (volta a marca de "+esc(nomeCurto(fixoDaHora))+")" : "Tirar esta sessão daqui"), "var(--faint)");
     } else {
       /* o check fica sempre no menu, a qualquer hora (pedido dele, 28/09/2026): antes só abria
          quando a sessão começava, e de manhã ele não achava a opção */
@@ -1631,7 +1675,7 @@ function abrirMenu(e){
     }
     corpo += "<hr>";
     corpo += botao("prontuario","Prontuário desta sessão","var(--ok)");
-    corpo += botao("editar","Abrir ficha de "+nomeCurto(info.paciente),"var(--accent)");
+    corpo += botao("editar","Abrir ficha de "+esc(nomeCurto(info.paciente)),"var(--accent)");
     if(info.paciente.meet) corpo += botao("meet","Abrir sala do Meet","var(--ok)");
   } else {
     var blocoAtual = dados.blocos[dia+"-"+hora];
@@ -1672,7 +1716,7 @@ function abrirMenu(e){
       else if(a==="divulgado"||a==="reservado"||TIPOS_PESSOAIS[a]) dados.blocos[kBloco] = a;
       else if(a==="editar"){ abrirFicha(info.paciente); return; }
       else if(a==="prontuario"){ abrirFicha(info.paciente, chaveRegistro(data, hora, info.paciente)); return; }
-      else if(a==="meet"){ window.open(info.paciente.meet,"_blank","noopener"); fecharMenu(); return; }
+      else if(a==="meet"){ if(/^https:\/\//i.test(info.paciente.meet||"")) window.open(info.paciente.meet,"_blank","noopener"); else recado("O link do Meet precisa começar com https://"); fecharMenu(); return; }
       salvar(); fecharMenu(); renderTudo();
     });
   });
@@ -1731,7 +1775,7 @@ function escolherRemarcacao(carga, destino, celula){
   var dono = pacienteEm(destino.dia, destino.hora, dDest);
   var m = document.createElement("div");
   m.className = "menu";
-  m.innerHTML = '<div class="head"><b>'+nomeCurto(p)+' → '+DIAS_CURTO[destino.dia]+', '+String(destino.hora).padStart(2,"0")+'h</b>' +
+  m.innerHTML = '<div class="head"><b>'+esc(nomeCurto(p))+' → '+DIAS_CURTO[destino.dia]+', '+String(destino.hora).padStart(2,"0")+'h</b>' +
     '<span>'+dDest.toLocaleDateString("pt-BR")+'</span></div>' +
     botao("so-hoje","Remarcar só nesta data","var(--info)") +
     (carga.origem==="fixo" && !dono ? botao("fixo","Mudar o horário fixo dele","var(--accent)") : "") +
@@ -1796,7 +1840,12 @@ function renderMes(){
       (feriado ? '<span class="fer">Feriado · '+esc(feriado)+'</span>' : "") +
       '<span class="pill'+(ss.length?"":" vazio")+'">'+(ss.length ? '<b>'+ss.length+'</b>'+(ss.length>1?"sessões":"sessão") : "livre")+'</span>' +
       (ss.length ? '<div class="linha"><span>'+ss.map(function(s){ return String(s.hora)+"h"; }).join(" · ")+'</span></div>' : "");
-    cel.addEventListener("click", function(dd){ return function(){ semana = inicioSemana(dd); mostrarView("semana"); renderTudo(); }; }(d));
+    /* o dia também abre pelo teclado (Tab até ele e Enter) */
+    cel.tabIndex = 0; cel.setAttribute("role","button");
+    cel.setAttribute("aria-label", d.toLocaleDateString("pt-BR",{day:"numeric", month:"long"}) + ": " + (ss.length ? ss.length + (ss.length>1 ? " sessões" : " sessão") : "livre") + ". Abrir a semana");
+    var abreSemana = function(dd){ return function(){ semana = inicioSemana(dd); mostrarView("semana"); renderTudo(); }; }(d);
+    cel.addEventListener("click", abreSemana);
+    cel.addEventListener("keydown", function(f){ return function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); f(); } }; }(abreSemana));
     alvo.appendChild(cel);
   }
 
@@ -2222,8 +2271,20 @@ function conferirAprovados(){
 
 
 /* ---------------- ficha do paciente ---------------- */
+/* a ficha aberta (04/10/2026): quando a Clínica inteira é trocada (o Drive trouxe o que mudou em outro
+   aparelho), a ficha é refeita com o paciente novo, em vez de continuar presa ao antigo, onde o que
+   ele digitava não era mais salvo */
+var fichaAberta = null;
+function reabrirFicha(texto){
+  if(!fichaAberta) return;
+  var f = fichaAberta, novo = acharPaciente(f.p.id);
+  f.fechar();
+  if(novo){ abrirFicha(novo, f.foco()); if(texto) recado(texto); }
+}
+document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "hidden" && fichaAberta) fichaAberta.gravarJa(); });
 function abrirFicha(p, foco){
   fecharMenu();
+  if(fichaAberta) fichaAberta.fechar();
   var fundo = document.createElement("div");
   fundo.className = "overlay";
   fundo.innerHTML =
@@ -2256,6 +2317,8 @@ function abrirFicha(p, foco){
             '<select id="fi-hora" data-campo="hora" aria-label="Hora">'+horasOpcoes(p.hora)+'</select>' +
           '</span><span class="hint">Mudar aqui vale para as próximas semanas.</span></div>' +
       '</div>' +
+      '<div class="field" id="fi-quinzena" hidden><label for="fi-qsem">Semana da quinzena</label>' +
+        '<select id="fi-qsem"></select><span class="hint">Em qual das duas semanas ele vem.</span></div>' +
       '<div class="field"><label for="fi-meet">Link do Meet</label>' +
         '<input id="fi-meet" data-campo="meet" value="'+esc(p.meet||"")+'" placeholder="cole aqui a sala fixa dele"></div>' +
       '<div class="field"><label for="fi-origem">Como chegou</label>' +
@@ -2348,7 +2411,7 @@ function abrirFicha(p, foco){
   /* prontuário (29/09/2026): as sessões deste paciente que ainda não estão no Word, cada uma
      com o texto montado pelos modelos. Ele escolhe o que aconteceu (e isso marca a grade),
      completa os campos, confere o texto e aprova. O que ele aprova o Claude passa para o Word. */
-  var abertoPront = foco || null, esperaSalvar = null;
+  var abertoPront = foco || null, esperaSalvar = null, esperaCampo = null;
   function salvarLogo(){ clearTimeout(esperaSalvar); esperaSalvar = setTimeout(salvar, 700); }
   function pintarProntuario(){
     var el = document.getElementById("fi-pront");
@@ -2591,15 +2654,47 @@ function abrirFicha(p, foco){
         var atualCiclo = ciclosDe(p).slice(-1)[0];
         atualCiclo.cobranca = p.cobranca; atualCiclo.valor = p.valor;
       }
-      salvar(); renderTudo(); resumo();
+      if(campo==="dia"||campo==="hora"||campo==="freq") avisarHorarioOcupado(p);
+      /* texto digitado: grava e redesenha quando ele para de digitar, não a cada letra
+         (cada letra redesenhava as oito telas e gastava um passo do desfazer, 04/10/2026) */
+      if(el.tagName==="INPUT"){
+        clearTimeout(esperaCampo);
+        esperaCampo = setTimeout(function(){ esperaCampo = null; salvar(); renderTudo(); resumo(); }, 500);
+        return;
+      }
+      salvar(); renderTudo(); resumo(); pintarQuinzena();
     });
   });
+  /* quinzenal: em qual das duas semanas ele vem (04/10/2026). Antes todos os quinzenais caíam
+     na mesma semana, sem como mudar. */
+  function pintarQuinzena(){
+    var el = document.getElementById("fi-quinzena"); if(!el) return;
+    el.hidden = p.freq !== "quinzenal";
+    if(el.hidden) return;
+    var esta = isoSegunda(new Date()), proxima = somaDias(esta, 7);
+    var vemEsta = ehSemanaDo(p, esta);
+    var sel = document.getElementById("fi-qsem");
+    sel.innerHTML = opc("esta","Nesta semana (segunda, "+dataCurtaBR(esta)+")", vemEsta ? "esta" : "proxima") +
+                    opc("proxima","Na próxima (segunda, "+dataCurtaBR(proxima)+")", vemEsta ? "esta" : "proxima");
+  }
+  document.getElementById("fi-qsem").addEventListener("change", function(e){
+    var esta = isoSegunda(new Date());
+    p.semanaRef = chaveData(e.target.value === "esta" ? esta : somaDias(esta, 7));
+    avisarHorarioOcupado(p);
+    salvar(); renderTudo(); resumo();
+  });
+  pintarQuinzena();
 
   document.getElementById("fi-origem").addEventListener("change", function(e){
     definirOrigem(p.codigo, e.target.value); salvar(); renderMarketing();
   });
 
-  function fechar(){ fundo.remove(); document.removeEventListener("keydown", aoTeclar); }
+  function fechar(){ gravarJa(); fundo.remove(); document.removeEventListener("keydown", aoTeclar); if(fichaAberta && fichaAberta.fundo===fundo) fichaAberta = null; }
+  function gravarJa(){
+    if(esperaSalvar){ clearTimeout(esperaSalvar); esperaSalvar = null; salvar(); }
+    if(esperaCampo){ clearTimeout(esperaCampo); esperaCampo = null; salvar(); renderTudo(); }
+  }
+  fichaAberta = { p:p, fundo:fundo, fechar:fechar, gravarJa:gravarJa, foco:function(){ return abertoPront; } };
   function aoTeclar(e){ if(e.key==="Escape") fechar(); }
   document.addEventListener("keydown", aoTeclar);
   fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
@@ -2609,6 +2704,16 @@ function abrirFicha(p, foco){
     dados.pacientes = dados.pacientes.filter(function(x){ return x.id!==p.id; });
     salvar(); renderTudo(); fechar();
   });
+}
+function dataCurtaBR(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
+/* dois pacientes no mesmo horário fixo, na mesma semana: a grade só mostra um (04/10/2026) */
+function avisarHorarioOcupado(p){
+  var esta = isoSegunda(new Date()), semanas = [esta, somaDias(esta, 7)];
+  var outro = dados.pacientes.filter(function(x){
+    return x.id!==p.id && x.dia===p.dia && x.hora===p.hora &&
+      semanas.some(function(w){ return ehSemanaDo(x, w) && ehSemanaDo(p, w); });
+  })[0];
+  if(outro) recado("Atenção: " + outro.nome + " já está nesse horário" + (p.freq==="quinzenal"||outro.freq==="quinzenal" ? " na mesma semana" : "") + ". A grade mostra só um dos dois.");
 }
 function opc(v,t,atual){ return '<option value="'+v+'"'+(String(atual)===String(v)?" selected":"")+'>'+t+'</option>'; }
 function horasOpcoes(atual){
@@ -2855,7 +2960,7 @@ function registrarPagamento(pacienteId, dataISO, valor, meio, obs, receita, quem
                 ". Registrar outro nessa mesma data?")) return false;
   }
   dados.pagamentos.push({
-    id: "g"+Date.now()+Math.floor(Math.random()*1000),
+    id: novoId("g"),
     pacienteId: pacienteId||"",
     nomePlanilha: pacienteId ? "" : (quem||""),
     data: dataISO,
@@ -4347,21 +4452,23 @@ function montarLeitura(celulas, preenchimentos, registro){
 function importarRecebimentos(lista){
   var porCodigo = {};
   dados.pacientes.forEach(function(p){ if(p.codigo) porCodigo[p.codigo] = p.id; });
-  var jaTem = {};
-  dados.pagamentos.forEach(function(g){ if(g.chavePlanilha) jaTem[g.chavePlanilha] = true; });
+  /* quantos recibos com a mesma chave já estão aqui: dois pagamentos iguais do mesmo paciente no
+     mesmo dia são dois recibos de verdade, e antes o segundo era descartado (04/10/2026) */
+  var jaTem = {}, nestaLeitura = {};
+  dados.pagamentos.forEach(function(g){ if(g.chavePlanilha) jaTem[g.chavePlanilha] = (jaTem[g.chavePlanilha] || 0) + 1; });
   var doApp = lancadosNoApp();
   var novos = 0;
   lista.forEach(function(r){
     var chave = (r.codigo || semAcento(r.nome)) + "|" + r.data + "|" + r.valor;
-    if(jaTem[chave]) return;
-    jaTem[chave] = true;
+    nestaLeitura[chave] = (nestaLeitura[chave] || 0) + 1;
+    if(nestaLeitura[chave] <= (jaTem[chave] || 0)) return;
     /* o mesmo pagamento lançado no app e na planilha (ele lança nos dois enquanto a planilha
        não para): não entra de novo, só passa a ser reconhecido como o da planilha (01/10/2026) */
     var gemeo = (doApp[chave] || []).shift();
     if(gemeo){ gemeo.chavePlanilha = chave; return; }
     novos++;
     dados.pagamentos.push({
-      id: "g" + Date.now() + Math.floor(Math.random()*100000),
+      id: novoId("g"),
       /* sem prontuário casado na planilha, o recibo entra assim mesmo: conta no mês,
          mas não gruda em ninguém (são os que a planilha mostra com "-") */
       pacienteId: porCodigo[r.codigo] || "",
@@ -4437,8 +4544,8 @@ function aplicarLeitura(leitura){
   dados.pacientes = leitura.pacientes.map(function(p){
     var antigo = porCodigo[p.codigo];
     return {
-      id: antigo ? antigo.id : ("p" + Date.now() + Math.floor(Math.random()*1000)),
-      codigo: p.codigo, nome: p.nome, freq: p.freq, cobranca: p.cobranca,
+      id: antigo ? antigo.id : novoId("p"),
+      codigo: p.codigo, nome: p.nome, nomeCompleto: p.nomeCompleto || (antigo && antigo.nomeCompleto) || "", freq: p.freq, cobranca: p.cobranca,
       valor: p.valor, dia: p.dia, hora: p.hora,
       status: p.status || "", inicio: p.inicio || "", fim: p.fim || "",
       meet: antigo ? (antigo.meet || "") : "",
@@ -4676,7 +4783,7 @@ CAMPOS_CONFIG.forEach(function(par){
 });
 
 document.getElementById("add-paciente").addEventListener("click", function(){
-  var novo = {id:"p"+Date.now(), codigo:"MGOQ00", nome:"Novo paciente", freq:"semanal", cobranca:"mensal", valor:dados.config.mensal, dia:1, hora:14, meet:""};
+  var novo = {id:novoId("p"), codigo:"", nome:"Novo paciente", freq:"semanal", cobranca:"mensal", valor:dados.config.mensal, dia:1, hora:14, meet:""};
   dados.pacientes.push(novo);
   salvar(); renderTudo(); abrirFicha(novo);
 });
@@ -4699,11 +4806,13 @@ document.getElementById("arquivo").addEventListener("change", function(e){
     try{
       var d = JSON.parse(r.result);
       if(!d.pacientes) throw new Error("arquivo sem pacientes");
-      if(!d.pagamentos) d.pagamentos = []; /* arquivo exportado antes dos pagamentos */
-      dados = d; salvar(); renderTudo();
+      /* trocar tudo pelo arquivo é grande demais para acontecer sem perguntar (04/10/2026) */
+      if(!confirm("Trocar a Clínica inteira pelo que está neste arquivo?\n\nNo arquivo: " + d.pacientes.length + " pacientes e " + (d.pagamentos || []).length + " pagamentos.\nAqui agora: " + dados.pacientes.length + " pacientes e " + dados.pagamentos.length + " pagamentos.\n\nO que está aqui e não está no arquivo se perde (dá para voltar com Ctrl+Z).")) return;
+      dados = normalizar(d); salvar(); renderTudo();
     }catch(err){ alert("Não consegui ler esse arquivo: "+err.message); }
   };
   r.readAsText(f);
+  e.target.value = "";   /* escolher o mesmo arquivo de novo volta a funcionar */
 });
 document.getElementById("tema").addEventListener("click", function(){
   var atual = document.documentElement.getAttribute("data-theme");
@@ -4737,16 +4846,14 @@ renderTudo();
 avisoPlanilha();
 var cadernoClinica = Nuvem.caderno({
   id: "clinica", nome: "Controle Único - clínica.json", rotulo: "a Clínica",
-  obter: function(){ return dados; },
+  /* antes de entregar a Clínica para juntar com o Drive, grava o que estava sendo digitado na ficha */
+  obter: function(){ if(fichaAberta) fichaAberta.gravarJa(); return dados; },
   aplicar: function(d){
-    dados = d;
-    if(!dados.pagamentos) dados.pagamentos = [];
-    if(!dados.arquivados) dados.arquivados = [];
-    if(!dados.formulacoes) dados.formulacoes = {};
-    if(!dados.excecoes) dados.excecoes = {};
+    dados = normalizar(d);
     instantaneo = JSON.stringify(dados); historico = []; refeitos = [];
     try{ localStorage.setItem(CHAVE, instantaneo); }catch(e){}
     fecharMenu(); sincronizarCampos(); renderTudo();
+    reabrirFicha("A ficha foi atualizada com o que mudou no outro aparelho; o que você digitou continua aqui.");
   },
   temDados: function(d){ return !!(d && d.pacientes && d.pacientes.length); }
 });

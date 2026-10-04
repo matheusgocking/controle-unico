@@ -6,32 +6,13 @@
 <title>Dinheiro e Casa · Controle Único</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap"></noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"></noscript>
+<link rel="stylesheet" href="tema.css">
 <style>
 /* toque: o navegador não espera para ver se é duplo toque, e o dedo acerta o alvo */
 button,a,summary,select,input,label{touch-action:manipulation}
 /* Mesmo desenho da Clínica e da Carteira (27/09/2026): fundo cinza-azulado, painéis brancos
    de borda fina, números em negrito e gráficos em rosca. O jeito de app fica só no celular. */
-:root{
-  --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766; --faint:#6f7a8a;
-  --accent:#7030a0; --accent-soft:#f0e5fb;
-  --pos:#1f6b4f; --pos-soft:#dcefe6; --neg:#a3241f; --neg-soft:#fbdedd; --warn:#8a4b12; --warn-soft:#fbe8d4;
-  /* cores das roscas: a paleta validada para daltonismo, na ordem fixa; a oitava é "Outros" */
-  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300; --c7:#4a3aa7; --c8:#8a94a3;
-  --font:"IBM Plex Sans",system-ui,sans-serif; --radius:8px;
-}
-@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
-  --accent:#c8a4f2; --accent-soft:#2e2140;
-  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
-  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d;
-}}
-:root[data-theme="dark"]{
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#818d9d;
-  --accent:#c8a4f2; --accent-soft:#2e2140;
-  --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
-  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d;
-}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
 button,select,input{font:inherit;color:inherit}
@@ -78,13 +59,15 @@ nav.abas button[aria-pressed="true"]{background:var(--surface);color:var(--text)
 
 /* situação do mês */
 .situ{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;align-items:stretch}
+.situ > .veredito{order:2}   /* no HTML vem primeiro (é o que se lê primeiro no celular); no computador fica à direita */
+.situ > .nums{min-width:0}
 .linha-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .linha-k + .linha-k{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
 .k span{display:block;color:var(--muted);font-size:13px}
 .k b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-top:2px;white-space:nowrap}
 .k small{display:block;color:var(--faint);font-size:12px;margin-top:3px}
 .k.destaque b{font-size:32px}
-.k .pct-k{font-style:normal;font-size:11.5px;font-weight:600;margin-left:6px;padding:1px 7px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
+.k .pct-k{display:inline-block;font-style:normal;font-size:11.5px;font-weight:600;margin:4px 0 2px;padding:1px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
 .k .pct-k.neg{background:var(--neg-soft);color:var(--neg)}
 .veredito{border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;justify-content:center;gap:10px;background:var(--surface-2)}
 .veredito.pos{background:var(--pos-soft)} .veredito.neg{background:var(--neg-soft)} .veredito.warn{background:var(--warn-soft)}
@@ -114,7 +97,15 @@ nav.abas button[aria-pressed="true"]{background:var(--surface);color:var(--text)
 /* rosca em painel estreito (coluna da direita): o gráfico em cima e a legenda embaixo */
 .painel{container-type:inline-size}
 @container (max-width:460px){ .rosca{grid-template-columns:minmax(0,1fr);justify-items:center} .leg{width:100%;min-width:0} }
-.leg .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.leg .n{overflow-wrap:anywhere}
+.partes .pt-total span{display:block;color:var(--muted);font-size:13px}
+.partes .pt-total b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em}
+.pilha{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;margin:10px 0 8px;background:var(--surface-2)}
+.pilha i{display:block;height:100%;min-width:3px}
+.meta-r{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.meta-r .l1{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
+.meta-r .l1 b{color:var(--text);font-size:14px}
+.meta-r small{display:block;color:var(--faint);font-size:12px;margin-top:4px}
 .selo-b{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--surface-2);color:var(--text)}
 
 /* números soltos (como na Clínica) */
@@ -156,6 +147,8 @@ tr.fx-fora td.c-desc b,tr.fx-fora td.c-cat{color:var(--faint)}
 .x:hover{color:var(--neg)}
 .x.lapis{font-size:14px} .x.lapis:hover{color:var(--accent)}
 td.c-x{white-space:nowrap}
+tr.clic{cursor:pointer}
+tr.clic:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 
 /* pendências: uma linha por dívida, com quem, quanto falta e os botões */
 .pd-grupo{margin:14px 0 4px;font-size:12.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:flex;gap:10px;align-items:baseline}
@@ -181,6 +174,9 @@ details.pd-fechadas{margin-top:12px} details.pd-fechadas summary{cursor:pointer;
 .fx-grupos > .bloco:first-child{margin-top:0}
 /* as tabelas dos grupos de fixos com as mesmas colunas, para um grupo alinhar com o outro */
 table.fixos{table-layout:fixed}
+.painel + .lanc{margin-top:16px}
+.aviso-fx{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.aviso-fx p{margin:0}
 table.fixos th:nth-child(2){width:30%} table.fixos th:nth-child(3){width:90px} table.fixos th:nth-child(4){width:170px} table.fixos th:nth-child(5){width:30px}
 details.fx-fora-d > summary{cursor:pointer;font-size:14px;color:var(--muted)}
 details.fx-fora-d[open] > summary{margin-bottom:12px}
@@ -233,7 +229,8 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 
 @media (max-width:960px){
   .duas,.duas.igual,.duas.larga,.duas.inv{grid-template-columns:1fr}
-  .situ{grid-template-columns:1fr}
+  .situ{grid-template-columns:1fr;gap:16px}
+  .situ > .veredito{order:0}
 }
 /* ---------- celular: aqui sim, jeito de app ---------- */
 @media (max-width:700px){
@@ -246,6 +243,11 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .coluna{gap:12px}
   .linha-k{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .linha-k .k.destaque{grid-column:1 / -1}
+  /* Situação do mês no celular: Recebi | Gastei, Vou receber | Vai sair, e embaixo Saldo | Fecha em */
+  .seis .nums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}
+  .seis .linha-k{display:contents}
+  .seis .linha-k .k.destaque{grid-column:auto;order:3;border-top:1px solid var(--line);padding-top:12px}
+  .seis .k b,.seis .k.destaque b{font-size:clamp(17px,5.6vw,22px)}
   .k b{font-size:21px} .k.destaque b{font-size:28px}
   .rosca{grid-template-columns:minmax(0,1fr);justify-items:center}
   .leg{width:100%}
@@ -254,7 +256,13 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   table.t thead{display:none}
   .ordem-cel{display:flex}
   table.t tr{display:grid;grid-template-columns:38px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
-  td.c-x .x{padding:0;min-width:34px;min-height:40px}   /* o lápis e o × cabem num toque de dedo */
+  td.c-x .x{padding:0;min-width:34px;min-height:40px}   /* o × cabe num toque de dedo */
+  /* no celular a linha toda abre o lançamento; o × some (apagar fica dentro do lançamento) e a descrição quebra a linha */
+  table.t tr.clic{grid-template-columns:42px minmax(0,1fr) auto}
+  tr.clic td.c-x{display:none}
+  tr.clic td.c-desc b{white-space:normal;overflow:visible;text-overflow:clip}
+  tr.clic .so-cel{white-space:normal}
+  tr.clic:active{background:var(--surface-2)}
   table.t tr:last-child{border-bottom:0}
   table.t td{border:0;padding:0 !important}
   table.t tbody tr:hover td{background:transparent}
@@ -436,15 +444,22 @@ function carteiraAgora(){
 // ---------- contas ----------
 // Regra do sistema Ciclo do Dinheiro do Mês: a casa entra no financeiro
 // dele só pelo que ELE pagou, no lugar da categoria Moradia.
+// A divisão da casa (0 a 1). 0 é um valor válido; só um valor ausente ou estranho volta para metade.
+function parteCasa(){
+  const n = Number(livro.casa.divisao);
+  return Number.isFinite(n) && n >= 0 && n <= 1 ? n : 0.5;
+}
 function contasCasa(){
   const doMes = livro.casa.lancamentos.filter(noMes);
   const total = soma(doMes, l => l.valor);
-  const metade = total * (Number(livro.casa.divisao) || 0.5);
+  const parte = parteCasa();
+  const metade = total * parte;
   const pagou = {}, dif = {};
-  for (const p of livro.casa.pessoas){
+  livro.casa.pessoas.forEach((p, i) => {
     pagou[p] = soma(doMes.filter(l => l.quem === p), l => l.valor);
-    dif[p] = pagou[p] - metade;
-  }
+    // a primeira pessoa responde por "parte" do total e a segunda pelo resto
+    dif[p] = pagou[p] - total * (i === 0 ? parte : 1 - parte);
+  });
   return { total, metade, pagou, dif };
 }
 
@@ -589,15 +604,26 @@ function configLancamento(padrao){
       return () => { livro.matheus.lancamentos = livro.matheus.lancamentos.filter(x => x.id !== id); salvar("matheus"); };
     },
     alterar(onde, id, d){
-      if (onde === "casa") {
-        const l = livro.casa.lancamentos.find(x => x.id === id);
-        if (l) Object.assign(l, { data:d.data, quem:d.quem, descricao:d.descricao || "-", categoria:d.categoria, valor:d.valor });
-        salvar("casa"); return;
+      const cad = onde === "casa" ? "casa" : "matheus";
+      const l = livro[cad].lancamentos.find(x => x.id === id);
+      if (!l) return null;
+      const antes = JSON.parse(JSON.stringify(l));
+      if (onde === "casa") Object.assign(l, { data:d.data, quem:d.quem, descricao:d.descricao || "-", categoria:d.categoria, valor:d.valor });
+      else {
+        const reserva = d.tipo === "Aporte" || d.tipo === "Resgate";
+        Object.assign(l, { data:d.data, tipo:d.tipo, descricao:d.descricao,
+          categoria: reserva ? "Reserva" : d.tipo === "Receita" ? "Outras entradas" : d.categoria, forma:d.forma, valor:d.valor });
       }
-      const l = livro.matheus.lancamentos.find(x => x.id === id), reserva = d.tipo === "Aporte" || d.tipo === "Resgate";
-      if (l) Object.assign(l, { data:d.data, tipo:d.tipo, descricao:d.descricao,
-        categoria: reserva ? "Reserva" : d.tipo === "Receita" ? "Outras entradas" : d.categoria, forma:d.forma, valor:d.valor });
-      salvar("matheus");
+      salvar(cad);
+      // desfazer devolve o lançamento como estava, no mesmo lugar da lista
+      return () => { const i = livro[cad].lancamentos.findIndex(x => x.id === id); if (i >= 0) livro[cad].lancamentos[i] = antes; salvar(cad); };
+    },
+    apagar(onde, id){
+      const cad = onde === "casa" ? "casa" : "matheus";
+      const i = livro[cad].lancamentos.findIndex(x => x.id === id); if (i < 0) return null;
+      const [tirado] = livro[cad].lancamentos.splice(i, 1);
+      salvar(cad);
+      return () => { if (!livro[cad].lancamentos.some(x => x.id === id)) livro[cad].lancamentos.splice(Math.min(i, livro[cad].lancamentos.length), 0, tirado); salvar(cad); };
     }
   };
 }
@@ -654,6 +680,25 @@ function rosca(itens, centro, aria){
   return `<div class="rosca"><svg viewBox="0 0 170 170" role="img" aria-label="${escH(aria)}">${fatias}${meio}</svg><ul class="leg">${leg}</ul></div>`;
 }
 
+// Partes de um todo numa barra só, com a mesma legenda da rosca.
+function barraPartes(itens, aria){
+  itens = itens.filter(x => x[1] > 0.005);
+  const total = soma(itens, x => x[1]);
+  if (!total) return `<p class="vazio">Nada guardado ainda.</p>`;
+  const faixas = itens.map(([rot, v, cor]) => `<i style="width:${(v / total * 100).toFixed(2)}%;background:${cor}" title="${escH(rot)}: ${dinheiro(v)}"></i>`).join("");
+  const leg = itens.map(([rot, v, cor, det]) => `<li><i style="background:${cor}"></i>
+    <span class="n">${escH(rot)}${det ? `<small>${escH(det)}</small>` : ""}</span><b>${dinheiro(v)}</b><span class="pc">${pctTxt(v, total)}</span></li>`).join("");
+  return `<div class="partes"><div class="pt-total"><span>Total</span><b>${dinheiro(total)}</b></div>
+    <div class="pilha" role="img" aria-label="${escH(aria)}">${faixas}</div><ul class="leg">${leg}</ul></div>`;
+}
+function metaReserva(reserva, meta){
+  if (!(meta > 0)) return "";
+  const falta = meta - reserva;
+  return `<div class="meta-r"><div class="l1"><span>Meta da reserva</span><b>${Math.round(pct(reserva, meta))}%</b></div>
+    <div class="trilho" role="img" aria-label="${Math.round(pct(reserva, meta))}% da meta"><i style="width:${pct(reserva, meta)}%"></i></div>
+    <small>${falta > 0.005 ? `faltam ${dinheiro(falta)} para ${dinheiro(meta)}` : `meta de ${dinheiro(meta)} alcançada`}</small></div>`;
+}
+
 // para onde foi o dinheiro do mês: despesas lançadas e fixos por categoria, mais a casa.
 // Sete fatias com cor e o resto junto em "Outros", para a rosca continuar legível.
 function porCategoria(){
@@ -665,14 +710,16 @@ function porCategoria(){
   if (casa) s["Moradia (casa)"] = (s["Moradia (casa)"] || 0) + casa;
   return Object.entries(s).filter(e => e[1] > 0.005).sort((a, b) => b[1] - a[1]);
 }
-function roscaCategorias(){
+function roscaCategorias(d){
   const cats = porCategoria();
   if (!cats.length) return `<p class="vazio">Nada saiu em ${MESES[ref.getMonth()]}.</p>`;
   const cabem = cats.length > 8 ? 7 : 8;
   const itens = cats.slice(0, cabem).map(([k, v], i) => [comPonto(k), v, `var(--c${i + 1})`]);
   const resto = cats.slice(cabem);
   if (resto.length) itens.push(["Outros.", soma(resto, e => e[1]), "var(--c8)", resto.map(e => semPonto(e[0])).join(", ") + "."]);
-  return rosca(itens, "saiu", "Despesas do mês por categoria");
+  // a rosca conta todos os fixos do mês; "Gastei" só conta os que já venceram. A nota explica a diferença.
+  const vai = d && d.faltaSair > 0.005 ? `<p class="nota">Inclui ${dinheiro(d.faltaSair)} de fixos que ainda vão sair, por isso passa do "Gastei".</p>` : "";
+  return rosca(itens, "no mês", "Despesas do mês por categoria") + vai;
 }
 
 // Limite de gasto por categoria (aprovado por ele em 02/10/2026): ele diz quanto quer gastar no mês
@@ -737,10 +784,10 @@ function cardSituacao(d){
   const corrente = chaveMes(ref) === chaveMes(new Date());
   return `
   <section class="painel"><h2>Situação do mês<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
-    <div class="situ"><div>
+    <div class="situ seis">${veredito(d)}<div class="nums">
       <div class="linha-k">
         <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small>${outros > 0.005 ? `<small>${dinheiro(outros)} de outras entradas</small>` : ""}</div>
-        <div class="k"><span>Gastei${d.entrou > 0.005 ? ` <em class="pct-k${d.saiu > d.entrou + 0.005 ? " neg" : ""}">${Math.round(d.saiu / d.entrou * 100)}% do que recebi</em>` : ""}</span><b>${dinheiro(d.saiu)}</b><small>${dinheiro(lancado)} lançados</small><small>${dinheiro(d.fixosMes)} de fixos</small><small>${dinheiro(d.minhaCasa)} da casa</small></div>
+        <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b>${d.entrou > 0.005 ? `<em class="pct-k${d.saiu > d.entrou + 0.005 ? " neg" : ""}">${Math.round(d.saiu / d.entrou * 100)}% do que recebi</em>` : ""}<small>${dinheiro(lancado)} lançados</small><small>${dinheiro(d.fixosMes)} de fixos</small><small>${dinheiro(d.minhaCasa)} da casa</small></div>
         <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
       </div>
       <div class="linha-k">
@@ -748,7 +795,7 @@ function cardSituacao(d){
         <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("só no mês corrente") : `<b>${dinheiro(d.faltaSair)}</b><small>fixos que vencem depois de hoje${d.semDia ? `, ${d.semDia} sem dia marcado` : ""}</small>`}</div>
         <div class="k destaque"><span>Fecha o mês em</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>saldo mais o que vou receber, menos o que vai sair</small></div>
       </div>
-    </div>${veredito(d)}</div>
+    </div></div>
   </section>
 `;
 }
@@ -765,11 +812,11 @@ function painelMeusLancamentos(){
     const cls = !casa && (l.tipo === "Receita" || l.tipo === "Resgate") ? "pos" : "";
     const sinal = cls ? "+ " : casa || l.tipo === "Despesa" ? "− " : "";
     const cat = nomeCat(l.categoria) + (!casa && l.tipo !== "Despesa" ? " · " + semPonto(l.tipo) : "");
-    return `<tr><td class="c-data">${dataCurta(l.data)}</td>
+    return `<tr class="clic" data-editar="${onde}:${escH(l.id)}" tabindex="0" title="Alterar"><td class="c-data">${dataCurta(l.data)}</td>
       <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : nomeCat(l.categoria)))}</b><span class="so-cel">${escH(comPonto(lugar + " · " + cat))}</span></td>
       <td class="c-cat">${lugar}.</td><td class="c-forma">${escH(comPonto(cat))}</td>
       <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
-      <td class="c-x"><button class="x lapis" data-editar="${onde}:${l.id}" aria-label="Alterar" title="Alterar">✎</button></td></tr>`;
+      <td class="c-x"><button class="x" data-apagar="${onde}:lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
   };
   return `<section class="painel" style="margin-top:16px"><h2>Meus lançamentos<span class="dir">${itens.length} no mês</span></h2>
     ${itens.length ? `<table class="t"><thead><tr><th>Dia</th><th>Descrição</th><th>De onde</th><th>Categoria</th><th class="dir">Valor</th><th></th></tr></thead>
@@ -782,16 +829,19 @@ function telaTudo(){
   const d = contasDinheiro(), c = contasCasa(), cl = contasClinica(), cart = carteiraAgora();
   const r = livro.matheus.reserva;
   const [p1, p2] = livro.casa.pessoas;
-  const patrimonio = rosca([["Reserva de emergência", d.reserva, "var(--c3)", r.meta ? `${Math.round(pct(d.reserva, r.meta))}% da meta de ${dinheiro(r.meta)}` : ""],
-                            ["Cripto", cart ? cart.total : 0, "var(--c4)", cart ? "lida em " + new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : ""]],
-                           "patrimônio", "Patrimônio: reserva de emergência e cripto");
+  const partes = [["Reserva de emergência", d.reserva, "var(--c3)", ""],
+                  ["Cripto", cart ? cart.total : 0, "var(--c4)", cart ? "lida em " + new Date(cart.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : ""]];
+  // com duas partes (ou menos) uma barra lê melhor que a rosca; a meta da reserva vem numa barra própria
+  const patrimonio = partes.filter(x => x[1] > 0.005).length <= 2
+    ? barraPartes(partes, "Patrimônio: reserva de emergência e cripto") + metaReserva(d.reserva, r.meta)
+    : rosca(partes, "patrimônio", "Patrimônio: reserva de emergência e cripto");
 
-  return barraMes() + formLancamento("") + cardSituacao(d) + `
+  return barraMes() + cardSituacao(d) + formLancamento("") + `
 
   <div class="duas inv">
     <section class="painel"><h2>Patrimônio</h2>${patrimonio}
       ${cart ? "" : `<p class="nota">Abra a Carteira cripto uma vez neste aparelho para o total dela entrar aqui.</p>`}</section>
-    <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias()}</section>
+    <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias(d)}</section>
   </div>
 
   <div class="duas igual">
@@ -824,11 +874,11 @@ function linhaLanc(l){
   const tipo = l.tipo !== "Despesa" ? ` · ${semPonto(l.tipo)}` : "";
   // linha composta leva um ponto só, no fim: "Reserva · Resgate." (correção dele, 02/10/2026)
   const cat = nomeCat(l.categoria), forma = semPonto(l.forma);
-  return `<tr><td class="c-data">${dataCurta(l.data)}</td>
+  return `<tr class="clic" data-editar="matheus:${escH(l.id)}" tabindex="0" title="Alterar"><td class="c-data">${dataCurta(l.data)}</td>
     <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : cat))}</b><span class="so-cel">${escH(comPonto([cat, forma].filter(Boolean).join(" · ") + tipo))}</span></td>
     <td class="c-cat">${escH(comPonto(cat + tipo))}</td><td class="c-forma">${escH(comPonto(forma))}</td>
     <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
-    <td class="c-x"><button class="x lapis" data-editar="matheus:${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="matheus:lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
+    <td class="c-x"><button class="x" data-apagar="matheus:lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
 }
 
 // ---------- pendências: quem deve a ele e a quem ele deve ----------
@@ -848,9 +898,9 @@ function painelPendencias(){
       <div class="pd-quem"><b>${escH(p.nome)}</b><span>${sub || "&nbsp;"}</span></div>
       <div class="pd-val"><b>${feita ? "quitada" : dinheiro(falta)}</b><span>${feita ? dinheiro(p.total) : `de ${dinheiro(p.total)}${Number(p.pago) > 0 ? ", já " + (p.tipo === "receber" ? "recebi " : "paguei ") + dinheiro(p.pago) : ""}`}</span>
         ${feita || !(Number(p.pago) > 0) ? "" : `<div class="trilho"><i style="width:${pct(p.pago, p.total)}%"></i></div>`}</div>
-      <div class="pd-acoes">${feita ? `<button class="b s" data-pend-reabrir="${p.id}">Reabrir</button>`
-        : `<button class="b s" data-pend-pago="${p.id}">${p.tipo === "receber" ? "Recebi uma parte" : "Paguei uma parte"}</button><button class="b s" data-pend-quitar="${p.id}">Quitar</button>`}
-        <button class="x" data-pend-apagar="${p.id}" aria-label="Apagar" title="Apagar">×</button></div></div>`;
+      <div class="pd-acoes">${feita ? `<button class="b s" data-pend-reabrir="${escH(p.id)}">Reabrir</button>`
+        : `<button class="b s" data-pend-pago="${escH(p.id)}">${p.tipo === "receber" ? "Recebi uma parte" : "Paguei uma parte"}</button><button class="b s" data-pend-quitar="${escH(p.id)}">Quitar</button>`}
+        <button class="x" data-pend-apagar="${escH(p.id)}" aria-label="Apagar" title="Apagar">×</button></div></div>`;
   };
   // Tela própria (01/10/2026: no fim da tela do Dinheiro ele achou a lista mal organizada): os três
   // totais em cima e, lado a lado, quem deve a ele e a quem ele deve, do maior para o menor.
@@ -939,9 +989,9 @@ function vistaFixos(){
   const tabela = lista => `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Dia</th><th class="dir">Valor em ${nome}</th><th></th></tr></thead><tbody>
       ${lista.map(g => `<tr${valorFixo(g, km) > 0 ? "" : ' class="fx-fora"'}><td class="c-desc"><b>${escH(comPonto(g.descricao))}</b>${!Number(g.dia) && valorFixo(g, km) > 0 ? `<span class="fx-sit">sem dia marcado${mesCorrente ? ": conta como já saiu" : ""}</span>` : ""}<span class="so-cel">${escH(comPonto(g.categoria))}</span></td>
         <td class="c-cat">${escH(comPonto(g.categoria))}</td>
-        <td class="dir"><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${g.id}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês"></td>
-        <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${g.id}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor em ${nome}"></td>
-        <td class="c-x"><button class="x" data-apagar="matheus:gastosFixos:${g.id}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`;
+        <td class="dir"><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${escH(g.id)}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês"></td>
+        <td class="dir"><input type="number" step="0.01" min="0" inputmode="decimal" data-valorfixo="${escH(g.id)}" value="${valorFixo(g, km) || ""}" placeholder="—" aria-label="Valor em ${nome}"></td>
+        <td class="c-x"><button class="x" data-apagar="matheus:gastosFixos:${escH(g.id)}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`;
   const grupo = (titulo, lista) => lista.length ? `<section class="painel bloco"><h2>${titulo}<span class="dir">${lista.length} · ${dinheiro(total(lista))}</span></h2>${tabela(lista)}</section>` : "";
 
   const formFixo = `<details class="novo"><summary>+ Novo gasto fixo</summary><form class="linha" id="fFixo">
@@ -957,11 +1007,27 @@ function vistaFixos(){
       <div class="stat"><span>Já saiu</span><b>${dinheiro(total(jaSaiu))}</b><small>${jaSaiu.length} de ${cobra.length}</small></div>
       <div class="stat"><span>Ainda vai sair</span><b class="${vaiSair.length ? "warn" : ""}">${dinheiro(total(vaiSair))}</b><small>${vaiSair.length ? (mesCorrente ? "próximo: dia " + vaiSair[0].dia : vaiSair.length + " de " + cobra.length) : "nada a vencer"}</small></div>
     </div>
+    ${copiaFixos(km, cobra.length)}
     <div class="bloco">${formFixo}</div>
     ${livro.matheus.gastosFixos.length ? "" : `<section class="painel"><p class="vazio">Nenhum gasto fixo cadastrado.</p></section>`}
     <div class="fx-grupos">${grupo(mesCorrente ? "Ainda vai sair" : "Vai sair em " + nome, vaiSair)}${grupo(mesCorrente ? "Já saiu" : "Saiu em " + nome, jaSaiu)}</div>
     ${fora.length ? `<section class="painel bloco"><details class="fx-fora-d"><summary>Não cobram em ${nome} (${fora.length})</summary>${tabela(fora)}</details></section>` : ""}
     <p class="nota" style="margin-top:14px">O dia é o da cobrança (no cartão, o dia da compra). Com o dia marcado, o fixo só entra em "Gastei" quando ele chega; antes disso fica em "Ainda vai sair". Para um fixo deixar de cobrar em ${nome}, apague o valor dele.</p>`;
+}
+
+// Os fixos novos vão só até dezembro. Quando um mês não tem nenhum fixo e o anterior tinha,
+// oferece copiar os valores do mês anterior. Só preenche o mês vazio; nada do que já existe muda.
+function mesAnterior(km){ const d = new Date(Number(km.slice(0, 4)), Number(km.slice(5, 7)) - 2, 1); return chaveMes(d); }
+function fixosParaCopiar(km){
+  const ant = mesAnterior(km);
+  return livro.matheus.gastosFixos.filter(g => g.valores && Number(g.valores[ant]) > 0 && g.valores[km] === undefined);
+}
+function copiaFixos(km, jaTem){
+  if (jaTem) return "";
+  const n = fixosParaCopiar(km).length; if (!n) return "";
+  const ant = MESES[Number(mesAnterior(km).slice(5, 7)) - 1];
+  return `<section class="painel bloco aviso-fx"><p>${MESES[ref.getMonth()][0].toUpperCase() + MESES[ref.getMonth()].slice(1)} ainda não tem gastos fixos. ${n} ${n === 1 ? "cobrou" : "cobraram"} em ${ant}.</p>
+    <button type="button" class="b p" id="copiarFixos">Copiar os fixos de ${ant}</button></section>`;
 }
 
 // Mês a mês: o gráfico e, embaixo, a mesma conta em lista, com o que sobrou em cada mês.
@@ -994,7 +1060,7 @@ function telaDinheiro(){
 
   const formReserva = `<details class="novo"><summary>Ajustar a reserva de emergência</summary><form class="linha" id="fReserva">
     <div><label>Saldo conferido</label><input type="number" name="saldoBase" step="0.01" inputmode="decimal" value="${r.saldoBase || ""}"></div>
-    <div><label>Conferido em</label><input type="date" name="dataBase" value="${r.dataBase || ""}"></div>
+    <div><label>Conferido em</label><input type="date" name="dataBase" value="${escH(r.dataBase || "")}"></div>
     <div><label>Meta</label><input type="number" name="meta" step="0.01" inputmode="decimal" value="${r.meta || ""}"></div>
     <div><button class="b p" type="submit">Guardar</button></div>
   </form></details>`;
@@ -1003,7 +1069,7 @@ function telaDinheiro(){
   <div class="duas larga">
     <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
     <div class="coluna">
-      <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias()}</section>
+      <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias(d)}</section>
       ${painelLimites()}
       <section class="painel"><h2>Reserva de emergência</h2>
         <div class="stats duas-col" style="margin-bottom:12px">
@@ -1023,7 +1089,7 @@ function totalCasaDoMes(d){
 }
 function cardCasa(c){
   const [p1, p2] = livro.casa.pessoas;
-  const parte = Number(livro.casa.divisao) || 0.5;
+  const parte = parteCasa();
   const agora = new Date(), corrente = chaveMes(ref) === chaveMes(agora);
   const nome = MESES[ref.getMonth()], Nome = nome[0].toUpperCase() + nome.slice(1);
   const doMes = livro.casa.lancamentos.filter(noMes).length;
@@ -1044,7 +1110,7 @@ function cardCasa(c){
              : `${Nome} ficou ${dinheiro(media - c.total)} abaixo da média de ${dinheiro(media)}.`);
   return `
   <section class="painel"><h2>Situação da casa<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
-    <div class="situ"><div>
+    <div class="situ">${v}<div class="nums">
       <div class="linha-k">
         <div class="k"><span>${escH(primeiro(p1))} pagou</span><b>${dinheiro(c.pagou[p1])}</b><small>parte: ${dinheiro(c.total * parte)}</small></div>
         <div class="k"><span>${escH(primeiro(p2))} pagou</span><b>${dinheiro(c.pagou[p2])}</b><small>parte: ${dinheiro(c.total * (1 - parte))}</small></div>
@@ -1055,7 +1121,7 @@ function cardCasa(c){
         <div class="k"><span>Mês passado</span><b>${dinheiro(antes)}</b><small>${antes > 0.005 ? (dif >= 0 ? dinheiro(dif) + " a menos que agora" : dinheiro(-dif) + " a mais que agora") : "sem compras"}</small></div>
         <div class="k destaque"><span>Média por mês</span>${media === null ? nd("nenhum mês fechado neste ano") : `<b>${dinheiro(media)}</b><small>${meses.length} ${meses.length === 1 ? "mês fechado" : "meses fechados"} de ${ref.getFullYear()}</small>`}</div>
       </div>
-    </div>${v}</div>
+    </div></div>
   </section>
 `;
 }
@@ -1065,7 +1131,7 @@ function telaCasa(){
   const doMes = ordenar(livro.casa.lancamentos.filter(noMes), "casa");
   const [p1, p2] = livro.casa.pessoas;
   const cor = q => q === p1 ? "var(--c1)" : "var(--c2)";
-  const parte = Number(livro.casa.divisao) || 0.5;
+  const parte = parteCasa();
 
   const porCat = {};
   doMes.forEach(l => porCat[l.categoria] = (porCat[l.categoria] || 0) + (Number(l.valor) || 0));
@@ -1079,11 +1145,11 @@ function telaCasa(){
 
   const quem = q => `<span class="quem"><i style="background:${cor(q)}"></i>${escH(primeiro(q))}</span>`;
   const lista = doMes.length ? `${filtroCategoria(doMes, "casa")}${ordemCelular("casa")}<table class="t">${cabecalho("casa")}<tbody>
-    ${filtrar(doMes, "casa").map(l => `<tr><td class="c-data">${dataCurta(l.data)}</td>
+    ${filtrar(doMes, "casa").map(l => `<tr class="clic" data-editar="casa:${escH(l.id)}" tabindex="0" title="Alterar"><td class="c-data">${dataCurta(l.data)}</td>
       <td class="c-desc"><b>${escH(comPonto(semPonto(l.categoria) + (l.descricao && l.descricao !== "-" && semPonto(l.descricao).toLowerCase() !== semPonto(l.categoria).toLowerCase() ? " · " + l.descricao : "")))}</b><span class="so-cel">${quem(l.quem)}</span></td>
       <td class="c-quem">${quem(l.quem)}</td>
       <td class="c-val dir">${dinheiro(l.valor)}</td>
-      <td class="c-x"><button class="x lapis" data-editar="casa:${l.id}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="casa:lancamentos:${l.id}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
+      <td class="c-x"><button class="x" data-apagar="casa:lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("")}</tbody></table>`
     : `<p class="vazio">Nenhuma compra em ${MESES[ref.getMonth()]}.</p>`;
 
   const ajustes = `<details class="novo"><summary>Divisão e nomes</summary>
@@ -1143,12 +1209,18 @@ function ligar(){
     li.onmouseenter = () => { r.classList.add("foco"); if (f) f.classList.add("on"); };
     li.onmouseleave = () => { r.classList.remove("foco"); if (f) f.classList.remove("on"); };
   });
-  document.querySelectorAll("[data-apagar]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("[data-apagar]").forEach(b => b.onclick = e => {
+    e.stopPropagation();
     if (!confirm("Apagar esta linha?")) return;
     const [cad, lista, id] = b.dataset.apagar.split(":");
     livro[cad][lista] = livro[cad][lista].filter(x => x.id !== id); salvar(cad);
   });
-  document.querySelectorAll("[data-editar]").forEach(b => b.onclick = () => { const [cad, id] = b.dataset.editar.split(":"); alterarLancamento(cad, id); });
+  // tocar na linha abre o lançamento para alterar (e, de lá, apagar)
+  document.querySelectorAll("[data-editar]").forEach(b => {
+    const abrir = () => { const [cad, id] = b.dataset.editar.split(":"); alterarLancamento(cad, id); };
+    b.onclick = e => { if (!e.target.closest("button,a,input,select")) abrir(); };
+    b.onkeydown = e => { if ((e.key === "Enter" || e.key === " ") && e.target === b) { e.preventDefault(); abrir(); } };
+  });
   document.querySelectorAll("[data-valorfixo]").forEach(i => i.onchange = () => {
     const g = livro.matheus.gastosFixos.find(x => x.id === i.dataset.valorfixo); if (!g) return;
     if (!g.valores) g.valores = {};
@@ -1156,6 +1228,12 @@ function ligar(){
     if (n > 0) g.valores[k] = n; else delete g.valores[k];
     salvar("matheus");
   });
+  const cf = document.getElementById("copiarFixos");
+  if (cf) cf.onclick = () => {
+    const km = chaveMes(ref), ant = mesAnterior(km), lista = fixosParaCopiar(km);
+    lista.forEach(g => { g.valores[km] = Number(g.valores[ant]); });
+    salvar("matheus");
+  };
   document.querySelectorAll("[data-dia]").forEach(i => i.onchange = () => {
     const g = livro.matheus.gastosFixos.find(x => x.id === i.dataset.dia);
     if (g) { const n = Number(i.value); g.dia = n >= 1 && n <= 31 ? n : null; salvar("matheus"); }
@@ -1200,8 +1278,9 @@ function ligar(){
     const p = daPend(b.dataset.pendPago); if (!p) return;
     const t = prompt(`Quanto ${p.tipo === "receber" ? "você recebeu" : "você pagou"} agora? Faltam ${dinheiro(restantePend(p))}.`);
     if (t === null) return;
-    // "1.250,50" e "1250.5" valem: com vírgula, o ponto é separador de milhar
-    const limpo = String(t).replace(/[^0-9.,]/g, ""), v = Number(limpo.indexOf(",") >= 0 ? limpo.replace(/\./g, "").replace(",", ".") : limpo);
+    // "1.250,50", "1.250" e "1250.5" valem: com vírgula, ou com ponto seguido de três dígitos, o ponto é separador de milhar
+    const limpo = String(t).replace(/[^0-9.,]/g, "");
+    const v = Number(limpo.indexOf(",") >= 0 || /^\d{1,3}(\.\d{3})+$/.test(limpo) ? limpo.replace(/\./g, "").replace(",", ".") : limpo);
     if (!(v > 0)) { alert("Não entendi o valor."); return; }
     p.pago = Math.round(((Number(p.pago) || 0) + v) * 100) / 100; salvar("matheus");
   });
@@ -1230,7 +1309,7 @@ function ligar(){
   }
   liga("fReserva", (f, d) => { livro.matheus.reserva = { saldoBase:Number(d.saldoBase) || 0,
     dataBase:d.dataBase || null, meta:Number(d.meta) || 0 }; salvar("matheus"); });
-  liga("fDivisao", (f, d) => { livro.casa.divisao = Math.min(Math.max(Number(d.divisao) || 50, 0), 100) / 100; salvar("casa"); });
+  liga("fDivisao", (f, d) => { const n = Number(d.divisao); livro.casa.divisao = Math.min(Math.max(Number.isFinite(n) && String(d.divisao).trim() !== "" ? n : 50, 0), 100) / 100; salvar("casa"); });
   liga("fPessoas", (f, d) => {
     const antigos = livro.casa.pessoas.slice(), novos = [d.p1.trim(), d.p2.trim()];
     // quem já comprou continua sendo a mesma pessoa, com o nome novo
