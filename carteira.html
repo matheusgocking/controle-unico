@@ -386,7 +386,7 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
       <div class="resumoAp" id="resumoAp"></div>
       <div class="ctrl" style="margin-top:0"><div class="legenda" id="legendaAp" style="margin-left:0"></div></div>
       <div class="grafico"><svg class="g" id="svgAp" viewBox="0 0 1000 300" preserveAspectRatio="none" role="img" aria-label="Patrimônio e total aportado desde o início"></svg><div class="dica" id="dicaAp"></div></div>
-      <div class="nota">O total aportado são os depósitos em reais na Binance, a única entrada de dinheiro novo. Cada ponto na linha tracejada é um aporte.</div>
+      <div class="nota">O aportado líquido são os depósitos em reais na Binance menos os saques em reais para o banco. Cada ponto na linha tracejada é um aporte.</div>
     </section>
     <section class="painel cheia" aria-label="Lista de aportes"><h2>Todos os aportes</h2><ul class="lista" id="listaAp"></ul></section>
   </div>
@@ -398,7 +398,7 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
         <span class="seg" id="agrupar"><button data-v="ativo" aria-pressed="true">Por ativo</button><button data-v="carteira">Por carteira</button></span>
       </span></h2>
       <div class="resumoAp" id="resumoAtivos"></div>
-      <table><thead id="cabAtivos"><tr><th data-col="ativo">Ativo<span class="seta"></span></th><th class="ocm" data-col="q">Quantidade<span class="seta"></span></th><th class="ocm" data-col="avg">Preço médio<span class="seta"></span></th><th class="ocm" data-col="p">Preço<span class="seta"></span></th><th data-col="d1">24 h<span class="seta"></span></th><th data-col="v">Valor<span class="seta"></span></th><th data-col="res">Resultado<span class="seta"></span></th><th data-col="roi" title="Retorno sobre tudo o que a moeda custou, contando o que as vendas já renderam">ROI<span class="seta"></span></th><th class="ocm" data-col="peso">Peso<span class="seta"></span></th></tr></thead><tbody id="ativos"></tbody></table>
+      <table><thead id="cabAtivos"><tr><th data-col="ativo">Ativo<span class="seta"></span></th><th class="ocm" data-col="q">Quantidade<span class="seta"></span></th><th class="ocm" data-col="avg">Preço médio<span class="seta"></span></th><th class="ocm" data-col="p">Preço<span class="seta"></span></th><th data-col="d1">24 h<span class="seta"></span></th><th data-col="v">Valor<span class="seta"></span></th><th data-col="res" title="O que você ganharia ou perderia vendendo esta moeda hoje, pelo preço médio">Em aberto<span class="seta"></span></th><th data-col="roi" title="Retorno sobre tudo o que a moeda custou, contando o que as vendas já renderam">Retorno<span class="seta"></span></th><th class="ocm" data-col="peso">Peso<span class="seta"></span></th></tr></thead><tbody id="ativos"></tbody></table>
       <div class="nota" style="margin-top:8px">Preço médio e resultado contam desde que a moeda entrou na carteira, pelo preço daquele dia. Transferências entre as suas carteiras não mudam o preço médio. A coluna 24 h compara o preço de agora com o fechamento de ontem.</div>
     </section>
     <section class="painel cheia" aria-label="Quem mais rendeu">
@@ -443,7 +443,7 @@ if (CARTEIRA_DADOS) {
   } catch(e){}
 }
 function aoGravarCarteira(k, v){
-  var campo = {"cripto-v1-diario":"diario", "cripto-v1-classe":"classe", "cripto-v1-binance":"binanceCsv"}[k];
+  var campo = {"cripto-v1-diario":"diario", "cripto-v1-classe":"classe", "cripto-v1-binance":"binanceCsv", "cripto-v1-naogolpe":"naoGolpe"}[k];
   if (!campo || !CARTEIRA_DADOS) return;
   CARTEIRA_DADOS[campo] = v;
   CARTEIRA_DADOS.atualizadoEm = new Date().toISOString();
@@ -509,7 +509,7 @@ const TOKENS = {
   'solana:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB':'USD',
 };
 // sobe quando o histórico passa a guardar algo novo; um histórico de versão antiga é refeito sozinho
-const VERSAO_HIST = 2;
+const VERSAO_HIST = 3;   // 3: saque em reais vira resgate para o banco e moedas marcadas como "não é golpe" (04/10/2026)
 const LS = { precos:'cripto-v1-precos', hist:'cripto-v1-hist', csv:'cripto-v1-binance', diario:'cripto-v1-diario', visita:'cripto-v1-visita', tema:'cripto-v1-tema', vivo:'cripto-v1-vivo', classe:'cripto-v1-classe' };
 const lsGet = (k, d) => { try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } };
 // o caderno do Drive é avisado mesmo quando o navegador recusa guardar a cópia (sem espaço): antes a anotação nem chegava ao Drive
@@ -827,7 +827,7 @@ function contabilizar(ev, precos, todos){
     }
   }
   const mapaS = new Map(saidas.filter(s => s.chegou > 0).map(s => [s.x, s])), mapaE = new Map(entradas.filter(e => e.resto < e.q - 1e-12).map(e => [e.x, e]));
-  let aportado = 0; const mov = [];
+  let aportado = 0, resgatado = 0; const mov = [];
   for(const x of txs){
     const d = dia(x.t);
     for(const e of x.ev.filter(e => e.taxa)){ const q = -e.q; sair(e.g, q); taxas[e.g] = (taxas[e.g] || 0) + q * P(e.g, d); }
@@ -871,8 +871,11 @@ function contabilizar(ev, precos, todos){
       // saque da Binance que não chegou em nenhuma carteira sua fica registrado como pendência
       // só o saque de verdade (op "saque" do CSV); taxa ou saída avulsa na Binance não é dinheiro "a caminho"
       const saque = x.rede === 'binance' && x.op === 'saque';
-      tipo = saque ? 'saque' : 'envio'; valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0);
-      outs.forEach(([g, q]) => { sair(g, q); if(saque){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += q; t.datas.push(x.t); } });
+      // saque em reais vai para a conta do banco: é dinheiro que voltou para você, não "a caminho" (decisão dele, 04/10/2026)
+      const banco = saque && outs.every(([g]) => g === 'BRL');
+      tipo = banco ? 'saqueBanco' : saque ? 'saque' : 'envio'; valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0);
+      if(banco) resgatado += valOut;
+      outs.forEach(([g, q]) => { sair(g, q); if(saque && !banco){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += q; t.datas.push(x.t); } });
     } else if(ins.length){
       tipo = x.rede === 'binance' || !x.inic ? 'recebimento' : 'resgate'; valIn = ins.reduce((a, [g, q]) => a + q * P(g, d), 0);
       ins.forEach(([g, q]) => entrar(g, q, q * P(g, d)));
@@ -881,7 +884,7 @@ function contabilizar(ev, precos, todos){
   }
   // contrato chamado, função e contraparte de cada movimento, para a classificação do diário
   mov.forEach(m => { const x = porH[m.id]; if(!x) return; const e0 = x.ev.find(e => e.alvo) || x.ev.find(e => e.metodo); if(e0){ m.alvo = e0.alvo; m.metodo = e0.metodo; } const ec = x.ev.find(e => !e.taxa && (e.q > 0 ? e.de : e.para)); if(ec) m.contra = ec.q > 0 ? ec.de : ec.para; });
-  return { pos, transito, taxas, aportado, mov, resultadoPools: Object.fromEntries(Object.entries(caixasPool).map(([p, c]) => [p, { resultado:c.resultado, aberto:c.custo }])) };
+  return { pos, transito, taxas, aportado, resgatado, mov, resultadoPools: Object.fromEntries(Object.entries(caixasPool).map(([p, c]) => [p, { resultado:c.resultado, aberto:c.custo }])) };
 }
 
 /* série diária de patrimônio, por rede */
@@ -905,6 +908,7 @@ function montarSerie(ev, precos){
       hold[e.rede][e.g] = (hold[e.rede][e.g] || 0) + e.q;
       if(e.poolPar && !e.poolPresa && e.q < 0){ const ep = emPool[e.poolPar] || (emPool[e.poolPar] = { rede:e.rede, q:{} }); ep.q[e.g] = (ep.q[e.g] || 0) - e.q; }
       if(e.op === 'aporte' && e.g === 'BRL') aporte += e.q;
+      if(e.op === 'saque' && e.g === 'BRL') aporte += e.q;   // q negativo: a linha é o aportado líquido
     }
     const redes = {}; let total = 0;
     const pr = g => g === 'BRL' ? 1 : precoEm(precos[g], d);
@@ -931,8 +935,8 @@ async function refazerHistorico(){
   ev.forEach(e => { e.g = grupoDe(e); if(e.lp) e.excluido = true; const p = txPool[e.h]; if(p && !e.taxa){ e.poolTx = p.nome; e.poolPar = p.par; e.poolPresa = p.status === 'presa'; e.poolRem = txRem.has(e.h); } });
   // tokens-golpe: nunca movimentados por você e sem preço conhecido
   const mexidos = new Set(ev.filter(e => e.inic && !e.excluido).map(e => e.g));
-  const golpe = new Set();
-  ev.forEach(e => { if(!e.excluido && !GRUPOS[e.g] && !mexidos.has(e.g) && e.rede !== 'binance'){ golpe.add(e.g); e.excluido = true; } });
+  const golpe = new Set(), naoGolpe = new Set(naoGolpeLista());
+  ev.forEach(e => { if(!e.excluido && !GRUPOS[e.g] && !mexidos.has(e.g) && e.rede !== 'binance' && !naoGolpe.has(e.g)){ golpe.add(e.g); e.excluido = true; } });
   const usados = [...new Set(ev.filter(e => !e.excluido).map(e => e.g))];
   const inicio = Math.min(...ev.map(e => e.t));
   const precos = await atualizarPrecos(usados.concat(['USD']), Date.parse(dia(inicio)), aviso);
@@ -941,7 +945,7 @@ async function refazerHistorico(){
   const serie = montarSerie(ev, precos);
   // quantidade que o histórico diz existir hoje, por rede e grupo
   const fim = {}; ev.filter(e => !e.excluido).forEach(e => { const k = e.rede + '|' + e.g; fim[k] = (fim[k] || 0) + e.q; });
-  const hist = { versao: VERSAO_HIST, geradoEm: Date.now(), serie, pos: conta.pos, transito: conta.transito, taxas: conta.taxas, aportado: conta.aportado, mov: conta.mov.reverse(), pools, recompensas, farms, resultadoPools: conta.resultadoPools, golpe: golpe.size, golpeLista: [...golpe].map(g => ({ g, rede:g.split(':')[0], sim:simDe(g), nome:nomeDe(g) })), fim, info: infoToken, avisos: avisosMontagem.slice() };
+  const hist = { versao: VERSAO_HIST, geradoEm: Date.now(), serie, pos: conta.pos, transito: conta.transito, taxas: conta.taxas, aportado: conta.aportado, resgatado: conta.resgatado, mov: conta.mov.reverse(), pools, recompensas, farms, resultadoPools: conta.resultadoPools, golpe: golpe.size, golpeLista: [...golpe].map(g => ({ g, rede:g.split(':')[0], sim:simDe(g), nome:nomeDe(g) })), fim, info: infoToken, avisos: avisosMontagem.slice() };
   if(!lsSet(LS.hist, hist)){ hist.serie = hist.serie.filter((x, i, a) => i % 2 === 0 || i === a.length - 1); lsSet(LS.hist, hist); }
   return hist;
 }
@@ -1096,10 +1100,12 @@ function ultimoCsvBinance(){
   let t = null; try{ const ev = eventosBinance(csv); t = ev.length ? ev[ev.length - 1].t : null; }catch(e){}
   csvAteCache = { n:csv.length, t }; return t;
 }
+// o que você pôs e não tirou: aportes em reais menos os saques em reais para o banco
+const aportLiq = () => HIST ? (HIST.aportado || 0) - (HIST.resgatado || 0) : 0;
 function totalVivo(){ return linhasVivas().reduce((a, x) => a + x.v, 0); }
 
 function desenharTopo(){
-  const total = totalVivo(), ap = HIST ? HIST.aportado : 0;
+  const total = totalVivo(), ap = aportLiq();
   document.getElementById('total').textContent = VIVO ? din(total) : '—';
   const nRedes = new Set(linhasVivas().filter(x => x.v >= 1).map(x => x.rede)).size;
   // a Binance não tem leitura ao vivo: o saldo dela é a soma do último CSV, e a tela diz de quando
@@ -1116,7 +1122,7 @@ function desenharTopo(){
 function serieVisivel(periodo = est.periodo){
   if(!HIST || !HIST.serie.length) return [];
   let s = HIST.serie.slice();
-  if(VIVO){ const hoje = dia(Date.now()); const ult = s[s.length-1]; const r = {}; ORDEM.forEach(x => r[x] = 0); linhasVivas().forEach(x => r[x.rede] += x.v); const ponto = { d:hoje, v:totalVivo(), a:HIST.aportado, r, usd:VIVO.usd }; if(ult.d === hoje) s[s.length-1] = ponto; else s.push(ponto); }
+  if(VIVO){ const hoje = dia(Date.now()); const ult = s[s.length-1]; const r = {}; ORDEM.forEach(x => r[x] = 0); linhasVivas().forEach(x => r[x.rede] += x.v); const ponto = { d:hoje, v:totalVivo(), a:aportLiq(), r, usd:VIVO.usd }; if(ult.d === hoje) s[s.length-1] = ponto; else s.push(ponto); }
   if(periodo) s = s.filter(x => x.d >= dia(Date.now() - periodo * DIA_MS));
   return s;
 }
@@ -1159,7 +1165,7 @@ function grafico(o){
     if(o.aportes){ let da = ''; S.forEach((x, i) => { const y = ys(cv(x.a, x)).toFixed(1); da += i ? ` H${xs(i).toFixed(1)} V${y}` : `M${xs(0)},${y}`; }); h += `<path d="${da}" fill="none" stroke="var(--aporte)" stroke-width="2" stroke-dasharray="6 5"/>`; }
     h += `<polyline points="${lp}" fill="none" stroke="var(--area)" stroke-width="2.2" stroke-linejoin="round"/>`;
     if(o.aportes) S.forEach((x, i) => { if(i && x.a - S[i-1].a >= 0.5) h += `<circle class="marcaAp" cx="${xs(i).toFixed(1)}" cy="${ys(cv(x.a, x)).toFixed(1)}" r="3.5" fill="var(--aporte)" stroke="var(--surface)" stroke-width="1.5"/>`; });
-    leg.innerHTML = `<span><i style="background:var(--area)"></i>Patrimônio</span>` + (o.aportes ? `<span><i style="background:var(--aporte)"></i>Total aportado</span>` : '');
+    leg.innerHTML = `<span><i style="background:var(--area)"></i>Patrimônio</span>` + (o.aportes ? `<span><i style="background:var(--aporte)"></i>Aportado líquido</span>` : '');
   } else {
     let base = S.map(() => 0);
     for(const r of ORDEM){ const topo = S.map((x, i) => base[i] + cv(x.r[r] || 0, x)); if(topo.every((v, i) => v === base[i])) continue; const pts = topo.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ') + ' ' + base.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).reverse().join(' '); h += `<polygon points="${pts}" fill="var(--n-${r})" fill-opacity=".85"/>`; base = topo; }
@@ -1216,12 +1222,13 @@ function desenharAportes(){
   const aps = HIST ? HIST.mov.filter(m => m.tipo === 'aporte') : [];
   document.getElementById('contAportes').textContent = aps.length || '';
   if(!HIST){ document.getElementById('resumoAp').innerHTML = '<p class="vazio">Aparece quando o histórico terminar de ser montado.</p>'; return; }
-  const total = totalVivo(), ap = HIST.aportado;
+  const total = totalVivo(), bruto = HIST.aportado, res = HIST.resgatado || 0, ap = aportLiq();
   const cx = (rot, val, cls = '') => `<div><span>${rot}</span><b class="num v ${cls}">${val}</b></div>`;
-  document.getElementById('resumoAp').innerHTML = cx('Total aportado', din(ap)) + (VIVO ? cx('Patrimônio agora', din(total)) + cx('Resultado', din(total - ap) + '  ' + pct((total - ap) / ap), sinal(total - ap)) : '') +
-    cx('Aportes', aps.length) + (aps.length ? cx('Último aporte', fmtData(aps[0].t)) + cx('Valor médio', din(ap / aps.length)) : '');
+  document.getElementById('resumoAp').innerHTML = cx('Aportado líquido', din(ap)) + (res > 0.005 ? cx('Aportes em reais', din(bruto)) + cx('Sacado para o banco', din(res)) : '') +
+    (VIVO ? cx('Patrimônio agora', din(total)) + cx('Ganho ou perda total', din(total - ap) + '  ' + (ap > 0 ? pct((total - ap) / ap) : '—'), sinal(total - ap)) : '') +
+    cx('Aportes', aps.length) + (aps.length ? cx('Último aporte', fmtData(aps[0].t)) + cx('Valor médio', din(bruto / aps.length)) : '');
   grafico({ svg:'svgAp', dica:'dicaAp', leg:'legendaAp', S:serieVisivel(0), modo:'linha', aportes:true });
-  let soma = ap;
+  let soma = bruto;
   document.getElementById('listaAp').innerHTML = aps.map(m => { const li = `<li class="lin"><span>${fmtData(m.t)}<small class="nota" style="display:block">Total aportado até aqui: <span class="v">${din(soma)}</span></small></span><b class="num v">${din(m.valIn)}</b></li>`; soma -= m.valIn; return li; }).join('') || '<li class="vazio">Nenhum aporte encontrado.</li>';
 }
 
@@ -1472,12 +1479,24 @@ function passoGrafo(){
 }
 const EXPLORADOR = { pulsechain:a => `https://scan.pulsechain.com/token/${a}`, base:a => `https://basescan.org/token/${a}`, solana:a => `https://solscan.io/token/${a}`, bsc:a => `https://bscscan.com/token/${a}` };
 const CHAIN_ID = { pulsechain:369, base:8453, bsc:56 };
+// Moedas que você disse que não são golpe (decisão dele, 04/10/2026): ficam no caderno e voltam para o total
+const naoGolpeLista = () => (CARTEIRA_DADOS && Array.isArray(CARTEIRA_DADOS.naoGolpe)) ? CARTEIRA_DADOS.naoGolpe.slice() : [];
+function marcarGolpe(g, naoE){
+  const l = new Set(naoGolpeLista()); if(naoE) l.add(g); else l.delete(g);
+  lsSet('cripto-v1-naogolpe', [...l]);
+  document.getElementById('painelGolpe').hidden = true;
+  status(naoE ? 'Marcada como não golpe. Refazendo o histórico…' : 'Voltou para a lista de golpes. Refazendo o histórico…', true);
+  refazerTudo();
+}
 function abrirGolpes(r){
   const el = document.getElementById('painelGolpe'), l = ((HIST && HIST.golpeLista) || []).filter(x => x.rede === r);
   el.innerHTML = `<div class="pg-topo">${icone(r, 18)}<b>${l.length} tokens-golpe na ${REDES[r].nome}</b><button class="fechar" aria-label="Fechar">×</button></div>
     <p class="nota" style="margin:6px 0 10px;font-size:12.5px;color:var(--muted)">Chegaram sem você pedir. <b>Não abra os links, não aprove e não tente vender</b>: é assim que golpistas drenam carteiras. Eles já não entram no seu total. O que dá para fazer com segurança: conferir no explorador e revogar aprovações antigas.</p>
     ${CHAIN_ID[r] ? `<a class="btn" style="display:inline-block;margin-bottom:10px;font-size:13px" href="https://revoke.cash/address/${EU_EVM}?chainId=${CHAIN_ID[r]}" target="_blank" rel="noopener">Revisar aprovações no revoke.cash</a>` : ''}
-    <ul class="lista">${l.map(x => { const a = x.g.split(':')[1]; return `<li class="lin"><span><b>${esc(x.sim)}</b><small class="nota" style="display:block">${esc(x.nome || '')}</small></span>${EXPLORADOR[r] ? `<a class="nota" href="${EXPLORADOR[r](a)}" target="_blank" rel="noopener">explorador ↗</a>` : ''}</li>`; }).join('')}</ul>`;
+    <ul class="lista">${l.map(x => { const a = x.g.split(':')[1]; return `<li class="lin"><span><b>${esc(x.sim)}</b><small class="nota" style="display:block">${esc(x.nome || '')}</small></span><span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${EXPLORADOR[r] ? `<a class="nota" href="${EXPLORADOR[r](a)}" target="_blank" rel="noopener">explorador ↗</a>` : ''}<button class="btn" data-naogolpe="${esc(x.g)}" style="font-size:12.5px">Não é golpe</button></span></li>`; }).join('')}</ul>
+    ${naoGolpeLista().filter(g => g.split(':')[0] === r).length ? `<p class="nota" style="margin:12px 0 6px;font-size:12.5px">Você marcou como não golpe (entram no total):</p><ul class="lista">${naoGolpeLista().filter(g => g.split(':')[0] === r).map(g => `<li class="lin"><span><b>${esc(simDe(g))}</b></span><button class="btn" data-egolpe="${esc(g)}" style="font-size:12.5px">É golpe</button></li>`).join('')}</ul>` : ''}`;
+  el.querySelectorAll('[data-naogolpe]').forEach(b => b.addEventListener('click', () => { if(confirm(`Marcar ${b.closest('li').querySelector('b').textContent} como moeda sua, que não é golpe? Ela volta para o total e para o histórico.`)) marcarGolpe(b.dataset.naogolpe, true); }));
+  el.querySelectorAll('[data-egolpe]').forEach(b => b.addEventListener('click', () => marcarGolpe(b.dataset.egolpe, false)));
   el.hidden = false;
 }
 function zoomGrafo(fator, cx = GF.W / 2, cy = GF.H / 2){
@@ -1531,6 +1550,7 @@ function desenharMapaFluxo(){
     if(m.tipo === 'aporte') add('entrou', 'banco', 'binance', m.valIn);
     else if(m.tipo === 'transferencia' && m.destino && m.destino !== m.rede) add('andou', m.rede, m.destino, m.valOut);
     else if(m.tipo === 'saque') add('saiu', 'binance', 'fora', m.valOut);
+    else if(m.tipo === 'saqueBanco') add('saiu', 'binance', 'banco', m.valOut);
     else if(m.tipo === 'envio' || m.tipo === 'recebimento'){
       const c = classeDe(m).cat;
       if(/Liquidez|Farm|Troca|Poeira|Golpe/.test(c)) continue;
@@ -1602,13 +1622,14 @@ function desenharAtivos(){
 function desenharResumoAtivos(){
   const el = document.getElementById('resumoAtivos');
   if(!VIVO || !HIST){ el.innerHTML = ''; return; }
-  const total = totalVivo(), ap = HIST.aportado;
+  const total = totalVivo(), ap = aportLiq();
   let naoReal = 0, real = 0; const vistos = new Set();
   linhasVivas().forEach(x => { const p = HIST.pos[x.g]; if(p && p.q > 1e-12) naoReal += x.v - p.custo / p.q * x.q; });
   Object.values(HIST.pos).forEach(p => real += p.realizado || 0);
   const cx = (rot, val, cls = '', dica = '') => `<div title="${dica}"><span>${rot}</span><b class="num v ${cls}">${val}</b></div>`;
-  el.innerHTML = cx('ROI da carteira', pct((total - ap) / ap), sinalPct((total - ap) / ap), 'Patrimônio de hoje sobre o total aportado') + cx('Resultado sobre o aportado', din(total - ap), sinal(total - ap)) +
-    cx('Lucro ou prejuízo em aberto', din(naoReal), sinal(naoReal), 'O que você ganharia ou perderia vendendo tudo hoje, pelo preço médio') + cx('Já realizado em vendas', din(real), sinal(real), 'Soma do que as vendas renderam acima ou abaixo do preço médio');
+  const r = ap > 0 ? (total - ap) / ap : NaN;
+  el.innerHTML = cx('Rendimento total', pct(r), sinalPct(r), 'Patrimônio de hoje comparado com o aportado líquido (aportes em reais menos saques em reais). Cripto que chegou de fora conta como ganho.') + cx('Ganho ou perda total', din(total - ap), sinal(total - ap), 'Patrimônio de hoje menos o aportado líquido') +
+    cx('Em aberto (não vendido)', din(naoReal), sinal(naoReal), 'O que você ganharia ou perderia vendendo tudo hoje, pelo preço médio. Ainda não é dinheiro na mão.') + cx('Já ganho em vendas', din(real), sinal(real), 'Soma do que as vendas renderam acima ou abaixo do preço médio. Não inclui o resultado das pools.');
 }
 function desenharLiquidez(){
   const el = document.getElementById('liquidez'); const total = totalVivo();
@@ -1650,6 +1671,7 @@ function descreverMov(m){
   if(m.tipo === 'transferencia' && m.destino === m.rede) return `Saque de ${lado(m.outs)} devolvido pela Binance`;
   if(m.tipo === 'transferencia') return `Transferiu ${lado(m.outs)} da ${REDES[m.rede].nome} para a ${REDES[m.destino].nome}`;
   if(m.tipo === 'saque') return `Sacou ${lado(m.outs)} da Binance, sem chegada em carteira sua`;
+  if(m.tipo === 'saqueBanco') return `Sacou ${lado(m.outs)} da Binance para o banco`;
   if(m.tipo === 'pool') return `Colocou ${lado(m.outs)} na pool ${esc(m.pool)}${m.ins.length ? ' e recebeu ' + lado(m.ins) : ''}`;
   if(m.tipo === 'poolSaida') return `Retirou ${lado(m.ins)} da pool ${esc(m.pool)}`;
   if(m.tipo === 'envio') return `Enviou ${lado(m.outs)} para fora das suas carteiras`;
@@ -1658,7 +1680,7 @@ function descreverMov(m){
   return m.tipo;
 }
 /* classificação do diário: automática quando os dados bastam; o resto fica "A classificar" para você escolher */
-const CATEGORIAS = ['Aporte', 'Compra', 'Venda', 'Troca', 'Conversão de poeira em BNB', 'Transferência entre carteiras', 'Ponte entre redes', 'Saque devolvido', 'Saque sem destino conhecido', 'Depósito vindo de fora', 'Liquidez: entrada', 'Liquidez: saída', 'Farm: depósito', 'Farm: saque', 'Farm: recompensa', 'Airdrop', 'Recebimento de terceiros', 'Envio para terceiros', 'Envio para corretora', 'Poeira (golpe)', 'Drenado (golpe)', 'Golpe / ignorar', 'Outro'];
+const CATEGORIAS = ['Aporte', 'Compra', 'Venda', 'Troca', 'Conversão de poeira em BNB', 'Transferência entre carteiras', 'Ponte entre redes', 'Saque devolvido', 'Saque sem destino conhecido', 'Resgate para o banco', 'Depósito vindo de fora', 'Liquidez: entrada', 'Liquidez: saída', 'Farm: depósito', 'Farm: saque', 'Farm: recompensa', 'Airdrop', 'Recebimento de terceiros', 'Envio para terceiros', 'Envio para corretora', 'Poeira (golpe)', 'Drenado (golpe)', 'Golpe / ignorar', 'Outro'];
 function classificar(m){
   const K = m.alvo && CONTRATOS[m.rede] ? CONTRATOS[m.rede][m.alvo] : null, Kc = m.contra && CONTRATOS[m.rede] ? CONTRATOS[m.rede][m.contra] : null;
   const farm = f => f && (HIST.farms || []).includes(f);
@@ -1667,6 +1689,7 @@ function classificar(m){
   if(m.tipo === 'aporte') return { cat:'Aporte', certo:true };
   if(m.tipo === 'transferencia') return m.destino === m.rede ? { cat:'Saque devolvido', certo:true } : { cat: m.rede !== 'binance' && m.destino !== 'binance' ? 'Ponte entre redes' : 'Transferência entre carteiras', certo:true };
   if(m.tipo === 'saque') return { cat:'Saque sem destino conhecido', certo:true };
+  if(m.tipo === 'saqueBanco') return { cat:'Resgate para o banco', certo:true };
   if(m.tipo === 'pool') return { cat:'Liquidez: entrada', via, certo:true };
   if(m.tipo === 'poolSaida') return { cat:'Liquidez: saída', via, certo:true };
   if(m.tipo === 'troca'){
@@ -1688,7 +1711,7 @@ function classeDe(m){ const c = classificar(m); return CLASSE[m.id] ? { cat:CLAS
 function desenharDiario(){
   const el = document.getElementById('diario');
   if(!HIST){ el.innerHTML = '<li class="vazio">Aparece quando o histórico terminar de ser montado.</li>'; return; }
-  const filtros = { todos:() => true, troca:m => m.tipo === 'troca', aporte:m => m.tipo === 'aporte', mov:m => ['envio','recebimento','resgate','transferencia','saque','pool','poolSaida'].includes(m.tipo), nota:m => DIARIO[m.id], duvida:m => !classeDe(m).certo };
+  const filtros = { todos:() => true, troca:m => m.tipo === 'troca', aporte:m => m.tipo === 'aporte', mov:m => ['envio','recebimento','resgate','transferencia','saque','saqueBanco','pool','poolSaida'].includes(m.tipo), nota:m => DIARIO[m.id], duvida:m => !classeDe(m).certo };
   const lista = HIST.mov.filter(filtros[est.filtro]);
   const nDuvida = HIST.mov.filter(filtros.duvida).length;
   document.getElementById('contDiario').textContent = HIST.mov.length + (nDuvida ? ` · ${nDuvida} a classificar` : '');
@@ -1725,7 +1748,7 @@ function desenharPendencias(){
   const usd = (VIVO && VIVO.usd) || 5;
   if(HIST){
     for(const [g, t] of Object.entries(HIST.transito || {})){ if(t.q > 1e-9){ const v = t.q * ((VIVO && VIVO.precos[g]) || 0); if(v >= 5) itens.push([`${qtd(t.q)} ${esc(simDe(g))} sacados da Binance não chegaram em nenhuma carteira sua`, `Saques de ${[...new Set((t.datas || []).map(x => nomeMes[new Date(x).getMonth()] + '/' + String(new Date(x).getFullYear()).slice(2)))].join(', ')}. Hoje valeriam ${din(v)} e contam como saída do patrimônio.${g === 'BNB' ? ' Lembrete na nota Crypto para 01/10/2026.' : ''}`]); } }
-    if(HIST.golpe) itens.push([`${HIST.golpe} tokens-golpe ocultos`, 'Chegaram sem você pedir, com nomes como “Claim…”. Não abra os links nem tente vender.']);
+    if(HIST.golpe) itens.push([`${HIST.golpe} tokens-golpe ocultos`, 'Chegaram sem você pedir, com nomes como “Claim…”. Não abra os links nem tente vender. Para ver quais são, ou dizer que um deles é seu, toque na bolha vermelha do mapa.']);
     (HIST.pools || []).filter(p => p.status === 'presa').forEach(p => itens.push([`Pool ${esc(p.nome)} presa numa farm desativada`, 'O contrato da farm não existe mais. O valor está na aba Pools.']));
     if(Date.now() - HIST.geradoEm > 7 * DIA_MS) itens.push(['Histórico com mais de uma semana', 'Clique em Refazer histórico para incluir os movimentos recentes no gráfico e no diário.']);
     (HIST.avisos || []).forEach(a => itens.push([a, 'Tente Refazer histórico mais tarde.']));
@@ -1937,12 +1960,33 @@ document.addEventListener('keydown', e => {
   }
 });
 marcarAnot(); /* primeiro instantâneo: o estado com que o site abriu */
+/* Junta dois CSVs da Binance sem repetir linhas (decisão dele, 04/10/2026): assim dá para mandar só o CSV
+   dos últimos meses. A mesma linha é a mesma hora, operação, moeda e quantidade; se ela aparece duas vezes
+   num arquivo (duas operações iguais no mesmo segundo), continua duas vezes. Cabeçalhos diferentes: null. */
+function juntarCsvBinance(velho, novo){
+  const linhas = t => t.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim());
+  const lv = linhas(velho), ln = linhas(novo);
+  if(!lv.length || !ln.length || lv[0].trim() !== ln[0].trim()) return null;
+  const cab = parseLinha(lv[0]).map(c => c.trim()), ix = ['Tempo', 'Operação', 'Moeda', 'Alterar'].map(n => cab.indexOf(n));
+  if(ix.some(i => i < 0)) return null;
+  const chave = l => { const c = parseLinha(l); return ix.map(i => String(c[i] || '').trim()).join('|'); };
+  const conta = l => l.slice(1).reduce((m, x) => { const k = chave(x); (m[k] = m[k] || []).push(x); return m; }, {});
+  const cv = conta(lv), cn = conta(ln), fora = [];
+  let novas = 0;
+  for(const [k, l] of Object.entries(cn)){ const ja = (cv[k] || []).length; if(l.length > ja){ fora.push(...l.slice(ja)); novas += l.length - ja; } }
+  return { txt: [lv[0], ...lv.slice(1), ...fora].join('\n'), novas };
+}
 async function lerArquivoCsv(f){
   const txt = await f.text();
   try{ const ev = eventosBinance(txt);
-    // CSV novo substitui o antigo inteiro: se ele começa depois ou tem menos linhas, o histórico antigo se perderia
     const velho = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
     let evVelho = []; try{ evVelho = velho ? eventosBinance(velho) : []; }catch(e){}
+    const junto = evVelho.length ? juntarCsvBinance(velho, txt) : null;
+    if(junto){
+      if(!junto.novas){ status('Esse CSV não traz nenhuma linha nova: tudo já estava guardado.'); return; }
+      lsSet(LS.csv, junto.txt); status(`CSV da Binance juntado ao guardado: ${junto.novas} linha(s) nova(s). Refazendo o histórico…`, true); refazerTudo(); return;
+    }
+    // cabeçalho diferente do guardado: o CSV novo substitui o antigo inteiro, e se ele tem menos história o app pergunta antes
     if(evVelho.length){
       const ini = l => l.length ? Math.min(...l.map(x => x.t)) : 0, fmt = t => new Date(t).toLocaleDateString('pt-BR');
       if((ini(ev) > ini(evVelho) + DIA_MS || ev.length < evVelho.length) &&

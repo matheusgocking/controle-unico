@@ -96,3 +96,16 @@ test("Reserva, fixo e pendência aceitam o valor com a vírgula automática", as
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Média da casa: últimos 12 meses fechados, só a partir de agosto de 2026", async () => {
+  const { ctx, f } = await abrir();
+  const t = await f.evaluate(() => {
+    const mk = (data, valor) => ({ id:data + valor, data, quem:"Pessoa Um", descricao:"-", categoria:"Mercado", valor });
+    livro.casa.lancamentos.push(mk("2026-07-20", 50), mk("2026-08-10", 1000), mk("2026-09-10", 2000));
+    ref = new Date(2026, 9, 1); aba = "casa"; desenhar();
+    return document.querySelector(".situ .nums").innerText;
+  });
+  assert.match(t, /R\$\s?1\.500,00/);           // (1000 + 2000) / 2, julho fica de fora
+  assert.match(t, /últimos 2 meses fechados/);
+  await ctx.close();
+});

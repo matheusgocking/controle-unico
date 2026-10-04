@@ -1125,6 +1125,7 @@ function telaDinheiro(){
 
 // O card do alto da Casa, no mesmo desenho do card da aba Tudo (pedido dele, 28/09/2026):
 // quem pagou quanto, o mês contra o anterior e a média, e a caixa dizendo se o mês está acima da média.
+const CASA_MEDIA_DESDE = "2026-08";   // primeiro mês com a casa lançada do começo ao fim
 function totalCasaDoMes(d){
   const k = chaveMes(d);
   return soma(livro.casa.lancamentos.filter(l => (l.data || "").slice(0, 7) === k), l => l.valor);
@@ -1136,15 +1137,20 @@ function cardCasa(c){
   const nome = MESES[ref.getMonth()], Nome = nome[0].toUpperCase() + nome.slice(1);
   const doMes = livro.casa.lancamentos.filter(noMes).length;
   const antes = totalCasaDoMes(new Date(ref.getFullYear(), ref.getMonth() - 1, 1));
-  // média dos meses fechados do ano que tiveram compra (o mês aberto e o corrente ficam de fora)
+  // Média dos últimos 12 meses fechados antes do mês aberto, só a partir do primeiro mês lançado inteiro
+  // (decisão dele, 04/10/2026: julho de 2026 tem só parte das compras e puxaria a média para baixo).
   const meses = [];
-  for (let m = 0; m < ref.getMonth(); m++){ const v = totalCasaDoMes(new Date(ref.getFullYear(), m, 1)); if (v > 0.005) meses.push(v); }
+  for (let m = 1; m <= 12; m++){
+    const d = new Date(ref.getFullYear(), ref.getMonth() - m, 1);
+    if (chaveMes(d) < CASA_MEDIA_DESDE) break;
+    const v = totalCasaDoMes(d); if (v > 0.005) meses.push(v);
+  }
   const media = meses.length ? soma(meses) / meses.length : null;
   const dif = c.total - antes;
   const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
   const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}</b></div><p>${texto}</p></div>`;
   let v;
-  if (media === null) v = `<div class="veredito"><div class="topo-v"><b>Sem média ainda</b></div><p>A média aparece quando houver um mês fechado com compras neste ano.</p></div>`;
+  if (media === null) v = `<div class="veredito"><div class="topo-v"><b>Sem média ainda</b></div><p>A média aparece quando houver um mês fechado com compras, a partir de agosto de 2026.</p></div>`;
   else if (c.total > media + 0.005) v = caixa("warn", true, corrente ? "Já passou da média" : "Acima da média",
     `${corrente ? "Até hoje" : Nome} ${corrente ? "a casa gastou" : "gastou"} ${dinheiro(c.total - media)} a mais que a média de ${dinheiro(media)}.`);
   else v = caixa("pos", false, corrente ? "Dentro da média" : "Abaixo da média",
@@ -1161,7 +1167,7 @@ function cardCasa(c){
       <div class="linha-k">
         <div class="k"><span>Balança</span><b style="font-size:18px;white-space:normal">${escH(balanca(c, p1, p2))}</b><small>quem pagou mais no mês</small></div>
         <div class="k"><span>Mês passado</span><b>${dinheiro(antes)}</b><small>${antes > 0.005 ? (dif >= 0 ? dinheiro(dif) + " a menos que agora" : dinheiro(-dif) + " a mais que agora") : "sem compras"}</small></div>
-        <div class="k destaque"><span>Média por mês</span>${media === null ? nd("nenhum mês fechado neste ano") : `<b>${dinheiro(media)}</b><small>${meses.length} ${meses.length === 1 ? "mês fechado" : "meses fechados"} de ${ref.getFullYear()}</small>`}</div>
+        <div class="k destaque"><span>Média por mês</span>${media === null ? nd("nenhum mês fechado ainda") : `<b>${dinheiro(media)}</b><small>${meses.length === 1 ? "1 mês fechado" : `últimos ${meses.length} meses fechados`}</small>`}</div>
       </div>
     </div></div>
   </section>
