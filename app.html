@@ -1408,6 +1408,9 @@ document.getElementById("arquivoJson").onchange = async e => {
   catch(err){ alert("Não consegui ler esse arquivo: " + err.message); }
 };
 function importarCadernos(j){
+  // a cópia da semana no Drive é o próprio caderno, sem o envelope do "Exportar dados"
+  if (j && j.caderno === "dinheiro" && !j.dinheiro) j = { dinheiro:j };
+  else if (j && j.caderno === "casa" && !j.casa) j = { casa:j };
   const vem = [];
   if (j.dinheiro && Array.isArray(j.dinheiro.lancamentos)) vem.push(["matheus", j.dinheiro, `${j.dinheiro.lancamentos.length} lançamentos e ${(j.dinheiro.gastosFixos || []).length} gastos fixos`]);
   if (j.casa && Array.isArray(j.casa.lancamentos)) vem.push(["casa", j.casa, `${j.casa.lancamentos.length} compras da casa`]);

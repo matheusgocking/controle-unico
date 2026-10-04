@@ -134,7 +134,13 @@ test("Junção das cópias: nada lançado em um aparelho some", async () => {
       // apagado lá, mudado aqui: fica (a mudança não se perde)
       mudadoAqui: J(base, { lancamentos:[{ id:"a", v:1 }, { id:"b", v:20 }] }, { lancamentos:[{ id:"a", v:1 }] }),
       // sem base (aparelho novo): as duas listas se somam
-      semBase: J(undefined, { l:[{ id:"a" }] }, { l:[{ id:"b" }] }, true)
+      semBase: J(undefined, { l:[{ id:"a" }] }, { l:[{ id:"b" }] }, true),
+      // outro aparelho gravou por cima sem ver o "c" daqui: o Drive não diz que apagou, então o "c" fica
+      porCima: J({ l:[{ id:"a" }, { id:"c" }] }, { l:[{ id:"a" }, { id:"c" }] }, { l:[{ id:"a" }, { id:"d" }] }, false, "", {}),
+      // o Drive diz que apagou o "c": sai
+      apagadoLa: J({ l:[{ id:"a" }, { id:"c" }] }, { l:[{ id:"a" }, { id:"c" }] }, { l:[{ id:"a" }] }, false, "", { "/l/#c":1 }),
+      // arquivo antigo, sem a lista de apagados: regra antiga (a ausência conta como apagado)
+      antigo: J({ l:[{ id:"a" }, { id:"c" }] }, { l:[{ id:"a" }, { id:"c" }] }, { l:[{ id:"a" }] }, false, "", null)
     };
   });
   assert.deepEqual(r.somam.lancamentos.map(x => x.id).sort(), ["a", "b", "c", "d"]);
@@ -143,6 +149,9 @@ test("Junção das cópias: nada lançado em um aparelho some", async () => {
   assert.equal(r.mesmo.divisao, 0.6);
   assert.deepEqual(r.mudadoAqui.lancamentos.map(x => x.id).sort(), ["a", "b"]);
   assert.deepEqual(r.semBase.l.map(x => x.id).sort(), ["a", "b"]);
+  assert.deepEqual(r.porCima.l.map(x => x.id).sort(), ["a", "c", "d"]);
+  assert.deepEqual(r.apagadoLa.l.map(x => x.id), ["a"]);
+  assert.deepEqual(r.antigo.l.map(x => x.id), ["a"]);
   await ctx.close();
 });
 
