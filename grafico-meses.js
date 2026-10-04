@@ -29,7 +29,7 @@ var GraficoMeses = (function(){
     }).join("");
     var grupos = serie.map(function(m, i){
       var x = esq + 6 + i * 44, mes = Number(m.k.slice(5, 7)) - 1, sel = m.k === opcoes.aberto;
-      var sobra = m.entrou - m.saiu;
+      var sobra = m.sobra != null ? m.sobra : m.entrou - m.saiu;   // quem manda a sobra (o Dinheiro, com a reserva) é quem sabe a conta
       var dica = CURTOS[mes] + "/" + m.k.slice(0, 4) + ": " + rotE.toLowerCase() + " " + din(m.entrou) + ", " + rotS.toLowerCase() + " " + din(m.saiu) +
                  " (" + (sobra < 0 ? "faltou " + din(-sobra) : "sobrou " + din(sobra)) + ")";
       return '<g class="gm-mes' + (sel ? " on" : "") + '" data-irmes="' + m.k + '" tabindex="0" role="button" aria-label="' + dica + '">' +

@@ -512,7 +512,8 @@ const TOKENS = {
 const VERSAO_HIST = 2;
 const LS = { precos:'cripto-v1-precos', hist:'cripto-v1-hist', csv:'cripto-v1-binance', diario:'cripto-v1-diario', visita:'cripto-v1-visita', tema:'cripto-v1-tema', vivo:'cripto-v1-vivo', classe:'cripto-v1-classe' };
 const lsGet = (k, d) => { try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } };
-const lsSet = (k, v) => { try{ localStorage.setItem(k, JSON.stringify(v)); if(window.aoGravarCarteira) aoGravarCarteira(k, v); return true; }catch(e){ return false; } };
+// o caderno do Drive é avisado mesmo quando o navegador recusa guardar a cópia (sem espaço): antes a anotação nem chegava ao Drive
+const lsSet = (k, v) => { let ok = true; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ ok = false; } if(window.aoGravarCarteira) aoGravarCarteira(k, v); return ok; };
 
 /* histórico da Solana gravado em 24/09/2026: vem do caderno no Drive (o servidor público não entrega o histórico a uma página) */
 const SOLANA_EVENTOS = (CARTEIRA_DADOS && CARTEIRA_DADOS.solanaEventos) || [];
@@ -855,8 +856,10 @@ function contabilizar(ev, precos){
       ins.forEach(([g, q]) => entrar(g, q, valIn ? base * (q * P(g, d)) / valIn : base / ins.length));
     } else if(outs.length){
       // saque da Binance que não chegou em nenhuma carteira sua fica registrado como pendência
-      tipo = x.rede === 'binance' ? 'saque' : 'envio'; valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0);
-      outs.forEach(([g, q]) => { sair(g, q); if(x.rede === 'binance'){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += q; t.datas.push(x.t); } });
+      // só o saque de verdade (op "saque" do CSV); taxa ou saída avulsa na Binance não é dinheiro "a caminho"
+      const saque = x.rede === 'binance' && x.op === 'saque';
+      tipo = saque ? 'saque' : 'envio'; valOut = outs.reduce((a, [g, q]) => a + q * P(g, d), 0);
+      outs.forEach(([g, q]) => { sair(g, q); if(saque){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += q; t.datas.push(x.t); } });
     } else if(ins.length){
       tipo = x.rede === 'binance' || !x.inic ? 'recebimento' : 'resgate'; valIn = ins.reduce((a, [g, q]) => a + q * P(g, d), 0);
       ins.forEach(([g, q]) => entrar(g, q, q * P(g, d)));
@@ -955,10 +958,14 @@ async function saldosAgora(hist){
         for(let i = 0; i < req.length; i += 10){ // o servidor aceita até 10 consultas por lote
           const resp = await pegar(RPC, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(req.slice(i, i + 10)) });
           if(!Array.isArray(resp)) throw new Error('resposta inesperada da Base');
-          resp.forEach(r => porId[r.id] = r.result);
+          // consulta recusada no lote vira erro da rede (fica o último saldo, com aviso), não saldo zero calado
+          resp.forEach(r => { if(r.error) throw new Error('a Base recusou uma consulta'); porId[r.id] = r.result; });
         }
         const big = h => h && h !== '0x' ? BigInt(h) : 0n;
-        lista = arr.map((c, i) => ({ contractAddress:c, balance: big(porId[2*i]).toString(), decimals: porId[2*i+1] && porId[2*i+1] !== '0x' ? Number(big(porId[2*i+1])) : 18, symbol:(infoToken['base:' + c] || {}).sim }));
+        // sem as casas decimais não dá para saber quanto é (supor 18 fazia 1.000 USDC virar 0,000000001)
+        lista = arr.map((c, i) => { const temDec = porId[2*i+1] && porId[2*i+1] !== '0x';
+          if(!temDec && big(porId[2*i]) > 0n) throw new Error('sem as casas decimais de um token da Base');
+          return { contractAddress:c, balance: big(porId[2*i]).toString(), decimals: temDec ? Number(big(porId[2*i+1])) : 18, symbol:(infoToken['base:' + c] || {}).sim }; });
       } else {
         nativo = (await pegar(`${R.api}?module=account&action=balance&address=${EU_EVM}`)).result || '0';
         lista = (await pegar(`${R.api}?module=account&action=tokenlist&address=${EU_EVM}`)).result || [];
@@ -971,7 +978,7 @@ async function saldosAgora(hist){
         if(!infoToken[g] && !GRUPOS[g]) infoToken[g] = { sim:(t.symbol || '?').slice(0,14), nome:(t.name || '').slice(0,48) };
         add(rede, g, un(t.balance || '0', +t.decimals || 0));
       }
-    }catch(e){ erros.push(R.nome); if(VIVO) VIVO.saldos.filter(s => s.rede === rede).forEach(s => add(rede, s.g, s.q)); }
+    }catch(e){ erros.push(R.nome); if(VIVO) VIVO.saldos.filter(s => s.rede === rede && !s.pool).forEach(s => add(rede, s.g, s.q)); }   // o que está numa posição de pool volta depois, pela própria posição: sem o !pool contava duas vezes
   }
   try{
     const b = await rpc(REDES.bsc.rpc, 'eth_getBalance', [EU_EVM, 'latest']); add('bsc', 'BNB', un(BigInt(b).toString(), 18));
@@ -979,20 +986,26 @@ async function saldosAgora(hist){
     if(cs.length){
       const resp = await pegar(REDES.bsc.rpc, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(cs.map((c, i) => ({ jsonrpc:'2.0', id:i, method:'eth_call', params:[{ to:c, data:'0x70a08231' + pad }, 'latest'] }))) });
       if(!Array.isArray(resp)) throw new Error('resposta inesperada da BNB Chain');
+      if(resp.some(r => r.error)) throw new Error('a BNB Chain recusou uma consulta');
       resp.forEach(r => { const c = cs[r.id]; add('bsc', 'bsc:' + c, un(r.result && r.result !== '0x' ? BigInt(r.result).toString() : '0', TOKENS_BSC[c].dec)); });
     }
-  }catch(e){ erros.push('BNB Chain'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'bsc').forEach(s => add('bsc', s.g, s.q)); }
+  }catch(e){ erros.push('BNB Chain'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'bsc' && !s.pool).forEach(s => add('bsc', s.g, s.q)); }
   try{
     const j = await pegar(`https://lite-api.jup.ag/ultra/v1/balances/${EU_SOL}`);
     for(const [mint, b] of Object.entries(j || {})){ if(mint === 'SOL'){ add('solana', 'SOL', +b.uiAmount); continue; } const g = TOKENS['solana:' + mint] || ('solana:' + mint); if(!GRUPOS[g] && !(hist && hist.pos && hist.pos[g])) continue; add('solana', g, +b.uiAmount); }
-  }catch(e){ erros.push('Solana'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'solana').forEach(s => add('solana', s.g, s.q)); }
+  }catch(e){ erros.push('Solana'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'solana' && !s.pool).forEach(s => add('solana', s.g, s.q)); }
   return { saldos, erros };
 }
 async function precosAgora(grupos){
   const out = {}, liq = {};
   const tick = await pegar('https://api.binance.com/api/v3/ticker/price').catch(() => []);
-  const tb = {}; (tick || []).forEach(x => tb[x.symbol] = +x.price);
-  const usd = tb.USDTBRL || 5;
+  const tb = {}; (Array.isArray(tick) ? tick : []).forEach(x => tb[x.symbol] = +x.price);
+  // Fonte de cotação que falhou não pode virar preço zero (o patrimônio caía calado): fica a última
+  // cotação conhecida e a tela avisa quais moedas estão com preço antigo (04/10/2026).
+  const ant = (VIVO && VIVO.precos) || {}, falhou = new Set(), velhos = [];
+  if(!tb.USDTBRL) falhou.add('binance');
+  const usd = tb.USDTBRL || (VIVO && VIVO.usd) || 5;
+  if(!tb.USDTBRL) velhos.push('USD');
   out.BRL = 1; out.USD = usd;
   const porRede = { pulsechain:[] };
   for(const g of grupos){
@@ -1008,10 +1021,16 @@ async function precosAgora(grupos){
     for(let i = 0; i < lista.length; i += 30){
       const parte = lista.slice(i, i + 30);
       const j = await gt(`https://api.geckoterminal.com/api/v2/networks/${net}/tokens/multi/${parte.map(x => x[1]).join(',')}`).catch(() => null);
+      if(!j || !Array.isArray(j.data)) parte.forEach(x => falhou.add(x[0]));
       for(const t of (j && j.data) || []){ const a = t.attributes, par = parte.find(x => x[1] === a.address.toLowerCase()); if(par){ out[par[0]] = (+a.price_usd || 0) * usd; liq[par[0]] = +a.total_reserve_in_usd || 0; } }
     }
   }
-  return { precos: out, liq, usd };
+  for(const g of grupos){
+    if(out[g] > 0 || !(ant[g] > 0)) continue;
+    const f = fontePreco(g);
+    if(falhou.has(g) || ((f.binance || f.binanceUsd) && falhou.has('binance'))){ out[g] = ant[g]; velhos.push(g); }
+  }
+  return { precos: out, liq, usd, velhos };
 }
 
 /* ================= estado e desenho ================= */
@@ -1311,7 +1330,8 @@ function desenharPosicoes(){
   if(!ps.length){ el.innerHTML = `<p class="vazio" style="margin:0 0 10px">Nenhuma posição aberta agora. Quando você abrir uma na Uniswap v3 ou na Aerodrome (Base), ela aparece aqui sozinha: o gráfico do preço com a sua faixa, se está dentro ou fora dela, quanto vale e o link para administrar.</p><button class="btn" id="btnSimular">Ver uma simulação</button>`; return; }
   el.innerHTML = ps.map(x => {
     const s0 = simDe(x.g0), s1 = simDe(x.g1), base = x.inverte ? s1 : s0, cot = x.inverte ? s0 : s1;
-    const pr = VIVO.precos, valor = x.a0 * (pr[x.g0] || 0) + x.a1 * (pr[x.g1] || 0);
+    // moeda da posição sem cotação: o valor aparece como "—", não como a metade que tem preço
+    const pr = VIVO.precos, semP = (x.a0 > 0 && !(pr[x.g0] > 0)) || (x.a1 > 0 && !(pr[x.g1] > 0)), valor = semP ? 0 : x.a0 * (pr[x.g0] || 0) + x.a1 * (pr[x.g1] || 0);
     const fmtP = v => v.toLocaleString('pt-BR', { maximumSignificantDigits:5 });
     const lo = Math.min(x.pa, x.p) * 0.92, hi = Math.max(x.pb, x.p) * 1.08, pc = v => ((v - lo) / (hi - lo) * 100).toFixed(2);
     const borda = x.dentro ? Math.min(x.p / x.pa - 1, 1 - x.p / x.pb) : null;
@@ -1690,6 +1710,7 @@ function desenharPendencias(){
   }
   itens.push(['A BNB Chain não tem histórico gratuito', 'Entra só o saldo de agora, sem passado no gráfico.']);
   if(VIVO && VIVO.erros && VIVO.erros.length) itens.unshift([`Não consegui ler o saldo de agora em ${VIVO.erros.join(', ')}`, 'Estou usando o último saldo conhecido. Clique em Atualizar para tentar de novo.']);
+  if(VIVO && VIVO.velhos && VIVO.velhos.length) itens.unshift([`Sem cotação de agora para ${VIVO.velhos.map(g => g === 'USD' ? 'o dólar' : simDe(g)).join(', ')}`, 'Estou usando a última cotação conhecida, então o total pode estar diferente do real. Clique em Atualizar para tentar de novo.']);
   el.innerHTML = itens.map(([a, b]) => `<div class="aviso">${a}<small>${b}</small></div>`).join('');
 }
 /* ================= alertas: o que é urgente fica no sino do topo ================= */
@@ -1710,6 +1731,7 @@ function calcularAlertas(){
   const f = VIVO.mercado && VIVO.mercado.fng && VIVO.mercado.fng[0];
   if(f && (f.v <= 20 || f.v >= 80)) add('atencao', 'medo:' + f.t, `Mercado em ${(MEDO[f.c] || f.c).toLowerCase()} (${f.v})`, 'Momento de humor extremo no mercado de cripto.', 'geral');
   if(VIVO.erros && VIVO.erros.length) add('atencao', 'erro', `Não consegui ler ${VIVO.erros.join(', ')}`, 'Estou usando o último saldo conhecido.', 'geral');
+  if(VIVO.velhos && VIVO.velhos.length) add('atencao', 'cotacao', `Sem cotação de agora para ${VIVO.velhos.length} moeda(s)`, 'Estou usando a última cotação conhecida.', 'geral');
   if(HIST && VISITA_ANT){ const n = HIST.mov.filter(m => m.t > VISITA_ANT.t).length; if(n) add('info', 'novos', `${n} movimento(s) novo(s) nas carteiras`, 'Desde a sua última visita.', 'diario'); }
   if(HIST){ const n = HIST.mov.filter(m => !classeDe(m).certo).length; if(n) add('info', 'classificar', `${n} transações a classificar no Diário`, 'Escolha a categoria das que eu não tive certeza.', 'diario'); }
   return A;
@@ -1735,9 +1757,9 @@ async function atualizarVivo(){
   status('Buscando saldos e cotações…', true);
   const { saldos, erros } = await saldosAgora(HIST);
   const grupos = [...new Set(saldos.map(s => s.g).concat(Object.keys((HIST && HIST.recompensas) || {})).concat(HIST ? HIST.mov.slice(0, 60).flatMap(m => m.ins.concat(m.outs).map(x => x[0])) : []))];
-  const { precos, liq, usd } = await precosAgora(grupos);
+  const { precos, liq, usd, velhos } = await precosAgora(grupos);
   const antes = VIVO;
-  VIVO = { t:Date.now(), saldos, precos, liq, usd, erros };
+  VIVO = { t:Date.now(), saldos, precos, liq, usd, erros, velhos };
   status('Buscando indicadores do mercado e posições de pool…', true);
   VIVO.mercado = await mercadoAgora().catch(() => (antes && antes.mercado) || {});
   VIVO.posicoes = await posicoesAbertas().catch(e => { console.warn('posições', e); return (antes && antes.posicoes) || []; });
@@ -1761,7 +1783,8 @@ async function iniciar(){
     tudo();
     status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }));
     // registra a visita de agora para a próxima vez
-    lsSet(LS.visita, { t:Date.now(), total:totalVivo(), precos:VIVO.precos });
+    // só com tudo lido: um total com rede fora do ar ou cotação antiga levaria um número errado para a aba Tudo
+    if(!(VIVO.erros && VIVO.erros.length) && !(VIVO.velhos && VIVO.velhos.length)) lsSet(LS.visita, { t:Date.now(), total:totalVivo(), precos:VIVO.precos });
   }catch(e){ console.error(e); status('Algo falhou: ' + e.message + '. Clique em Atualizar para tentar de novo.'); }
   ocupado = false;
   window.__pronto = true;
@@ -1892,7 +1915,16 @@ document.addEventListener('keydown', e => {
 marcarAnot(); /* primeiro instantâneo: o estado com que o site abriu */
 async function lerArquivoCsv(f){
   const txt = await f.text();
-  try{ const ev = eventosBinance(txt); lsSet(LS.csv, txt); status(`CSV da Binance lido: ${ev.length} linhas. Refazendo o histórico…`, true); refazerTudo(); }
+  try{ const ev = eventosBinance(txt);
+    // CSV novo substitui o antigo inteiro: se ele começa depois ou tem menos linhas, o histórico antigo se perderia
+    const velho = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
+    let evVelho = []; try{ evVelho = velho ? eventosBinance(velho) : []; }catch(e){}
+    if(evVelho.length){
+      const ini = l => l.length ? Math.min(...l.map(x => x.t)) : 0, fmt = t => new Date(t).toLocaleDateString('pt-BR');
+      if((ini(ev) > ini(evVelho) + DIA_MS || ev.length < evVelho.length) &&
+         !confirm(`Este CSV troca o que está guardado.\n\nGuardado: ${evVelho.length} linhas, desde ${fmt(ini(evVelho))}.\nNovo: ${ev.length} linhas, desde ${fmt(ini(ev))}.\n\nO novo tem menos história. Trocar mesmo assim?`)){ status('CSV não trocado.'); return; }
+    }
+    lsSet(LS.csv, txt); status(`CSV da Binance lido: ${ev.length} linhas. Refazendo o histórico…`, true); refazerTudo(); }
   catch(e){ status(e.message); }
 }
 document.getElementById('btnCsv').addEventListener('click', () => document.getElementById('arqCsv').click());
