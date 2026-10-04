@@ -466,10 +466,12 @@ details.painel{scroll-margin-top:60px}
     </div>
     <label for="cs-modelo">Modelo de formulação</label>
     <select id="cs-modelo"></select>
-    <p class="dica so-explica" style="margin-top:4px">O modelo dá os módulos e os campos. Dá para trocar depois, em Módulos, e criar o seu em Modelos.</p>
+    <p class="dica so-explica" style="margin-top:4px">O modelo dá os módulos e os campos. Dá para trocar depois, em Módulos, e criar o seu em Modelos. Para trazer um caso que já está em Word, escolha o modelo e toque em Importar do Word: cada parte vai para o campo de mesmo nome.</p>
     <div class="pe-dlg">
       <button class="b esq" type="button" data-fechar>Cancelar</button>
       <button class="b" type="button" data-exemplo>Criar um caso de exemplo</button>
+      <button class="b" type="button" id="cs-importar">Importar do Word</button>
+      <input type="file" id="cs-arq" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden">
       <button class="b p" type="submit">Criar</button>
     </div>
   </form>
@@ -480,7 +482,8 @@ details.painel{scroll-margin-top:60px}
     <h2>Nova medida</h2>
     <p class="onde">Uma escala, um questionário ou uma nota de 0 a 10 que você vai anotar ao longo do tempo.</p>
     <label for="me-nome">Nome</label>
-    <input type="text" id="me-nome" required autocomplete="off" placeholder="Ex.: ansiedade antes da reunião (0 a 10)">
+    <input type="text" id="me-nome" required autocomplete="off" list="me-sugestoes" placeholder="Ex.: BAI, OQ-45.2 ou ansiedade antes da reunião (0 a 10)">
+    <datalist id="me-sugestoes"><option value="OQ-45.2"><option value="BAI"><option value="BDI-II"><option value="BHS"><option value="BSS"><option value="ASRS-18"><option value="PHQ-9"><option value="GAD-7"></datalist>
     <div class="linha2">
       <div><label for="me-sentido">Quanto maior o número</label>
         <select id="me-sentido"><option value="pior">Pior</option><option value="melhor">Melhor</option></select></div>
@@ -546,9 +549,9 @@ const MODELOS_PRONTOS = [
     M("problemas","Problemas prioritários","sempre", UM("Um registro por problema, do mais ao menos prioritário.", {tipo:"problema", area:"comportamento"})),
     M("objetivos","Objetivos terapêuticos","sempre", UM("Um registro por objetivo, com o prazo. Ligue cada objetivo ao problema prioritário de onde ele vem.", {tipo:"objetivo", area:"motivacao",
       colunas:[["Objetivo","Definido segundo critérios SMART, quando aplicável."],["Prazo","Curto, médio ou longo prazo."]]})),
-    M("anotacoes","Anotações clínicas","ligado", UM("Hipóteses provisórias, informações a investigar e observações clínicas ainda não incorporadas à formulação.")),
-    M("identificacao","Dados de identificação","desligado", ["Idade","Nacionalidade","Identidade de gênero","Orientação sexual","Estado civil","Escolaridade","Ocupação","Residência atual","Contexto cultural","Orientação religiosa","Situação socioeconômica"].map(n => CN(n)), {area:"socio"}),
-    M("contexto","Contexto atual relevante","desligado", [
+    M("anotacoes","Anotações clínicas","desligado", UM("Hipóteses provisórias, informações a investigar e observações clínicas ainda não incorporadas à formulação.")),
+    M("identificacao","Dados de identificação","ligado", ["Idade","Nacionalidade","Identidade de gênero","Orientação sexual","Estado civil","Escolaridade","Ocupação","Residência atual","Contexto cultural","Orientação religiosa","Situação socioeconômica"].map(n => CN(n)), {area:"socio"}),
+    M("contexto","Contexto atual relevante","ligado", [
       CN("Relacionamentos e rede de apoio","Relacionamentos, convivência, apoio e conflitos.",{area:"socio"}),
       CN("Situação acadêmica/profissional","Estudo/trabalho, rotina, desempenho e dificuldades."),
       CN("Condições de saúde física","Condições médicas e limitações atuais.",{area:"bio"}),
@@ -561,7 +564,7 @@ const MODELOS_PRONTOS = [
     M("recursos","Recursos e obstáculos","desligado", [
       CN("Recursos atuais","O que favorece o funcionamento, o enfrentamento ou o tratamento.",{tipo:"recurso"}),
       CN("Obstáculos atuais","O que dificulta o funcionamento, o enfrentamento ou o tratamento.")], {area:"contexto"}),
-    M("valores","Valores, interesses e aspirações","desligado", [
+    M("valores","Valores, interesses e aspirações","ligado", [
       CN("Valores","Aspectos e qualidades de vida considerados importantes."),
       CN("Interesses","Atividades, experiências e áreas de interesse relevantes."),
       CN("Aspirações","Direções, projetos e realizações desejadas.")], {area:"motivacao"}),
@@ -588,7 +591,7 @@ const MODELOS_PRONTOS = [
       CN("Problemas e sintomas"),CN("Contexto de início"),CN("Curso e desfecho"),CN("Intercorrências relevantes"),
       CN("Tratamentos anteriores","Um tratamento por linha.",{colunas:COL_TRATAMENTO.concat([["Motivo do encerramento","Alta, abandono, decisão do paciente ou do profissional, ausência de benefício."]])})
     ].map(k => Object.assign(k, {tipo:"historia"})), {area:"afeto"}),
-    M("alerta","Sinais de alerta (red flags)","desligado", UM("Riscos que pedem atenção imediata.")),
+    M("alerta","Sinais de alerta (red flags)","ligado", UM("Riscos que pedem atenção imediata.")),
     M("funcionamento","Funcionamento","desligado", [CN("Comportamento","",{area:"comportamento"}),CN("Cognição","",{area:"cognitivo"}),CN("Afeto e humor","",{area:"afeto"}),
       CN("Biofisiológico","",{area:"bio"}),CN("Existencial","",{area:"motivacao"}),CN("Social/interpessoal","",{area:"socio"}),CN("Na sociedade","",{area:"socio"})]),
     M("diagnostico","Diagnóstico","desligado", [CN("Diagnóstico(s)"),CN("Fundamentação diagnóstica"),CN("Diagnósticos diferenciais"),CN("Síntese diagnóstica","",{hip:true}),CN("Observações diagnósticas")], {area:"afeto"}),
@@ -599,11 +602,11 @@ const MODELOS_PRONTOS = [
       CN("Antecedentes e contexto","",{area:"contexto"}),CN("Operações motivadoras","",{area:"motivacao"}),CN("Respostas","",{area:"comportamento"}),CN("Consequências","",{area:"contexto"}),
       CN("Função hipotetizada","",{hip:true, area:"comportamento"}),
       CN("Padrões comportamentais relevantes","Respostas recorrentes, diante de quais contextos, possivelmente relacionadas a qual função.",{hip:true, area:"comportamento",
-        frase:"[Respostas recorrentes], principalmente diante de [contextos ou antecedentes], possivelmente relacionadas a [função]."}),
+        colunas:[["Respostas recorrentes",""],["Principalmente diante de","Contextos ou antecedentes."],["Possivelmente relacionadas a","Função."]]}),
       CN("Variáveis contextuais relevantes","Condição associada ao aumento ou à redução de um padrão.",{area:"contexto",
-        frase:"[Condição] está associada ao [aumento ou redução] da probabilidade ou intensidade de [padrão], especialmente [contexto]."}),
+        colunas:[["Condição",""],["Aumenta ou reduz","A probabilidade ou a intensidade."],["De qual padrão",""],["Especialmente quando","Contexto, se for o caso."]]}),
       CN("Hipóteses funcionais","Diante de quê, qual resposta tende a produzir qual consequência, mantida por quê.",{hip:true, area:"comportamento",
-        frase:"Diante de [antecedentes ou contextos], [resposta ou padrão] tende a produzir [consequência], podendo ser favorecido(a) ou mantido(a) por [relação funcional ou contingência]."})]),
+        colunas:[["Diante de","Antecedentes ou contextos."],["A resposta","Resposta ou padrão."],["Tende a produzir","Consequência."],["Mantida por","Relação funcional ou contingência."]]})]),
     M("cognitivo","Diagrama cognitivo","desligado", [
       CN("Precipitantes relevantes","",{area:"contexto"}),CN("Crenças nucleares","",{hip:true, area:"self"}),CN("Crenças intermediárias","",{hip:true}),
       CN("Estratégias compensatórias e de enfrentamento","",{area:"comportamento"}),
@@ -1988,6 +1991,287 @@ function criarExemplo(){
   if ($("dlg-caso").open) $("dlg-caso").close();
   vista = "formulacao"; tela = "caso"; abrirCaso(c.id); gravar();
 }
+
+/* ---------- importar do Word ----------
+   Lê um .docx no próprio navegador (nada sai do aparelho) e leva cada parte ao campo do modelo que tem o mesmo nome:
+   "Rótulo: texto" vai para o campo Rótulo; um título de seção muda o lugar dos parágrafos seguintes; uma tabela vai
+   para o campo em tabela com as colunas mais parecidas. Texto entre colchetes é dica do modelo e fica de fora.
+   O que não achar lugar entra em "Fora do modelo", para nada se perder. CPF e telefone não entram: a formulação não precisa deles. */
+async function lerZip(buf, nome){
+  const v = new DataView(buf), u8 = new Uint8Array(buf);
+  let fim = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 70000); i--) if (v.getUint32(i, true) === 0x06054b50){ fim = i; break; }
+  if (fim < 0) throw new Error("não é um arquivo .docx");
+  let p = v.getUint32(fim + 16, true);
+  const total = v.getUint16(fim + 10, true), dec = new TextDecoder();
+  for (let n = 0; n < total; n++){
+    const metodo = v.getUint16(p + 10, true), tam = v.getUint32(p + 20, true), lenNome = v.getUint16(p + 28, true),
+          lenExtra = v.getUint16(p + 30, true), lenCom = v.getUint16(p + 32, true), local = v.getUint32(p + 42, true);
+    if (dec.decode(u8.subarray(p + 46, p + 46 + lenNome)) === nome){
+      const ini = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true), dados = u8.subarray(ini, ini + tam);
+      if (metodo === 0) return dec.decode(dados);
+      const s = new Blob([dados]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return await new Response(s).text();
+    }
+    p += 46 + lenNome + lenExtra + lenCom;
+  }
+  throw new Error("o arquivo não tem " + nome);
+}
+const W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+/* o texto de um parágrafo, sem o que está em caixas de texto e desenhos (a rede desenhada no Word) */
+function textoP(p){
+  let t = "";
+  p.querySelectorAll("*").forEach(n => {
+    if (n.namespaceURI !== W_NS) return;
+    if (n.localName === "t" && !n.closest("txbxContent")) t += n.textContent;
+    else if ((n.localName === "tab") && !n.closest("txbxContent")) t += " ";
+    else if (n.localName === "br" && !n.closest("txbxContent")) t += "\n";
+  });
+  return t.replace(/[  ]+/g, " ").trim();
+}
+/* parágrafo com estilo de título, ou todo em negrito: no Word, é assim que se marca o começo de uma seção */
+function ehTitulo(p){
+  const estilo = p.getElementsByTagNameNS(W_NS, "pStyle")[0], nome = estilo ? (estilo.getAttributeNS(W_NS, "val") || estilo.getAttribute("w:val") || "") : "";
+  if (/t[ií]tulo|heading/i.test(nome)) return true;
+  const runs = Array.from(p.getElementsByTagNameNS(W_NS, "r")).filter(r => r.getElementsByTagNameNS(W_NS, "t").length && !r.closest("txbxContent"));
+  return runs.length > 0 && runs.every(r => { const b = r.getElementsByTagNameNS(W_NS, "b")[0]; return b && !/^(0|false)$/.test(b.getAttributeNS(W_NS, "val") || b.getAttribute("w:val") || ""); });
+}
+const filhosW = (el, nome) => Array.from(el.children).filter(n => n.namespaceURI === W_NS && n.localName === nome);
+/* o corpo do documento como uma sequência de parágrafos e tabelas; tabela de uma coluna só vira parágrafos */
+function blocosDoDocx(xml){
+  const doc = new DOMParser().parseFromString(xml, "application/xml"), corpo = doc.getElementsByTagNameNS(W_NS, "body")[0], blocos = [];
+  const celula = tc => filhosW(tc, "p").map(textoP).filter(Boolean);
+  const andar = el => Array.from(el.children).forEach(n => {
+    if (n.namespaceURI !== W_NS) return;
+    if (n.localName === "p"){ const t = textoP(n); if (t) blocos.push({p:t, titulo:ehTitulo(n)}); }
+    else if (n.localName === "sdt"){ const c = filhosW(n, "sdtContent")[0]; if (c) andar(c); }
+    else if (n.localName === "tbl"){
+      /* célula mesclada na horizontal conta uma vez por coluna que ocupa, para os cabeçalhos ficarem sobre as colunas certas */
+      const trs = filhosW(n, "tr").map(tr => filhosW(tr, "tc").map(tc => {
+        const span = tc.getElementsByTagNameNS(W_NS, "gridSpan")[0];
+        return {txt:celula(tc), span:span ? +(span.getAttributeNS(W_NS, "val") || span.getAttribute("w:val")) || 1 : 1};
+      }));
+      /* linha vazia é só espaçamento; se cada linha tem no máximo uma célula escrita, a tabela é só moldura de parágrafos */
+      if (trs.every(l => l.filter(c => c.txt.length).length <= 1)) trs.forEach(l => l.forEach(c => c.txt.forEach(t => blocos.push({p:t}))));
+      else blocos.push({tab:trs.map(l => l.flatMap(c => Array(c.span).fill(c.txt)))});
+    }
+  });
+  andar(corpo);
+  return blocos;
+}
+const normal = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+const PALAVRAS_VAZIAS = new Set(["e","de","do","da","dos","das","a","o","as","os","no","na","em","ao","com","para","por"]);
+const palavras = s => normal(s).split(" ").filter(w => w && !PALAVRAS_VAZIAS.has(w));
+/* quanto dois nomes se parecem, de 0 a 1: palavras em comum sobre o nome menor, com plural e singular iguais */
+function parecido(a, b){
+  const raiz = w => w.replace(/(oes|aes|es|s)$/, ""), x = palavras(a).map(raiz), y = new Set(palavras(b).map(raiz));
+  if (!x.length || !y.size) return 0;
+  const comum = x.filter(w => y.has(w)).length;
+  return comum / Math.min(x.length, y.size);
+}
+/* dica do modelo: o texto é quase todo colchetes, reticências ou traços */
+function soDica(t){
+  const sem = t.replace(/\[[^\]]*\]/g, "").replace(/\(\d{1,2}\/\d{1,2}(\/\d{2,4})?\)/g, "").replace(/[\s.,;:()\-–—x…]/gi, "");
+  return sem.length < 3 || (t.match(/\[[^\]]*\]/g) || []).join("").length > t.length * 0.5;
+}
+/* textos do modelo em Word do Matheus (rótulos e perguntas-guia, sem os colchetes): quando aparecem soltos, não são conteúdo */
+const TEXTOS_DO_MODELO = new Set(["afeto e humor", "alvos terapeuticos", "analise de contingencias", "anotacoes clinicas", "antecedentes e", "biofisiologico", "cognicao", "como seu comportamento mudou", "como seu pensamento mudou", "como seus sentimentos evoluiram", "como voce descreveria seu comportamento", "como voce experienciou seus sentimentos", "como voce lidou com o que aconteceu", "como voce lidou com os sentimentos", "como voce reagiu as reacoes fisiologicas", "como voce reagiu mentalmente", "como voce respondeu as mudancas no seu relacionamento com os outros", "comportamento", "consequencias", "consideracoes culturais religiosas e contextuais", "conteudo", "contexto", "contexto atual relevante", "contexto cultural", "contexto de inicio", "cpf", "crencas adaptativas", "crencas intermediarias", "crencas intermediarias adaptativas", "crencas nucleares", "crencas nucleares adaptativas", "curso e desfecho", "curto prazo", "dados de identificacao", "de um zoom em situacoes concretas selecionadas e agrupadas em metaproblemas focando no processo ao inves do conteudo", "demandas psicologicas ou internas da situacao para o individuo", "diagnostico", "diagnosticos diferenciais", "diagrama cognitivo", "efeitos adversos", "emocao", "escolaridade", "estado civil", "estrategias compensatorias e de enfrentamento", "estrategias e intervencoes", "evolucao", "existencial", "externa", "funcao hipotetizada", "funcionamento na sociedade", "funcionamento pessoal", "funcionamento social interpessoal", "fundamentacao diagnostica", "hipoteses funcionais", "historico de saude mental", "historico familiar de saude mental", "historico pessoal relevante", "identidade de genero", "indicacao", "instrumentos de avaliacao", "interacao", "intercorrencias relevantes", "interna", "intervencao", "intervencoes terapeuticas", "investigacoes e encaminhamentos", "longo prazo", "metaproblema descricao da situacao externa ou gatilho", "modalidade", "motivo do encerramento", "nacionalidade", "necessidades de adaptacao do tratamento", "nome completo", "o que aconteceu no seu relacionamento com os outros", "o que voce fez", "o que voce fez para lidar com as reacoes fisicas", "o que voce pensou", "o que voce sentiu", "objetivos terapeuticos", "observacoes diagnosticas", "ocupacao", "operacoes motivadoras", "oq 45 2 utilizado para monitoramento semanal ao longo do tratamento", "orientacao religiosa", "orientacao sexual", "padroes comportamentais relevantes", "pensamento automatico", "pensamentos automaticos recorrentes", "periodo", "prazo", "precipitantes relevantes", "preferencias e participacao do paciente", "problemas e sintomas", "problemas prioritarios", "processo", "processos cognitivos", "processos comportamentais", "processos emocionais", "processos fisiologicos", "processos interacionais", "prontidao e motivacao para mudanca", "quais consequencias negativas ou positivas de curto prazo essas respostas tiveram", "quais consequencias negativas ou positivas de longo prazo essas respostas tiveram", "quais reacoes fisiologicas voce demonstrou", "quanto tempo a mudanca no pensamento durou", "reacoes fisicas", "reatividade e resistencia ao tratamento", "recursos e obstaculos", "registro 01", "registro 02", "registro 03", "residencia atual", "resposta", "respostas", "resultados terapeuticos pretendidos definidos a partir dos problemas prioritarios e da formulacao do caso", "seu comportamento em relacao aos outros mudou", "significado", "sinais de alerta", "sintese diagnostica", "situacao", "situacao desencadeadora", "situacao socioeconomica", "situacoes e pensamentos automaticos relevantes", "telefone", "tratamentos anteriores", "tratamentos concomitantes", "ultima atualizacao", "valores interesses e aspiracoes", "variaveis contextuais relevantes", "voce mudou a forma como interage", "voce tentou influencia los", "vulnerabilidades"]);
+const IGNORAR_LINHA = ["de um zoom em situacoes", "resultados terapeuticos pretendidos", "cpf", "telefone", "ultima atualizacao", "total de sessoes"];
+/* títulos do Word que não têm o mesmo nome no modelo */
+const APELIDOS = {"historico de saude mental":"Problemas e sintomas", "funcionamento social interpessoal":"Social/interpessoal", "funcionamento na sociedade":"Na sociedade",
+  "instrumentos de avaliacao":"Medidas e monitoramento", "intervencoes terapeuticas":"Intervenções", "nome completo":"__nome", "prontuario":"__codigo",
+  "irma":"Irmã(o)", "irmao":"Irmã(o)", "irmaos":"Irmã(o)"};
+
+function importarDocx(blocos, mod){
+  const campos = mod.modulos.flatMap(m => m.campos.map(k => ({m, k, nome:k.nome || m.nome}))), itens = [], relacoes = [], semLugar = [], tabelasFora = [], medidas = [];
+  const ident = {};
+  let atual = null;        // {m, k}: onde caem os parágrafos sem rótulo
+  let tituloSolto = "";    // título que não está no modelo (um diagnóstico, uma escala): acompanha o que vier embaixo dele
+  let instrumento = "";    // a escala da vez, para as linhas "data: escore"
+  const doModulo = l => atual ? l.filter(x => x.m === atual.m).concat(l.filter(x => x.m !== atual.m)) : l;
+  /* o campo com esse nome: primeiro no módulo atual, depois em qualquer um; um módulo de campo único vale pelo nome do módulo */
+  function achar(rotulo){
+    let nn = normal(rotulo); if (!nn) return null;
+    if (APELIDOS[nn]){ const a = APELIDOS[nn]; if (a.startsWith("__")) return {ident:a.slice(2)}; nn = normal(a); }
+    const e = doModulo(campos).find(x => normal(x.nome) === nn || (normal(x.m.nome) === nn && !x.k.nome));
+    if (e) return e;
+    const m = mod.modulos.find(x => normal(x.nome) === nn);
+    return m ? {m, k:m.campos.length === 1 ? m.campos[0] : null} : null;
+  }
+  /* título que não bate exato: o campo ou o módulo cujo nome (de duas palavras ou mais) está todo dentro dele */
+  function acharParecido(rotulo){
+    const k = doModulo(campos).filter(x => x.k.nome && palavras(x.nome).length >= 2 && parecido(rotulo, x.nome) === 1)
+      .sort((a, b) => palavras(b.nome).length - palavras(a.nome).length)[0];
+    if (k) return k;
+    const m = mod.modulos.find(x => parecido(rotulo, x.nome) === 1);
+    return m ? {m, k:m.campos.length === 1 ? m.campos[0] : null} : null;
+  }
+  const novo = (alvo, texto, cols) => {
+    const it = {id:uid(), m:alvo.m.id, c:alvo.k.id, texto, data:hoje(), hip:!!alvo.k.hip};
+    if (it.hip) it.status = "aberta";
+    if (cols){ it.cols = cols; it.texto = textoDeCols(cols, colunasDe(alvo.k)); }
+    itens.push(it); return it;
+  };
+  const solto = t => semLugar.push(tituloSolto && !t.startsWith(tituloSolto) ? tituloSolto + ": " + t : t);
+  const guardar = t => { if (atual && atual.k) novo(atual, t); else solto(t); };
+  const limpar = t => t.replace(/^\s*[-–•]\s*/, "").trim();
+  const doModelo = t => TEXTOS_DO_MODELO.has(normal(t));
+  /* célula: sem as linhas que são do modelo (perguntas-guia, rótulos, colchetes) */
+  const celula = c => c.split("\n").filter(l => l.trim() && !soDica(l) && !doModelo(l.replace(/:\s*$/, ""))).join("\n").trim();
+  /* "01/09/2026: 23 (moderada)" anota um ponto na escala da vez */
+  function ponto(t){
+    const m = t.match(/^(?:([^:\d][^:]{0,60}):\s*)?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*[:\-–]?\s*(\d+(?:[.,]\d+)?)(?!\s*\/)/);
+    const nome = m && (m[1] ? m[1].trim() : instrumento);
+    if (!m || !nome) return false;
+    let ano = m[4] ? (m[4].length === 2 ? "20" + m[4] : m[4]) : String(new Date().getFullYear());
+    let data = ano + "-" + m[3].padStart(2, "0") + "-" + m[2].padStart(2, "0");
+    if (!m[4] && data > hoje()) data = (+ano - 1) + data.slice(4);
+    if (isNaN(new Date(data))) return false;
+    let med = medidas.find(x => normal(x.nome) === normal(nome));
+    if (!med){ med = {id:uid(), nome, sentido:"pior", alvo:null, pontos:[]}; medidas.push(med); }
+    med.pontos = med.pontos.filter(q => q.data !== data).concat({data, valor:parseFloat(m[5].replace(",", "."))});
+    return true;
+  }
+
+  blocos.forEach(b => {
+    if (b.p){
+      const t = b.p, n = normal(t);
+      if (IGNORAR_LINHA.some(x => n.startsWith(x))) return;
+      if (ponto(t)) return;
+      const dois = t.match(/^([^:\[\]]{2,80}):\s*([\s\S]*)$/);
+      const rotulo = dois ? dois[1] : t.replace(/:\s*$/, ""), resto = dois ? dois[2].trim() : "";
+      const titulo = /:\s*$/.test(t) || (dois && !resto) || (b.titulo && t.length <= 80 && !/[.!?]$/.test(t));
+      const lugar = achar(rotulo) || (titulo || (dois && rotulo.length <= 60) ? acharParecido(rotulo) : null);
+      if (lugar && lugar.ident){ if (resto && !soDica(resto)) ident[lugar.ident] = resto; return; }
+      if (lugar && (titulo || dois)){
+        atual = lugar; tituloSolto = "";
+        instrumento = lugar.k && /medidas|monitoramento|instrumento/.test(normal(lugar.k.nome)) ? instrumento : "";
+        if (resto && !soDica(resto)){ if (lugar.k) novo(lugar, limpar(resto)); else solto(t); }
+        return;
+      }
+      if (titulo){ atual = null; tituloSolto = rotulo.trim(); instrumento = rotulo.trim(); return; }
+      if (soDica(t) || doModelo(t)) return;
+      if (dois && rotulo.length <= 60) instrumento = rotulo.trim();
+      guardar(limpar(t));
+      return;
+    }
+    /* tabela */
+    const linhas = b.tab.map(l => l.map(c => c.join("\n").trim()));
+    if (linhas.length < 2) return;
+    const cab = linhas[0], vazia = c => !celula(c);
+    const tabelas = doModulo(campos.filter(x => colunasDe(x.k).length));
+    /* 1) "Registro 01, 02..." nas colunas: cada coluna é um registro, a primeira coluna traz os rótulos */
+    if (cab.length > 1 && cab.slice(1).every(c => /^registro\b/.test(normal(c)))){
+      const rotulos = linhas.slice(1).map(l => (l[0] || "").replace(/:\s*$/, ""));
+      const alvo = melhorTabela(tabelas, rotulos);
+      for (let j = 1; j < cab.length; j++){
+        const valores = linhas.slice(1).map(l => celula(l[j] || ""));
+        if (valores.every(v => !v)) continue;
+        if (alvo) novo(alvo.x, "", distribuir(alvo.x.k, rotulos, valores));
+        else solto(rotulos.map((r, i) => valores[i] ? r + ": " + valores[i] : "").filter(Boolean).join(" · "));
+      }
+      if (alvo) atual = alvo.x;
+      return;
+    }
+    /* 2) cabeçalho na primeira linha; "1º, 2º..." na primeira coluna sai */
+    let cabs = cab, corpo = linhas.slice(1);
+    if (!normal(cab[0]) && corpo.every(l => !normal(l[0] || "") || /^\d+\s*o?$/.test(normal(l[0])))){ cabs = cab.slice(1); corpo = corpo.map(l => l.slice(1)); }
+    cabs = cabs.map(c => c.replace(/\n/g, " ").replace(/:\s*$/, "").trim());
+    const util = corpo.map(l => l.map(celula)).filter(l => l.some(Boolean));
+    /* SORC e parecidos: cada coluna tem um campo de texto de mesmo nome num módulo; ganha da tabela quando cobre mais colunas */
+    const melhorMod = mod.modulos.map(m => [m, cabs.filter(c => m.campos.some(k => k.nome && !colunasDe(k).length && normal(k.nome) === normal(c))).length]).sort((a, b) => b[1] - a[1])[0];
+    const porColuna = cabs.map(c => melhorMod && melhorMod[0].campos.filter(k => k.nome && !colunasDe(k).length && normal(k.nome) === normal(c)).map(k => ({m:melhorMod[0], k}))[0] || null);
+    const tab = melhorTabela(tabelas, cabs), alvo = tab && !(melhorMod && melhorMod[1] > tab.usadas.size) ? tab : null;
+    if (alvo){
+      /* coluna que nomeia um problema: o registro fica ligado a ele, e o problema é criado se ainda não existe */
+      const iProb = cabs.findIndex((c, i) => !alvo.usadas.has(i) && campos.some(x => x.k.tipo === "problema" && parecido(c, x.nome) === 1));
+      const campoProb = iProb >= 0 ? campos.find(x => x.k.tipo === "problema" && parecido(cabs[iProb], x.nome) === 1) : null;
+      util.forEach(l => {
+        const outros = cabs.map((c, i) => i).filter(i => i !== iProb);
+        if (outros.every(i => !l[i])){ if (campoProb && l[iProb]) novo(campoProb, limpar(l[iProb])); return; }
+        const it = novo(alvo.x, "", distribuir(alvo.x.k, outros.map(i => cabs[i]), outros.map(i => l[i])));
+        if (campoProb && l[iProb]){
+          const txt = limpar(l[iProb]);
+          const p = itens.find(i => i.m === campoProb.m.id && (i.c || "") === campoProb.k.id && normal(i.texto) === normal(txt)) || novo(campoProb, txt);
+          relacoes.push({id:uid(), de:it.id, para:p.id, tipo:"está ligado a"});
+        }
+      });
+      atual = alvo.x; tituloSolto = "";
+      return;
+    }
+    /* 3) sem campo em tabela parecido: a coluna com o nome de um campo de texto vira o registro, as outras entram junto */
+    const semTab = doModulo(campos.filter(x => !colunasDe(x.k).length));
+    let principal = -1, campoTxt = null;
+    cabs.forEach((c, i) => { if (campoTxt) return; const x = semTab.find(y => normal(y.nome) === normal(c)) || semTab.find(y => palavras(y.nome).length && parecido(y.nome, c) === 1);
+      if (x){ principal = i; campoTxt = x; } });
+    /* colunas que têm, cada uma, um campo de mesmo nome no mesmo módulo (como S, O, R e C do SORC): cada célula vira um registro no seu campo */
+    if (melhorMod && melhorMod[1] > cabs.length / 2){
+      util.forEach(l => l.forEach((v, i) => { if (!v) return; if (porColuna[i]) novo(porColuna[i], limpar(v)); else solto((cabs[i] ? cabs[i] + ": " : "") + v); }));
+      atual = porColuna.find(Boolean); tituloSolto = "";
+      return;
+    }
+    const linhaTexto = (l, sem) => cabs.map((c, i) => i !== sem && l[i] ? (c ? c + ": " : "") + l[i] : "").filter(Boolean).join("\n");
+    if (campoTxt){
+      util.forEach(l => { if (l[principal]) novo(campoTxt, [limpar(l[principal]), linhaTexto(l, principal)].filter(Boolean).join("\n")); else solto(linhaTexto(l, -1)); });
+      atual = campoTxt; tituloSolto = "";
+      return;
+    }
+    if (util.length) tabelasFora.push(cabs.filter(Boolean).join(" | "));
+    util.forEach(l => solto(linhaTexto(l, -1)));
+  });
+  return {itens, relacoes, semLugar, tabelasFora, ident, medidas};
+}
+/* o campo em tabela cujas colunas mais se parecem com estes cabeçalhos (mais da metade deles) */
+function melhorTabela(lista, cabs){
+  let melhor = null;
+  lista.forEach(x => {
+    const cols = colunasDe(x.k), usadas = new Set();
+    cabs.forEach((c, i) => { if (cols.some(([n]) => parecido(c, n) >= 0.99 || parecido(n, c) >= 0.99)) usadas.add(i); });
+    if (usadas.size && usadas.size > cabs.length / 2 && (!melhor || usadas.size > melhor.usadas.size)) melhor = {x, usadas};
+  });
+  return melhor;
+}
+/* leva cada valor à coluna de nome parecido; "Curto prazo: ... / Longo prazo: ..." numa célula se divide entre as colunas que têm esses nomes */
+function distribuir(k, cabs, valores){
+  const cols = colunasDe(k), out = {};
+  const por = (nome, v) => { if (!v || soDica(v)) return; out[nome] = out[nome] ? out[nome] + "\n" + v : v; };
+  cabs.forEach((c, i) => {
+    const v = (valores[i] || "").trim(); if (!v || soDica(v)) return;
+    const candidatas = cols.filter(([n]) => parecido(c, n) >= 0.99 || parecido(n, c) >= 0.99);
+    if (candidatas.length > 1){
+      const resto = [];
+      v.split("\n").forEach(lin => { const m = lin.match(/^([^:]{2,40}):\s*(.*)$/), alvo = m && candidatas.find(([n]) => parecido(m[1], n) === 1);
+        if (alvo) por(alvo[0], m[2].trim()); else resto.push(lin); });
+      if (resto.length) por(candidatas[0][0], resto.join("\n"));
+    } else if (candidatas.length) por(candidatas[0][0], v);
+    else por(cols[0][0], c + ": " + v);
+  });
+  return out;
+}
+async function importarArquivoWord(arq){
+  const mod = modeloPorId($("cs-modelo").value);
+  let r;
+  try { r = importarDocx(blocosDoDocx(await lerZip(await arq.arrayBuffer(), "word/document.xml")), mod); }
+  catch(err){ alert("Não deu para ler este arquivo. Ele precisa ser um .docx (Word 2007 ou mais novo).\n\n" + err.message); return; }
+  const nome = $("cs-nome").value.trim() || r.ident.nome || arq.name.replace(/\.docx$/i, "");
+  const c = {id:uid(), codigo:$("cs-codigo").value.trim() || r.ident.codigo || "", nome, criado:hoje(), atualizado:hoje(), modelo:mod.id,
+             modulos:mod.modulos.filter(m => m.modo === "ligado").map(m => m.id), itens:r.itens, relacoes:r.relacoes, medidas:r.medidas, revisoes:[]};
+  r.semLugar.forEach(t => c.itens.push({id:uid(), m:"__importado", c:"", texto:t, data:hoje(), hip:false}));
+  c.itens.forEach(i => ligarModulo(c, i.m));
+  livro.casos.push(c);
+  $("dlg-caso").close(); vista = "formulacao"; tela = "caso"; abrirCaso(c.id); gravar();
+  const porModulo = mod.modulos.map(m => [m.nome, r.itens.filter(i => i.m === m.id).length]).filter(x => x[1]);
+  $("vs-titulo").textContent = "Importado do Word";
+  $("vs-motivo").textContent = plural(r.itens.length, "registro entrou", "registros entraram") + " no modelo " + mod.nome + (r.relacoes.length ? ", com " + plural(r.relacoes.length, "ligação", "ligações") + " entre objetivo e problema" : "") +
+    (r.medidas.length ? ". " + plural(r.medidas.length, "escala foi para", "escalas foram para") + " Medidas, com " + plural(r.medidas.reduce((n, m) => n + m.pontos.length, 0), "anotação", "anotações") : "") + ". Confira antes de usar.";
+  $("vs-texto").textContent = porModulo.map(x => x[0] + ": " + x[1]).join("\n") +
+    (r.semLugar.length ? "\n\n" + plural(r.semLugar.length, "trecho não achou lugar e ficou", "trechos não acharam lugar e ficaram") + " em \"Fora do modelo\", no fim da formulação. Use Editar, \"Onde fica\", para mudar de lugar." : "") +
+    (r.tabelasFora.length ? "\n\nTabelas sem campo correspondente (o conteúdo também está em \"Fora do modelo\"):\n- " + r.tabelasFora.map(t => curto(t, 90)).join("\n- ") : "") +
+    "\n\nCPF e telefone não são importados.";
+  $("dlg-versao").showModal();
+}
+$("cs-importar").addEventListener("click", () => $("cs-arq").click());
+$("cs-arq").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) importarArquivoWord(f); });
 
 /* ---------- saída: texto, impressão, imagem e cópia ---------- */
 function baixar(nome, conteudo, tipo){
