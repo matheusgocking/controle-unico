@@ -147,3 +147,34 @@ test("Formulação: id estranho não vira código, desfazer ligação pergunta e
     await ctx.close();
   }
 });
+
+test("Clínica: o vencimento segue o saldo de sessões, não a data do pagamento", async () => {
+  const { ctx, p, erros } = await abrir("clinica.html");
+  const r = await p.evaluate(() => {
+    const venc = id => { vencCache = null; devidoCache = null; const v = proximoVencimento(acharPaciente(id)); return v ? chaveData(v) : null; };
+    const out = {};
+    // mensal (4 sessões) pago na segunda 28/09: cobre 28/09, 05/10, 12/10 e 19/10
+    registrarPagamento("pA", "2026-09-28", 700, "pix", "");
+    out.mensal = venc("pA");
+    // quinzenal (2 sessões) que vem a cada duas semanas, pago em 30/09: cobre 30/09 e 14/10
+    registrarPagamento("pC", "2026-09-30", 400, "pix", "");
+    out.quinzenal = venc("pC");
+    out.quinzenalSituacao = situacaoPagamento(acharPaciente("pC")).chave;
+    // com a base da planilha: quitado, vence na próxima sessão; com duas de crédito, na terceira
+    const b = acharPaciente("pB");
+    b.basePlanilha = "2026-09-30"; b.sessoesPlanilha = 10;
+    registrarPagamento("pB", "2026-09-01", 2000, "pix", "");
+    out.quitado = venc("pB");
+    registrarPagamento("pB", "2026-10-02", 400, "pix", "");
+    out.credito = venc("pB");
+    // devendo duas: atrasado desde a penúltima terça
+    b.sessoesPlanilha = 14;
+    out.devendo = venc("pB");
+    out.devendoSituacao = situacaoPagamento(b).chave;
+    return out;
+  });
+  assert.deepEqual(r, { mensal:"2026-10-26", quinzenal:"2026-10-28", quinzenalSituacao:"ok",
+    quitado:"2026-10-06", credito:"2026-10-20", devendo:"2026-09-22", devendoSituacao:"atraso" });
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

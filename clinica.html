@@ -2953,11 +2953,6 @@ function pagamentosDe(id){
 function ultimoPagamento(p){ var l = pagamentosDe(p.id); return l.length ? l[0] : null; }
 
 /* quantos dias um pagamento cobre; zero quer dizer "vence a cada sessão" */
-function diasDoCiclo(p){
-  if(p.cobranca==="mensal") return 28;
-  if(p.cobranca==="quinzenal") return 14;
-  return 0;
-}
 /* a primeira sessão depois de uma data, já respeitando quinzenal, remarcação e encaixe */
 function proximaSessaoApos(p, base){
   for(var i=1; i<=42; i++){
@@ -2969,12 +2964,60 @@ function proximaSessaoApos(p, base){
   }
   return null;
 }
+/* Vencimento pelo saldo de sessões (regra dele, 04/10/2026): o pagamento compra sessões (o ciclo
+   mensal, quatro; o quinzenal, duas; a avulsa, uma) e o paciente só passa a dever quando esse saldo
+   acabou e há sessão realizada, a confirmar ou falta cobrada. Antes o vencimento era a data do
+   pagamento mais 28 ou 14 dias: o quinzenal que pagou duas sessões aparecia atrasado no meio do que
+   já tinha pago, e feriado ou sessão desmarcada não empurravam a data.
+   Devolve o dia em que vence; no passado, o dia da primeira sessão que ficou sem pagar. */
+var vencCache = null;
+/* as sessões que cobram, de uma data em diante, na ordem; "futuras" deixa de fora as que já passaram */
+function sessoesQueCobram(p, desde, quantas, futuras){
+  var lista = [];
+  for(var i = 0; i <= 400 && lista.length < quantas; i++){
+    var d = somaDias(desde, i);
+    for(var h = dados.config.horaInicio; h <= dados.config.horaFim; h++){
+      var st = estadoSessaoDe(p, d, h);
+      if(st && cobraSessao(st.estado) && !(futuras && jaPassou(d, h))) lista.push(d);
+    }
+  }
+  return lista;
+}
 function proximoVencimento(p){
+  if(!vencCache) vencCache = {};
+  if(vencCache[p.id] !== undefined) return vencCache[p.id];
+  return (vencCache[p.id] = calcularVencimento(p));
+}
+function calcularVencimento(p){
+  var dv = devidoDe(p);
+  if(dv){
+    if(dv.sessoes > 0){
+      /* devendo: desde a primeira sessão que o saldo não cobriu */
+      if(dv.extrato){
+        var ls = extratoDe(p).linhas, desde = null;
+        for(var i = ls.length - 1; i >= 0 && ls[i].saldo > 0.005; i--) if(ls[i].cobrado > 0) desde = ls[i].data;
+        if(desde) return deISO(desde);
+      }
+      var passadas = [], hoje = hoje0();
+      for(var d = somaDias(hoje, -365); d <= hoje; d = somaDias(d, 1)){
+        for(var h = dados.config.horaInicio; h <= dados.config.horaFim; h++){
+          var st = estadoSessaoDe(p, d, h);
+          if(st && cobraSessao(st.estado) && jaPassou(d, h)) passadas.push(d);
+        }
+      }
+      var k = passadas.length - dv.sessoes;
+      return k >= 0 ? passadas[k] : deISO(dv.base);
+    }
+    /* em dia: o saldo cobre as próximas sessões; vence na primeira que ficar de fora */
+    var credito = -dv.sessoes, fut = sessoesQueCobram(p, hoje0(), credito + 1, true);
+    return fut.length > credito ? fut[credito] : null;
+  }
+  /* sem base para a conta da dívida: o último pagamento cobre as sessões do dia dele em diante */
   var u = ultimoPagamento(p);
   if(!u) return proximaSessaoApos(p, somaDias(hoje0(),-1)); /* nunca pagou: vence na próxima sessão */
-  var ciclo = diasDoCiclo(p);
-  if(ciclo) return somaDias(deISO(u.data), ciclo);
-  return proximaSessaoApos(p, deISO(u.data));
+  var vs = valorSessaoEm(p, u.data), cobre = vs > 0 ? Math.max(1, Math.round((Number(u.valor)||0) / vs)) : 1;
+  var l = sessoesQueCobram(p, deISO(u.data), cobre + 1, false);
+  return l.length > cobre ? l[cobre] : null;
 }
 /* peso ordena a tabela: atraso na frente, em dia no fim */
 function situacaoPagamento(p){
@@ -4782,7 +4825,7 @@ if(window.ResizeObserver) new ResizeObserver(function(){ dicaDeAbas(); }).observ
 function mesDaSemana(){ var q = somaDias(semana, 3); mesRef = new Date(q.getFullYear(), q.getMonth(), 1); }
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
-  atrasoCache = null; devidoCache = null; cacheMes = {}; cacheNomes = null;
+  atrasoCache = null; devidoCache = null; vencCache = null; cacheMes = {}; cacheNomes = null;
   conferirAprovados();
   renderSemana(); renderMes(); renderSessoes(); renderPainel(); renderMeta(); renderPacientes(); renderPagamentos(); renderMarketing();
 }
