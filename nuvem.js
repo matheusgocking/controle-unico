@@ -639,7 +639,9 @@ var Nuvem = (function(){
     /* recarrega a página de propósito, sem o aviso de mudança pendente (ela continua marcada) */
     recarregar: function(){ saindo = true; location.reload(); },
     conectado: temToken,
-    pior: pior, algumPendente: algumPendente, sair: sair
+    pior: pior, algumPendente: algumPendente, sair: sair,
+    /* a junção das duas cópias, exposta para os testes automáticos (testes/) */
+    juntar: juntar
   };
 })();
 
