@@ -98,7 +98,7 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 .nuvem[data-estado="erro"] #nuvem-texto{display:inline; color:#b3261e; font-weight:500}
 :root[data-theme="dark"] .nuvem[data-estado="erro"] #nuvem-texto{color:#f2a09b}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .nuvem[data-estado="erro"] #nuvem-texto{color:#f2a09b} }
-/* menu "mais": tema, privacidade, sair deste aparelho e a versão */
+/* menu "mais": conferir, tema, privacidade, sair deste aparelho e a versão */
 .menu{position:relative}
 .menu > summary{list-style:none}
 .menu > summary::-webkit-details-marker{display:none}
@@ -111,7 +111,6 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 .menu-lista .sair{color:#b3261e}
 .menu-lista .sair svg{color:currentColor}
 .menu-lista .versao{padding:8px 12px 4px; border-top:1px solid var(--line); margin-top:4px; color:var(--muted); font-size:12px}
-.so-cel{display:none !important}
 /* versão do app: a data da publicação, lida de versao.json (pedido dele, 29/09/2026) */
 .versao{font-size:11px; color:var(--muted); opacity:.85; white-space:nowrap}
 .versao-nova{flex:none; display:flex; align-items:center; justify-content:center; gap:12px; padding:8px 12px; font-size:14px; background:#d49a1c; color:#1b1b1b}
@@ -141,7 +140,6 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   /* erro no celular: uma faixa própria embaixo da barra, para ser lida (antes ficava escondido) */
   .nuvem[data-estado="erro"] #nuvem-texto{display:block; order:9; flex-basis:100%; max-width:none; color:var(--barra-ink); background:rgba(0,0,0,.22); border-radius:8px; padding:6px 10px; font-weight:500}
   header{flex-wrap:wrap}
-  .so-cel{display:flex !important}
   .so-pc{display:none !important}
   .bt.p{padding:5px 12px; font-size:13px}
   .bt{border-color:rgba(255,255,255,.35); color:var(--barra-ink); padding:6px 9px}
@@ -176,12 +174,10 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   <div class="dir">
     <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto" title="Estado do Google Drive" role="img" aria-label="Estado do Google Drive"></span><span id="nuvem-texto" role="status" aria-live="polite"></span>
       <button class="bt p" id="nuvem-entrar" type="button" style="gap:0">Entrar<span class="so-pc">&nbsp;com o Google</span></button></p>
-    <button class="bt so-pc" id="conferir" type="button" title="Conferir o app com as planilhas" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg><span>Conferir</span></button>
     <details class="menu" id="menu">
       <summary class="bt" title="Mais opções" aria-label="Mais opções"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></summary>
       <div class="menu-lista">
-        <button type="button" class="so-cel" id="conferir-cel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg>Conferir com as planilhas</button>
+        <button type="button" id="conferir" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg>Conferir com as planilhas</button>
         <button type="button" id="tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor"/></svg><span id="tema-rot">Tema escuro</span></button>
         <a href="guia.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></svg>Guia rápido</a>
         <a href="privacidade.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/></svg>Privacidade</a>
@@ -290,9 +286,10 @@ function alternarConferir(){
   if (atual === "conferir") mostrar(antesDeConferir);
   else { antesDeConferir = atual || "tudo"; mostrar("conferir"); }
 }
-document.getElementById("conferir").addEventListener("click", alternarConferir);
 var menu = document.getElementById("menu");
-document.getElementById("conferir-cel").addEventListener("click", function(){ menu.open = false; alternarConferir(); });
+// a Conferência fica só no menu ⋯, no celular e no computador (decisão dele, 05/10/2026: desde 01/10
+// o Dinheiro e a Casa existem só no app, e o botão no topo quase não era mais usado)
+document.getElementById("conferir").addEventListener("click", function(){ menu.open = false; alternarConferir(); });
 document.getElementById("sair").addEventListener("click", function(){ menu.open = false; Nuvem.sair(); });
 // o menu fecha ao tocar fora dele ou com Esc
 document.addEventListener("click", function(e){ if (menu.open && !menu.contains(e.target)) menu.open = false; });

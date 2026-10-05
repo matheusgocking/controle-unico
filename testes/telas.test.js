@@ -68,7 +68,10 @@ test("Voltar do celular: volta pelas telas abertas, na ordem", async () => {
 test("Voltar sai da Conferência para a tela de antes", async () => {
   const { ctx, p } = await abrir({ largura:1280 });
   await p.click("[data-p=clinica]"); await espera(600);
-  await p.click("#conferir"); await espera(600);
+  // a Conferência abre pelo menu ⋯, também no computador
+  assert.equal(await p.locator("header > .dir > #conferir").count(), 0);
+  await p.click("#menu summary"); await p.click("#conferir"); await espera(600);
+  assert.equal(await p.evaluate(() => document.getElementById("menu").open), false);
   assert.equal((await tela(p)).casca, "conferir");
   await p.goBack(); await espera(500);
   const t = await tela(p);
