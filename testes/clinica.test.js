@@ -239,3 +239,46 @@ test("Clínica: mudar o horário fixo vale dali em diante e não mexe no passado
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Clínica: o previsto da tela Mês é o mesmo da aba Pagamentos", async () => {
+  const { ctx, p, erros } = await abrir("clinica.html");
+  const r = await p.evaluate(() => {
+    // um paciente em triagem e um preço que muda no meio do mês: antes as duas telas divergiam
+    dados.pacientes.push({ id:"pE", codigo:"T005", nome:"Em Triagem", freq:"semanal", cobranca:"avulsa", valor:180, dia:4, hora:14, status:"Triagem." });
+    const b = acharPaciente("pB");
+    b.ciclos = [{ inicio:"2026-08-01", cobranca:"avulsa", valor:150 }, { inicio:"2026-10-10", cobranca:"avulsa", valor:200, noApp:true }];
+    b.valor = 200;
+    mesRef = new Date(2026, 9, 1); mesPag = new Date(2026, 9, 1);
+    renderTudo();
+    return { mes: document.getElementById("m-receita").textContent, mesTri: document.getElementById("m-receita-tri").textContent,
+             pag: document.getElementById("pg-previsto").textContent, pagTri: document.getElementById("pg-previsto-tri").textContent };
+  });
+  assert.equal(r.mes, r.pag);
+  assert.equal(r.mesTri, r.pagTri);
+  assert.match(r.pagTri, /em triagem/);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Clínica: o histórico de pagamentos vem do mais recente para o mais antigo", async () => {
+  const { ctx, p, erros } = await abrir("clinica.html");
+  const r = await p.evaluate(() => {
+    dados.pagamentos = [
+      { id:"g1", pacienteId:"pA", data:"2026-10-01", valor:700, meio:"pix", receita:"Prática Clínica." },
+      { id:"g2", pacienteId:"pB", data:"2026-10-03", valor:200, meio:"pix", receita:"Prática Clínica." },
+      { id:"g3", pacienteId:"pC", data:"2026-10-01", valor:400, meio:"pix", receita:"Prática Clínica." },
+      { id:"g4", pacienteId:"", nomePlanilha:"Acerto", data:"2026-09-20", valor:50, meio:"pix", receita:"Pendência." }
+    ];
+    mesPag = new Date(2026, 9, 1); mostrarView("pagamentos"); renderTudo();
+    const sec = [...document.querySelectorAll("#v-pagamentos > .panel")].filter(x => !x.classList.contains("hidden")).map(x => x.querySelector("h2").textContent);
+    return { ids: [...document.querySelectorAll("#pg-historico [data-apagar]")].map(b => b.dataset.apagar), sec,
+             form: document.getElementById("pg-form").classList.contains("hidden") };
+  });
+  assert.deepEqual(r.ids, ["g2", "g3", "g1"], "no mesmo dia, o último registrado primeiro; setembro fica fora");
+  assert.match(r.sec[0], /^Histórico de pagamentos/, "o histórico é o primeiro quadro da aba");
+  assert.equal(r.form, true, "o formulário começa fechado");
+  await p.click("#pg-abrir");
+  assert.equal(await p.locator("#pg-form").isVisible(), true);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

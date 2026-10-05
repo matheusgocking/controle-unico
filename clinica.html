@@ -416,6 +416,59 @@ table.tab td .quem .ini{width:28px; height:28px; font-size:12.5px}
 .recibo .meio{color:var(--muted); font-size:11.5px; background:var(--surface-2); border-radius:20px; padding:1px 8px}
 .recibo .apagar{border:0; background:transparent; color:var(--faint); cursor:pointer; font-size:12px; padding:2px 6px; border-radius:6px}
 .recibo .apagar:hover{background:var(--devendo-soft); color:var(--devendo)}
+/* aba Pagamentos (05/10/2026): o histórico em cima, separado por dia; o registrar fica num botão */
+.stat .stat-extra{display:block; font-size:11px; color:var(--muted); margin-top:1px}
+.stat .stat-extra:empty{display:none}
+#v-pagamentos h2 .ss-n{font:400 12.5px/1 inherit; color:var(--muted); margin-left:6px}
+.pg-acoes{display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin-bottom:16px}
+.pg-form{margin-bottom:16px}
+.pg-form h2{margin-bottom:12px}
+#pg-form.hidden + .panel{margin-top:0}
+.pg-campos{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0 14px; align-items:start}
+.pg-campos .field{min-width:0}
+.pg-campos .field input,.pg-campos .field select{width:100%; min-width:0}
+.pg-largo{grid-column:span 2}
+.pg-inteiro{grid-column:1/-1}
+p.pg-inteiro{margin:-6px 0 12px}
+.pg-botoes{display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin-top:2px}
+.pgh-dia{display:flex; justify-content:space-between; gap:10px; padding:16px 0 6px; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border-strong)}
+.pgh-dia:first-child{padding-top:2px}
+.pgh-dia > span:first-child::first-letter{text-transform:uppercase}
+.pgh-tot{font-variant-numeric:tabular-nums}
+.pgh{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13.5px}
+.pgh .ini{width:30px; height:30px; font-size:13px}
+.pgh.fora .ini{background:var(--neutral-chip); color:var(--muted)}
+.pgh-q{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px}
+.pgh-q b{font-weight:600}
+.pgh-q > span{color:var(--muted); font-size:12px; overflow-wrap:anywhere}
+.pgh-v{font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:600}
+.pgh.fora .pgh-v{color:var(--muted)}
+.pgh .apagar{border:0; background:transparent; color:var(--faint); cursor:pointer; font-size:12px; padding:2px 6px; border-radius:6px}
+.pgh .apagar:hover{background:var(--devendo-soft); color:var(--devendo)}
+@media (max-width:700px){
+  .pg-campos{grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 10px}
+  .pg-campos .field input,.pg-campos .field select{min-height:40px; font-size:16px}
+  .pg-botoes .btn{min-height:40px}
+  .pg-botoes .hint{flex-basis:100%}
+  #pg-abrir{flex:1 1 100%; min-height:44px}
+  .pgh .apagar{min-height:40px; min-width:44px; padding:6px 8px}
+  /* a situação de cada paciente vira um cartão por pessoa, sem deslizar para o lado */
+  table.pg-cartoes{margin-top:4px}
+  table.pg-cartoes thead{display:none}
+  table.pg-cartoes, table.pg-cartoes tbody{display:block}
+  table.pg-cartoes tr{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px 12px; padding:12px; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:10px; background:var(--surface)}
+  table.pg-cartoes tr.linha-atraso{background:var(--devendo-soft); border-color:var(--devendo-line)}
+  table.pg-cartoes td, table.tab.pg-cartoes tr.linha-atraso td{display:block; padding:0; border:0; background:transparent; min-width:0}
+  table.pg-cartoes td[data-rot]::before{content:attr(data-rot); display:block; font-size:11px; color:var(--muted); margin-bottom:2px}
+  table.tab.pg-cartoes{padding:0; white-space:normal}
+  /* em cima, o nome e a situação; embaixo, os números */
+  table.pg-cartoes td.pc-quem{grid-column:1; grid-row:1; align-self:center}
+  table.pg-cartoes td.pc-sit{grid-column:2; grid-row:1; align-self:center; text-align:right}
+  table.pg-cartoes td.pc-sit::before{display:none !important}
+  table.pg-cartoes td.pc-sit .sit{white-space:normal; text-align:center}
+  table.pg-cartoes td.pc-acao{grid-column:1/-1; text-align:left}
+  table.pg-cartoes td.pc-acao .btn{width:100%; min-height:40px}
+}
 .fipag{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin-bottom:14px}
 .fipag .topo{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:6px}
 .fipag h3{font-size:14px}
@@ -751,7 +804,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       </div>
       <div class="stats">
         <div class="stat"><b id="m-sessoes">0</b><span>Sessões no mês</span></div>
-        <div class="stat"><b id="m-receita">R$ 0</b><span>Receita prevista</span></div>
+        <div class="stat" title="O que a agenda deste mês deveria render, pela regra de cobrança de cada paciente. É o mesmo número da aba Pagamentos; quem está em triagem aparece embaixo."><b id="m-receita">R$ 0</b><span>Previsto no mês</span><small class="stat-extra" id="m-receita-tri"></small></div>
         <div class="stat"><b id="m-pacientes">0</b><span>Pacientes ativos</span></div>
       </div>
     </div>
@@ -979,6 +1032,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   </section>
 
   <!-- ============ PAGAMENTOS ============ -->
+  <!-- Pedido dele (05/10/2026): o histórico dos pagamentos vem primeiro, do mais novo para o mais
+       antigo; o formulário de registrar fica fechado num botão e mais enxuto; a situação de cada
+       paciente vira cartões no celular, sem deslizar a tabela para o lado. -->
   <section id="v-pagamentos" class="hidden">
     <div class="bar">
       <div class="nav">
@@ -989,46 +1045,37 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       </div>
       <div class="stats">
         <div class="stat" title="Soma do que entrou neste mês."><b id="pg-recebido">R$ 0</b><span>Recebido no mês</span></div>
-        <div class="stat" title="O que a agenda deste mês deveria render, pela regra de cobrança de cada paciente."><b id="pg-previsto">R$ 0</b><span>Previsto no mês</span></div>
+        <div class="stat" title="O que a agenda deste mês deveria render, pela regra de cobrança de cada paciente. Quem está em triagem fica de fora e aparece embaixo."><b id="pg-previsto">R$ 0</b><span>Previsto no mês</span><small class="stat-extra" id="pg-previsto-tri"></small></div>
         <div class="stat" title="Pacientes cujo próximo pagamento já passou da data."><b id="pg-atraso">0</b><span>Em atraso</span></div>
         <div class="stat" title="Pagamentos que vencem de hoje até daqui a sete dias."><b id="pg-semana">R$ 0</b><span>Vence em 7 dias</span></div>
       </div>
     </div>
 
-    <div class="panel">
+    <div class="pg-acoes">
+      <button class="btn primary" id="pg-abrir" aria-expanded="false" aria-controls="pg-form">+ Registrar pagamento</button>
+      <span id="pg-feito" class="hint" role="status"></span>
+    </div>
+
+    <div class="panel hidden pg-form" id="pg-form">
       <h2>Registrar um pagamento</h2>
-      <p class="sub">Um lançamento só para tudo o que entra: pagamento de paciente, pendência ou acerto. O próximo vencimento sai daqui: ciclo mensal vale quatro semanas, quinzenal duas, e quem paga por sessão vence na sessão seguinte.</p>
-      <div class="grid2">
+      <div class="pg-campos">
+        <div class="field pg-largo">
+          <label for="pg-paciente">Quem pagou</label>
+          <select id="pg-paciente"></select>
+        </div>
         <div class="field">
-          <label for="pg-origem">Origem</label>
-          <select id="pg-origem">
-            <option value="Prática Clínica.">Paciente: conta na receita da clínica</option>
-            <option value="Pendência.">Pendência: empréstimo, acerto, dívida antiga</option>
-            <option value="Extra.">Extra: outra entrada</option>
-          </select>
-          <span class="hint">Só a origem Paciente entra na receita da clínica; o resto conta no total do mês (regra de 27/09/2026).</span>
+          <label for="pg-valor">Valor (R$)</label>
+          <input type="number" id="pg-valor" min="0" step="10" inputmode="decimal">
         </div>
         <div class="field">
           <label for="pg-data">Quando pagou</label>
           <input type="date" id="pg-data">
         </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="pg-paciente">Quem pagou</label>
-          <select id="pg-paciente"></select>
-        </div>
-        <div class="field hidden" id="pg-quem-campo">
+        <div class="field pg-inteiro hidden" id="pg-quem-campo">
           <label for="pg-quem">De quem, ou o quê</label>
           <input id="pg-quem" placeholder="ex.: acerto da viagem, empréstimo devolvido">
         </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="pg-valor">Valor (R$)</label>
-          <input type="number" id="pg-valor" min="0" step="10">
-          <span class="hint" id="pg-dica">—</span>
-        </div>
+        <p class="hint pg-inteiro" id="pg-dica">—</p>
         <div class="field">
           <label for="pg-meio">Como pagou</label>
           <select id="pg-meio">
@@ -1039,34 +1086,43 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
             <option value="outro">Outro</option>
           </select>
         </div>
+        <div class="field">
+          <label for="pg-origem">Tipo de entrada</label>
+          <select id="pg-origem" title="Só o pagamento de paciente entra na receita da clínica; o resto conta no total do mês (regra de 27/09/2026).">
+            <option value="Prática Clínica.">Paciente</option>
+            <option value="Pendência.">Pendência ou acerto</option>
+            <option value="Extra.">Outra entrada</option>
+          </select>
+        </div>
+        <div class="field pg-largo">
+          <label for="pg-obs">Observação (opcional)</label>
+          <input id="pg-obs" placeholder="ex.: adiantou o ciclo de outubro">
+        </div>
       </div>
-      <div class="field">
-        <label for="pg-obs">Observação (opcional)</label>
-        <input id="pg-obs" placeholder="ex.: adiantou o ciclo de outubro">
-      </div>
-      <div style="display:flex; gap:8px; align-items:center">
-        <button class="btn primary" id="pg-add">Registrar pagamento</button>
-        <span id="pg-feito" class="hint"></span>
+      <div class="pg-botoes">
+        <button class="btn primary" id="pg-add">Registrar</button>
+        <button class="btn ghost" id="pg-cancelar">Cancelar</button>
+        <span class="hint">Só o pagamento de paciente entra na receita da clínica. O próximo vencimento sai daqui.</span>
       </div>
     </div>
 
     <div class="panel">
+      <h2>Histórico de pagamentos <small class="ss-n" id="pg-hist-n"></small></h2>
+      <p class="sub" id="pg-hist-sub">O que entrou no mês aberto, do mais recente para o mais antigo. Use ‹ e › para ver outros meses.</p>
+      <div id="pg-historico"></div>
+    </div>
+
+    <div class="panel">
       <h2>Situação de cada paciente</h2>
-      <p class="sub">Primeiro quem deve mais. "Deve" são as sessões já cobradas e ainda não pagas, como na planilha. O botão registra um pagamento de hoje, no valor do ciclo dele.</p>
+      <p class="sub">Primeiro quem deve mais. "Deve" são as sessões já cobradas e ainda não pagas, como na planilha. "Recebi hoje" registra um pagamento de hoje, no valor do ciclo dele.</p>
       <div class="tabwrap">
-        <table class="tab" id="pg-tabela">
+        <table class="tab pg-cartoes" id="pg-tabela">
           <thead><tr>
             <th>Paciente</th><th>Deve</th><th>Cobrança</th><th>Último pagamento</th><th>Próximo pagamento</th><th>Situação</th><th></th>
           </tr></thead>
           <tbody></tbody>
         </table>
       </div>
-    </div>
-
-    <div class="panel">
-      <h2>Pagamentos do mês</h2>
-      <p class="sub" id="pg-hist-sub">O que entrou no mês aberto, do mais novo para o mais antigo.</p>
-      <div id="pg-historico"></div>
     </div>
   </section>
 
@@ -1481,11 +1537,6 @@ function importarHistorico(lista){
   });
   salvar(); renderTudo();
   return n;
-}
-function receitaMensal(p, sessoesNoMes){
-  if(p.cobranca==="mensal") return p.valor;
-  if(p.cobranca==="quinzenal") return p.valor;
-  return p.valor*sessoesNoMes;
 }
 /* Estados de uma sessão: "sessao" (acontece e cobra), "falta" (não compareceu sem aviso de
    24 horas: cobra), "remarcada" (avisou: não cobra), "cancelada" (não haverá: não cobra) e
@@ -1996,13 +2047,13 @@ function renderMes(){
     alvo.appendChild(cel);
   }
 
-  var receita = 0, ativos = 0;
-  dados.pacientes.forEach(function(p){
-    var n = contagemPorPaciente[p.id]||0;
-    if(n>0){ ativos++; receita += receitaMensal(p, n); }
-  });
+  /* a receita é a mesma conta da aba Pagamentos (05/10/2026): antes esta tela usava o valor de
+     hoje de cada paciente e somava quem está em triagem, e os dois números não batiam */
+  var ativos = 0, nMes = numerosDoMes(primeiro);
+  dados.pacientes.forEach(function(p){ if((contagemPorPaciente[p.id]||0) > 0) ativos++; });
   document.getElementById("m-sessoes").textContent = totalSessoes;
-  document.getElementById("m-receita").textContent = moeda(receita);
+  document.getElementById("m-receita").textContent = moeda(nMes.previsto);
+  document.getElementById("m-receita-tri").textContent = nMes.previstoTriagem > 0 ? "+ " + moeda(nMes.previstoTriagem) + " em triagem" : "";
   document.getElementById("m-pacientes").textContent = ativos;
 }
 
@@ -3008,8 +3059,7 @@ function rotuloCobranca(p){
 }
 
 function pagamentosDe(id){
-  return dados.pagamentos.filter(function(g){ return g.pacienteId===id; })
-    .sort(function(a,b){ return a.data < b.data ? 1 : (a.data > b.data ? -1 : 0); });
+  return maisRecentePrimeiro(dados.pagamentos.filter(function(g){ return g.pacienteId===id; }));
 }
 function ultimoPagamento(p){ var l = pagamentosDe(p.id); return l.length ? l[0] : null; }
 
@@ -3187,10 +3237,15 @@ function registrarPagamento(pacienteId, dataISO, valor, meio, obs, receita, quem
   salvar(); renderTudo();
   return true;
 }
+/* do mais recente para o mais antigo; no mesmo dia, o último registrado vem primeiro (05/10/2026) */
+function maisRecentePrimeiro(lista){
+  return lista.map(function(g, i){ return {g:g, i:i}; })
+    .sort(function(a,b){ return a.g.data < b.g.data ? 1 : (a.g.data > b.g.data ? -1 : b.i - a.i); })
+    .map(function(x){ return x.g; });
+}
 function pagamentosDoMes(ref){
   var alvo = ref.getFullYear()+"-"+String(ref.getMonth()+1).padStart(2,"0");
-  return dados.pagamentos.filter(function(g){ return String(g.data||"").indexOf(alvo)===0; })
-    .sort(function(a,b){ return a.data < b.data ? 1 : (a.data > b.data ? -1 : 0); });
+  return maisRecentePrimeiro(dados.pagamentos.filter(function(g){ return String(g.data||"").indexOf(alvo)===0; }));
 }
 /* o que a agenda de um mês deve render, pela regra de cobrança de cada paciente */
 function previstoDoMes(ref){ return numerosDoMes(ref).previsto; }
@@ -3210,7 +3265,8 @@ function renderPagamentos(){
   recebidos.forEach(function(g){ somaRecebida += Number(g.valor)||0; });
   document.getElementById("pg-recebido").textContent = moeda(somaRecebida);
   var nPg = numerosDoMes(ref);
-  document.getElementById("pg-previsto").textContent = moeda(nPg.previsto) + (nPg.previstoTriagem > 0 ? " + " + moeda(nPg.previstoTriagem) + " em triagem" : "");
+  document.getElementById("pg-previsto").textContent = moeda(nPg.previsto);
+  document.getElementById("pg-previsto-tri").textContent = nPg.previstoTriagem > 0 ? "+ " + moeda(nPg.previstoTriagem) + " em triagem" : "";
   document.getElementById("pg-sub").textContent =
     recebidos.length + (recebidos.length===1 ? " pagamento registrado" : " pagamentos registrados");
 
@@ -3240,15 +3296,16 @@ function renderPagamentos(){
     var p = l.p, s = l.s, dv = textoDevido(p);
     var tr = document.createElement("tr");
     if(s.chave==="atraso" || dv.classe==="atraso") tr.className = "linha-atraso";
+    /* data-rot: no celular a linha vira um cartão e cada dado leva o nome da coluna ao lado */
     tr.innerHTML =
-      '<td><span class="quem"><span class="ini">'+esc(inicial1(p))+'</span>' +
+      '<td class="pc-quem"><span class="quem"><span class="ini">'+esc(inicial1(p))+'</span>' +
         '<button class="linknome" data-ficha="'+esc(p.id)+'">'+esc(p.nome)+'</button></span></td>' +
-      '<td><span class="sit '+dv.classe+'" title="'+esc(dv.titulo)+'">'+esc(dv.texto)+'</span></td>' +
-      '<td>'+rotuloCobranca(p)+'<br><span class="hint">'+moeda(p.valor)+' por ciclo</span></td>' +
-      '<td>'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio||"")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
-      '<td>'+(s.venc ? dataLonga(s.venc)+'<br><span class="hint">'+DIAS_CURTO[s.venc.getDay()].toLowerCase()+'</span>' : "—")+'</td>' +
-      '<td><span class="sit '+s.classe+'">'+esc(s.texto)+'</span></td>' +
-      '<td class="num"><button class="btn sm" data-recebi="'+esc(p.id)+'">Recebi hoje</button></td>';
+      '<td data-rot="Deve"><span class="sit '+dv.classe+'" title="'+esc(dv.titulo)+'">'+esc(dv.texto)+'</span></td>' +
+      '<td data-rot="Cobrança">'+rotuloCobranca(p)+'<br><span class="hint">'+moeda(p.valor)+' por ciclo</span></td>' +
+      '<td data-rot="Último">'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio||"")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
+      '<td data-rot="Próximo">'+(s.venc ? dataLonga(s.venc)+'<br><span class="hint">'+DIAS_CURTO[s.venc.getDay()].toLowerCase()+'</span>' : "—")+'</td>' +
+      '<td class="pc-sit" data-rot="Situação"><span class="sit '+s.classe+'">'+esc(s.texto)+'</span></td>' +
+      '<td class="num pc-acao"><button class="btn sm" data-recebi="'+esc(p.id)+'">Recebi hoje</button></td>';
     tb.appendChild(tr);
   });
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
@@ -3262,7 +3319,7 @@ function renderPagamentos(){
       var p = acharPaciente(b.dataset.recebi);
       if(!p) return;
       if(!registrarPagamento(p.id, chaveData(hoje0()), p.valor, "pix", "")) return;
-      avisarPagamento(p.nome + " pagou " + moeda(p.valor) + " hoje. Dá para trocar o meio ou apagar na lista do mês.");
+      avisarPagamento(p.nome + " pagou " + moeda(p.valor) + " hoje. Está no topo do histórico, se precisar apagar.");
     });
   });
 
@@ -3278,25 +3335,51 @@ function renderPagamentos(){
   if(!document.getElementById("pg-data").value) document.getElementById("pg-data").value = chaveData(hoje0());
   dicaPagamento(false);
 
+  /* o histórico: do mais recente para o mais antigo, separado por dia, com o total do dia
+     quando entrou mais de um pagamento (pedido dele, 05/10/2026) */
   var hist = document.getElementById("pg-historico");
+  document.getElementById("pg-hist-n").textContent = recebidos.length ? recebidos.length + " · " + moeda(somaRecebida) : "";
   hist.innerHTML = "";
   if(!recebidos.length){
     hist.innerHTML = '<p class="pvazio">Nenhum pagamento registrado neste mês.</p>';
     return;
   }
+  var porDia = [];
   recebidos.forEach(function(g){
-    var p = acharPaciente(g.pacienteId);
-    var div = document.createElement("div");
-    div.className = "recibo";
-    div.innerHTML =
-      '<span class="q">'+esc(p ? p.nome : (g.nomePlanilha || "Paciente fora da agenda"))+'</span>' +
-      '<span>'+dataLonga(deISO(g.data))+'</span>' +
-      (g.receita && g.receita !== "Prática Clínica." ? '<span class="meio">'+esc(g.receita.replace(/\.$/,""))+'</span>' : "") +
-      (g.meio ? '<span class="meio">'+esc(MEIOS[g.meio]||g.meio)+'</span>' : "") +
-      (g.obs ? '<span class="hint">'+esc(g.obs)+'</span>' : "") +
-      '<span class="v">'+moeda(g.valor)+'</span>' +
-      '<button class="apagar" data-apagar="'+esc(g.id)+'" title="Apagar este registro">apagar</button>';
-    hist.appendChild(div);
+    var ult = porDia[porDia.length-1];
+    if(ult && ult.data === g.data) ult.lista.push(g); else porDia.push({data:g.data, lista:[g]});
+  });
+  porDia.forEach(function(dia){
+    var d = deISO(dia.data), total = 0;
+    dia.lista.forEach(function(g){ total += Number(g.valor)||0; });
+    var cab = document.createElement("div");
+    cab.className = "pgh-dia";
+    cab.innerHTML = '<span>'+esc(d.toLocaleDateString("pt-BR", {weekday:"long", day:"numeric", month:"long"}))+'</span>' +
+      (dia.lista.length > 1 ? '<span class="pgh-tot">'+moeda(total)+'</span>' : "");
+    hist.appendChild(cab);
+    dia.lista.forEach(function(g){
+      var p = acharPaciente(g.pacienteId);
+      var nome = p ? p.nome : (g.nomePlanilha || "Paciente fora da agenda");
+      var detalhes = [];
+      if(g.meio) detalhes.push(esc(MEIOS[g.meio]||g.meio));
+      if(g.receita && g.receita !== "Prática Clínica.") detalhes.push(esc(g.receita.replace(/\.$/,"")) + ", fora da receita");
+      if(g.obs) detalhes.push(esc(g.obs));
+      var div = document.createElement("div");
+      div.className = "pgh" + (dePaciente(g) ? "" : " fora");
+      div.innerHTML =
+        '<span class="ini">'+esc(p ? inicial1(p) : (nome.charAt(0) || "?").toUpperCase())+'</span>' +
+        '<span class="pgh-q">'+(p ? '<button class="linknome" data-ficha="'+esc(p.id)+'">'+esc(nome)+'</button>' : '<b>'+esc(nome)+'</b>') +
+          (detalhes.length ? '<span>'+detalhes.join(" · ")+'</span>' : "")+'</span>' +
+        '<b class="pgh-v">'+moeda(g.valor)+'</b>' +
+        '<button class="apagar" data-apagar="'+esc(g.id)+'" title="Apagar este registro" aria-label="Apagar o pagamento de '+esc(nome)+'">apagar</button>';
+      hist.appendChild(div);
+    });
+  });
+  hist.querySelectorAll("[data-ficha]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var p = acharPaciente(b.dataset.ficha);
+      if(p) abrirFicha(p);
+    });
   });
   hist.querySelectorAll("[data-apagar]").forEach(function(b){
     b.addEventListener("click", function(){
@@ -5022,6 +5105,15 @@ document.getElementById("ss-desde").addEventListener("change", function(){
   salvar(); renderTudo();
 });
 document.getElementById("pg-paciente").addEventListener("change", function(){ dicaPagamento(true); });
+/* o formulário de registrar fica fechado; o botão abre e já põe o foco em quem pagou */
+function abrirFormPagamento(abrir){
+  document.getElementById("pg-form").classList.toggle("hidden", !abrir);
+  document.getElementById("pg-abrir").setAttribute("aria-expanded", abrir ? "true" : "false");
+  document.getElementById("pg-abrir").classList.toggle("hidden", abrir);
+  if(abrir) document.getElementById("pg-paciente").focus();
+}
+document.getElementById("pg-abrir").addEventListener("click", function(){ abrirFormPagamento(true); });
+document.getElementById("pg-cancelar").addEventListener("click", function(){ abrirFormPagamento(false); document.getElementById("pg-abrir").focus(); });
 document.getElementById("mk-novo").addEventListener("click", function(){ abrirAnuncio(""); });
 document.getElementById("mk-desde").addEventListener("change", function(){
   var v = document.getElementById("mk-desde").value;
@@ -5042,6 +5134,7 @@ document.getElementById("pg-add").addEventListener("click", function(){
   document.getElementById("pg-obs").value = "";
   document.getElementById("pg-quem").value = "";
   mesPag = deISO(data); /* abre o mês do pagamento que ele acabou de lançar */
+  abrirFormPagamento(false);
   renderPagamentos();
   var venc = p ? proximoVencimento(p) : null;
   avisarPagamento((p ? p.nome : quem) + " · " + moeda(valor) + " em " + dataLonga(deISO(data)) +

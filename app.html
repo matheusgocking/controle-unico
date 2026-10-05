@@ -573,13 +573,15 @@ const COLUNAS = {
 };
 const valorDaColuna = (l, c) => c === "valor" ? Number(l.valor) || 0
   : c === "compra" ? semPonto(l.categoria) + " " + (l.descricao || "") : String(l[c] || "");
+// No mesmo dia, o lançado por último aparece primeiro (pedido dele, 05/10/2026): a lista guarda
+// a ordem em que foi lançado, e é ela que desempata.
 function ordenar(lista, qual){
   const { c, d } = ordem[qual];
-  return lista.slice().sort((a, b) => {
+  return lista.map((l, i) => [l, i]).sort(([a, ia], [b, ib]) => {
     const x = valorDaColuna(a, c), y = valorDaColuna(b, c);
     const r = typeof x === "number" ? x - y : x.localeCompare(y, "pt-BR", { sensitivity:"base" });
-    return (r || (b.data || "").localeCompare(a.data || "") * d) * d;
-  });
+    return (r || (b.data || "").localeCompare(a.data || "") * d) * d || (c === "data" ? (ia - ib) * d : ib - ia);
+  }).map(([l]) => l);
 }
 function cabecalho(qual){
   const o = ordem[qual];
@@ -862,7 +864,8 @@ function painelMeusLancamentos(){
   const eu = livro.casa.pessoas[0];
   const itens = livro.matheus.lancamentos.filter(noMes).map(l => ({ l, onde:"matheus" }))
     .concat(livro.casa.lancamentos.filter(noMes).filter(l => l.quem === eu).map(l => ({ l, onde:"casa" })))
-    .sort((a, b) => (b.l.data || "").localeCompare(a.l.data || ""));
+    .map((x, i) => ({ ...x, i }))
+    .sort((a, b) => (b.l.data || "").localeCompare(a.l.data || "") || b.i - a.i);
   const linha = ({ l, onde }) => {
     const casa = onde === "casa", lugar = casa ? "Casa" : "Pessoal";
     const cls = !casa && (l.tipo === "Receita" || l.tipo === "Resgate") ? "pos" : "";
