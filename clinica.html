@@ -205,6 +205,11 @@ button,input,select,textarea{font:inherit; color:inherit}
 .cell.remarcada .nm{text-decoration:line-through; font-weight:400; opacity:.8}
 /* cortesia: a sessão acontece (roxo de sessão), mas não cobra: o contorno tracejado por dentro diz isso */
 .cell.cortesia{background:var(--t-sessao-bg); border-left-color:var(--t-sessao-bar); color:var(--t-sessao-fg); outline:2px dashed var(--t-sessao-bar); outline-offset:-5px}
+/* não haverá sessão: a hora continua sendo do paciente. Cinza, como na aba Sessões, com o nome
+   apagado e a barra pontilhada: dá para ver de quem é, sem parecer sessão (05/10/2026) */
+.cell.cancelada{background:var(--neutral-chip); border-left:4px dotted var(--border-strong); color:var(--faint)}
+.cell.cancelada .nm{font-weight:500; opacity:.85}
+.cell.cancelada .lab{font-weight:600; font-size:10.5px; letter-spacing:.02em; text-transform:lowercase}
 select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:12.5px; max-width:100%}
 @media (max-width:700px){ select.situacao{min-height:40px; font-size:16px} } /* área de toque; abaixo de 16 px o iPhone dá zoom */
 @media (max-width:700px){
@@ -230,6 +235,80 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 .legend span{display:inline-flex; align-items:center}
 .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; border:1px solid rgba(128,128,128,.35)}
 .legend .dica{color:var(--faint); flex-basis:100%}
+/* legenda da semana (05/10/2026): cada amostra é uma célula da grade em miniatura, com nomes curtos,
+   em dois grupos: o que acontece com o paciente e o que é o horário sem paciente */
+.leg-semana{margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; display:flex; flex-direction:column; gap:10px}
+.leg-semana .grupo{display:grid; grid-template-columns:118px minmax(0,1fr); align-items:start; gap:8px}
+.leg-semana .itens{display:flex; flex-wrap:wrap; gap:8px 18px}
+.leg-semana h3{margin:3px 0 0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint)}
+.leg-semana .it{display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--text)}
+.leg-semana .it .sw{width:26px; height:18px}
+.leg-semana .dica{margin:0; padding-top:10px; border-top:1px solid var(--border); font-size:12.5px; color:var(--muted)}
+/* amostras: as mesmas cores das células */
+.sw{display:inline-block; flex:none; width:22px; height:16px; border-radius:4px; border-left:3px solid transparent; box-sizing:border-box; position:relative}
+.sw-normal{background:var(--t-sessao-bg); border-left-color:var(--t-sessao-bar)}
+.sw-realizada{background:var(--t-realizada-bg); border-left-color:var(--t-realizada-bar)}
+.sw-falta{background:var(--t-falta-bg); border-left-color:var(--t-falta-bar)}
+.sw-remarcada{background:var(--t-remarcada-bg); border:1px dashed var(--t-remarcada-bar); border-left:3px dashed var(--t-remarcada-bar)}
+.sw-encaixe{background:var(--t-encaixe-bg); border-left-color:var(--t-encaixe-bar)}
+.sw-cancelada{background:var(--neutral-chip); border-left:3px dotted var(--border-strong)}
+.sw-cortesia{background:var(--t-sessao-bg); border-left-color:var(--t-sessao-bar); outline:1.5px dashed var(--t-sessao-fg); outline-offset:-4px}
+.sw-divulgado{background:var(--t-divulgado-bg); border-left-color:var(--t-divulgado-bar)}
+.sw-reservado{background-color:var(--t-reservado-bg); background-image:repeating-linear-gradient(135deg, var(--t-reservado-risca) 0 3px, transparent 3px 6px); border-left-color:var(--t-reservado-bar)}
+.sw-livre{background:var(--surface); border:1px solid var(--border-strong)}
+.sw-devendo{background:var(--t-sessao-bg); border-left-color:var(--t-sessao-bar); box-shadow:inset -4px 0 0 var(--devendo)}
+@media (max-width:700px){
+  .leg-semana{padding:12px}
+  .leg-semana .grupo{grid-template-columns:minmax(0,1fr)}
+  .leg-semana .itens{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px 10px}
+}
+
+/* ---------- menu de célula ---------- */
+.menu{position:absolute; z-index:40; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:var(--shadow); padding:6px; min-width:206px}
+.menu .head{padding:6px 8px 8px; border-bottom:1px solid var(--border); margin-bottom:6px}
+.menu .head b{font-family:var(--font); font-weight:700; font-size:14px}
+.menu .head span{display:block; color:var(--muted); font-size:12px}
+.menu button{display:flex; align-items:center; gap:8px; width:100%; border:0; background:transparent; padding:7px 8px; border-radius:7px; cursor:pointer; text-align:left}
+.menu button:hover{background:var(--surface-2)}
+.menu hr{border:0; border-top:1px solid var(--border); margin:6px 0}
+.menu i{width:9px; height:9px; border-radius:3px; display:inline-block}
+.menu select{width:100%; padding:6px; border-radius:7px; border:1px solid var(--border-strong); background:var(--surface)}
+/* menu da célula (05/10/2026): as situações em quadradinhos de escolha, a atual marcada */
+.menu-cel{width:344px; padding:8px; box-shadow:0 12px 32px rgba(0,0,0,.18)}
+.menu-cel .head{padding:4px 6px 10px; margin-bottom:8px}
+.menu-cel .head b{font-size:15px}
+.menu .ops{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px}
+.menu .ops.tres{grid-template-columns:repeat(3,minmax(0,1fr))}
+.menu .op{position:relative; align-items:center; gap:9px; padding:9px 9px; border:1px solid var(--border); background:var(--surface); border-radius:10px; min-height:48px}
+.menu .op:hover{background:var(--surface-2); border-color:var(--border-strong)}
+.menu .op .sw{width:22px; height:22px; border-radius:6px}
+.menu .op-t{display:flex; flex-direction:column; min-width:0; font-size:13.5px; font-weight:600; line-height:1.2; color:var(--text)}
+.menu .op-t small{font-size:11px; font-weight:400; color:var(--muted); margin-top:2px}
+.menu .op.on{border-color:var(--accent); background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent)}
+.menu .op.on::after{content:"✓"; position:absolute; top:4px; right:7px; font-size:11px; font-weight:700; color:var(--accent)}
+.menu .ops.tres .op{flex-direction:column; align-items:flex-start; gap:6px}
+.menu .acoes{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border)}
+.menu .acoes button{width:auto; flex:1 1 auto; justify-content:center; border:1px solid var(--border); border-radius:9px; padding:7px 10px; font-size:13px}
+.menu .encaixe{margin-top:8px; padding:8px 4px 2px; border-top:1px solid var(--border)}
+.menu .encaixe label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px}
+.menu-fundo{display:none}
+/* no celular o menu vira uma folha que sobe do pé da tela, com o resto escurecido */
+@media (max-width:700px){
+  .menu-fundo{display:block; position:fixed; inset:0; z-index:39; background:rgba(15,20,30,.42)}
+  .menu{position:fixed; top:auto !important; left:0 !important; right:0; bottom:0; width:auto; min-width:0;
+    border-radius:18px 18px 0 0; border-bottom:0; padding:8px 14px calc(16px + env(safe-area-inset-bottom)); max-height:86vh; overflow-y:auto}
+  .menu .head{position:relative; padding:18px 4px 12px}
+  .menu .head::before{content:""; position:absolute; top:4px; left:50%; width:40px; height:4px; margin-left:-20px; border-radius:4px; background:var(--border-strong)}
+  .menu .head b{font-size:17px}
+  .menu .op{min-height:58px; padding:10px 11px}
+  .menu .op-t{font-size:15px}
+  .menu .op-t small{font-size:12px}
+  .menu .acoes button{min-height:44px; font-size:14px}
+}
+@media (prefers-reduced-motion: no-preference) and (max-width:700px){
+  .menu{animation:sobe .16s ease-out}
+  @keyframes sobe{from{transform:translateY(24px); opacity:.6} to{transform:none; opacity:1}}
+}
 .avisobar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:var(--radius); padding:10px 12px; margin-bottom:14px; font-size:13px}
 
 /* ---------- menu de célula ---------- */
@@ -661,6 +740,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 @media (max-width:700px){
   .recibo .apagar{min-height:40px; min-width:44px; padding:6px 10px}
   .menu button{min-height:40px}
+  .menu .acoes button{min-height:44px}
+  .cell.cancelada{border-left-width:2px}
+  .cell.cancelada .lab{font-size:8px; letter-spacing:0}
   .menu select{min-height:40px; font-size:16px}
 }
 </style>
@@ -727,16 +809,24 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <div class="pgrid" id="hoje-cartoes"></div>
     </div>
 
-    <div class="legend">
-      <span><i style="background:var(--t-sessao-bg); border-color:var(--t-sessao-bar)"></i>Sessão do horário fixo</span>
-      <span><i style="background:var(--t-divulgado-bg); border-color:var(--t-divulgado-bar)"></i>Atendimento divulgado: pintado, entra na mensagem</span>
-      <span><i style="background-color:var(--t-reservado-bg); background-image:repeating-linear-gradient(135deg,var(--t-reservado-bar) 0 2px,transparent 2px 4px); border-color:var(--t-reservado-bar)"></i>Atendimento não divulgado: riscado, fica fora da mensagem</span>
-      <span><i style="background:var(--t-encaixe-bg); border-color:var(--t-encaixe-bar)"></i>Encaixe: a sessão entra aqui (← veio de)</span>
-      <span><i style="background:var(--t-remarcada-bg); border-color:var(--t-remarcada-bar); border-style:dashed"></i>Remarcada: a sessão sai daqui (→ foi para)</span>
-      <span><i style="background:var(--t-realizada-bg); border-color:var(--t-realizada-bar)"></i>Realizada (você confirmou)</span>
-      <span><i style="background:var(--t-falta-bg); border-color:var(--t-falta-bar)"></i>Faltou</span>
-      <span><i style="background:var(--devendo); border-color:var(--devendo)"></i>Tarja à direita: pagamento vencido</span>
-      <span class="dica">Clique no paciente para marcar a sessão como realizada, falta ou remarcada. Arraste o nome de um paciente para outro horário para remarcar. No canto, o código do prontuário.</span>
+    <!-- legenda (05/10/2026): nomes curtos e amostras iguais às células, em dois grupos -->
+    <div class="leg-semana" aria-label="Legenda da semana">
+      <div class="grupo"><h3>Sessão</h3><div class="itens">
+        <span class="it"><i class="sw sw-normal"></i>Marcada</span>
+        <span class="it"><i class="sw sw-realizada"></i>Realizada</span>
+        <span class="it"><i class="sw sw-falta"></i>Faltou</span>
+        <span class="it"><i class="sw sw-remarcada"></i>Remarcada (saiu)</span>
+        <span class="it"><i class="sw sw-encaixe"></i>Encaixe (entrou)</span>
+        <span class="it"><i class="sw sw-cancelada"></i>Não haverá</span>
+        <span class="it"><i class="sw sw-cortesia"></i>Cortesia</span>
+        <span class="it"><i class="sw sw-devendo"></i>Pagamento vencido</span>
+      </div></div>
+      <div class="grupo"><h3>Horário livre</h3><div class="itens">
+        <span class="it"><i class="sw sw-divulgado"></i>Divulgado</span>
+        <span class="it"><i class="sw sw-reservado"></i>Não divulgado</span>
+        <span class="it"><i class="sw sw-livre"></i>Sem atendimento</span>
+      </div></div>
+      <p class="dica">Toque num horário para escolher a situação. Arraste um paciente para outro horário para remarcar.</p>
     </div>
   </section>
 
@@ -1587,7 +1677,7 @@ function renderSemana(){
 
       if(info.classe==="sessao" || info.classe==="sessao realizada"){ sessoes++; receita += valorSessao(info.paciente); }
       if(info.classe==="cortesia") sessoes++; /* acontece, ocupa a hora, mas não entra na receita */
-      if(info.classe==="divulgado") divulgadosLivres++;
+      if(livreDivulgado(info)) divulgadosLivres++;
     }
   }
 
@@ -1654,10 +1744,16 @@ function estadoCelula(dia, hora, data){
     if(estado==="remarcada") return {classe:"remarcada", nome:nomeGrade(p),
       etiqueta:(ex && ex.para ? "→ Foi para "+quando(ex.para) : "→ Remarcada"), paciente:p, origem:"fixo"};
     if(estado==="cortesia") return {classe:"cortesia", nome:nomeGrade(p), etiqueta:"Cortesia", aria:nomeGrade(p)+", sessão cortesia, não cobrada", paciente:p, origem:"fixo"};
-    /* "não haverá sessão nesta data" não deixa a hora em branco: ela volta a ser o
-       horário de atendimento que já era, em vez de virar um buraco no meio do bloco */
     if(estado!=="cancelada")
       return {classe:"sessao", nome:nomeGrade(p), etiqueta:(jaPassou(data, hora) ? "a confirmar" : ""), paciente:p, origem:"fixo"};
+    /* "não haverá sessão nesta data": o horário continua sendo dele, então o nome fica, apagado,
+       com "não haverá" embaixo (pedido dele, 05/10/2026). Antes o nome sumia e a hora parecia de
+       ninguém. Se a hora era divulgada, ela continua entrando na mensagem, como antes. */
+    var blocoFixo = dados.blocos[dia+"-"+hora];
+    var divulga = blocoFixo==="divulgado" && data >= inicioSemana(hoje0());
+    return {classe:"cancelada", nome:nomeGrade(p), etiqueta:"Não haverá",
+      aria:nomeGrade(p)+", não haverá sessão nesta data"+(divulga ? "; horário divulgado" : ""),
+      paciente:p, origem:"fixo", divulga:divulga};
   }
   /* as duas linhas da célula dizem o estado inteiro: "Atendimento" em cima, divulgado ou não embaixo */
   var bloco = dados.blocos[dia+"-"+hora];
@@ -1672,6 +1768,8 @@ function estadoCelula(dia, hora, data){
   if(bloco) return {classe:"pessoal "+bloco, nome:"", etiqueta:TIPOS_PESSOAIS[bloco]||bloco, paciente:null};
   return {classe:"", nome:"", etiqueta:"", paciente:null};
 }
+/* horário divulgado e sem sessão: o que entra na mensagem e na conta dos divulgados livres */
+function livreDivulgado(info){ return info.classe==="divulgado" || !!info.divulga; }
 function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 /* As janelas (ficha, mensagem, cobrança, anúncio, leitura da planilha) levam o teclado junto
    (04/10/2026): ao abrir, o foco entra na janela, sem abrir o teclado do celular; o Tab circula
@@ -1742,6 +1840,7 @@ function fecharMenu(){
   if(!menuAberto) return;
   var tinhaFoco = menuAberto.contains(document.activeElement), v = voltaDoMenu;
   menuAberto.remove(); menuAberto = null; voltaDoMenu = null;
+  document.querySelectorAll(".menu-fundo").forEach(function(f){ f.remove(); });
   if(!tinhaFoco || !v) return;
   var achar = function(){ return document.querySelector('.cell[data-data="'+v.data+'"][data-hora="'+v.hora+'"]'); };
   var c = achar(); if(c) c.focus({preventScroll:true});
@@ -1755,19 +1854,23 @@ function fecharMenu(){
 function menuComTeclado(m, cel){
   voltaDoMenu = {data:cel.dataset.data, hora:cel.dataset.hora};
   m.setAttribute("role", "menu");
-  m.querySelectorAll("button[data-acao]").forEach(function(b){ b.setAttribute("role", "menuitem"); });
+  m.querySelectorAll("button[data-acao]").forEach(function(b){ if(!b.hasAttribute("role")) b.setAttribute("role", "menuitem"); });
+  /* no celular, o resto da tela escurece atrás do menu; tocar nele fecha */
+  var fundo = document.createElement("div");
+  fundo.className = "menu-fundo";
+  m.parentNode.insertBefore(fundo, m);
   m.addEventListener("keydown", function(e){
     if(e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); fecharMenu(); return; }
-    if(e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    if(["ArrowDown","ArrowUp","ArrowRight","ArrowLeft"].indexOf(e.key) < 0) return;
     if(e.target.tagName === "SELECT") return;
     var l = Array.prototype.slice.call(m.querySelectorAll("button,select")), i = l.indexOf(document.activeElement);
     if(!l.length) return;
     e.preventDefault();
-    l[(i + (e.key === "ArrowDown" ? 1 : -1) + l.length) % l.length].focus();
+    l[(i + (e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : -1) + l.length) % l.length].focus();
   });
   /* o Tab que sai do menu fecha ele, como clicar fora */
   m.addEventListener("focusout", function(e){ if(menuAberto === m && e.relatedTarget && !m.contains(e.relatedTarget)){ voltaDoMenu = null; fecharMenu(); } });
-  var primeiro = m.querySelector("button,select");
+  var primeiro = m.querySelector(".op.on") || m.querySelector("button,select");
   if(primeiro) primeiro.focus({preventScroll:true});
 }
 document.addEventListener("click", function(e){
@@ -1785,55 +1888,59 @@ function abrirMenu(e){
   var info = estadoCelula(dia, hora, data);
 
   var m = document.createElement("div");
-  m.className = "menu";
-  var cab = '<div class="head"><b>'+DIAS[dia]+', '+String(hora).padStart(2,"0")+'h</b><span>'+data.toLocaleDateString("pt-BR")+'</span></div>';
-  var corpo = "";
-
+  m.className = "menu menu-cel";
   var ex = excecao(data, hora);
   var fixoDaHora = pacienteEm(dia, hora, data);
   /* a hora aceita encaixe quando ninguém vai ser atendido nela: ou está vazia,
      ou o paciente fixo saiu (falta, remarcada, não haverá) e ninguém entrou ainda */
   var aceitaEncaixe = !info.paciente || (info.origem==="fixo" && saiuDaHora(ex));
+  var quandoTxt = DIAS_CURTO[dia]+" "+dataCurta(data)+" · "+String(hora).padStart(2,"0")+"h";
+  var cab = '<div class="head"><b>'+(info.paciente ? esc(nomeGrade(info.paciente)) : DIAS[dia]+", "+String(hora).padStart(2,"0")+"h")+'</b>'+
+    '<span>'+(info.paciente ? quandoTxt : data.toLocaleDateString("pt-BR"))+'</span></div>';
+  var corpo = "";
 
+  /* O menu da célula virou uma escolha só (05/10/2026): cada situação é um quadradinho com a
+     mesma cor da grade e da legenda, a atual vem marcada, e tocar na marcada volta ao normal.
+     As ações gravadas são as mesmas de antes (data-acao); só mudou a cara. */
   if(info.paciente){
     if(info.origem==="extra"){
       /* aqui o que está marcado é a sessão que veio de outro horário */
-      var entrou = entradaDa(ex);
-      corpo += botao(entrou && entrou.realizada ? "desconfirmar-extra" : "realizada-extra", entrou && entrou.realizada ? "Tirar a confirmação" : "✓ Sessão realizada", "var(--t-realizada-bg)");
-      corpo += botao("tirar-entrada", (ex && ex.entra ? "Tirar esta sessão daqui (volta a marca de "+esc(nomeCurto(fixoDaHora))+")" : "Tirar esta sessão daqui"), "var(--faint)");
+      var entrou = entradaDa(ex), feita = !!(entrou && entrou.realizada);
+      corpo += '<div class="ops" role="group" aria-label="Situação da sessão">' +
+        opcao(feita ? "desconfirmar-extra" : "fechar", "Prevista", "entrou aqui", "encaixe", !feita) +
+        opcao(feita ? "desconfirmar-extra" : "realizada-extra", "Realizada", "aconteceu", "realizada", feita) + '</div>';
+      corpo += '<div class="acoes">' + botao("tirar-entrada", (ex && ex.entra ? "Tirar daqui (volta a marca de "+esc(nomeCurto(fixoDaHora))+")" : "Tirar esta sessão daqui"), "var(--faint)") + '</div>';
     } else {
-      /* o check fica sempre no menu, a qualquer hora (pedido dele, 28/09/2026): antes só abria
-         quando a sessão começava, e de manhã ele não achava a opção */
-      if(ex && ex.tipo==="realizada") corpo += botao("limpar-excecao","Tirar a confirmação","var(--faint)");
-      else corpo += botao("realizada","✓ Sessão realizada","var(--t-realizada-bg)");
-      corpo += botao("falta","Marcar falta","var(--t-falta-bar)");
-      corpo += botao("remarcada","Marcar como remarcada","var(--t-remarcada-bar)");
-      corpo += botao("cancelada","Não haverá sessão nesta data","var(--border-strong)");
-      corpo += botao("cortesia","Sessão cortesia (não cobrada)","var(--t-sessao-bar)");
-      if(ex && ex.tipo!=="realizada") corpo += botao("limpar-excecao","Voltar ao normal","var(--accent)");
+      /* o check fica sempre no menu, a qualquer hora (pedido dele, 28/09/2026) */
+      var atual = ex && ex.tipo ? ex.tipo : "normal";
+      var toque = function(acao){ return atual===acao ? "limpar-excecao" : acao; };
+      corpo += '<div class="ops" role="group" aria-label="Situação da sessão">' +
+        opcao(atual==="normal" ? "fechar" : "limpar-excecao", "Normal", jaPassou(data, hora) ? "a confirmar" : "como sempre", "normal", atual==="normal") +
+        opcao(toque("realizada"), "Realizada", "aconteceu", "realizada", atual==="realizada") +
+        opcao(toque("falta"), "Faltou", "sem aviso: cobra", "falta", atual==="falta") +
+        opcao(toque("remarcada"), "Remarcada", "avisou: não cobra", "remarcada", atual==="remarcada") +
+        opcao(toque("cancelada"), "Não haverá", "não cobra", "cancelada", atual==="cancelada") +
+        opcao(toque("cortesia"), "Cortesia", "acontece, não cobra", "cortesia", atual==="cortesia") + '</div>';
     }
-    corpo += "<hr>";
-    corpo += botao("prontuario","Prontuário desta sessão","var(--ok)");
-    corpo += botao("editar","Abrir ficha de "+esc(nomeCurto(info.paciente)),"var(--accent)");
-    if(info.paciente.meet) corpo += botao("meet","Abrir sala do Meet","var(--ok)");
+    corpo += '<div class="acoes">' +
+      botao("prontuario","Prontuário","var(--ok)") +
+      botao("editar","Ficha","var(--accent)") +
+      (info.paciente.meet ? botao("meet","Meet","var(--ok)") : "") + '</div>';
   } else {
     var blocoAtual = dados.blocos[dia+"-"+hora];
-    if(blocoAtual!=="divulgado") corpo += botao("divulgado","Atendimento divulgado","var(--t-divulgado-bar)");
-    if(blocoAtual!=="reservado") corpo += botao("reservado","Atendimento não divulgado","var(--t-reservado-bar)");
-    if(blocoAtual) corpo += botao("limpar-bloco","Deixar livre","var(--faint)");
+    corpo += '<div class="ops tres" role="group" aria-label="Este horário">' +
+      opcao(blocoAtual==="divulgado" ? "fechar" : "divulgado", "Divulgado", "entra na mensagem", "divulgado", blocoAtual==="divulgado") +
+      opcao(blocoAtual==="reservado" ? "fechar" : "reservado", "Não divulgado", "fica fora", "reservado", blocoAtual==="reservado") +
+      opcao(blocoAtual ? "limpar-bloco" : "fechar", "Livre", "sem atendimento", "livre", !blocoAtual) + '</div>';
   }
   if(aceitaEncaixe){
-    corpo += "<hr>";
-    corpo += '<div style="padding:4px 8px 8px"><label style="font-size:12px;color:var(--muted)">Encaixe nesta data</label><select id="sel-extra"><option value="">escolher paciente…</option>'+
+    corpo += '<div class="encaixe"><label for="sel-extra">Encaixar alguém nesta hora</label><select id="sel-extra"><option value="">escolher paciente…</option>'+
       dados.pacientes.map(function(p){ return '<option value="'+esc(p.id)+'">'+esc(p.nome)+'</option>'; }).join("")+'</select></div>';
   }
 
   m.innerHTML = cab + corpo;
   document.body.appendChild(m);
-  var r = cel.getBoundingClientRect();
-  var topo = window.scrollY + r.bottom + 4;
-  var esq = Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 220);
-  m.style.top = topo+"px"; m.style.left = Math.max(8,esq)+"px";
+  posicionarMenu(m, cel);
   menuAberto = m;
   menuComTeclado(m, cel);
 
@@ -1848,6 +1955,7 @@ function abrirMenu(e){
     b.addEventListener("click", function(){
       var a = b.dataset.acao;
       var kData = chaveData(data)+"|"+hora, kBloco = dia+"-"+hora;
+      if(a==="fechar"){ fecharMenu(); return; }
       if(a==="falta"||a==="remarcada"||a==="cancelada"||a==="cortesia"||a==="realizada") marcarSaida(kData, a);
       else if(a==="realizada-extra"||a==="desconfirmar-extra"){ var en = dados.excecoes[kData]; var alvo = en && en.tipo==="extra" ? en : (en && en.entra); if(alvo){ if(a==="realizada-extra") alvo.realizada = true; else delete alvo.realizada; } }
       else if(a==="limpar-excecao") delete dados.excecoes[kData];
@@ -1863,6 +1971,21 @@ function abrirMenu(e){
 }
 function botao(acao, texto, cor){
   return '<button data-acao="'+acao+'"><i style="background:'+cor+'"></i>'+texto+'</button>';
+}
+/* uma situação no menu da célula: a amostra é a mesma da grade e da legenda */
+function opcao(acao, rotulo, dica, amostra, marcada){
+  return '<button type="button" class="op'+(marcada ? " on" : "")+'" data-acao="'+acao+'" role="menuitemradio" aria-checked="'+(marcada ? "true" : "false")+'">' +
+    '<i class="sw sw-'+amostra+'" aria-hidden="true"></i><span class="op-t">'+rotulo+'<small>'+dica+'</small></span></button>';
+}
+/* no computador o menu abre colado na célula, e para cima quando não cabe embaixo;
+   no celular o CSS transforma ele numa folha que sobe do pé da tela */
+function posicionarMenu(m, cel){
+  var r = cel.getBoundingClientRect(), larg = m.offsetWidth, alt = m.offsetHeight;
+  var topo = r.bottom + 4;
+  if(topo + alt > window.innerHeight - 8 && r.top - alt - 4 > 8) topo = r.top - alt - 4;
+  var esq = Math.min(r.left, document.documentElement.clientWidth - larg - 8);
+  m.style.top = (window.scrollY + topo)+"px";
+  m.style.left = (window.scrollX + Math.max(8, esq))+"px";
 }
 
 /* ---------------- arrastar para remarcar ---------------- */
@@ -1922,9 +2045,7 @@ function escolherRemarcacao(carga, destino, celula){
     (carga.origem==="fixo" && dono ? '<div style="padding:4px 10px 8px; font-size:12px; color:var(--muted)">Só nesta data: esse horário é o fixo de '+esc(nomeCurto(dono))+'.</div>' : "") +
     '<hr>' + botao("cancelar","Deixar como estava","var(--faint)");
   document.body.appendChild(m);
-  var r = celula.getBoundingClientRect();
-  m.style.top = (window.scrollY + r.bottom + 4)+"px";
-  m.style.left = Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 230))+"px";
+  posicionarMenu(m, celula);
   menuAberto = m;
   menuComTeclado(m, celula);
 
@@ -2071,7 +2192,7 @@ function horasDivulgadasSemana(){
     var d = somaDias(base,j);
     for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++){
       var info = estadoCelula(d.getDay(), h, d);
-      if(info.classe==="divulgado") n++;
+      if(livreDivulgado(info)) n++;
     }
   }
   return n;
@@ -2901,7 +3022,7 @@ function textoDivulgacao(){
     var horas = [];
     for(var h=c.horaInicio; h<=c.horaFim; h++){
       var info = estadoCelula(d.getDay(), h, d);
-      if(info.classe==="divulgado") horas.push(String(h).padStart(2,"0")+":00h");
+      if(livreDivulgado(info)) horas.push(String(h).padStart(2,"0")+":00h");
     }
     if(horas.length) linhas.push("* *"+DIAS[d.getDay()]+":* "+horas.join(" | ")+".");
   }
@@ -3657,7 +3778,7 @@ function renderPainel(){
   for(var j=0;j<7;j++){
     var d = somaDias(base,j);
     for(var h=dados.config.horaInicio; h<=dados.config.horaFim; h++){
-      if(estadoCelula(d.getDay(), h, d).classe==="divulgado") livres.push(DIAS_CURTO[d.getDay()]+" "+h+"h");
+      if(livreDivulgado(estadoCelula(d.getDay(), h, d))) livres.push(DIAS_CURTO[d.getDay()]+" "+h+"h");
     }
   }
   var mensal = +c.mensal || 0, renda = livres.length * mensal;

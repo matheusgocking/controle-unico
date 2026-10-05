@@ -239,3 +239,31 @@ test("Clínica: mudar o horário fixo vale dali em diante e não mexe no passado
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Clínica: \"não haverá\" deixa o nome na grade, apagado, e o menu volta ao normal", async () => {
+  for (const largura of [1280, 390]) {
+    const { ctx, p, erros } = await abrir("clinica.html", { largura });
+    await p.evaluate(() => { dados.blocos = { "1-9":"divulgado" }; marcarSaida("2026-10-05|9", "cancelada"); renderTudo(); });
+    const cel = p.locator('.cell[data-data="2026-10-05"][data-hora="9"]');
+    assert.equal(await cel.getAttribute("class").then(c => c.includes("cancelada")), true);
+    assert.equal(await cel.locator(".nm").textContent(), "Paciente Mensal");
+    assert.equal(await cel.locator(".lab").textContent(), "Não haverá");
+    // o horário divulgado continua contando como livre e entrando na mensagem, como antes
+    assert.equal(await p.evaluate(() => horasDivulgadasSemana()), 1);
+    assert.match(await p.evaluate(() => textoDivulgacao()), /Segunda-feira:\* 09:00h/);
+    // tocar abre a escolha com "Não haverá" marcado; "Normal" desfaz
+    await cel.click();
+    assert.equal(await p.locator('.menu .op.on').textContent().then(t => t.startsWith("Não haverá")), true);
+    assert.equal(await p.locator('.menu .op').count(), 6);
+    await p.locator('.menu .op', { hasText:"Normal" }).click();
+    assert.equal(await p.evaluate(() => dados.excecoes["2026-10-05|9"]), undefined);
+    assert.equal(await cel.getAttribute("class").then(c => c.includes("cancelada")), false);
+    // tocar de novo na situação marcada também volta ao normal
+    await cel.click(); await p.locator('.menu .op', { hasText:"Faltou" }).click();
+    assert.equal(await p.evaluate(() => dados.excecoes["2026-10-05|9"].tipo), "falta");
+    await cel.click(); await p.locator('.menu .op', { hasText:"Faltou" }).click();
+    assert.equal(await p.evaluate(() => dados.excecoes["2026-10-05|9"]), undefined);
+    assert.deepEqual(erros, []);
+    await ctx.close();
+  }
+});
