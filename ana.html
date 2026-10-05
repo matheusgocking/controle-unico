@@ -668,13 +668,14 @@ function configLancamento(){
 // a ordem da lista de gastos: cabeçalho no computador, caixa de escolha no celular
 let ordem = { c:"data", d:-1 };
 const COLUNAS = [["data","Dia"],["descricao","Descrição"],["categoria","Categoria"],["forma","Forma"],["valor","Valor"]];
+// no mesmo dia, o lançado por último aparece primeiro (05/10/2026)
 function ordenar(lista){
   const { c, d } = ordem, val = l => c === "valor" ? Number(l.valor) || 0 : String(l[c] || "");
-  return lista.slice().sort((a, b) => {
+  return lista.map((l, i) => [l, i]).sort(([a, ia], [b, ib]) => {
     const x = val(a), y = val(b);
     const r = typeof x === "number" ? x - y : x.localeCompare(y, "pt-BR", { sensitivity:"base" });
-    return (r || (b.data || "").localeCompare(a.data || "") * d) * d;
-  });
+    return (r || (b.data || "").localeCompare(a.data || "") * d) * d || (c === "data" ? (ia - ib) * d : ib - ia);
+  }).map(([l]) => l);
 }
 function cabecalho(){
   return `<thead><tr>${COLUNAS.map(([c, n]) => `<th${c === "valor" ? ' class="dir"' : ""}><button type="button" class="ord" data-ord="${c}" aria-pressed="${ordem.c === c}"
