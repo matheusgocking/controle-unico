@@ -210,6 +210,20 @@ th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 .filtro-cat{display:flex;margin:0 0 6px;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
 .filtro-cat select{width:auto;flex:0 1 240px;min-width:0;padding:6px 8px}
 .filtro-cat span{color:var(--text);font-weight:600;white-space:nowrap}
+.fe-al{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.fe-al li,.fe-cat li{color:var(--text)}
+.fe-al li{display:flex;gap:10px;align-items:baseline;font-size:14px}
+.fe-al li i{flex:none;width:9px;height:9px;border-radius:99px;background:var(--faint);transform:translateY(-1px)}
+.fe-al li.warn i{background:var(--warn)} .fe-al li.pos i{background:var(--pos)}
+.fe-cat{list-style:none;margin:0;padding:0}
+.fe-cat li{display:grid;grid-template-columns:minmax(0,1fr) auto 108px;gap:2px 12px;align-items:baseline;padding:8px 2px;border-top:1px solid var(--line);font-size:14px}
+.fe-cat li:first-child{border-top:0}
+.fe-cat .n{min-width:0;overflow-wrap:anywhere} .fe-cat .n small{display:block;color:var(--muted);font-size:12px}
+.fe-cat b{white-space:nowrap;font-weight:600} .fe-cat li > small{white-space:nowrap;color:var(--muted);font-size:12.5px;text-align:right}
+.fe-cat li.warn > small{color:var(--warn);font-weight:600} .fe-cat li.pos > small{color:var(--pos);font-weight:600}
+.fe-cat li:not(:has(> small)){grid-template-columns:minmax(0,1fr) auto}
+.fe-aviso{margin-bottom:16px}
+.k small.pos{color:var(--pos);font-weight:600} .k small.warn{color:var(--warn);font-weight:600}
 .lim{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:12px}
 .lim li{display:grid;gap:4px}
 .lim .l1{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:14px}
@@ -283,6 +297,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .pd{grid-template-columns:minmax(0,1fr) auto} .pd .pd-acoes{grid-column:1 / -1}
   .pd .pd-quem b{white-space:normal} .pd .pd-val{white-space:normal;max-width:190px}
   .subabas{margin:8px 0 2px} .subabas button{padding:10px 6px;font-size:13px;flex:1 1 auto}
+  .subabas button{padding:10px 4px;font-size:12.5px;letter-spacing:-.01em}   /* cinco telas no Dinheiro: cabem todas sem rolar */
   .subabas .so-larg{display:none} .subabas .so-cel{display:inline;font-size:inherit;color:inherit;overflow:visible}
   .subabas button em{margin-left:4px;padding:1px 6px}
   .stats.tres{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px} .stats.tres .stat:last-child{grid-column:1 / -1}
@@ -455,8 +470,8 @@ function parteCasa(){
   const n = Number(livro.casa.divisao);
   return Number.isFinite(n) && n >= 0 && n <= 1 ? n : 0.5;
 }
-function contasCasa(){
-  const doMes = livro.casa.lancamentos.filter(noMes);
+function contasCasa(km = chaveMes(ref)){
+  const doMes = livro.casa.lancamentos.filter(l => (l.data || "").slice(0, 7) === km);
   const total = soma(doMes, l => l.valor);
   const parte = parteCasa();
   const metade = total * parte;
@@ -520,26 +535,32 @@ function contasDinheiro(){
 // Entrou e saiu em cada mês, para o gráfico do Dinheiro (01/10/2026). As mesmas regras do mês
 // aberto: entrou é receita solta mais tudo o que a Clínica recebeu; saiu é despesa lançada sem
 // Moradia, mais os fixos do mês, mais o que ele pagou na casa.
-function serieMeses(){
+function pagamentosClinica(){
   const w = janelaClinica(), cache = w ? null : lerLocal("controle-unico-clinica-cache");
-  const pags = w ? w.dados.pagamentos || [] : (cache && cache.pagamentos) || [];
+  return w ? w.dados.pagamentos || [] : (cache && cache.pagamentos) || [];
+}
+const doK = k => l => (l.data || "").slice(0, 7) === k;
+function serieMeses(){
+  const pags = pagamentosClinica();
+  return GraficoMeses.meses(12, chaveMes(ref)).map(k => mesDinheiro(k, pags));
+}
+// Um mês do Dinheiro pela chave ("2026-09"), com as regras de serieMeses. Serve também ao Fechamento.
+function mesDinheiro(k, pags = pagamentosClinica()){
   const eu = livro.casa.pessoas[0];
-  const doK = k => l => (l.data || "").slice(0, 7) === k;
-  return GraficoMeses.meses(12, chaveMes(ref)).map(k => {
-    const lk = livro.matheus.lancamentos.filter(doK(k));
-    const m = { k,
-      entrou: soma(lk.filter(l => l.tipo === "Receita"), l => l.valor) + soma(pags.filter(doK(k)), g => g.valor),
-      saiu: soma(lk.filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor)
-          + soma(livro.matheus.gastosFixos, g => valorFixo(g, k))
-          + soma(livro.casa.lancamentos.filter(doK(k)).filter(l => l.quem === eu), l => l.valor),
-      aportes: soma(lk.filter(l => l.tipo === "Aporte"), l => l.valor),
-      resgates: soma(lk.filter(l => l.tipo === "Resgate"), l => l.valor) };
-    // o que sobrou é a mesma conta do "Saldo" da Situação do mês: o que foi para a reserva saiu do
-    // caixa, o que voltou dela entrou (04/10/2026: antes a lista dizia "faltou" num mês que a
-    // Situação dizia ter fechado positivo, como setembro, pago com o resgate de 30/09)
-    m.sobra = m.entrou - m.saiu - m.aportes + m.resgates;
-    return m;
-  });
+  const lk = livro.matheus.lancamentos.filter(doK(k));
+  const m = { k,
+    entrou: soma(lk.filter(l => l.tipo === "Receita"), l => l.valor) + soma(pags.filter(doK(k)), g => g.valor),
+    saiu: soma(lk.filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor)
+        + soma(livro.matheus.gastosFixos, g => valorFixo(g, k))
+        + soma(livro.casa.lancamentos.filter(doK(k)).filter(l => l.quem === eu), l => l.valor),
+    aportes: soma(lk.filter(l => l.tipo === "Aporte"), l => l.valor),
+    resgates: soma(lk.filter(l => l.tipo === "Resgate"), l => l.valor),
+    pacientes: soma(pags.filter(doK(k)).filter(g => !g.receita || g.receita === "Prática Clínica."), g => g.valor) };
+  // o que sobrou é a mesma conta do "Saldo" da Situação do mês: o que foi para a reserva saiu do
+  // caixa, o que voltou dela entrou (04/10/2026: antes a lista dizia "faltou" num mês que a
+  // Situação dizia ter fechado positivo, como setembro, pago com o resgate de 30/09)
+  m.sobra = m.entrou - m.saiu - m.aportes + m.resgates;
+  return m;
 }
 
 // ---------- ordenar as listas ----------
@@ -723,12 +744,12 @@ function metaReserva(reserva, meta){
 
 // para onde foi o dinheiro do mês: despesas lançadas e fixos por categoria, mais a casa.
 // Sete fatias com cor e o resto junto em "Outros", para a rosca continuar legível.
-function porCategoria(){
-  const km = chaveMes(ref), s = {};
-  livro.matheus.lancamentos.filter(noMes).filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia")
+function porCategoria(km = chaveMes(ref)){
+  const s = {};
+  livro.matheus.lancamentos.filter(doK(km)).filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia")
     .forEach(l => s[l.categoria] = (s[l.categoria] || 0) + (Number(l.valor) || 0));
   livro.matheus.gastosFixos.forEach(g => { const v = valorFixo(g, km); if (v) s[g.categoria] = (s[g.categoria] || 0) + v; });
-  const casa = contasCasa().pagou[livro.casa.pessoas[0]] || 0;
+  const casa = contasCasa(km).pagou[livro.casa.pessoas[0]] || 0;
   if (casa) s["Moradia (casa)"] = (s["Moradia (casa)"] || 0) + casa;
   return Object.entries(s).filter(e => e[1] > 0.005).sort((a, b) => b[1] - a[1]);
 }
@@ -867,7 +888,7 @@ function telaTudo(){
     ? barraPartes(partes, "Patrimônio: reserva de emergência e cripto") + metaReserva(d.reserva, r.meta)
     : rosca(partes, "patrimônio", "Patrimônio: reserva de emergência e cripto");
 
-  return barraMes() + cardSituacao(d) + formLancamento("") + `
+  return barraMes() + avisoFechamento() + cardSituacao(d) + formLancamento("") + `
 
   <div class="duas inv">
     <section class="painel"><h2>Patrimônio</h2>${patrimonio}
@@ -1003,7 +1024,7 @@ async function importarPendencias(arquivo){
 
 // O Dinheiro em quatro telas (pedido dele, 01/10/2026: fixos e pendências empilhados no fim da
 // tela ficavam mal organizados). A chave fica no alto; o mês aberto vale para todas.
-const VISTAS_DIN = [["mes","Lançamentos"],["fixos",'<span class="so-larg">Gastos fixos</span><span class="so-cel">Fixos</span>'],["pend","Pendências"],["hist","Mês a mês"]];
+const VISTAS_DIN = [["mes","Lançamentos"],["fixos",'<span class="so-larg">Gastos fixos</span><span class="so-cel">Fixos</span>'],["pend","Pendências"],["hist","Mês a mês"],["fech",'<span class="so-larg">Fechamento</span><span class="so-cel">Fechou</span>']];
 let vistaDin = "mes";
 function subabasDinheiro(){
   const n = pendencias().filter(p => !pendQuitada(p)).length;
@@ -1092,10 +1113,191 @@ function vistaHistorico(){
     <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos (no mês corrente, também os que ainda vão vencer) e o que você pagou na casa. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela, a mesma conta do saldo da Situação do mês. As barras mostram só o que entrou e saiu.</p>`;
 }
 
+// ---------- Fechamento do mês (05/10/2026) ----------
+// O resumo de um mês que já acabou: como fechou, o que mudou contra os meses de antes e o que fugiu
+// do normal, no Dinheiro e na Casa. Só lê os cadernos; nada aqui grava.
+// "Normal" é a média dos meses anteriores com movimento (até 6) no Dinheiro e, na Casa, a mesma média
+// do card da Casa (meses fechados desde CASA_MEDIA_DESDE).
+const NORMAL_MESES = 6;
+const FORA_PCT = 0.3, FORA_MIN = 100;   // fugiu do normal: 30% e pelo menos R$ 100 de diferença
+const somaMes = (k, n) => chaveMes(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1 + n, 1));
+const nomeMes = k => MESES[Number(k.slice(5, 7)) - 1];
+const maiusc = t => t[0].toUpperCase() + t.slice(1);
+const fugiu = (v, m) => Math.abs(v - m) >= FORA_MIN && (m < 0.005 || Math.abs(v - m) / m >= FORA_PCT);
+const temMovimento = m => m.entrou > 0.005 || m.saiu > 0.005 || m.aportes > 0.005 || m.resgates > 0.005;
+const fimDoMesISO = k => k + "-" + String(ultimoDia(k)).padStart(2, "0");
+
+// Categorias (Dinheiro ou Casa) contra a média das mesmas categorias nos meses de base.
+// Categoria que não apareceu num mês de base conta zero naquele mês.
+function categoriasContraNormal(atual, bases){
+  const nomes = new Set([...Object.keys(atual), ...bases.flatMap(b => Object.keys(b))]);
+  return [...nomes].map(c => {
+    const v = atual[c] || 0, m = bases.length ? soma(bases, b => b[c] || 0) / bases.length : 0;
+    return { c, v, m, dif: v - m, fora: bases.length > 0 && fugiu(v, m) };
+  }).filter(x => x.v > 0.005 || x.m > 0.005).sort((a, b) => b.v - a.v || b.m - a.m);
+}
+const casaPorCategoria = k => {
+  const s = {};
+  livro.casa.lancamentos.filter(doK(k)).forEach(l => s[l.categoria] = (s[l.categoria] || 0) + (Number(l.valor) || 0));
+  return s;
+};
+
+function fechamento(k){
+  const pags = pagamentosClinica();
+  const din = mesDinheiro(k, pags);
+  const base = [];
+  for (let i = 1; i <= 12 && base.length < NORMAL_MESES; i++){
+    const m = mesDinheiro(somaMes(k, -i), pags); if (temMovimento(m)) base.push(m);
+  }
+  const media = f => base.length ? soma(base, f) / base.length : null;
+  const normal = { entrou:media(m => m.entrou), saiu:media(m => m.saiu), sobra:media(m => m.sobra), n:base.length };
+  const ant = mesDinheiro(somaMes(k, -1), pags);
+  const cats = categoriasContraNormal(Object.fromEntries(porCategoria(k)), base.map(m => Object.fromEntries(porCategoria(m.k))));
+
+  // reserva no último dia do mês, quando o saldo conferido é de antes disso
+  const r = livro.matheus.reserva, fim = fimDoMesISO(k);
+  let reservaFim = null;
+  if (r.dataBase && r.dataBase <= fim) {
+    const mov = livro.matheus.lancamentos.filter(l => (l.data || "") >= r.dataBase && (l.data || "") <= fim);
+    reservaFim = (Number(r.saldoBase) || 0) + soma(mov.filter(l => l.tipo === "Aporte"), l => l.valor) - soma(mov.filter(l => l.tipo === "Resgate"), l => l.valor);
+  }
+
+  // fixos que mudaram de valor, começaram ou pararam contra o mês anterior
+  const kAnt = somaMes(k, -1);
+  const fixos = livro.matheus.gastosFixos.map(g => ({ g, v:valorFixo(g, k), a:valorFixo(g, kAnt) }))
+    .filter(x => (x.v > 0.005) !== (x.a > 0.005) || (x.v > 0.005 && Math.abs(x.v - x.a) >= Math.max(10, x.a * 0.05)))
+    .sort((x, y) => Math.abs(y.v - y.a) - Math.abs(x.v - x.a));
+
+  const eu = livro.casa.pessoas[0];
+  const maiores = livro.matheus.lancamentos.filter(doK(k)).filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia").map(l => ({ l, onde:"Pessoal" }))
+    .concat(livro.casa.lancamentos.filter(doK(k)).filter(l => l.quem === eu).map(l => ({ l, onde:"Casa" })))
+    .sort((a, b) => (Number(b.l.valor) || 0) - (Number(a.l.valor) || 0)).slice(0, 5);
+
+  const lim = limites(), gastoCat = Object.fromEntries(porCategoria(k));
+  const limites_ = Object.keys(lim).filter(c => Number(lim[c]) > 0 && (gastoCat[c] || 0) > Number(lim[c]) + 0.005)
+    .map(c => ({ c, teto:Number(lim[c]), foi:gastoCat[c] }));
+
+  const casa = contasCasa(k), mc = mediaCasa(k);
+  const casaCats = categoriasContraNormal(casaPorCategoria(k), mc.chaves.map(casaPorCategoria));
+  const compras = livro.casa.lancamentos.filter(doK(k)).length;
+
+  return { k, din, normal, ant, cats, reservaFim, fixos, maiores, limites:limites_, casa, mc, casaCats, compras };
+}
+
+// A lista do alto: o que fugiu do normal, primeiro o que pede atenção, depois as boas notícias.
+function alertasFechamento(F){
+  const a = [], { din, normal } = F;
+  const n = normal.n;
+  if (n && fugiu(din.saiu, normal.saiu)) a.push(din.saiu > normal.saiu
+    ? ["warn", `Gastou ${dinheiro(din.saiu - normal.saiu)} a mais que o normal: ${dinheiro(din.saiu)} contra ${dinheiro(normal.saiu)} por mês.`]
+    : ["pos", `Gastou ${dinheiro(normal.saiu - din.saiu)} a menos que o normal: ${dinheiro(din.saiu)} contra ${dinheiro(normal.saiu)} por mês.`]);
+  if (n && fugiu(din.entrou, normal.entrou)) a.push(din.entrou < normal.entrou
+    ? ["warn", `Recebeu ${dinheiro(normal.entrou - din.entrou)} a menos que o normal: ${dinheiro(din.entrou)} contra ${dinheiro(normal.entrou)} por mês.`]
+    : ["pos", `Recebeu ${dinheiro(din.entrou - normal.entrou)} a mais que o normal: ${dinheiro(din.entrou)} contra ${dinheiro(normal.entrou)} por mês.`]);
+  if (din.resgates > 0.005) a.push(["warn", `Tirou ${dinheiro(din.resgates)} da reserva de emergência.`]);
+  F.limites.forEach(x => a.push(["warn", `${semPonto(nomeCat(x.c))} passou o limite em ${dinheiro(x.foi - x.teto)} (${dinheiro(x.foi)} de ${dinheiro(x.teto)}).`]));
+  const daCasa = x => x.c === "Moradia (casa)";   // a parte dele na casa já aparece nos avisos da Casa
+  F.cats.filter(x => x.fora && x.dif > 0 && !daCasa(x) && !F.limites.some(l => l.c === x.c)).forEach(x => a.push(["warn", x.m < 0.005
+    ? `${semPonto(nomeCat(x.c))}: ${dinheiro(x.v)}, sem gasto nos meses anteriores.`
+    : `${semPonto(nomeCat(x.c))}: ${dinheiro(x.v)}, ${dinheiro(x.dif)} acima do normal de ${dinheiro(x.m)}.`]));
+  F.fixos.filter(x => x.v > x.a + 0.005 && x.a > 0.005).forEach(x => a.push(["warn", `O fixo ${semPonto(x.g.descricao)} subiu de ${dinheiro(x.a)} para ${dinheiro(x.v)}.`]));
+  if (F.mc.media !== null && fugiu(F.casa.total, F.mc.media)) a.push(F.casa.total > F.mc.media
+    ? ["warn", `A casa gastou ${dinheiro(F.casa.total - F.mc.media)} acima da média: ${dinheiro(F.casa.total)} contra ${dinheiro(F.mc.media)}.`]
+    : ["pos", `A casa gastou ${dinheiro(F.mc.media - F.casa.total)} abaixo da média: ${dinheiro(F.casa.total)} contra ${dinheiro(F.mc.media)}.`]);
+  F.casaCats.filter(x => x.fora && x.dif > 0).forEach(x => a.push(["warn", x.m < 0.005
+    ? `Na casa, ${semPonto(nomeCat(x.c)).toLowerCase()}: ${dinheiro(x.v)}, sem compra nos meses anteriores.`
+    : `Na casa, ${semPonto(nomeCat(x.c)).toLowerCase()}: ${dinheiro(x.v)}, ${dinheiro(x.dif)} acima do normal de ${dinheiro(x.m)}.`]));
+  F.cats.filter(x => x.fora && x.dif < 0 && !daCasa(x) && x.m >= FORA_MIN).forEach(x => a.push(["pos", `${semPonto(nomeCat(x.c))}: ${dinheiro(x.v)}, ${dinheiro(-x.dif)} abaixo do normal de ${dinheiro(x.m)}.`]));
+  if (din.aportes > 0.005) a.push(["pos", `Guardou ${dinheiro(din.aportes)} na reserva de emergência.`]);
+  return a.sort((x, y) => (x[0] === "warn" ? 0 : 1) - (y[0] === "warn" ? 0 : 1));
+}
+
+function vistaFechamento(){
+  const k = chaveMes(ref), kHoje = chaveMes(new Date()), kAnt = somaMes(kHoje, -1);
+  const Nome = maiusc(nomeMes(k));
+  if (k >= kHoje) return `<section class="painel"><p class="vazio" style="padding-top:0">${k === kHoje ? `${Nome} ainda não acabou.` : `${Nome} ainda não começou.`} O fechamento resume um mês que já terminou.</p>
+    <button type="button" class="b" data-fech="${kAnt}">Ver o fechamento de ${nomeMes(kAnt)}</button></section>`;
+  const F = fechamento(k), { din, normal } = F;
+  if (!temMovimento(din) && !F.compras) return `<section class="painel"><p class="vazio">Nada lançado em ${nomeMes(k)} de ${k.slice(0, 4)}.</p></section>`;
+
+  const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
+  const pos = din.sobra >= 0;
+  const compNormal = normal.sobra === null ? "" : Math.abs(din.sobra - normal.sobra) < 0.005 ? " Igual ao normal."
+    : ` ${din.sobra > normal.sobra ? "Melhor" : "Pior"} que o normal, que é ${normal.sobra < 0 ? "faltar " + dinheiro(-normal.sobra) : "sobrar " + dinheiro(normal.sobra)} por mês.`;
+  const ver = `<div class="veredito ${pos ? "pos" : "neg"}"><div class="topo-v">${seta(pos)}<b>${pos ? "Fechou positivo" : "Fechou negativo"}</b></div>
+    <p>${Nome} terminou com ${pos ? dinheiro(din.sobra) + " de sobra" : "falta de " + dinheiro(-din.sobra)}.${compNormal}</p></div>`;
+
+  const contra = (v, m, maisBom) => {
+    if (m === null) return `<small>sem meses anteriores para comparar</small>`;
+    const d = v - m; if (Math.abs(d) < 0.005) return `<small>igual ao normal</small>`;
+    const bom = maisBom ? d > 0 : d < 0;
+    return `<small class="${fugiu(v, m) ? (bom ? "pos" : "warn") : ""}">${dinheiro(Math.abs(d))} ${d > 0 ? "acima" : "abaixo"} do normal (${dinheiro(m)})</small>`;
+  };
+  const vsAnt = (v, a) => a > 0.005 ? `<small>${nomeMes(F.ant.k)}: ${dinheiro(a)}</small>` : "";
+  const outros = din.entrou - din.pacientes;
+  const nums = `<div class="nums"><div class="linha-k">
+      <div class="k"><span>Recebi</span><b class="pos">${dinheiro(din.entrou)}</b>${contra(din.entrou, normal.entrou, true)}${vsAnt(din.entrou, F.ant.entrou)}${din.pacientes > 0.005 ? `<small>${dinheiro(din.pacientes)} de pacientes${outros > 0.005 ? `, ${dinheiro(outros)} de outras entradas` : ""}</small>` : ""}</div>
+      <div class="k"><span>Gastei</span><b>${dinheiro(din.saiu)}</b>${contra(din.saiu, normal.saiu, false)}${vsAnt(din.saiu, F.ant.saiu)}${din.entrou > 0.005 ? `<small>${Math.round(din.saiu / din.entrou * 100)}% do que recebi</small>` : ""}</div>
+      <div class="k destaque"><span>Sobrou</span><b class="${din.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(din.sobra)}</b>${contra(din.sobra, normal.sobra, true)}${din.aportes > 0.005 || din.resgates > 0.005 ? `<small>ajustado pela reserva</small>` : ""}</div>
+    </div></div>`;
+
+  const alertas = alertasFechamento(F);
+  const listaAlertas = alertas.length
+    ? `<ul class="fe-al">${alertas.map(([t, txt]) => `<li class="${t}"><i></i><span>${escH(txt)}</span></li>`).join("")}</ul>`
+    : `<p class="vazio" style="padding:0">Nada fugiu do normal em ${nomeMes(k)}.</p>`;
+
+  const linhaCat = x => `<li class="${x.fora ? (x.dif > 0 ? "warn" : "pos") : ""}"><span class="n">${escH(comPonto(nomeCat(x.c)))}</span><b>${dinheiro(x.v)}</b>
+    <small>${x.m < 0.005 ? "novo" : Math.abs(x.dif) < 0.5 ? "no normal" : `${x.dif > 0 ? "+" : "−"} ${dinheiro(Math.abs(x.dif))}`}</small></li>`;
+  const tabelaCats = (cats, vazio) => cats.length ? `<ul class="fe-cat">${cats.map(linhaCat).join("")}</ul>` : `<p class="vazio">${vazio}</p>`;
+
+  const [p1, p2] = livro.casa.pessoas;
+  const casa = F.compras ? `<div class="stats duas-col" style="margin-bottom:12px">
+      <div class="stat"><span>Total da casa</span><b>${dinheiro(F.casa.total)}</b><small>${F.compras} compra${F.compras === 1 ? "" : "s"}</small></div>
+      <div class="stat"><span>Média</span><b>${F.mc.media === null ? "—" : dinheiro(F.mc.media)}</b><small>${F.mc.media === null ? "sem mês fechado antes" : F.mc.meses.length === 1 ? "1 mês fechado" : `últimos ${F.mc.meses.length} meses fechados`}</small></div>
+      <div class="stat"><span>${escH(primeiro(p1))} pagou</span><b>${dinheiro(F.casa.pagou[p1])}</b></div>
+      <div class="stat"><span>${escH(primeiro(p2))} pagou</span><b>${dinheiro(F.casa.pagou[p2])}</b></div>
+    </div><p class="nota" style="margin:0 0 10px">Balança: ${escH(balanca(F.casa, p1, p2))}.</p>
+    ${tabelaCats(F.casaCats, "")}` : `<p class="vazio">Nenhuma compra da casa em ${nomeMes(k)}.</p>`;
+
+  const maiores = F.maiores.length ? `<ul class="fe-cat">${F.maiores.map(({ l, onde }) => `<li><span class="n">${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : nomeCat(l.categoria)))}<small>${dataCurta(l.data)} · ${onde} · ${escH(semPonto(nomeCat(l.categoria)))}</small></span><b>${dinheiro(l.valor)}</b></li>`).join("")}</ul>`
+    : `<p class="vazio">Nenhum gasto lançado.</p>`;
+
+  const fixos = F.fixos.length ? `<section class="painel"><h2>Gastos fixos que mudaram<span class="dir">contra ${nomeMes(F.ant.k)}</span></h2><ul class="fe-cat">${F.fixos.map(x =>
+    `<li class="${x.v > x.a ? "warn" : "pos"}"><span class="n">${escH(comPonto(x.g.descricao))}</span><b>${x.v > 0.005 ? dinheiro(x.v) : "—"}</b>
+      <small>${x.a < 0.005 ? "começou" : x.v < 0.005 ? `parou (era ${dinheiro(x.a)})` : `era ${dinheiro(x.a)}`}</small></li>`).join("")}</ul></section>` : "";
+
+  const reserva = din.aportes > 0.005 || din.resgates > 0.005 || F.reservaFim !== null
+    ? `<p class="nota" style="margin-top:10px">Reserva de emergência:${din.aportes > 0.005 ? ` guardou ${dinheiro(din.aportes)}.` : ""}${din.resgates > 0.005 ? ` Tirou ${dinheiro(din.resgates)}.` : ""}${F.reservaFim !== null ? ` Terminou o mês com ${dinheiro(F.reservaFim)}.` : ""}</p>` : "";
+
+  return `<section class="painel"><h2>Como ${nomeMes(k)} fechou<span class="dir">${normal.n ? `normal: média de ${normal.n === 1 ? "1 mês" : normal.n + " meses"} antes` : ""}</span></h2>
+    <div class="situ">${ver}${nums}</div>${reserva}</section>
+  <section class="painel bloco"><h2>O que fugiu do normal<span class="dir">${alertas.filter(x => x[0] === "warn").length || "nada"} para olhar</span></h2>${listaAlertas}</section>
+  <div class="duas igual">
+    <section class="painel"><h2>Gastos por categoria<span class="dir">contra o normal</span></h2>${tabelaCats(F.cats, "Nada saiu neste mês.")}</section>
+    <section class="painel"><h2>Casa<span class="dir">contra a média</span></h2>${casa}</section>
+  </div>
+  <div class="duas igual">
+    <section class="painel"><h2>Maiores gastos<span class="dir">seus, com a casa</span></h2>${maiores}</section>
+    ${fixos || `<section class="painel"><h2>Gastos fixos</h2><p class="vazio">Nenhum fixo mudou de valor contra ${nomeMes(F.ant.k)}.</p></section>`}
+  </div>
+  <p class="nota" style="margin-top:14px">O normal é a média dos meses anteriores com movimento, até ${NORMAL_MESES}. Fugiu do normal quando a diferença passa de ${Math.round(FORA_PCT * 100)}% e de ${dinheiro(FORA_MIN)}. Na casa, a média é a mesma do card da Casa, só com meses completos. As contas são as mesmas da Situação do mês e do Mês a mês. Esta tela só lê os dados, não muda nada.</p>`;
+}
+
+// Nos primeiros dias do mês, a aba Tudo lembra que o mês anterior fechou.
+function avisoFechamento(){
+  const agora = new Date(), kHoje = chaveMes(agora);
+  if (PERFIL === "ana" || chaveMes(ref) !== kHoje || agora.getDate() > 10) return "";
+  const k = somaMes(kHoje, -1);
+  if (!temMovimento(mesDinheiro(k))) return "";
+  return `<section class="painel bloco aviso-fx fe-aviso"><p><b>${maiusc(nomeMes(k))} fechou.</b> Veja o resumo do mês e o que fugiu do normal.</p>
+    <button type="button" class="b s" data-fech="${k}">Ver o fechamento</button></section>`;
+}
+
 function telaDinheiro(){
   if (vistaDin === "fixos") return subabasDinheiro() + barraMes() + vistaFixos();
   if (vistaDin === "pend") return subabasDinheiro() + painelPendencias();
   if (vistaDin === "hist") return subabasDinheiro() + vistaHistorico();
+  if (vistaDin === "fech") return subabasDinheiro() + barraMes() + vistaFechamento();
   const d = contasDinheiro();
   const doMes = ordenar(livro.matheus.lancamentos.filter(noMes), "lanc");
   const r = livro.matheus.reserva;
@@ -1136,6 +1338,15 @@ function totalCasaDoMes(d){
   const k = chaveMes(d);
   return soma(livro.casa.lancamentos.filter(l => (l.data || "").slice(0, 7) === k), l => l.valor);
 }
+function mediaCasa(km){
+  const meses = [], chaves = [];
+  for (let m = 1; m <= 12; m++){
+    const d = new Date(Number(km.slice(0, 4)), Number(km.slice(5, 7)) - 1 - m, 1);
+    if (chaveMes(d) < CASA_MEDIA_DESDE) break;
+    const v = totalCasaDoMes(d); if (v > 0.005) { meses.push(v); chaves.push(chaveMes(d)); }
+  }
+  return { meses, chaves, media: meses.length ? soma(meses) / meses.length : null };
+}
 function cardCasa(c){
   const [p1, p2] = livro.casa.pessoas;
   const parte = parteCasa();
@@ -1145,13 +1356,7 @@ function cardCasa(c){
   const antes = totalCasaDoMes(new Date(ref.getFullYear(), ref.getMonth() - 1, 1));
   // Média dos últimos 12 meses fechados antes do mês aberto, só a partir do primeiro mês lançado inteiro
   // (decisão dele, 04/10/2026: julho de 2026 tem só parte das compras e puxaria a média para baixo).
-  const meses = [];
-  for (let m = 1; m <= 12; m++){
-    const d = new Date(ref.getFullYear(), ref.getMonth() - m, 1);
-    if (chaveMes(d) < CASA_MEDIA_DESDE) break;
-    const v = totalCasaDoMes(d); if (v > 0.005) meses.push(v);
-  }
-  const media = meses.length ? soma(meses) / meses.length : null;
+  const { meses, media } = mediaCasa(chaveMes(ref));
   const dif = c.total - antes;
   const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
   const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}</b></div><p>${texto}</p></div>`;
@@ -1255,6 +1460,9 @@ function desenhar(){
       if (e && (e.tagName !== "SELECT" || [...e.options].some(o => o.value === v))) e.value = v; });
   }
   ligar();
+  // no celular as subabas podem passar da largura: a aberta fica sempre à vista
+  const sub = t.querySelector(".subabas"), on = sub && sub.querySelector('[aria-pressed="true"]');
+  if (on && sub.scrollWidth > sub.clientWidth) sub.scrollLeft = Math.max(0, on.offsetLeft + on.offsetWidth - sub.clientWidth + 8);
 }
 
 function ligar(){
@@ -1314,7 +1522,19 @@ function ligar(){
   // clicar num mês do gráfico abre aquele mês
   // clicar num mês (no gráfico ou na lista) abre os lançamentos daquele mês
   GraficoMeses.ligar(document.getElementById("tela"), k => { ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1); vistaDin = "mes"; desenhar(); window.scrollTo(0, 0); });
-  document.querySelectorAll("[data-vd]").forEach(b => b.onclick = () => { vistaDin = b.dataset.vd; desenhar(); });
+  document.querySelectorAll("[data-vd]").forEach(b => b.onclick = () => {
+    vistaDin = b.dataset.vd;
+    // o fechamento abre no mês que acabou de fechar quando o mês aberto ainda não terminou
+    if (vistaDin === "fech" && chaveMes(ref) >= chaveMes(new Date())) { const d = new Date(); ref = new Date(d.getFullYear(), d.getMonth() - 1, 1); }
+    desenhar();
+  });
+  document.querySelectorAll("[data-fech]").forEach(b => b.onclick = () => {
+    const k = b.dataset.fech;
+    ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1);
+    aba = "carteira"; vistaDin = "fech";
+    try { location.hash = aba; } catch(e){}
+    desenhar(); window.scrollTo(0, 0);
+  });
 
   // o formulário único de lançamento (lancamento.js) entra em cada lugar marcado na tela
   document.querySelectorAll("[data-lanc]").forEach(el => FormLancamento.montar(el, configLancamento(el.dataset.lanc || null)));
