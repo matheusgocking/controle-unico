@@ -807,6 +807,8 @@ function veredito(d){
 }
 
 // O card do alto da aba Tudo: o que entrou e saiu, o que ainda vem e a seta. Também fica no alto da Carteira.
+// Pedido dele (05/10/2026): embaixo de Recebi, uma linha com o resgate e o aporte do mês na reserva.
+// O resgate não entra no total de Recebi; ele só ajusta o Saldo agora.
 function cardSituacao(d){
   const outros = d.entrou - d.dePacientes;
   const lancado = d.saiu - d.fixosMes - d.minhaCasa;
@@ -815,7 +817,7 @@ function cardSituacao(d){
   <section class="painel"><h2>Situação do mês<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
     <div class="situ seis">${veredito(d)}<div class="nums">
       <div class="linha-k">
-        <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small>${outros > 0.005 ? `<small>${dinheiro(outros)} de outras entradas</small>` : ""}</div>
+        <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small>${outros > 0.005 ? `<small>${dinheiro(outros)} de outras entradas</small>` : ""}${d.resgatesMes > 0.005 ? `<small class="k-res">e ${dinheiro(d.resgatesMes)} resgatados da reserva</small>` : ""}${d.aportesMes > 0.005 ? `<small class="k-res">${dinheiro(d.aportesMes)} guardados na reserva, não gastos</small>` : ""}</div>
         <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b>${d.entrou > 0.005 ? `<em class="pct-k${d.saiu > d.entrou + 0.005 ? " neg" : ""}">${Math.round(d.saiu / d.entrou * 100)}% do que recebi</em>` : ""}<small>${dinheiro(lancado)} lançados</small><small>${dinheiro(d.fixosMes)} de fixos</small><small>${dinheiro(d.minhaCasa)} da casa</small></div>
         <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
       </div>
