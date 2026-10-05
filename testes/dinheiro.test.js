@@ -109,3 +109,18 @@ test("Média da casa: últimos 12 meses fechados, só a partir de agosto de 2026
   assert.match(t, /últimos 2 meses fechados/);
   await ctx.close();
 });
+
+test("Recebi mostra embaixo o resgate e o aporte do mês na reserva", async () => {
+  const { ctx, f, erros } = await abrir();
+  const r = await f.evaluate(() => {
+    ref = new Date(2026, 9, 1); aba = "carteira"; vistaDin = "mes"; desenhar();
+    const d = contasDinheiro();
+    return { d, txt: document.querySelector(".situ .k").innerText };
+  });
+  if (r.d.aportesMes > 0.005) assert.match(r.txt, /guardados na reserva, não gastos/);
+  if (r.d.resgatesMes > 0.005) assert.match(r.txt, /resgatados da reserva/);
+  else assert.doesNotMatch(r.txt, /resgatados/);
+  assert.ok(r.d.aportesMes > 0.005, "outubro dos dados de teste tem aporte");
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
