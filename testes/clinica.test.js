@@ -104,6 +104,44 @@ test("Clínica: corrigir o prontuário na ficha não apaga o \"como chegou\" de 
   await ctx.close();
 });
 
+test("Clínica: a aba Marketing mostra o ranking, os cartões e o aviso de quem falta marcar, sem mexer nos dados", async () => {
+  for (const largura of [375, 1280]) {
+    const { ctx, p, erros } = await abrir("clinica.html", { largura });
+    const r = await p.evaluate(() => {
+      dados.anuncios = [
+        { id:"a1", post:"Reels A", inicio:"2026-08-01", fim:"2026-08-07", colocado:70, gasto:66.4, conversas:9 },
+        { id:"a2", post:"Carrossel B", inicio:"2026-09-05", fim:"2026-09-12", colocado:100, gasto:98.1, conversas:6 },
+        { id:"a3", post:"Reels A", inicio:"2026-09-20", fim:"2026-09-27", colocado:80, gasto:79.5, conversas:11 },
+        { id:"a4", post:"Story C", inicio:"2026-10-04", fim:"2026-10-10", colocado:50 },
+        { id:"a5", post:"Antigo D", inicio:"2026-07-01", fim:"2026-07-05", colocado:30, gasto:30, conversas:2 }];
+      dados.origens = { T001:{ tipo:"anuncio", anuncio:"a1" } };
+      const antes = JSON.stringify(dados);
+      document.querySelector("[data-view=marketing]").click(); renderMarketing();
+      const posts = [...document.querySelectorAll("#mk-rank .mk-post .cab b")].map(b => b.textContent);
+      const cartoes = document.querySelectorAll("#mk-lista .mk-an").length;
+      document.getElementById("mk-todos").click();
+      const todos = document.querySelectorAll("#mk-lista .mk-an").length;
+      const aviso = document.getElementById("mk-aviso");
+      const avisoTexto = aviso.classList.contains("hidden") ? "" : aviso.textContent;
+      document.getElementById("mk-marcar").click();
+      const faltando = document.querySelectorAll("#mk-origens .mk-origem.falta").length;
+      const linhas = document.querySelectorAll("#mk-origens .mk-origem").length;
+      return { posts, cartoes, todos, avisoTexto, faltando, linhas, mudou: JSON.stringify(dados) !== antes,
+        larga: document.documentElement.scrollWidth > window.innerWidth + 1 };
+    });
+    assert.deepEqual(r.posts, ["Reels A", "Antigo D", "Carrossel B", "Story C"], "o mais barato por conversa primeiro; o sem métrica no fim");
+    assert.equal(r.cartoes, 4, "só os quatro mais recentes de início");
+    assert.equal(r.todos, 5, "\"Ver os anteriores\" mostra todos");
+    assert.match(r.avisoTexto, /3 pacientes sem marcar/);
+    assert.equal(r.faltando, 3, "\"Marcar agora\" filtra quem falta");
+    assert.equal(r.linhas, 3);
+    assert.equal(r.mudou, false, "olhar a aba não muda os dados");
+    assert.equal(r.larga, false, "nada passa da largura da tela");
+    assert.deepEqual(erros, []);
+    await ctx.close();
+  }
+});
+
 test("Clínica: as janelas e o menu da grade funcionam pelo teclado", async () => {
   const { ctx, p, erros } = await abrir("clinica.html");
   const cel = p.locator('.cell[data-data="2026-10-05"][data-hora="9"]');

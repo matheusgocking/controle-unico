@@ -576,37 +576,62 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 #v-sessoes h2 .ss-n{font:400 12.5px/1 inherit; color:var(--muted); margin-left:6px}
 #ss-p-marcar{border-color:var(--quente-line)}
 /* ---------- marketing (01/10/2026) ---------- */
-/* um cartão por vez que ele turbinou: nome do post, situação e os números em colunas */
-.mk-an{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px}
+/* o aviso do alto: o que falta ele marcar para as contas fecharem */
+.mk-aviso{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin:0 0 16px; padding:10px 14px;
+  background:var(--warn-soft); border:1px solid var(--quente-line); border-radius:var(--radius); font-size:13px}
+.mk-aviso > span{flex:1 1 260px}
+.mk-aviso .btn{margin-left:auto}
+/* um cartão por vez que ele turbinou: o nome e a situação em cima, quatro números grandes, o resto miúdo */
+.mk-an{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px}
+.mk-an.no-ar{border-left:4px solid var(--ok); padding-left:13px}
 .mk-an + .mk-an{margin-top:10px}
-.mk-an .topo{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-bottom:10px}
-.mk-an h3{font-size:14.5px}
-.mk-an .quando{color:var(--muted); font-size:12.5px}
-.mk-an .acoes{margin-left:auto}
-.mk-nums{display:grid; grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); gap:10px 14px}
-.mk-nums div{display:flex; flex-direction:column; min-width:0}
-.mk-nums b{font-family:var(--font); font-weight:700; font-size:16px; white-space:nowrap}
-.mk-nums span{color:var(--muted); font-size:12px}
+.mk-an .topo{display:flex; align-items:flex-start; gap:10px; margin-bottom:12px}
+.mk-an .tit{flex:1 1 auto; min-width:0}
+.mk-an h3{font-size:15px; line-height:1.3; overflow-wrap:anywhere}
+.mk-an .quando{display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; margin-top:3px; color:var(--muted); font-size:12.5px}
+.mk-nums{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px 16px}
+.mk-nums > div{display:flex; flex-direction:column; min-width:0}
+.mk-nums .rot{color:var(--muted); font-size:11.5px; font-weight:600; letter-spacing:.02em; text-transform:uppercase}
+.mk-nums b{font-family:var(--font); font-weight:700; font-size:19px; line-height:1.25; white-space:nowrap}
+.mk-nums small{color:var(--muted); font-size:12px}
 .mk-nums .vazio b{color:var(--faint); font-weight:400}
-.mk-uso{display:flex; align-items:center; gap:10px; margin-top:10px; font-size:12px; color:var(--muted)}
-.mk-uso .trilho{flex:1; height:8px; border-radius:20px; background:var(--surface-3); overflow:hidden}
-.mk-uso .trilho span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
-.mk-an .pe{margin:10px 0 0; font-size:12px; color:var(--muted)}
-/* o ranking por post: a barra é a nota de cada um contra a do melhor */
-.mk-post{padding:10px 0; border-bottom:1px solid var(--border)}
+.mk-nums .espera{grid-column:span 2; align-self:center; color:var(--muted); font-size:12.5px; line-height:1.4;
+  border:1px dashed var(--border-strong); border-radius:8px; padding:8px 10px}
+.mk-nums .trilho{display:block; height:6px; margin-top:5px; border-radius:20px; background:var(--surface-3); overflow:hidden}
+.mk-nums .trilho span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
+.mk-an .pe{margin:12px 0 0; font-size:12px; color:var(--muted)}
+.mk-an .pe i,.mk-post .nums i{font-style:normal; margin:0 6px; color:var(--faint)}
+.mk-an .pe.quem{margin-top:6px}
+.mk-an .pe.quem b{color:var(--text); font-weight:600}
+.mk-todos{margin-top:12px}
+/* o ranking por post: a posição, a barra (a nota de cada um contra a do melhor) e o número que decide */
+.mk-post{display:grid; grid-template-columns:28px minmax(0,1fr) auto; gap:4px 12px; align-items:center; padding:12px 0; border-bottom:1px solid var(--border)}
 .mk-post:last-child{border-bottom:0; padding-bottom:0}
+.mk-post .pos{width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:13px}
+.mk-post.sem-nota .pos{background:var(--surface-2); color:var(--faint)}
 .mk-post .cab{display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px}
-.mk-post .cab b{font-size:14px}
-.mk-post .trilho{height:8px; border-radius:20px; background:var(--surface-2); overflow:hidden; margin:7px 0}
+.mk-post .cab b{font-size:14px; overflow-wrap:anywhere}
+.mk-post .trilho{height:8px; border-radius:20px; background:var(--surface-2); overflow:hidden; margin:7px 0 6px}
 .mk-post .trilho span{display:block; height:100%; background:var(--g-rec); border-radius:20px}
-.mk-post .nums{display:flex; flex-wrap:wrap; gap:2px 16px; font-size:12.5px; color:var(--muted)}
-.mk-post .nums b{color:var(--text); font-weight:600}
-/* como cada paciente chegou: o nome à esquerda e a escolha à direita */
+.mk-post .nums{font-size:12.5px; color:var(--muted)}
+.mk-post .nota{display:flex; flex-direction:column; align-items:flex-end; text-align:right}
+.mk-post .nota b{font-family:var(--font); font-size:18px; font-weight:700; white-space:nowrap}
+.mk-post .nota b.nada{color:var(--faint); font-weight:400}
+.mk-post .nota span{color:var(--muted); font-size:11.5px; white-space:nowrap}
+/* a sobra do saldo é o número que ele olha antes de turbinar: em destaque */
+.mk-sobra{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:10px; padding:10px 12px;
+  border-radius:var(--radius); background:var(--ok-soft); color:var(--ok); font-size:13.5px; font-weight:600}
+.mk-sobra b{font-family:var(--font); font-size:18px}
+.linhas .mk-sobra{padding:10px 12px; border-bottom:0}
+.mk-sobra.neg{background:var(--devendo-soft); color:var(--devendo)}
+/* como cada paciente chegou: o nome à esquerda e a escolha à direita; quem falta marcar fica sinalizado */
 .mk-origem{display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px}
 .mk-origem .quem{display:flex; flex-direction:column; min-width:0; flex:1 1 220px}
 .mk-origem .quem b{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .mk-origem .quem span{color:var(--muted); font-size:11.5px}
 .mk-origem select,#fi-origem{padding:6px 8px; min-height:34px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); max-width:100%}
+.mk-origem select{flex:0 1 300px}
+.mk-origem.falta select{border-color:var(--quente-line); background:var(--warn-soft)}
 .mk-desde{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; font-size:12.5px; color:var(--muted)}
 .mk-desde input{padding:4px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text)}
 .modal .erro{color:var(--devendo); font-size:12.5px; margin-right:auto; align-self:center}
@@ -616,9 +641,18 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 @media (max-width:700px){
   #mk-novo{width:100%; padding:8px}
   .mk-origem select{width:100%; min-height:40px}
-  .mk-an .btn.sm{min-height:36px; padding:6px 12px}   /* área de toque */
-  .mk-nums{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px 8px}
-  .mk-nums b{font-size:15px}
+  .mk-an .btn.sm,.mk-aviso .btn{min-height:36px; padding:6px 12px}   /* área de toque */
+  .mk-aviso .btn{width:100%}
+  .mk-an{padding:12px}
+  .mk-an.no-ar{padding-left:9px}
+  .mk-nums{grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 10px}
+  .mk-nums b{font-size:17px}
+  .mk-post{grid-template-columns:24px minmax(0,1fr) auto; gap:4px 10px}
+  .mk-post .pos{width:22px; height:22px; font-size:12px; align-self:start}
+  /* no celular o número que decide desce para baixo do nome, para o texto não ficar espremido */
+  .mk-post{grid-template-columns:24px minmax(0,1fr)}
+  .mk-post .nota{grid-column:2; flex-direction:row; align-items:baseline; gap:6px; text-align:left}
+  .mk-post .nota b{font-size:16px}
   #v-marketing .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (prefers-reduced-motion: no-preference){ .cell,.btn,.tab{transition:background-color .12s ease} }
@@ -1054,6 +1088,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <button class="btn primary" id="mk-novo">+ Novo anúncio</button>
     </div>
 
+    <!-- o que falta ele fazer para as contas fecharem: some quando não falta nada -->
+    <div class="mk-aviso hidden" id="mk-aviso" role="status"></div>
+
     <div class="panel">
       <h2>Qual post vale mais</h2>
       <p class="sub" id="mk-rank-sub"></p>
@@ -1062,21 +1099,21 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 
     <div class="panel">
       <h2>Cada anúncio</h2>
-      <p class="sub">Um cartão para cada vez que você turbinou. Você lança o post, as datas e quanto colocou; as métricas vêm do Instagram, e o Claude preenche quando você pedir "atualiza as métricas dos anúncios".</p>
+      <p class="sub">Um cartão para cada vez que você turbinou, do mais novo ao mais antigo. As métricas o Claude preenche quando você pedir "atualiza as métricas dos anúncios".</p>
       <div id="mk-lista"></div>
     </div>
 
     <div class="panel">
       <h2>O dinheiro dos anúncios</h2>
-      <p class="sub">O que sai do seu bolso é a recarga de saldo, lançada na Carteira com a categoria "Clínica: Anúncios". Lançar um anúncio aqui não cria gasto lá: só diz para onde o saldo foi.</p>
+      <p class="sub">O que sai do bolso é a recarga de saldo na Meta, lançada na Carteira como "Clínica: Anúncios". Lançar um anúncio aqui não cria gasto lá.</p>
       <div class="linhas" id="mk-dinheiro"></div>
       <label class="mk-desde" for="mk-desde">Recarrego saldo na Meta desde <input type="date" id="mk-desde" aria-label="A partir de quando o anúncio é pago com saldo recarregado"></label>
       <p class="hint" style="margin:8px 0 0">A sobra é a recarga menos o que você colocou nos anúncios, a partir dessa data. O saldo exato, com o imposto, é o que a Meta mostra.</p>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="mk-origens-painel">
       <h2>Como cada paciente chegou</h2>
-      <p class="sub">O único dado que só você sabe. Com ele o app conta quantos pacientes cada anúncio trouxe e quanto eles já pagaram. A mesma escolha aparece na ficha do paciente.</p>
+      <p class="sub">Só você sabe. Com isso o app conta quantos pacientes cada anúncio trouxe e quanto já pagaram. A mesma escolha aparece na ficha do paciente.</p>
       <div class="filtros" id="mk-filtros" role="tablist" aria-label="Quais pacientes mostrar"></div>
       <div id="mk-origens"></div>
     </div>
@@ -3866,7 +3903,19 @@ function lancamentosDeAnuncio(){
   return d.lancamentos.filter(function(l){ return l.categoria === "Clínica: Anúncios" && l.tipo === "Despesa"; });
 }
 
-var filtroOrigem = "todos", origensInteiras = false;
+/* a sobra do saldo recarregado na Meta: recargas da Carteira desde a data dele menos o que ele
+   colocou nos anúncios começados desde então. null sem a data ou sem o caderno do Dinheiro */
+function sobraDoSaldo(lanc){
+  var desde = (dados.marketing || {}).desde || "";
+  if(lanc === undefined) lanc = lancamentosDeAnuncio();
+  if(!desde || !lanc) return null;
+  var recarga = 0, posto = 0;
+  lanc.forEach(function(l){ if(String(l.data||"") >= desde) recarga += Number(l.valor)||0; });
+  anuncios().forEach(function(a){ if(a.inicio && a.inicio >= desde) posto += Number(a.colocado)||0; });
+  return {recarga:recarga, posto:posto, sobra:Math.round((recarga - posto) * 100) / 100};
+}
+
+var filtroOrigem = "todos", origensInteiras = false, anunciosInteiros = false;
 function renderMarketing(){
   var rec = recebidoPorCodigo();
   var contas = anuncios().map(function(a){ return {a:a, c:contaDoAnuncio(a, rec)}; })
@@ -3912,53 +3961,73 @@ function renderMarketing(){
   var melhor = comNota.length ? comNota[0].nota : 0;
   document.getElementById("mk-rank-sub").textContent = !grupos.length ? "Aparece aqui quando houver anúncio lançado."
     : (porRetorno ? "Do que mais devolveu para cada real gasto ao que menos devolveu. O mesmo post turbinado várias vezes conta junto."
-                  : "Do que paga menos por conversa ao que paga mais. Conversa não é paciente: quando houver pacientes marcados em dois posts ou mais, a ordem passa a ser por quanto voltou para cada real.");
+                  : "Do que paga menos por conversa ao que paga mais. Quando houver pacientes marcados em dois posts, a ordem passa a ser por quanto voltou para cada real.");
+  /* cada post numa linha: a posição, o nome, a barra e, à direita, o número que decide a ordem */
   document.getElementById("mk-rank").innerHTML = grupos.length ? grupos.map(function(g, i){
     var etiqueta = "";
     if(g.nota === null) etiqueta = '<span class="sit sem">sem métrica ainda</span>';
     else if(comNota.length >= 2 && g === comNota[0]) etiqueta = '<span class="sit ok">vale mais</span>';
     else if(comNota.length >= 2 && g === comNota[comNota.length-1] && g.nota < melhor) etiqueta = '<span class="sit atraso">vale menos</span>';
     var largura = g.nota !== null && melhor > 0 ? Math.max(3, Math.round(g.nota / melhor * 100)) : 0;
-    return '<div class="mk-post"><div class="cab"><b>'+esc(g.post)+'</b>'+etiqueta+
-        '<span class="hint">'+(g.vezes === 1 ? "turbinado 1 vez" : "turbinado "+g.vezes+" vezes")+'</span></div>' +
-      '<div class="trilho"><span style="width:'+largura+'%"></span></div>' +
-      '<div class="nums"><span><b>'+moeda2(g.custo)+'</b> gastos</span>' +
-        '<span><b>'+(g.conversas > 0 ? inteiro(g.conversas) : "—")+'</b> conversas</span>' +
-        '<span><b>'+(g.conversas > 0 ? moeda2(g.gastoMedido / g.conversas) : "—")+'</b> por conversa</span>' +
-        '<span><b>'+g.pacientes+'</b> '+(g.pacientes === 1 ? "paciente" : "pacientes")+'</span>' +
-        (g.pacientes > 0 ? '<span><b>'+moeda(g.custo / g.pacientes)+'</b> por paciente</span>' : "") +
-        (g.pacientes > 0 && g.custo > 0 ? '<span>voltou <b>'+moeda2(g.retorno / g.custo)+'</b> para cada R$ 1</span>' : "") +
-      '</div></div>';
+    var nota = g.nota === null ? '<b class="nada">—</b><span>sem métrica</span>'
+      : porRetorno ? '<b>'+moeda2(g.nota)+'</b><span>voltou por R$ 1</span>'
+      : '<b>'+moeda2(g.gastoMedido / g.conversas)+'</b><span>por conversa</span>';
+    var partes = [moeda2(g.custo) + (g.vezes === 1 ? " em 1 vez" : " em " + g.vezes + " vezes")];
+    if(g.conversas > 0) partes.push(plural(g.conversas, "conversa", "conversas"));
+    partes.push(plural(g.pacientes, "paciente", "pacientes") + (g.pacientes > 0 ? " (" + moeda(g.custo / g.pacientes) + " cada)" : ""));
+    if(porRetorno && g.conversas > 0) partes.push(moeda2(g.gastoMedido / g.conversas) + " por conversa");
+    else if(!porRetorno && g.pacientes > 0 && g.custo > 0) partes.push("voltou " + moeda2(g.retorno / g.custo) + " por R$ 1");
+    return '<div class="mk-post'+(g.nota === null ? " sem-nota" : "")+'"><span class="pos" aria-hidden="true">'+(g.nota === null ? "·" : (i+1))+'</span>' +
+      '<div class="corpo"><div class="cab"><b>'+esc(g.post)+'</b>'+etiqueta+'</div>' +
+        '<div class="trilho"><span style="width:'+largura+'%"></span></div>' +
+        '<div class="nums">'+partes.join('<i aria-hidden="true">·</i>')+'</div></div>' +
+      '<div class="nota">'+nota+'</div></div>';
   }).join("") : "";
 
   /* 3. cada anúncio, do mais novo para o mais antigo */
   var codigoNome = {};
   carteiraInteira().forEach(function(x){ codigoNome[x.codigo] = String(x.nome||"").trim().split(/\s+/)[0]; });
-  var num = function(v, rotulo, vazio){ return '<div'+(vazio ? ' class="vazio"' : "")+'><b>'+v+'</b><span>'+rotulo+'</span></div>'; };
-  document.getElementById("mk-lista").innerHTML = contas.length ? contas.map(function(x){
+  var num = function(v, rotulo, extra, vazio){
+    return '<div'+(vazio ? ' class="vazio"' : "")+'><span class="rot">'+rotulo+'</span><b>'+v+'</b>'+(extra ? '<small>'+extra+'</small>' : "")+'</div>';
+  };
+  /* os que ainda estão no ar (ou vão começar) aparecem sempre; dos que terminaram, os mais recentes */
+  var hojeA = chaveData(hoje0()), ativos = contas.filter(function(x){ return !x.a.fim || x.a.fim >= hojeA; }).length;
+  var LIMITE_AN = Math.max(4, ativos), contasVistas = anunciosInteiros ? contas : contas.slice(0, LIMITE_AN);
+  document.getElementById("mk-lista").innerHTML = contas.length ? contasVistas.map(function(x){
     var a = x.a, c = x.c, s = situacaoAnuncio(a);
     var periodo = (a.inicio ? dataCurta(deISO(a.inicio)) : "?") + (a.fim ? " a " + dataLonga(deISO(a.fim)) : (a.inicio ? "/" + a.inicio.slice(0,4) : ""));
-    var uso = c.gasto !== null && c.colocado > 0
-      ? '<div class="mk-uso"><span class="trilho"><span style="width:'+Math.min(100, Math.round(c.gasto / c.colocado * 100))+'%"></span></span>' +
-        '<span>'+Math.min(999, Math.round(c.gasto / c.colocado * 100))+'% do que você colocou</span></div>' : "";
+    var pct = c.gasto !== null && c.colocado > 0 ? Math.round(c.gasto / c.colocado * 100) : null;
+    var uso = pct !== null ? '<span class="trilho" title="'+Math.min(999,pct)+'% do que você colocou já foi gasto"><span style="width:'+Math.min(100,pct)+'%"></span></span>' : "";
     var nomes = c.codigos.map(function(k){ return codigoNome[k] || k; }).join(", ");
-    return '<div class="mk-an"><div class="topo"><h3>'+esc(a.post || "Anúncio sem nome")+'</h3>' +
-        '<span class="quando">'+periodo+'</span><span class="sit '+s.classe+'">'+esc(s.texto)+'</span>' +
-        '<span class="acoes"><button class="btn sm" data-anuncio="'+esc(a.id)+'">Editar</button></span></div>' +
-      '<div class="mk-nums">' +
-        num(c.colocado > 0 ? moeda2(c.colocado) : "—", "você colocou", !(c.colocado > 0)) +
-        num(c.gasto !== null ? moeda2(c.gasto) : "—", "gasto na Meta", c.gasto === null) +
-        num(c.conversas !== null ? inteiro(c.conversas) : "—", "conversas", c.conversas === null) +
-        num(c.gasto !== null && c.conversas > 0 ? moeda2(c.gasto / c.conversas) : "—", "por conversa", !(c.gasto !== null && c.conversas > 0)) +
-        num(c.views !== null ? inteiro(c.views) : "—", "visualizações", c.views === null) +
-        num(c.alcance !== null ? inteiro(c.alcance) : "—", "alcance", c.alcance === null) +
-        num(c.seguidores !== null ? inteiro(c.seguidores) : "—", "seguidores", c.seguidores === null) +
-        num(c.pacientes, c.pacientes === 1 ? "paciente" : "pacientes", !c.pacientes) +
-        num(c.pacientes ? moeda(c.retorno) : "—", "já voltou", !c.pacientes) +
-      '</div>' + uso +
-      '<p class="pe">' + (a.lidoEm ? "Métricas lidas em " + dataLonga(deISO(a.lidoEm)) + "." : "Sem métricas ainda: peça ao Claude para atualizar, ou digite em Editar.") +
-        (nomes ? " Vieram dele: " + esc(nomes) + "." : "") + '</p></div>';
-  }).join("") : '<p class="pvazio">Nenhum anúncio lançado ainda. Use "+ Novo anúncio" para lançar o primeiro.</p>';
+    var miudos = [];
+    if(c.views !== null) miudos.push(inteiro(c.views) + " visualizações");
+    if(c.alcance !== null) miudos.push(inteiro(c.alcance) + " contas alcançadas");
+    if(c.seguidores !== null) miudos.push(plural(c.seguidores, "seguidor novo", "seguidores novos"));
+    if(a.lidoEm) miudos.push("lidas em " + dataLonga(deISO(a.lidoEm)));
+    var corpo;
+    if(c.gasto === null && c.conversas === null){
+      corpo = '<div class="mk-nums">' +
+        num(c.colocado > 0 ? moeda2(c.colocado) : "—", "Você colocou", "", !(c.colocado > 0)) +
+        '<div class="espera">Sem métricas ainda. Peça ao Claude "atualiza as métricas dos anúncios", ou digite em Editar.</div>' +
+        num(c.pacientes, c.pacientes === 1 ? "Paciente" : "Pacientes", c.pacientes ? "voltou " + moeda(c.retorno) : "", !c.pacientes) +
+      '</div>';
+    } else {
+      corpo = '<div class="mk-nums">' +
+        num(c.gasto !== null ? moeda2(c.gasto) : moeda2(c.colocado), "Gasto", (c.colocado > 0 ? "de " + moeda2(c.colocado) + " colocados" : "") + uso, false) +
+        num(c.conversas !== null ? inteiro(c.conversas) : "—", "Conversas", "", c.conversas === null) +
+        num(c.gasto !== null && c.conversas > 0 ? moeda2(c.gasto / c.conversas) : "—", "Por conversa", "", !(c.gasto !== null && c.conversas > 0)) +
+        num(c.pacientes, c.pacientes === 1 ? "Paciente" : "Pacientes", c.pacientes ? "voltou " + moeda(c.retorno) : "", !c.pacientes) +
+      '</div>' + (miudos.length ? '<p class="pe">'+miudos.join('<i aria-hidden="true">·</i>')+'</p>' : "");
+    }
+    return '<div class="mk-an'+(s.classe === "ok" ? " no-ar" : "")+'"><div class="topo"><div class="tit"><h3>'+esc(a.post || "Anúncio sem nome")+'</h3>' +
+        '<span class="quando">'+periodo+'<span class="sit '+s.classe+'">'+esc(s.texto)+'</span></span></div>' +
+        '<button class="btn sm" data-anuncio="'+esc(a.id)+'" aria-label="Editar o anúncio '+esc(a.post || "")+'">Editar</button></div>' +
+      corpo + (nomes ? '<p class="pe quem">Vieram dele: <b>' + esc(nomes) + '</b></p>' : "") + '</div>';
+  }).join("") + (contas.length > LIMITE_AN ? '<button class="btn sm ghost mk-todos" id="mk-todos">' +
+      (anunciosInteiros ? "Mostrar só os mais recentes" : "Ver os anteriores (" + (contas.length - LIMITE_AN) + ")") + '</button>' : "")
+    : '<p class="pvazio">Nenhum anúncio lançado ainda. Use "+ Novo anúncio" para lançar o primeiro.</p>';
+  var todosBtn = document.getElementById("mk-todos");
+  if(todosBtn) todosBtn.addEventListener("click", function(){ anunciosInteiros = !anunciosInteiros; renderMarketing(); });
   document.querySelectorAll("#mk-lista [data-anuncio]").forEach(function(b){
     b.addEventListener("click", function(){ abrirAnuncio(b.dataset.anuncio); });
   });
@@ -3971,23 +4040,20 @@ function renderMarketing(){
   if(!lanc){
     hd = linha("O que saiu do bolso", "— abra a aba Carteira uma vez neste aparelho");
   } else {
-    var hojeISO = chaveData(hoje0()), mesISO = hojeISO.slice(0,7), anoISO = hojeISO.slice(0,4), noMes = 0, noAno = 0, recarga = 0;
+    var hojeISO = chaveData(hoje0()), mesISO = hojeISO.slice(0,7), anoISO = hojeISO.slice(0,4), noMes = 0, noAno = 0;
     lanc.forEach(function(l){
       var v = Number(l.valor)||0, d = String(l.data||"");
       if(d.indexOf(mesISO) === 0) noMes += v;
       if(d.indexOf(anoISO) === 0) noAno += v;
-      if(desde && d >= desde) recarga += v;
     });
     hd = linha("Saiu do bolso neste mês, pela Carteira", "<b>"+moeda2(noMes)+"</b>") +
          linha("Saiu do bolso em " + anoISO, "<b>"+moeda2(noAno)+"</b>");
-    if(desde){
-      var posto = 0;
-      anuncios().forEach(function(a){ if(a.inicio && a.inicio >= desde) posto += Number(a.colocado)||0; });
-      var sobra = Math.round((recarga - posto) * 100) / 100;
-      hd += linha("Recarregado desde " + dataLonga(deISO(desde)), "<b>"+moeda2(recarga)+"</b>") +
-            linha("Colocado em anúncios desde então", "<b>"+moeda2(posto)+"</b>") +
-            linha(sobra >= 0 ? "Sobra para anunciar" : "Colocado a mais do que a recarga lançada",
-                  '<b'+(sobra < 0 ? ' style="color:var(--devendo)"' : "")+'>'+moeda2(Math.abs(sobra))+'</b>');
+    var sd = sobraDoSaldo(lanc);
+    if(sd){
+      hd += linha("Recarregado desde " + dataLonga(deISO(desde)), "<b>"+moeda2(sd.recarga)+"</b>") +
+            linha("Colocado em anúncios desde então", "<b>"+moeda2(sd.posto)+"</b>") +
+            '<div class="mk-sobra'+(sd.sobra < 0 ? " neg" : "")+'"><span>'+(sd.sobra >= 0 ? "Sobra para anunciar" : "Colocado a mais do que a recarga lançada")+'</span>' +
+              '<b>'+moeda2(Math.abs(sd.sobra))+'</b></div>';
     }
   }
   document.getElementById("mk-dinheiro").innerHTML = hd;
@@ -4013,7 +4079,7 @@ function renderMarketing(){
   var alvo = document.getElementById("mk-origens");
   alvo.innerHTML = (mostrados.length ? mostrados.map(function(x){
     var pago = retornoDe(rec[x.codigo]).total;
-    return '<div class="mk-origem"><span class="quem"><b>'+esc(x.nome)+'</b>' +
+    return '<div class="mk-origem'+(valorOrigem(x.codigo) ? "" : " falta")+'"><span class="quem"><b>'+esc(x.nome)+'</b>' +
       '<span>'+esc(x.codigo)+(x.inicio ? " · começou em "+dataLonga(deISO(x.inicio)) : "")+" · "+esc(x.situacao)+(pago > 0 ? " · já pagou "+moeda(pago) : "")+'</span></span>' +
       '<select data-origem="'+esc(x.codigo)+'" aria-label="Como '+esc(x.nome)+' chegou">'+opcoesOrigem(x.codigo)+'</select></div>';
   }).join("") : '<p class="pvazio">'+(todos.length ? "Ninguém nesta lista." : 'Nenhum paciente ainda. Use "Ler a planilha" no alto da página.')+'</p>') +
@@ -4024,6 +4090,21 @@ function renderMarketing(){
   });
   var mais = document.getElementById("mk-mais");
   if(mais) mais.addEventListener("click", function(){ origensInteiras = !origensInteiras; renderMarketing(); });
+
+  /* 6. o aviso do alto: sem a origem marcada, o app não sabe quantos pacientes cada anúncio trouxe */
+  var aviso = document.getElementById("mk-aviso"), faltam = conta[""] || 0;
+  aviso.classList.toggle("hidden", !(faltam > 0 && contas.length > 0));
+  if(faltam > 0 && contas.length > 0){
+    aviso.innerHTML = '<span><b>' + plural(faltam, "paciente", "pacientes") + ' sem marcar</b> como chegou. Sem isso o app não sabe quantos pacientes cada anúncio trouxe.</span>' +
+      '<button class="btn sm" id="mk-marcar">Marcar agora</button>';
+    document.getElementById("mk-marcar").addEventListener("click", function(){
+      filtroOrigem = ""; origensInteiras = false; renderMarketing();
+      var painel = document.getElementById("mk-origens-painel");
+      painel.scrollIntoView({behavior:"smooth", block:"start"});
+      var primeiro = painel.querySelector("select[data-origem]");
+      if(primeiro) primeiro.focus({preventScroll:true});
+    });
+  }
 }
 
 /* a janela de um anúncio: serve para lançar um novo e para corrigir um que já existe.
@@ -4048,7 +4129,8 @@ function abrirAnuncio(id){
     '<div class="grid2">' + campo("Começou em", "an-inicio", "date", v.inicio) +
       campo("Termina em", "an-fim", "date", v.fim, "", "Pode ficar em branco.") + '</div>' +
     campo("Quanto você colocou (R$)", "an-colocado", "number", v.colocado, 'min="0" step="0.01" inputmode="decimal"',
-      "O valor que o Instagram mostrou na hora de turbinar. É ele que desconta da sobra do saldo.") +
+      "O valor que o Instagram mostrou na hora de turbinar. É ele que desconta da sobra do saldo." +
+      (!a && sobraDoSaldo() ? " Sobra agora: <b>" + moeda2(sobraDoSaldo().sobra) + "</b>." : "")) +
     '<details class="metricas"'+(a ? " open" : "")+'><summary>Métricas do Instagram</summary>' +
       '<p class="hint" style="margin:0 0 10px">O Claude preenche quando você pede para atualizar as métricas. Você também pode digitar.</p>' +
       '<div class="grid2">' + campo("Gasto até agora (R$)", "an-gasto", "number", v.gasto, 'min="0" step="0.01" inputmode="decimal"') +
