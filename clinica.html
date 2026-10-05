@@ -3322,6 +3322,70 @@ function dicaPagamento(trocouPaciente){
     (s.ultimo ? "último em " + dataLonga(deISO(s.ultimo.data)) : "sem pagamento registrado");
 }
 
+/* ---------------- cópia em planilha ----------------
+   Abas da Clínica para o "Baixar planilha" da Carteira (05/10/2026): a regra dele é só trocar
+   planilha por app com prova de que dá para tirar tudo de volta. Só lê os dados, não grava nada.
+   Pacientes (os da agenda e os que já saíram), os ciclos de pagamento de cada um e uma linha
+   por sessão: o histórico do prontuário até a data dele e, depois, o que a agenda registra. */
+var SITUACAO_PLANILHA = {sessao:"A confirmar", realizada:"Realizada", falta:"Não compareceu (cobrada)",
+  remarcada:"Remarcada", cancelada:"Não haverá", cortesia:"Cortesia", avisou:"Avisou e não veio"};
+function abasParaPlanilha(){
+  var vazio = function(v){ return (v === undefined || v === null || v === "") ? "-" : v; };
+  var suspensoes = dados.suspensoes || {};
+  var pacientes = [["Prontuário","Nome","Nome completo","Situação","Status","Frequência","Cobrança","Valor","Dia","Hora",
+    "Início","Fim","Gênero","Suspenso desde","Deve (sessões)","Deve (R$)","Dívida conta desde"]];
+  dados.pacientes.forEach(function(p){
+    var d = devidoDe(p);
+    pacientes.push([vazio(p.codigo), vazio(p.nome), vazio(p.nomeCompleto), "Na agenda", vazio(String(p.status||"").replace(/\.$/,"")),
+      vazio(p.freq), vazio(p.cobranca), Number(p.valor)||0, DIAS[p.dia] || "-", p.hora === undefined ? "-" : p.hora + "h",
+      vazio(p.inicio), vazio(p.fim), vazio(p.genero), "-",
+      d ? d.sessoes : "-", d ? d.valor : "-", d ? vazio(d.base) : "-"]);
+  });
+  (dados.arquivados || []).forEach(function(a){
+    pacientes.push([vazio(a.codigo), vazio(a.nome), "-", "Fora da agenda", vazio(String(a.status||"").replace(/\.$/,"")),
+      "-", vazio(a.modalidade), Number(a.valor)||0, "-", "-", vazio(a.inicio), vazio(a.fim), "-", vazio(suspensoes[a.codigo]),
+      "-", Number(a.aPagar)||0, a.aPagar ? "planilha, " + vazio(dados.arquivadosEm) : "-"]);
+  });
+
+  var ciclos = [["Prontuário","Nome","Início","Cobrança","Valor","Aberto no app"]];
+  dados.pacientes.forEach(function(p){
+    ciclosDe(p).forEach(function(c){
+      ciclos.push([vazio(p.codigo), vazio(p.nome), vazio(c.inicio), vazio(c.cobranca), Number(c.valor)||0, c.noApp ? "Sim" : "Não"]);
+    });
+  });
+
+  var sessoes = [];
+  dados.pacientes.forEach(function(p){
+    var h = p.historico;
+    ((h && h.sessoes) || []).forEach(function(s){
+      var cobra = s.situacao === "realizada" || s.situacao === "falta";
+      sessoes.push({data:s.data, hora:"-", p:p, situacao:SITUACAO_PLANILHA[s.situacao] || s.situacao,
+        valor:cobra ? valorSessaoEm(p, s.data) : 0, origem:"Prontuário"});
+    });
+  });
+  /* da agenda: desde "Contando desde" (ou o mês da primeira marca) até hoje, só o que já passou
+     ou já tem marca; de quem tem histórico do prontuário, só o que vem depois dele */
+  var hoje = hoje0();
+  for(var d = mesDesde(); d <= hoje; d = somaDias(d, 1)){
+    var iso = chaveData(d);
+    sessoesDoDia(d, true).forEach(function(s){
+      var p = s.paciente;
+      if(!p || (p.historico && p.historico.ate && iso <= p.historico.ate)) return;
+      if(s.estado === "sessao" && !jaPassou(d, s.hora)) return;
+      sessoes.push({data:iso, hora:s.hora + "h", p:p, situacao:SITUACAO_PLANILHA[s.estado] || s.estado,
+        valor:cobraSessao(s.estado) ? valorSessaoEm(p, iso) : 0, origem:"Agenda"});
+    });
+  }
+  sessoes.sort(function(a,b){ return a.data < b.data ? -1 : (a.data > b.data ? 1 : String(a.hora).localeCompare(String(b.hora))); });
+
+  return [
+    {nome:"Pacientes", linhas:pacientes},
+    {nome:"Ciclos", linhas:ciclos},
+    {nome:"Sessões", linhas:[["Data","Hora","Prontuário","Nome","Situação","Valor cobrado","De onde veio"]].concat(
+      sessoes.map(function(s){ return [s.data, s.hora, vazio(s.p.codigo), vazio(s.p.nome), s.situacao, s.valor, s.origem]; }))}
+  ];
+}
+
 /* ---------------- painel ---------------- */
 /* Espelha o Dashboard da planilha, com as contas refeitas: a sessão é contada no dia em
    que acontece, e não no mês em que o tratamento termina; a receita projetada usa a regra
