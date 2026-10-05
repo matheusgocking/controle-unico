@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle Único · Guia rápido</title>
+<meta name="description" content="Guia rápido do Controle Único: para que serve cada tela e como usar.">
+<link rel="icon" href="icone-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="tema.css">
+<script>
+/* o tema escolhido no app (claro ou escuro) vale aqui também */
+try { var t = localStorage.getItem("cu-painel-tema") || localStorage.getItem("cu-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+/* guia.html?para=ana mostra só o que vale para a página da Ana */
+if (/[?&]para=ana\b/.test(location.search)) document.documentElement.dataset.para = "ana";
+</script>
+<style>
+/* Guia rápido (05/10/2026): uma página só de leitura, fora da casca, como a Privacidade.
+   Não abre caderno nem fala com o Google: só explica as telas. */
+button,a,summary{touch-action:manipulation}
+*{box-sizing:border-box}
+html{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){color-scheme:dark} }
+body{margin:0; background:var(--bg); color:var(--text); font:15px/1.6 var(--font); -webkit-tap-highlight-color:transparent}
+.wrap{max-width:760px; margin:0 auto; padding:0 16px 56px}
+header{position:sticky; top:0; z-index:5; background:var(--bg); border-bottom:1px solid var(--line);
+  padding:10px 0; padding-top:calc(10px + env(safe-area-inset-top,0px))}
+header .wrap{display:flex; align-items:center; gap:10px; padding-bottom:0}
+.selo{width:28px; height:28px; border-radius:8px; background:var(--text); color:var(--bg); display:grid; place-items:center; font-size:13px; font-weight:700; flex:none}
+header b{font-weight:600}
+.voltar{margin-left:auto; display:inline-flex; align-items:center; gap:6px; min-height:40px; padding:6px 12px; border:1px solid var(--line);
+  border-radius:99px; color:var(--text); text-decoration:none; font-size:14px; white-space:nowrap}
+.voltar:hover{background:var(--surface)}
+h1{font-size:26px; line-height:1.25; margin:26px 0 6px}
+.intro{color:var(--muted); margin:0 0 18px}
+/* índice: um botão por tela, que leva até ela */
+.indice{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 22px; padding:0; list-style:none}
+.indice a{display:inline-flex; align-items:center; min-height:36px; padding:6px 12px; border-radius:99px; background:var(--surface);
+  border:1px solid var(--line); color:var(--text); text-decoration:none; font-size:14px}
+.indice a:hover{border-color:var(--accent)}
+section{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:0 0 14px; scroll-margin-top:72px}
+section h2{font-size:18px; margin:0 0 2px; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+section h2 small{font-size:12px; font-weight:500; color:var(--muted)}
+.serve{margin:0 0 8px; color:var(--muted)}
+section ul{margin:0; padding-left:20px}
+section li{margin:4px 0}
+section li::marker{color:var(--accent)}
+h3{font-size:15px; margin:14px 0 2px}
+.dica{margin:12px 0 0; padding:10px 12px; border-radius:8px; background:var(--accent-soft); font-size:14px}
+.aviso{margin:12px 0 0; padding:10px 12px; border-radius:8px; background:var(--warn-soft); font-size:14px}
+kbd{font:inherit; font-weight:600; padding:0 6px; border-radius:6px; border:1px solid var(--line); background:var(--bg); white-space:nowrap}
+.pt{display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin:0 2px}
+.pt.ok{background:#2f9e5b} .pt.indo{background:#d49a1c} .pt.erro{background:#d0453a}
+a{color:var(--accent)}
+.grupo{font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:26px 0 10px}
+/* quem é cada parte: a do Matheus some no guia da Ana, e o contrário */
+:root[data-para="ana"] [data-para="matheus"], :root:not([data-para="ana"]) [data-para="ana"]{display:none !important}
+@media (max-width:520px){
+  h1{font-size:22px; margin-top:18px}
+  section{padding:14px}
+}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="selo" data-para="matheus">CU</div><div class="selo" data-para="ana">A</div>
+  <b data-para="matheus">Controle Único</b><b data-para="ana">Controle da Ana</b>
+  <a class="voltar" data-para="matheus" href="./">‹ <span>Voltar ao app</span></a>
+  <a class="voltar" data-para="ana" href="ana.html">‹ <span>Voltar ao app</span></a>
+</div></header>
+
+<main class="wrap">
+
+<!-- ======================= Guia do Matheus ======================= -->
+<div data-para="matheus">
+  <h1>Guia rápido</h1>
+  <p class="intro">Para que serve cada tela do app e como usar. Tudo o que você lança fica guardado no seu Google Drive.</p>
+  <ul class="indice">
+    <li><a href="#comeco">Começar</a></li>
+    <li><a href="#lancar">Lançar</a></li>
+    <li><a href="#tudo">Tudo</a></li>
+    <li><a href="#dinheiro">Dinheiro</a></li>
+    <li><a href="#casa">Casa</a></li>
+    <li><a href="#cripto">Cripto</a></li>
+    <li><a href="#clinica">Clínica</a></li>
+    <li><a href="#conferir">Conferir</a></li>
+    <li><a href="#menu">Menu ⋯</a></li>
+    <li><a href="#outras">Outras páginas</a></li>
+  </ul>
+
+  <section id="comeco">
+    <h2>Começar</h2>
+    <ul>
+      <li>Toque em <kbd>Entrar com o Google</kbd> no alto. No app instalado, quem já entrou antes entra sozinho.</li>
+      <li>O ponto no alto diz onde estão os dados: <span class="pt ok"></span> verde, salvo no Google Drive; <span class="pt indo"></span> amarelo, salvando ou buscando; <span class="pt erro"></span> vermelho, algo deu errado, e o motivo aparece escrito ao lado.</li>
+      <li>O app grava sozinho, um instante depois de cada mudança. Não há botão de salvar.</li>
+      <li>São três abas: <b>Tudo</b>, <b>Carteira</b> e <b>Clínica</b>. No celular elas ficam embaixo; no computador, em cima.</li>
+      <li>Número que o app não tem aparece como um traço, com o motivo, em vez de um zero que enganaria.</li>
+    </ul>
+  </section>
+
+  <section id="lancar">
+    <h2>Lançar um gasto ou uma entrada</h2>
+    <p class="serve">O mesmo formulário serve no Tudo, no Dinheiro e na Casa.</p>
+    <ul>
+      <li>Toque em <kbd>+ Novo lançamento</kbd>. No celular há também o botão redondo <kbd>+</kbd> no canto da tela.</li>
+      <li>Primeiro diga de quem é: <b>Pessoal</b> (só seu, entra inteiro no seu mês) ou <b>Casa</b> (dividido, entra na balança com a Ana). No Tudo essa escolha é obrigatória; no Dinheiro e na Casa ela já vem marcada.</li>
+      <li>Depois: o que é (despesa, receita, aporte ou resgate da reserva), o dia (<kbd>Hoje</kbd>, <kbd>Ontem</kbd> ou outro), a categoria, a descrição se quiser, o valor e a forma de pagamento (ou quem comprou, na Casa).</li>
+      <li>No valor, digite só os números: a vírgula anda sozinha (1025 vira 10,25).</li>
+      <li>Depois de lançar, o app mostra o que entrou e oferece <kbd>Desfazer</kbd>.</li>
+      <li>Nas listas, o lápis <kbd>✎</kbd> altera um lançamento e o <kbd>×</kbd> apaga (o app pergunta antes).</li>
+    </ul>
+  </section>
+
+  <section id="tudo">
+    <h2>Tudo</h2>
+    <p class="serve">O seu mês num olhar só.</p>
+    <ul>
+      <li>A caixa do alto dá o veredito: <b>Pode gastar</b>, <b>Segure até entrar</b> ou <b>Não pode gastar</b>.</li>
+      <li>Depois vêm o Patrimônio (reserva de emergência e cripto), os Gastos por categoria, a Casa e a Clínica.</li>
+      <li>Abra <b>De onde vem cada número</b> para ver como cada conta foi feita.</li>
+      <li>No fim, <b>Meus lançamentos</b>: tudo o que você lançou no mês, pessoal e as suas compras da casa.</li>
+    </ul>
+  </section>
+
+  <p class="grupo">Carteira</p>
+
+  <section id="dinheiro">
+    <h2>Dinheiro <small>Carteira › Dinheiro</small></h2>
+    <p class="serve">O seu dinheiro pessoal, mês a mês. As setas <kbd>‹</kbd> <kbd>›</kbd> trocam o mês.</p>
+    <h3>Lançamentos</h3>
+    <ul>
+      <li>A situação do mês, a lista do que entrou e saiu (com filtro por categoria), os gastos por categoria, os limites por categoria e a reserva de emergência.</li>
+      <li>Toque no nome de uma coluna para ordenar a lista. No celular, use a caixa <b>Ordenar por</b>.</li>
+      <li><b>Limites por categoria</b>: diga quanto quer gastar por mês numa categoria. A barra fica laranja a partir de 80% e vermelha quando passa.</li>
+    </ul>
+    <h3>Gastos fixos</h3>
+    <ul>
+      <li>Separados em <b>Ainda vai sair</b>, <b>Já saiu</b> e <b>Não cobram no mês</b>.</li>
+      <li>Mês novo ainda sem fixos: use <kbd>Copiar os fixos</kbd> do mês anterior.</li>
+    </ul>
+    <h3>Pendências</h3>
+    <ul>
+      <li>Quem te deve e a quem você deve, com <kbd>Recebi uma parte</kbd>, <kbd>Paguei uma parte</kbd> e <kbd>Quitar</kbd>.</li>
+      <li>É só acompanhamento: não entra nas contas do mês. O dinheiro que entra ou sai você lança como sempre.</li>
+    </ul>
+    <h3>Mês a mês</h3>
+    <ul>
+      <li>O gráfico dos últimos doze meses e, embaixo, quanto sobrou ou faltou em cada um. Toque num mês para abrir.</li>
+    </ul>
+    <p class="dica">No fim da página: <kbd>Baixar planilha</kbd> gera uma cópia em Excel; <kbd>Exportar dados</kbd> guarda uma cópia do Dinheiro e da Casa; <kbd>Importar dados</kbd> volta essa cópia e troca o que está no app por ela (o app pergunta antes).</p>
+  </section>
+
+  <section id="casa">
+    <h2>Casa <small>Carteira › Casa</small></h2>
+    <p class="serve">As compras da casa, suas e da Ana.</p>
+    <ul>
+      <li>Mostra o total do mês, quanto cada um pagou e a balança.</li>
+      <li>A balança só mostra quem pagou mais ("Ana está R$ X atrás"). Ninguém paga o outro.</li>
+      <li>No seu mês, a casa entra pelo que você pagou.</li>
+      <li><b>Divisão e nomes</b>: só você muda. A Ana vê, lança as compras dela e só altera ou apaga as dela.</li>
+    </ul>
+  </section>
+
+  <section id="cripto">
+    <h2>Cripto <small>Carteira › Cripto</small></h2>
+    <p class="serve">As suas carteiras de cripto, lidas direto das redes.</p>
+    <ul>
+      <li><kbd>Atualizar</kbd> busca os saldos e as cotações de agora.</li>
+      <li>Abas: <b>Visão geral</b>, <b>Mapa</b>, <b>Ativos</b>, <b>Aportes</b>, <b>Pools</b> e <b>Diário</b> (suas anotações de decisão).</li>
+      <li><b>Precisa da sua atenção</b> junta os avisos. Um token marcado como golpe que não é: toque em <kbd>Não é golpe</kbd>.</li>
+      <li>Saque em reais da Binance aparece como <b>Resgate para o banco</b>.</li>
+      <li>Ler o CSV da Binance e refazer o histórico só aparecem no computador.</li>
+    </ul>
+  </section>
+
+  <p class="grupo">Clínica</p>
+
+  <section id="clinica">
+    <h2>Clínica</h2>
+    <p class="serve">Agenda, sessões, pagamentos e anúncios do consultório.</p>
+    <h3>Sessões</h3>
+    <ul>
+      <li>A grade da semana ou do mês. Toque num horário para marcar o que aconteceu: <b>Realizada</b>, <b>Não compareceu</b>, <b>Remarcada</b>, <b>Não haverá sessão</b> ou <b>Cortesia</b>.</li>
+      <li>Só conta a sessão marcada como realizada.</li>
+      <li>Embaixo, três listas: <b>Falta marcar</b> (o que já passou sem marca), <b>Histórico de sessões</b> e <b>Sessões previstas</b>.</li>
+    </ul>
+    <h3>Painel e Meta</h3>
+    <ul>
+      <li>Recebido contra previsto, o que falta receber, a meta e <b>Quem está devendo</b>.</li>
+      <li><kbd>Cobrar</kbd> monta a mensagem de cobrança para você ajustar e copiar no WhatsApp. O app não envia nada.</li>
+    </ul>
+    <h3>Pacientes e Pagamentos</h3>
+    <ul>
+      <li>A ficha de cada paciente tem as sessões, o extrato (sessões cobradas e pagamentos) e o prontuário.</li>
+      <li>O pagamento compra sessões (mensal 4, quinzenal 2, avulsa 1) e a coluna <b>Deve</b> mostra o que falta.</li>
+      <li>Quem está suspenso fica em <b>Suspensos</b>, com os dias contados.</li>
+    </ul>
+    <h3>Marketing</h3>
+    <ul>
+      <li>Lance em <kbd>+ Novo anúncio</kbd> cada vez que turbinar um post, e marque como cada paciente chegou.</li>
+      <li>A recarga de saldo na Meta continua no Dinheiro, na categoria Clínica: Anúncios.</li>
+    </ul>
+    <p class="dica"><kbd>Ler a planilha</kbd>, no alto da Clínica, traz o que mudou na planilha da prática clínica. O app só lê a planilha, nunca escreve nela.</p>
+  </section>
+
+  <section id="conferir">
+    <h2>Conferir</h2>
+    <p class="serve">Compara o app com as planilhas, item por item.</p>
+    <ul>
+      <li>No computador é o botão <kbd>Conferir</kbd> no alto; no celular fica no menu <kbd>⋯</kbd>.</li>
+      <li>Escolha as planilhas: elas são lidas no próprio aparelho, nada é enviado.</li>
+      <li>Desde outubro de 2026 serve à Clínica. Dinheiro e Casa são conferidos pelo extrato do banco.</li>
+    </ul>
+  </section>
+
+  <section id="menu">
+    <h2>Menu ⋯</h2>
+    <ul>
+      <li><b>Tema escuro</b> ou <b>Tema claro</b>.</li>
+      <li><b>Privacidade</b>: o que o app acessa e como tirar o acesso.</li>
+      <li><b>Sair deste aparelho</b>: apaga deste aparelho o que o app guardou e o acesso ao Google. O que está no Drive não é tocado.</li>
+      <li>No fim do menu, a versão do app (a data em que foi publicada).</li>
+      <li>Saiu versão nova com o app aberto: aparece a faixa <b>Há uma versão nova do app</b>. Toque em <kbd>Atualizar</kbd>.</li>
+    </ul>
+  </section>
+
+  <section id="outras">
+    <h2>Outras páginas</h2>
+    <ul>
+      <li><b>Controle da Ana</b>: página própria dela, com link próprio. Veja <a href="?para=ana">o guia da Ana</a>.</li>
+      <li><b>Formulação de Caso</b>: página própria, ainda em teste.</li>
+    </ul>
+    <p class="dica">Para instalar no iPhone: no Safari, toque em Compartilhar e depois em Adicionar à Tela de Início.</p>
+  </section>
+</div>
+
+<!-- ======================= Guia da Ana ======================= -->
+<div data-para="ana">
+  <h1>Guia rápido</h1>
+  <p class="intro">Para que serve cada tela do seu controle e como usar. Tudo o que você lança fica guardado no Google Drive.</p>
+  <ul class="indice">
+    <li><a href="#a-comeco">Começar</a></li>
+    <li><a href="#a-mes">Mês</a></li>
+    <li><a href="#a-plantoes">Plantões</a></li>
+    <li><a href="#a-atendimentos">Atendimentos</a></li>
+    <li><a href="#a-gastos">Gastos</a></li>
+    <li><a href="#a-casa">Casa</a></li>
+  </ul>
+
+  <section id="a-comeco">
+    <h2>Começar</h2>
+    <ul>
+      <li>Toque em <kbd>Entrar com o Google</kbd> no alto, com a sua conta.</li>
+      <li>O ponto no alto diz onde estão os dados: <span class="pt ok"></span> verde, salvo no Google Drive; <span class="pt indo"></span> amarelo, salvando ou buscando; <span class="pt erro"></span> vermelho, algo deu errado, e o motivo aparece escrito ao lado.</li>
+      <li>O app grava sozinho, um instante depois de cada mudança. Não há botão de salvar.</li>
+      <li>Em todas as telas, as setas <kbd>‹</kbd> <kbd>›</kbd> trocam o mês.</li>
+      <li>No valor, digite só os números: a vírgula anda sozinha (1025 vira 10,25).</li>
+      <li>Nas listas, o lápis <kbd>✎</kbd> altera e o <kbd>×</kbd> apaga.</li>
+    </ul>
+    <p class="dica">Para instalar no iPhone: no Safari, toque em Compartilhar e depois em Adicionar à Tela de Início.</p>
+  </section>
+
+  <section id="a-mes">
+    <h2>Mês</h2>
+    <p class="serve">Quanto entra, quanto sai e quanto sobra no mês.</p>
+    <ul>
+      <li><b>Situação do mês</b>: Entra, Sai e Sobra, com o aviso se o mês fecha positivo ou negativo.</li>
+      <li><b>Entradas</b>: os plantões e atendimentos entram sozinhos. Outra entrada (bolsa, salário) vai em <kbd>+ Nova entrada</kbd>, só neste mês ou até dezembro.</li>
+      <li><b>Para onde vai</b>: os gastos do mês por categoria, com o que você pagou na casa.</li>
+      <li>O gráfico mostra os últimos doze meses. Toque num mês para abrir.</li>
+    </ul>
+  </section>
+
+  <section id="a-plantoes">
+    <h2>Plantões</h2>
+    <p class="serve">Os plantões do mês e quanto vão render.</p>
+    <ul>
+      <li><kbd>+ Novo plantão</kbd>: data, local, período, tipo (Regular ou Extra) e valor. Dá para repetir por algumas semanas.</li>
+      <li><kbd>↻ Plantões que se repetem</kbd>: diga a regra (por exemplo, hospital, noturno, toda sexta) e o app lança os que faltam até o mês escolhido.</li>
+      <li>Não vai fazer um plantão? Desmarque <b>vai fazer</b> na linha dele.</li>
+      <li><b>Valores e locais</b>, embaixo: o valor de cada dia da semana em cada local e se o local paga no mês seguinte. Mudar a tabela não muda os plantões já lançados.</li>
+    </ul>
+  </section>
+
+  <section id="a-atendimentos">
+    <h2>Atendimentos</h2>
+    <p class="serve">Os pagamentos dos seus pacientes particulares.</p>
+    <ul>
+      <li>Cada pagamento é uma linha: paciente, valor e o dia em que pagou.</li>
+      <li>O nome já usado aparece como sugestão enquanto você digita.</li>
+      <li>O resumo por paciente mostra quanto cada um pagou no mês e o total do ano.</li>
+    </ul>
+  </section>
+
+  <section id="a-gastos">
+    <h2>Gastos</h2>
+    <p class="serve">O que você gasta no mês.</p>
+    <ul>
+      <li><kbd>+ Novo lançamento</kbd>: primeiro diga se é <b>Pessoal</b> ou <b>Casa</b>. O da Casa vai para as contas da casa.</li>
+      <li>Toque no nome de uma coluna para ordenar a lista. No celular, use a caixa <b>Ordenar por</b>.</li>
+      <li><b>Categorias</b>: crie as suas.</li>
+      <li><b>Gastos fixos</b>: <kbd>+ Novo gasto fixo</kbd> vale deste mês até dezembro, e o valor de cada mês pode ser trocado na linha. Mês novo sem fixos: <kbd>Copiar os fixos</kbd> do mês anterior.</li>
+    </ul>
+  </section>
+
+  <section id="a-casa">
+    <h2>Casa</h2>
+    <p class="serve">As compras da casa, suas e do Matheus.</p>
+    <ul>
+      <li>Na primeira vez, toque em <b>Escolher o que foi compartilhado comigo</b> para abrir as contas da casa.</li>
+      <li>Mostra o total do mês, quanto cada um pagou e a balança. A balança só mostra quem pagou mais; ninguém paga o outro.</li>
+      <li>Você altera e apaga só as suas compras.</li>
+      <li>A divisão e os nomes só o Matheus muda. Aqui eles só aparecem.</li>
+      <li>No seu mês, a moradia é o que você pagou na casa.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>No fim da página</h2>
+    <ul>
+      <li><kbd>Baixar planilha</kbd> gera uma cópia em Excel.</li>
+      <li><kbd>Sair deste aparelho</kbd> apaga deste aparelho o que o app guardou e o acesso ao Google. O que está no Drive não é tocado.</li>
+    </ul>
+  </section>
+</div>
+
+</main>
+</body>
+</html>
