@@ -803,6 +803,10 @@ function veredito(d){
   const nome = MESES[ref.getMonth()];
   const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
   const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}</b></div><p>${texto}</p></div>`;
+  // Aparelho novo, ou depois de "Sair deste aparelho": sem entrar e sem nada guardado aqui, os R$ 0,00
+  // não são o mês dele, e a caixa pedia para "segurar até entrar" (05/10/2026). Agora pede para entrar.
+  const semNada = !livro.matheus.lancamentos.length && !livro.matheus.gastosFixos.length && !livro.casa.lancamentos.length;
+  if (semNada && !Nuvem.conectado()) return `<div class="veredito"><div class="topo-v"><b>Entre para ver o seu mês</b></div><p>Os números aparecem depois que você entrar com o Google, no botão Entrar lá em cima.</p></div>`;
   if (km < hoje) return d.sobra >= 0
     ? caixa("pos", true, "Fechou positivo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${dinheiro(d.sobra)} de sobra.`)
     : caixa("neg", false, "Fechou negativo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${sinalDin(d.sobra)}.`);
