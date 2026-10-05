@@ -2,27 +2,34 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Controle Único · Privacidade</title>
+<link rel="icon" href="icone-192.png" type="image/png">
+<!-- as cores e a letra do app (tema.css), e o tema claro ou escuro escolhido no menu (05/10/2026) -->
+<link rel="stylesheet" href="tema.css">
+<script>try { var t = localStorage.getItem("cu-painel-tema") || localStorage.getItem("cu-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}</script>
 <style>
-  :root { --fundo: #f6f4f0; --texto: #26221e; --suave: #6f675f; }
-  @media (prefers-color-scheme: dark) { :root { --fundo: #1b1917; --texto: #eee9e2; --suave: #a79e94; } }
-  body { margin: 0; background: var(--fundo); color: var(--texto);
-    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 620px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 { font-size: 1.4rem; }
-  p.data { color: var(--suave); }
-  a { color: inherit; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); }
+  main { max-width: 620px; margin: 0 auto; padding: 16px 16px 48px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+  h1 { font-size: 1.4rem; line-height: 1.3; margin: 18px 0 4px; }
+  p.data { color: var(--muted); margin-top: 0; }
+  a { color: var(--accent); }
+  code { font-size: .9em; }
+  /* no app do iPhone não há botão de voltar do navegador: a volta fica no alto, à vista */
+  .voltar { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 14px; border: 1px solid var(--line);
+    border-radius: 99px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px; }
+  .voltar:hover { border-color: var(--muted); }
 </style>
 </head>
 <body>
 <main>
+  <a class="voltar volta" href="./">← Voltar ao app</a>
   <h1>Controle Único: política de privacidade</h1>
   <p class="data">Atualizada em 27 de setembro de 2026.</p>
 
   <p>O Controle Único é um aplicativo de uso pessoal e familiar de Matheus Gocking, para organizar as contas da casa e do consultório. Não é oferecido ao público.</p>
 
-  <p><strong>Onde os dados ficam.</strong> Os dados ficam em arquivos no Google Drive da própria pessoa que usa o app. O app funciona inteiro no navegador e não tem servidor próprio: nada é guardado em outro lugar. A única saída é a da aba Carteira, que consulta serviços públicos de blockchain e de cotação com os endereços das carteiras, para ler saldos e preços.</p>
+  <p><strong>Onde os dados ficam.</strong> Os dados ficam em arquivos no Google Drive da própria pessoa que usa o app. O app funciona inteiro no navegador e não tem servidor próprio: nada é guardado em outro lugar. A única saída é a da Cripto, dentro da Carteira, que consulta serviços públicos de blockchain e de cotação com os endereços das carteiras, para ler saldos e preços.</p>
 
   <p><strong>O que o app acessa.</strong> Com a sua permissão, o app pede ao Google acesso só aos arquivos do Drive que ele mesmo criou ou que você escolheu abrir com ele (a permissão chamada <code>drive.file</code>). Ele não vê os outros arquivos do seu Drive, seus e-mails nem seus contatos.</p>
 
@@ -32,7 +39,22 @@
 
   <p><strong>Contato.</strong> matheusgocking@gmail.com</p>
 
-  <p><a href="./">Voltar ao app</a></p>
+  <p><a class="volta" href="./">Voltar ao app</a></p>
 </main>
+<script>
+/* Voltar leva para a página de onde veio (05/10/2026): a Ana volta para o controle dela, e quem abriu
+   pela Clínica volta para a Clínica. Antes o link ia sempre para a casca do Matheus. */
+(function(){
+  var ref = ""; try { ref = document.referrer; } catch(e){}
+  var daqui = ref && ref.indexOf(location.origin + "/") === 0;
+  var links = document.querySelectorAll("a.volta");
+  for (var i = 0; i < links.length; i++) {
+    if (daqui && /\/ana\.html/.test(ref)) links[i].href = "ana.html";
+    links[i].addEventListener("click", function(e){
+      if (daqui && history.length > 1) { e.preventDefault(); history.back(); }
+    });
+  }
+})();
+</script>
 </body>
 </html>

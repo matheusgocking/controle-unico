@@ -242,13 +242,16 @@ function quadro(k, src){
   return f;
 }
 
-function mostrar(p){
+/* O botão Voltar do celular (05/10/2026): cada troca de tela vira um passo do histórico da casca,
+   e Voltar leva à tela de antes. A troca dentro do quadro do app usa replace, que não deixa passo:
+   antes era ela que entrava no histórico, e Voltar mudava a tela escondida sem nada acontecer à vista. */
+function mostrar(p, comoFicou){
   p = ANTIGOS[p] || p;
   var cfg = PAGINAS[p]; if (!cfg) return;
   var novo = !quadros[cfg.quadro];
   var f = quadro(cfg.quadro, cfg.src);
   if (!novo && cfg.quadro === "app"){
-    try { f.contentWindow.location.hash = p; } catch(e){ f.src = cfg.src; }
+    try { f.contentWindow.location.replace(cfg.src.replace(/#.*$/, "") + "#" + p); } catch(e){ f.src = cfg.src; }
   }
   for (var q in quadros) quadros[q].hidden = (q !== cfg.quadro);
   f.title = NOMES[p];
@@ -269,8 +272,18 @@ function mostrar(p){
   document.getElementById("conferir").setAttribute("aria-pressed", String(p === "conferir"));
   // a conferência não vira a tela de abertura: ao voltar ao app ele cai no módulo de sempre
   if (p !== "conferir") { try { localStorage.setItem("cu-painel-aba", p); } catch(e){} }
-  try { history.replaceState(null, "", "#" + p); } catch(e){}
+  // comoFicou: a tela veio do próprio histórico (Voltar, Avançar) ou é a de abertura, e não ganha passo novo
+  var anterior = (location.hash || "").replace("#", "");
+  try {
+    if (comoFicou || anterior === p) history.replaceState(null, "", "#" + p);
+    else history.pushState(null, "", "#" + p);
+  } catch(e){}
 }
+window.addEventListener("popstate", function(){
+  var p = (location.hash || "").replace("#", "");
+  p = ANTIGOS[p] || p;
+  if (PAGINAS[p] && p !== atual) mostrar(p, true);
+});
 var antesDeConferir = "tudo";
 function alternarConferir(){
   if (atual === "conferir") mostrar(antesDeConferir);
@@ -326,7 +339,7 @@ inicial = ANTIGOS[inicial] || inicial;
 if (!PAGINAS[inicial]) { try { inicial = localStorage.getItem("cu-painel-aba") || "tudo"; } catch(e){ inicial = "tudo"; } }
 inicial = ANTIGOS[inicial] || inicial;
 if (!PAGINAS[inicial]) inicial = "tudo";
-mostrar(inicial);
+mostrar(inicial, true);
 // A aba Tudo pergunta os números do mês à Clínica, que abre escondida. No celular ela não disputa
 // a rede e o processador com a tela que está na frente: espera essa tela terminar de carregar
 // (a Clínica é a página mais pesada) e só então abre, quando o aparelho está livre.
