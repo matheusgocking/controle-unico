@@ -230,6 +230,7 @@ ul.regras li:first-child{border-top:0} ul.regras li span{flex:1;min-width:0}
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="exportar-xlsx.js"></script>
 <script src="lancamento.js"></script>
+<script src="periodo-fixo.js"></script>
 <script src="grafico-meses.js"></script>
 <script src="nuvem.js"></script>
 </head>
@@ -1013,6 +1014,8 @@ setInterval(tentarCompartilhar, 5000);
 // ---------- começo ----------
 { let a = (location.hash || "").replace("#", ""); if (!a) { try { a = localStorage.getItem("cu-ana-aba") || "mes"; } catch(e){ a = "mes"; } } aba = ["mes","plantoes","atendimentos","gastos","casa"].includes(a) ? a : "mes"; }
 desenhar();
+// a barra ‹ mês › acompanha a rolagem: quando sai pelo alto, uma cópia pequena fica fixa logo abaixo da barra de cima (periodo-fixo.js)
+PeriodoFixo.iniciar(() => document.querySelectorAll("#tela .mes"), { topo: () => document.getElementById("conteudo").getBoundingClientRect().top });
 Nuvem.iniciar();
 Nuvem.entrarSozinho();   // no app do iPhone, quem já entrou antes volta a entrar sozinho
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});

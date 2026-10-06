@@ -759,6 +759,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 <script src="nuvem.js"></script>
 <script src="modelos-prontuario.js"></script>
 <script src="categorias.js"></script>
+<script src="periodo-fixo.js"></script>
 <script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
 </head>
 <body>
@@ -5431,6 +5432,13 @@ function abrirFormPagamento(abrir){
   if(abrir) document.getElementById("pg-paciente").focus();
 }
 document.getElementById("pg-abrir").addEventListener("click", function(){ abrirFormPagamento(true); });
+/* o botão + da casca (06/10/2026), "Recebimento de paciente": abre a aba Pagamentos com o mesmo
+   formulário de registrar, sem nada novo nas contas */
+window.abrirRecebimento = function(){
+  mostrarView("pagamentos");
+  abrirFormPagamento(true);
+  document.getElementById("pg-form").scrollIntoView({ block:"start" });
+};
 document.getElementById("pg-cancelar").addEventListener("click", function(){ abrirFormPagamento(false); document.getElementById("pg-abrir").focus(); });
 document.getElementById("mk-novo").addEventListener("click", function(){ abrirAnuncio(""); });
 document.getElementById("mk-desde").addEventListener("change", function(){
@@ -5535,6 +5543,9 @@ document.querySelector(".gridwrap").addEventListener("scroll", function(e){ if(r
 window.addEventListener("resize", function(){ rolagemSemana.semana = null; rolarSemana(); });
 mostrarView("sessoes");
 renderTudo();
+/* a troca de semana ou de mês acompanha a rolagem (pedido dele, 06/10/2026): quando a barra ‹ › da tela
+   sai pelo alto, uma cópia pequena dela fica fixa (periodo-fixo.js). As setas da cópia apertam as daqui. */
+PeriodoFixo.iniciar(function(){ return document.querySelectorAll("section:not(.hidden) > .bar > .nav"); });
 avisoPlanilha();
 var cadernoClinica = Nuvem.caderno({
   id: "clinica", nome: "Controle Único - clínica.json", rotulo: "a Clínica",
