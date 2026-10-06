@@ -262,6 +262,8 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .seis .linha-k{display:contents}
   .seis .linha-k .k.destaque{grid-column:auto;order:3;border-top:1px solid var(--line);padding-top:12px}
   .seis .k b,.seis .k.destaque b{font-size:clamp(17px,5.6vw,22px)}
+  /* valor negativo de cinco dígitos (−R$ 16.397,80) invadia a caixa do lado no iPhone (06/10/2026) */
+  .seis .k b,.seis .k.destaque b{font-size:clamp(15px,4.6vw,22px)}
   .k b{font-size:21px} .k.destaque b{font-size:28px}
   .rosca{grid-template-columns:minmax(0,1fr);justify-items:center}
   .leg{width:100%}
@@ -528,9 +530,12 @@ function contasDinheiro(){
   // o que voltou dela entrou. Assim, tirar da reserva e gastar deixa o saldo do mês no lugar.
   const aportesMes = soma(doMes.filter(l => l.tipo === "Aporte"), l => l.valor);
   const resgatesMes = soma(doMes.filter(l => l.tipo === "Resgate"), l => l.valor);
-  const sobra = entrou - saiu - aportesMes + resgatesMes;
+  // arredondado ao centavo: a soma de decimais no computador deixava −0,00000000000006 e o mês "fechava negativo em R$ 0,00"
+  const sobra = Math.round((entrou - saiu - aportesMes + resgatesMes) * 100) / 100;
+  // mês que já acabou fecha no que fechou; o que os pacientes ficaram devendo aparece à parte (06/10/2026)
+  const fimDoMes = km < kHoje ? sobra : Math.round((sobra + (cl.falta || 0) - (faltaSair || 0)) * 100) / 100;
   return { entrou, receitaSolta, recebidoClinica: cl.recebido, dePacientes: cl.pacientes, saiu, minhaCasa, fixosMes, faltaSair, semDia, reserva,
-           aportesMes, resgatesMes, sobra, falta: cl.falta, clinicaOk: cl.ok, fimDoMes: sobra + (cl.falta || 0) - (faltaSair || 0) };
+           aportesMes, resgatesMes, sobra, falta: cl.falta, clinicaOk: cl.ok, fimDoMes, passado: km < kHoje };
 }
 
 // Entrou e saiu em cada mês, para o gráfico do Dinheiro (01/10/2026). As mesmas regras do mês
@@ -560,7 +565,7 @@ function mesDinheiro(k, pags = pagamentosClinica()){
   // o que sobrou é a mesma conta do "Saldo" da Situação do mês: o que foi para a reserva saiu do
   // caixa, o que voltou dela entrou (04/10/2026: antes a lista dizia "faltou" num mês que a
   // Situação dizia ter fechado positivo, como setembro, pago com o resgate de 30/09)
-  m.sobra = m.entrou - m.saiu - m.aportes + m.resgates;
+  m.sobra = Math.round((m.entrou - m.saiu - m.aportes + m.resgates) * 100) / 100;
   return m;
 }
 
@@ -850,11 +855,12 @@ function cardSituacao(d){
         <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
       </div>
       <div class="linha-k">
-        <div class="k"><span>Ainda vou receber</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>previsto da agenda menos o que os pacientes já pagaram</small>`}</div>
+        <div class="k"><span>${d.passado ? "Ficou para receber" : "Ainda vou receber"}</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>${d.passado ? "sessões do mês que os pacientes ainda não pagaram" : "previsto da agenda menos o que os pacientes já pagaram"}</small>`}</div>
         <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("mês fechado") : `<b>${dinheiro(d.faltaSair)}</b><small>${corrente ? `fixos que vencem depois de hoje${d.semDia ? `, ${d.semDia} sem dia marcado` : ""}` : "fixos do mês"}</small>`}</div>
-        <div class="k destaque"><span>Fecha o mês em</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>saldo mais o que vou receber, menos o que vai sair</small></div>
+        <div class="k destaque"><span>${d.passado ? "Fechou o mês em" : "Fecha o mês em"}</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>${d.passado ? "o que entrou menos o que saiu no mês" : "saldo mais o que vou receber, menos o que vai sair"}</small></div>
       </div>
     </div></div>
+    ${!d.passado && fixosParaCopiar(chaveMes(ref)).length ? `<p class="nota" style="margin:10px 0 0">Os gastos fixos de ${MESES[ref.getMonth()]} ainda não foram copiados do mês anterior, então "Ainda vai sair" e "Fecha o mês em" estão sem eles. Copie em Gastos fixos.</p>` : ""}
   </section>
 `;
 }
@@ -1057,7 +1063,7 @@ function vistaFixos(){
         <td class="c-cat">${escH(comPonto(g.categoria))}</td>
         <td class="dir"><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${escH(g.id)}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês"></td>
         <td class="dir"><input type="text" inputmode="numeric" autocomplete="off" data-dinheiro data-valorfixo="${escH(g.id)}" value="${valorCampo(valorFixo(g, km))}" placeholder="—" aria-label="Valor em ${nome}"></td>
-        <td class="c-x"><button class="x" data-apagar="matheus:gastosFixos:${escH(g.id)}" aria-label="Apagar">×</button></td></tr>`).join("")}</tbody></table>`;
+        <td class="c-x"><button class="x" data-apagar-fixo="${escH(g.id)}" aria-label="Tirar a partir de ${nome}">×</button></td></tr>`).join("")}</tbody></table>`;
   // Conta da casa cadastrada também como fixo (ex.: condomínio): se no mesmo mês houver compra dele na
   // Casa com essa categoria, o valor pode estar entrando duas vezes no mês. Só avisa; nada muda sozinho.
   const txt = s => semPonto(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -1118,7 +1124,7 @@ function vistaHistorico(){
   }).join("");
   return `<section class="painel bloco"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serie, { aberto:chaveMes(ref) })}</section>
     ${linhas ? `<section class="painel bloco"><h2>Cada mês<span class="dir">últimos 12 meses</span></h2>${linhas}</section>` : ""}
-    <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos (no mês corrente, também os que ainda vão vencer) e o que você pagou na casa. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela, a mesma conta do saldo da Situação do mês. As barras mostram só o que entrou e saiu.</p>`;
+    <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos (no mês corrente, também os que ainda vão vencer) e o que você pagou na casa. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela, a mesma conta do saldo da Situação do mês. No mês corrente, os fixos que ainda vão vencer já estão descontados; por isso o número fica abaixo do Saldo agora. As barras mostram só o que entrou e saiu.</p>`;
 }
 
 // ---------- Fechamento do mês (05/10/2026) ----------
@@ -1490,6 +1496,23 @@ function ligar(){
     if (cad === "casa" && !podeMexer(livro.casa[lista].find(x => x.id === id))) return;
     livro[cad][lista] = livro[cad][lista].filter(x => x.id !== id); salvar(cad);
   });
+  // × do gasto fixo: tira o fixo deste mês em diante; os meses que já passaram continuam com o valor que tinham.
+  // Antes apagava o fixo de todos os meses e o mês passado mudava de número, sem volta (06/10/2026).
+  document.querySelectorAll("[data-apagar-fixo]").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const g = livro.matheus.gastosFixos.find(x => x.id === b.dataset.apagarFixo); if (!g) return;
+    const km = chaveMes(ref), nome = MESES[ref.getMonth()];
+    const antes = g.valores ? Object.keys(g.valores).filter(k => k < km && Number(g.valores[k]) > 0) : [];
+    if (antes.length) {
+      if (!confirm(`Tirar ${comPonto(g.descricao)} de ${nome} em diante? Os meses anteriores continuam com o valor que tinham.`)) return;
+      // zero neste mês (e não vazio) para o mês não oferecer "copiar do mês anterior" de volta
+      Object.keys(g.valores).forEach(k => { if (k > km) delete g.valores[k]; }); g.valores[km] = 0;
+    } else {
+      if (!confirm(`Apagar ${comPonto(g.descricao)}?${g.valores ? "" : " Ele sai de todos os meses, inclusive dos que já passaram."}`)) return;
+      livro.matheus.gastosFixos = livro.matheus.gastosFixos.filter(x => x.id !== g.id);
+    }
+    salvar("matheus");
+  });
   // tocar na linha abre o lançamento para alterar (e, de lá, apagar)
   document.querySelectorAll("[data-editar]").forEach(b => {
     const abrir = () => { const [cad, id] = b.dataset.editar.split(":"); alterarLancamento(cad, id); };
@@ -1583,6 +1606,8 @@ function ligar(){
   });
   document.querySelectorAll("[data-pend-reabrir]").forEach(b => b.onclick = () => {
     const p = daPend(b.dataset.pendReabrir); if (!p) return;
+    // paga por inteiro: reabrir só faz sentido zerando o que foi pago, então pergunta antes (antes zerava calado)
+    if (restantePend(p) < 0.005 && Number(p.pago) > 0 && !confirm(`Já foram pagos ${dinheiro(Number(p.pago))}. Reabrir zera esse valor. Continuar?`)) return;
     delete p.quitada; if (restantePend(p) < 0.005) p.pago = 0; salvar("matheus");
   });
   document.querySelectorAll("[data-pend-apagar]").forEach(b => b.onclick = () => {
@@ -1606,8 +1631,11 @@ function ligar(){
     const antigos = livro.casa.pessoas.slice(), novos = [d.p1.trim(), d.p2.trim()];
     // dois nomes iguais juntariam as compras das duas pessoas numa só, sem volta
     if (!novos[0] || !novos[1] || novos[0].toLowerCase() === novos[1].toLowerCase()) { alert("Os dois nomes precisam ser diferentes."); return; }
-    // quem já comprou continua sendo a mesma pessoa, com o nome novo
-    livro.casa.lancamentos.forEach(l => { const i = antigos.indexOf(l.quem); if (i >= 0) l.quem = novos[i]; });
+    // quem já comprou continua sendo a mesma pessoa, com o nome novo. Nome que já existia fica com as compras
+    // dele: só trocar a ordem dos dois nomes não troca mais quem comprou o quê (06/10/2026)
+    const saem = antigos.filter(n => !novos.includes(n)), chegam = novos.filter(n => !antigos.includes(n));
+    const troca = {}; saem.forEach((n, i) => { if (chegam[i]) troca[n] = chegam[i]; });
+    livro.casa.lancamentos.forEach(l => { if (troca[l.quem]) l.quem = troca[l.quem]; });
     livro.casa.pessoas = novos; salvar("casa");
   });
 }

@@ -141,3 +141,46 @@ test("Listas do mês: no mesmo dia, o último lançado aparece primeiro", async 
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+// Revisão de 06/10/2026
+test("O × do gasto fixo tira só deste mês em diante; o mês passado não muda", async () => {
+  const { ctx, f, erros } = await abrir();
+  const r = await f.evaluate(() => {
+    ref = new Date(2026, 8, 1); const antes = contasDinheiro().saiu;
+    const g = livro.matheus.gastosFixos.find(x => valorFixo(x, "2026-09") > 0 && valorFixo(x, "2026-10") > 0);
+    ref = new Date(2026, 9, 1); aba = "carteira"; vistaDin = "fixos"; desenhar();
+    document.querySelector(`[data-apagar-fixo="${g.id}"]`).click();
+    const h = livro.matheus.gastosFixos.find(x => x.id === g.id);
+    ref = new Date(2026, 8, 1); const depois = contasDinheiro().saiu;
+    return { antes, depois, existe:!!h, out:valorFixo(h, "2026-10"), nov:valorFixo(h, "2026-11"), copiar:fixosParaCopiar("2026-10").some(x => x.id === g.id) };
+  });
+  perto(r.depois, r.antes, "setembro continua igual");
+  assert.deepEqual([r.existe, r.out, r.nov, r.copiar], [true, 0, 0, false]);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Trocar a ordem dos dois nomes da Casa não troca quem comprou o quê", async () => {
+  const { ctx, f } = await abrir();
+  const r = await f.evaluate(() => {
+    const antes = livro.casa.lancamentos.map(l => l.quem).join();
+    aba = "casa"; desenhar();
+    const fm = document.getElementById("fPessoas"); if (!fm) return null;
+    const [a, b] = livro.casa.pessoas;
+    fm.querySelector('[name="p1"]').value = b; fm.querySelector('[name="p2"]').value = a;
+    fm.requestSubmit();
+    return { antes, depois:livro.casa.lancamentos.map(l => l.quem).join(), pessoas:livro.casa.pessoas.join() };
+  });
+  assert.ok(r, "achou o formulário dos nomes");
+  assert.equal(r.depois, r.antes);
+  assert.equal(r.pessoas, "Pessoa Dois,Pessoa Um");
+  await ctx.close();
+});
+
+test("Mês que já acabou: 'Fechou o mês em' é o que fechou", async () => {
+  const { ctx, f } = await abrir();
+  const d = await f.evaluate(() => { ref = new Date(2026, 8, 1); return contasDinheiro(); });
+  assert.equal(d.passado, true);
+  perto(d.fimDoMes, d.sobra, "setembro");
+  await ctx.close();
+});

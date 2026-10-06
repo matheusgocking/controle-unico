@@ -50,3 +50,29 @@ test("CSV da Binance: junta sem repetir e mantém operações iguais do mesmo ar
   });
   assert.deepEqual(r, { novas:1, linhas:5, nada:0, outro:null });
 });
+
+// Revisão de 06/10/2026
+test("Moeda sacada da Binance que chega na Base com contrato próprio casa pelo símbolo e leva o custo", async () => {
+  const r = await pg.evaluate(() => {
+    const D = Date.parse("2025-03-10T12:00:00Z");
+    const ev = [
+      { h:"c", t:D - 864e5, rede:"binance", g:"binance:AERO", k:"AERO", q:100, op:"troca", inic:true },
+      { h:"c", t:D - 864e5, rede:"binance", g:"USD", k:"USDT", q:-50, op:"troca", inic:true },
+      { h:"s", t:D, rede:"binance", g:"binance:AERO", k:"AERO", q:-100, op:"saque", inic:true },
+      { h:"r", t:D + 300e3, rede:"base", g:"base:0xaero", k:"0xaero", q:99.9, de:"0xbinance", inic:false }];
+    infoToken["base:0xaero"] = { sim:"AERO", nome:"Aerodrome" };
+    const c = contabilizar(ev, { USD:{ "2025-03-09":5 }, "binance:AERO":{ "2025-03-09":2.5 }, "base:0xaero":{ "2025-03-10":4 } }, ev);
+    return { transito:Object.keys(c.transito), custo:Math.round(c.pos["base:0xaero"].custo * 100) / 100 };
+  });
+  assert.deepEqual(r, { transito:[], custo:249.75 });
+});
+
+test("CSV da Binance: Observação com quebra de linha e a mesma quantidade escrita de outro jeito", async () => {
+  const r = await pg.evaluate(() => {
+    const cab = "ID do usuário,Tempo,Conta,Operação,Moeda,Alterar,Observação";
+    const ev = eventosBinance(cab + '\n1,2024-01-01 10:00:00,Spot,Deposit,BRL,100,"linha 1\nlinha 2"\n1,2024-01-02 10:00:00,Spot,Deposit,BRL,50,\n1,curta');
+    const novas = juntarCsvBinance("Tempo,Operação,Moeda,Alterar\n2024-01-01 10:00:00,Buy,BTC,0.00100000", "Tempo,Operação,Moeda,Alterar\n2024-01-01 10:00:00,Buy,BTC,0.001").novas;
+    return { n:ev.length, novas };
+  });
+  assert.deepEqual(r, { n:2, novas:0 });
+});

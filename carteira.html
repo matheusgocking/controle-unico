@@ -260,6 +260,9 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
 @media (max-width:600px){ .rosca{ grid-template-columns:1fr; justify-items:center; } .leg-r{ width:100%; } }
 @media (max-width:960px){ .linha2,.linha3{ grid-template-columns:1fr; } .total{ font-size:42px; } }
 @media (max-width:600px){ .wrap{ padding:14px 16px 44px; } .acoes{ margin-left:0; } .total{ font-size:36px; } .ocm{ display:none; } .diario li{ grid-template-columns:1fr; } }
+/* no celular a tabela de ativos rola dentro dela, sem empurrar a página para o lado; os filtros do Diário quebram linha (06/10/2026) */
+.rolaX{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+@media (max-width:600px){ #filtroDiario{ display:flex; flex-wrap:wrap; max-width:100%; } #filtroDiario button{ flex:1 1 auto; } }
 @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 .nuvem{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin:0;opacity:.9}
 .nuvem-ponto{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.5;flex:none}
@@ -398,7 +401,7 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
         <span class="seg" id="agrupar"><button data-v="ativo" aria-pressed="true">Por ativo</button><button data-v="carteira">Por carteira</button></span>
       </span></h2>
       <div class="resumoAp" id="resumoAtivos"></div>
-      <table><thead id="cabAtivos"><tr><th data-col="ativo">Ativo<span class="seta"></span></th><th class="ocm" data-col="q">Quantidade<span class="seta"></span></th><th class="ocm" data-col="avg">Preço médio<span class="seta"></span></th><th class="ocm" data-col="p">Preço<span class="seta"></span></th><th data-col="d1">24 h<span class="seta"></span></th><th data-col="v">Valor<span class="seta"></span></th><th data-col="res" title="O que você ganharia ou perderia vendendo esta moeda hoje, pelo preço médio">Em aberto<span class="seta"></span></th><th data-col="roi" title="Retorno sobre tudo o que a moeda custou, contando o que as vendas já renderam">Retorno<span class="seta"></span></th><th class="ocm" data-col="peso">Peso<span class="seta"></span></th></tr></thead><tbody id="ativos"></tbody></table>
+      <div class="rolaX"><table><thead id="cabAtivos"><tr><th data-col="ativo">Ativo<span class="seta"></span></th><th class="ocm" data-col="q">Quantidade<span class="seta"></span></th><th class="ocm" data-col="avg">Preço médio<span class="seta"></span></th><th class="ocm" data-col="p">Preço<span class="seta"></span></th><th data-col="d1">24 h<span class="seta"></span></th><th data-col="v">Valor<span class="seta"></span></th><th data-col="res" title="O que você ganharia ou perderia vendendo esta moeda hoje, pelo preço médio">Em aberto<span class="seta"></span></th><th data-col="roi" title="Retorno sobre tudo o que a moeda custou, contando o que as vendas já renderam">Retorno<span class="seta"></span></th><th class="ocm" data-col="peso">Peso<span class="seta"></span></th></tr></thead><tbody id="ativos"></tbody></table></div>
       <div class="nota" style="margin-top:8px">Preço médio e resultado contam desde que a moeda entrou na carteira, pelo preço daquele dia. Transferências entre as suas carteiras não mudam o preço médio. A coluna 24 h compara o preço de agora com o fechamento de ontem.</div>
     </section>
     <section class="painel cheia" aria-label="Quem mais rendeu">
@@ -509,7 +512,7 @@ const TOKENS = {
   'solana:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB':'USD',
 };
 // sobe quando o histórico passa a guardar algo novo; um histórico de versão antiga é refeito sozinho
-const VERSAO_HIST = 3;   // 3: saque em reais vira resgate para o banco e moedas marcadas como "não é golpe" (04/10/2026)
+const VERSAO_HIST = 4;   // 4: moeda sacada da Binance que chega com outro nome casa pelo símbolo (06/10/2026). 3: saque em reais vira resgate para o banco e moedas marcadas como "não é golpe" (04/10/2026)
 const LS = { precos:'cripto-v1-precos', hist:'cripto-v1-hist', csv:'cripto-v1-binance', diario:'cripto-v1-diario', visita:'cripto-v1-visita', tema:'cripto-v1-tema', vivo:'cripto-v1-vivo', classe:'cripto-v1-classe' };
 const lsGet = (k, d) => { try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } };
 // o caderno do Drive é avisado mesmo quando o navegador recusa guardar a cópia (sem espaço): antes a anotação nem chegava ao Drive
@@ -519,6 +522,9 @@ const lsSet = (k, v) => { let ok = true; try{ localStorage.setItem(k, JSON.strin
 const SOLANA_EVENTOS = (CARTEIRA_DADOS && CARTEIRA_DADOS.solanaEventos) || [];
 /* CSV da Binance: vem do caderno no Drive (antes ficava escrito aqui) */
 const BINANCE_CSV_INICIAL = (CARTEIRA_DADOS && CARTEIRA_DADOS.binanceCsv) || '';
+// O CSV de agora: o do navegador ou, se ele não coube lá (armazenamento cheio), o do caderno, que é o guardado
+// no Drive. Antes caía no CSV lido na abertura e o segundo CSV importado apagava as linhas do primeiro (06/10/2026).
+const csvAtual = () => lsGet(LS.csv, null) || (CARTEIRA_DADOS && CARTEIRA_DADOS.binanceCsv) || BINANCE_CSV_INICIAL;
 
 /* ================= utilidades ================= */
 const esperar = ms => new Promise(r => setTimeout(r, ms));
@@ -542,6 +548,11 @@ async function gt(url){ const falta = 2300 - (Date.now() - ultimoGT); if(falta >
 async function rpc(url, method, params){ const j = await pegar(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ jsonrpc:'2.0', id:1, method, params }) }); if(j.error) throw new Error(j.error.message); return j.result; }
 async function graph(query){ const j = await pegar(PULSEX, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ query }) }); if(j.errors) throw new Error(j.errors[0].message); return j.data; }
 function parseLinha(l){ const out = []; let cur = '', q = false; for(let i = 0; i < l.length; i++){ const c = l[i]; if(q){ if(c === '"'){ if(l[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += c; } else if(c === '"') q = true; else if(c === ','){ out.push(cur); cur = ''; } else cur += c; } out.push(cur); return out; }
+// separa as linhas do CSV sem quebrar um campo entre aspas que tenha quebra de linha (uma Observação, por exemplo)
+function linhasCsv(txt){ const out = []; let cur = '', q = false; const t = txt.replace(/^\uFEFF/, '');
+  for(let i = 0; i < t.length; i++){ const c = t[i]; if(c === '"') q = !q;
+    if(!q && (c === '\n' || c === '\r')){ if(c === '\r' && t[i+1] === '\n') i++; if(cur.trim()) out.push(cur); cur = ''; } else cur += c; }
+  if(cur.trim()) out.push(cur); return out; }
 let status = (txt, trab) => { const s = document.getElementById('status'); s.textContent = txt; s.classList.toggle('trab', !!trab); };
 
 /* ================= grupos e preços ================= */
@@ -594,10 +605,16 @@ async function atualizarPrecos(grupos, desde, aviso){
   const cache = lsGet(LS.precos, {});
   const hoje = dia(Date.now());
   // relê a partir do último dia gravado, porque ele pode ter sido gravado antes de o dia fechar
-  const falta = g => { const m = cache[g]; if(!m) return desde; const ks = Object.keys(m).sort(); if(!ks.length) return desde; const ult = ks[ks.length-1]; return ult >= hoje ? null : Date.parse(ult); };
+  // Começo do histórico mais antigo que o primeiro dia guardado (um CSV mais antigo juntado, por exemplo):
+  // busca desde o começo uma vez. Antes esses dias nunca eram buscados e valiam o primeiro preço guardado (06/10/2026).
+  const pedidoDesde = lsGet('cripto-v1-precos-desde', {});
+  const falta = g => { const m = cache[g]; if(!m) return desde; const ks = Object.keys(m).sort(); if(!ks.length) return desde;
+    if(desde < Date.parse(ks[0]) - DIA_MS && !(pedidoDesde[g] <= desde)) return desde;
+    const ult = ks[ks.length-1]; return ult >= hoje ? null : Date.parse(ult); };
+  const anotar = (g, d) => { if(d === desde && !(pedidoDesde[g] <= d)) pedidoDesde[g] = d; };
   // dólar em reais primeiro
   const usdDesde = falta('USD');
-  if(usdDesde != null){ aviso('cotação do dólar'); cache.USD = Object.assign(cache.USD || {}, await klines('USDTBRL', usdDesde)); }
+  if(usdDesde != null){ aviso('cotação do dólar'); cache.USD = Object.assign(cache.USD || {}, await klines('USDTBRL', usdDesde)); anotar('USD', usdDesde); }
   const usd = cache.USD;
   const usdEm = d => precoEm(usd, d) || 5;
   let n = 0;
@@ -613,11 +630,13 @@ async function atualizarPrecos(grupos, desde, aviso){
       if(!Object.keys(m).length && f.binanceUsd){ const u = await klines(f.binanceUsd, desdeG).catch(() => ({})); for(const [d,p] of Object.entries(u)) m[d] = p * usdEm(d); }
       if(f.pulsex){ const u = await pulsexDias(f.pulsex, Math.floor(desdeG/1000)); for(const [d,p] of Object.entries(u)) m[d] = p * usdEm(d); }
       if(f.gtNet){ const u = await gtDias(f.gtNet, f.addr); for(const [d,p] of Object.entries(u)) m[d] = p * usdEm(d); }
+      anotar(g, desdeG);
     }catch(e){ console.warn('preço', g, e); }
     cache[g] = Object.assign(cache[g] || {}, m);
     if(!Object.keys(cache[g]).length) cache[g] = {};
   }
   if(!lsSet(LS.precos, cache)) console.warn('sem espaço para guardar preços');
+  else lsSet('cripto-v1-precos-desde', pedidoDesde);
   return cache;
 }
 const ordCache = new WeakMap();
@@ -634,12 +653,13 @@ function precoEm(m, d){
 
 /* ================= histórico de transações ================= */
 function eventosBinance(txt){
-  const linhas = txt.replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim());
-  const cab = parseLinha(linhas[0]).map(c => c.trim());
+  const linhas = linhasCsv(txt);
+  const cab = parseLinha(linhas[0] || '').map(c => c.trim());
   const col = n => cab.indexOf(n);
   const iT = col('Tempo'), iO = col('Operação'), iM = col('Moeda'), iA = col('Alterar');
   if(iT < 0 || iO < 0 || iM < 0 || iA < 0) throw new Error('Este arquivo não é o histórico de transações da Binance (faltam as colunas Tempo, Operação, Moeda e Alterar).');
-  const rows = linhas.slice(1).map(parseLinha).map(c => ({ t: Date.parse(c[iT].trim().replace(' ', 'T') + '-03:00'), op: c[iO].trim(), k: c[iM].trim(), q: parseFloat(c[iA]) })).filter(r => r.t && r.q);
+  // linha com colunas faltando é pulada (antes derrubava a importação inteira)
+  const rows = linhas.slice(1).map(parseLinha).filter(c => c.length > Math.max(iT, iO, iM, iA)).map(c => ({ t: Date.parse(c[iT].trim().replace(' ', 'T') + '-03:00'), op: c[iO].trim(), k: c[iM].trim(), q: parseFloat(c[iA]) })).filter(r => r.t && r.q);
   rows.sort((a, b) => a.t - b.t);
   const ev = []; let grupoAnt = null, tAnt = 0, n = 0, h = '';
   for(const r of rows){
@@ -812,18 +832,22 @@ function contabilizar(ev, precos, todos){
     if(q < 0 && (x.rede === 'binance' ? x.op === 'saque' : x.inic)) saidas.push({ x, g, q:-q, resto:-q, chegou:0 });
     else if(q > 0 && (x.rede === 'binance' ? x.op === 'deposito' : !x.inic)) entradas.push({ x, g, q, resto:q });
   }
+  // moeda que o app não conhece pelo nome na Binance (binance:AERO) e que chega numa rede com contrato próprio
+  // (base:0x…): casa pelo símbolo. Antes ficava "sacada que não chegou" e perdia o preço médio (06/10/2026)
+  const mesmaMoeda = (s, e) => e.g === s.g || (s.x.rede === 'binance' && s.g.startsWith('binance:') && e.x.rede !== 'binance'
+    && infoToken[e.g] && String(infoToken[e.g].sim || '').toUpperCase() === s.g.slice(8).toUpperCase());
   const janela = (s, e) => { const dt = e.x.t - s.x.t; return dt >= -6 * 3600e3 && dt <= 4 * DIA_MS; };
   const redeOk = (s, e) => e.x.rede !== s.x.rede || (s.x.rede === 'binance' && Math.abs(e.q - s.q) <= s.q * 0.001); // saque devolvido pela Binance
   // 1) pares de quantidade parecida; 2) o que sobrar, casado por quantidade dentro da janela (pontes juntam ou dividem valores)
   for(const s of saidas){
     let melhor = null;
-    for(const e of entradas){ if(e.resto < e.q || e.g !== s.g || !redeOk(s, e) || !janela(s, e) || e.q > s.q * 1.0001 || e.q < s.q * 0.85) continue; if(!melhor || Math.abs(e.x.t - s.x.t) < Math.abs(melhor.x.t - s.x.t)) melhor = e; }
-    if(melhor){ s.chegou = melhor.q; s.resto = 0; melhor.resto = 0; s.destino = melhor.x.rede; }
+    for(const e of entradas){ if(e.resto < e.q || !mesmaMoeda(s, e) || !redeOk(s, e) || !janela(s, e) || e.q > s.q * 1.0001 || e.q < s.q * 0.85) continue; if(!melhor || Math.abs(e.x.t - s.x.t) < Math.abs(melhor.x.t - s.x.t)) melhor = e; }
+    if(melhor){ s.chegou = melhor.q; s.resto = 0; melhor.resto = 0; s.destino = melhor.x.rede; if(melhor.g !== s.g) s.gDestino = melhor.g; }
   }
   for(const s of saidas){
     if(s.resto <= 1e-12) continue;
-    for(const e of entradas.filter(e => e.resto > 1e-12 && e.g === s.g && e.x.rede !== s.x.rede && janela(s, e)).sort((a, b) => a.x.t - b.x.t)){
-      const u = Math.min(s.resto, e.resto); s.resto -= u; e.resto -= u; s.chegou += u; s.destino = s.destino || e.x.rede; if(s.resto <= 1e-12) break;
+    for(const e of entradas.filter(e => e.resto > 1e-12 && (s.gDestino ? e.g === s.gDestino : mesmaMoeda(s, e)) && e.x.rede !== s.x.rede && janela(s, e)).sort((a, b) => a.x.t - b.x.t)){
+      const u = Math.min(s.resto, e.resto); s.resto -= u; e.resto -= u; s.chegou += u; s.destino = s.destino || e.x.rede; if(e.g !== s.g) s.gDestino = e.g; if(s.resto <= 1e-12) break;
     }
   }
   const mapaS = new Map(saidas.filter(s => s.chegou > 0).map(s => [s.x, s])), mapaE = new Map(entradas.filter(e => e.resto < e.q - 1e-12).map(e => [e.x, e]));
@@ -839,6 +863,8 @@ function contabilizar(ev, precos, todos){
     const S = mapaS.get(x), E = mapaE.get(x);
     if(S){ // transferência entre carteiras suas: não muda o preço médio
       const { g, q } = S;
+      // chegou com outro nome de grupo: o custo do que chegou passa junto, para o preço médio continuar o da compra
+      if(S.gDestino && S.chegou > 0){ const r = sair(g, S.chegou); entrar(S.gDestino, S.chegou, r.custo); }
       if(S.resto <= q * 0.15){ const perda = q - S.chegou; if(perda > 0){ sair(g, perda); taxas[g] = (taxas[g] || 0) + perda * P(g, d); } }
       else { sair(g, S.resto); if(x.rede === 'binance'){ const t = transito[g] || (transito[g] = { q:0, datas:[] }); t.q += S.resto; t.datas.push(x.t); } }
       mov.push({ id:x.h, t:x.t, rede:x.rede, destino:S.destino, tipo:'transferencia', outs:[[g, q]], ins:[], valOut:q * P(g, d), valIn:0 });
@@ -922,7 +948,7 @@ function montarSerie(ev, precos){
 /* ================= montagem completa do histórico ================= */
 async function refazerHistorico(){
   const aviso = t => status('Montando o histórico: ' + t + '…', true);
-  const csv = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
+  const csv = csvAtual();
   let ev = [];
   if(csv) ev = ev.concat(eventosBinance(csv));
   // se uma rede falhar, mantém o histórico anterior em vez de gravar um incompleto
@@ -957,7 +983,7 @@ async function saldosAgora(hist){
   const add = (rede, g, q) => { if(q > 1e-12) saldos.push({ rede, g, q }); };
   const erros = [];
   // Binance: soma do CSV
-  const csv = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
+  const csv = csvAtual();
   if(csv){ const s = {}; eventosBinance(csv).forEach(e => { const g = grupoDe(e); s[g] = (s[g] || 0) + e.q; }); Object.entries(s).forEach(([g, q]) => add('binance', g, q)); }
   for(const rede of ['pulsechain','base']){
     const R = REDES[rede];
@@ -984,8 +1010,14 @@ async function saldosAgora(hist){
           if(!temDec && big(porId[2*i]) > 0n) throw new Error('sem as casas decimais de um token da Base');
           return { contractAddress:c, balance: big(porId[2*i]).toString(), decimals: temDec ? Number(big(porId[2*i+1])) : 18, symbol:(infoToken['base:' + c] || {}).sim }; });
       } else {
-        nativo = (await pegar(`${R.api}?module=account&action=balance&address=${EU_EVM}`)).result || '0';
-        lista = (await pegar(`${R.api}?module=account&action=tokenlist&address=${EU_EVM}`)).result || [];
+        // "200 com erro" do explorador (limite de consultas, por exemplo) é erro da rede: antes o saldo
+        // sumia calado e o total errado ia para a aba Tudo (06/10/2026)
+        const jb = await pegar(`${R.api}?module=account&action=balance&address=${EU_EVM}`);
+        if(!jb || !/^\d+$/.test(String(jb.result))) throw new Error('resposta inesperada da ' + R.nome);
+        nativo = jb.result;
+        const jt = await pegar(`${R.api}?module=account&action=tokenlist&address=${EU_EVM}`);
+        if(!jt || !(Array.isArray(jt.result) || (jt.status === '0' && /no token/i.test(jt.message || '')))) throw new Error('resposta inesperada da ' + R.nome);
+        lista = Array.isArray(jt.result) ? jt.result : [];
       }
       add(rede, R.nativo, un(nativo, 18));
       for(const t of lista){
@@ -1009,19 +1041,22 @@ async function saldosAgora(hist){
   }catch(e){ erros.push('BNB Chain'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'bsc' && !s.pool).forEach(s => add('bsc', s.g, s.q)); }
   try{
     const j = await pegar(`https://lite-api.jup.ag/ultra/v1/balances/${EU_SOL}`);
+    if(!j || typeof j !== 'object' || Array.isArray(j) || j.error) throw new Error('resposta inesperada da Solana');
     for(const [mint, b] of Object.entries(j || {})){ if(mint === 'SOL'){ add('solana', 'SOL', +b.uiAmount); continue; } const g = TOKENS['solana:' + mint] || ('solana:' + mint); if(!GRUPOS[g] && !(hist && hist.pos && hist.pos[g])) continue; add('solana', g, +b.uiAmount); }
   }catch(e){ erros.push('Solana'); if(VIVO) VIVO.saldos.filter(s => s.rede === 'solana' && !s.pool).forEach(s => add('solana', s.g, s.q)); }
   return { saldos, erros };
 }
-async function precosAgora(grupos){
+async function precosAgora(grupos, anterior){
   const out = {}, liq = {};
   const tick = await pegar('https://api.binance.com/api/v3/ticker/price').catch(() => []);
   const tb = {}; (Array.isArray(tick) ? tick : []).forEach(x => tb[x.symbol] = +x.price);
   // Fonte de cotação que falhou não pode virar preço zero (o patrimônio caía calado): fica a última
   // cotação conhecida e a tela avisa quais moedas estão com preço antigo (04/10/2026).
-  const ant = (VIVO && VIVO.precos) || {}, falhou = new Set(), velhos = [];
+  // anterior: a leitura de antes; na segunda chamada (moedas das posições) o VIVO já é o novo e não tem essas moedas
+  const base = anterior || VIVO;
+  const ant = (base && base.precos) || {}, falhou = new Set(), velhos = [];
   if(!tb.USDTBRL) falhou.add('binance');
-  const usd = tb.USDTBRL || (VIVO && VIVO.usd) || 5;
+  const usd = tb.USDTBRL || (base && base.usd) || 5;
   if(!tb.USDTBRL) velhos.push('USD');
   out.BRL = 1; out.USD = usd;
   const porRede = { pulsechain:[] };
@@ -1094,7 +1129,7 @@ function linhasVivas(){
 }
 let csvAteCache = null;
 function ultimoCsvBinance(){
-  const csv = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
+  const csv = csvAtual();
   if(!csv) return null;
   if(csvAteCache && csvAteCache.n === csv.length) return csvAteCache.t;
   let t = null; try{ const ev = eventosBinance(csv); t = ev.length ? ev[ev.length - 1].t : null; }catch(e){}
@@ -1747,7 +1782,7 @@ function desenharPendencias(){
   const el = document.getElementById('pendencias'); const itens = [];
   const usd = (VIVO && VIVO.usd) || 5;
   if(HIST){
-    for(const [g, t] of Object.entries(HIST.transito || {})){ if(t.q > 1e-9){ const v = t.q * ((VIVO && VIVO.precos[g]) || 0); if(v >= 5) itens.push([`${qtd(t.q)} ${esc(simDe(g))} sacados da Binance não chegaram em nenhuma carteira sua`, `Saques de ${[...new Set((t.datas || []).map(x => nomeMes[new Date(x).getMonth()] + '/' + String(new Date(x).getFullYear()).slice(2)))].join(', ')}. Hoje valeriam ${din(v)} e contam como saída do patrimônio.${g === 'BNB' ? ' Lembrete na nota Crypto para 01/10/2026.' : ''}`]); } }
+    for(const [g, t] of Object.entries(HIST.transito || {})){ if(t.q > 1e-9){ const v = t.q * ((VIVO && VIVO.precos[g]) || 0); if(v >= 5) itens.push([`${qtd(t.q)} ${esc(simDe(g))} sacados da Binance não chegaram em nenhuma carteira sua`, `Saques de ${[...new Set((t.datas || []).map(x => nomeMes[new Date(x).getMonth()] + '/' + String(new Date(x).getFullYear()).slice(2)))].join(', ')}. Hoje valeriam ${din(v)} e contam como saída do patrimônio.`]); } }
     if(HIST.golpe) itens.push([`${HIST.golpe} tokens-golpe ocultos`, 'Chegaram sem você pedir, com nomes como “Claim…”. Não abra os links nem tente vender. Para ver quais são, ou dizer que um deles é seu, toque na bolha vermelha do mapa.']);
     (HIST.pools || []).filter(p => p.status === 'presa').forEach(p => itens.push([`Pool ${esc(p.nome)} presa numa farm desativada`, 'O contrato da farm não existe mais. O valor está na aba Pools.']));
     if(Date.now() - HIST.geradoEm > 7 * DIA_MS) itens.push(['Histórico com mais de uma semana', 'Clique em Refazer histórico para incluir os movimentos recentes no gráfico e no diário.']);
@@ -1812,7 +1847,7 @@ async function atualizarVivo(){
   VIVO.posicoes = await posicoesAbertas().catch(e => { console.warn('posições', e); return (antes && antes.posicoes) || []; });
   // preço das moedas das posições que ainda não tinham cotação
   const faltam = [...new Set(VIVO.posicoes.flatMap(x => [x.g0, x.g1]))].filter(g => precos[g] == null);
-  if(faltam.length){ const extra = await precosAgora(faltam).catch(() => null); if(extra){ Object.assign(precos, extra.precos); Object.assign(liq, extra.liq); } }
+  if(faltam.length){ const extra = await precosAgora(faltam, antes).catch(() => null); if(extra){ Object.assign(precos, extra.precos); Object.assign(liq, extra.liq); (extra.velhos || []).filter(v => v !== 'USD' && !VIVO.velhos.includes(v)).forEach(v => VIVO.velhos.push(v)); } }
   // o que está dentro de uma posição aberta continua sendo seu e entra no patrimônio (a posição de teste, não)
   VIVO.posicoes.filter(x => !x.teste).forEach(x => { if(x.a0 > 0) saldos.push({ rede:x.rede, g:x.g0, q:x.a0, pool:true }); if(x.a1 > 0) saldos.push({ rede:x.rede, g:x.g1, q:x.a1, pool:true }); });
   lsSet(LS.vivo, VIVO);
@@ -1835,6 +1870,7 @@ async function iniciar(){
   }catch(e){ console.error(e); status('Algo falhou: ' + e.message + '. Clique em Atualizar para tentar de novo.'); }
   ocupado = false;
   window.__pronto = true;
+  seguirFila();
 }
 
 /* ================= controles ================= */
@@ -1892,8 +1928,12 @@ seg('tema', null, v => {
 { const t = lsGet(LS.tema, 'auto'); const b = document.querySelector(`#tema [data-v="${t}"]`); if(b) b.click(); }
 document.getElementById('pequenos').addEventListener('change', e => { est.pequenos = e.target.checked; desenharAtivos(); });
 document.getElementById('btnOlho').addEventListener('click', e => { const on = document.body.classList.toggle('privado'); e.target.setAttribute('aria-pressed', on); e.target.textContent = on ? 'Mostrar valores' : 'Esconder valores'; });
-document.getElementById('btnAtualizar').addEventListener('click', async () => { if(ocupado) return; ocupado = true; try{ await atualizarVivo(); tudo(); status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui atualizar: ' + e.message); } ocupado = false; });
-async function refazerTudo(){ if(ocupado) return; ocupado = true; try{ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); PRECOS = lsGet(LS.precos, {}); await atualizarVivo(); tudo(); status('Histórico refeito às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui refazer o histórico: ' + e.message); } ocupado = false; }
+document.getElementById('btnAtualizar').addEventListener('click', async () => { if(ocupado) return; ocupado = true; try{ await atualizarVivo(); tudo(); status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui atualizar: ' + e.message); } ocupado = false; seguirFila(); });
+// CSV importado ou "não é golpe" marcado durante uma leitura: o histórico é refeito quando ela termina
+// (antes o pedido se perdia e a tela só mudava 12 horas depois, 06/10/2026)
+let refazerDepois = false;
+function seguirFila(){ if(refazerDepois && !ocupado){ refazerDepois = false; refazerTudo(); } }
+async function refazerTudo(){ if(ocupado){ refazerDepois = true; return; } ocupado = true; try{ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); PRECOS = lsGet(LS.precos, {}); await atualizarVivo(); tudo(); status('Histórico refeito às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui refazer o histórico: ' + e.message); } ocupado = false; seguirFila(); }
 document.getElementById('btnHistorico').addEventListener('click', () => { if(!ocupado && confirm('Refazer o histórico relê todas as transações e leva uns 2 minutos. Continuar?')) refazerTudo(); });
 // abas: a aba aberta fica no endereço da página (#ativos, #pools, #diario)
 const ABAS = ['geral', 'mapa', 'ativos', 'aportes', 'pools', 'diario'];
@@ -1964,12 +2004,12 @@ marcarAnot(); /* primeiro instantâneo: o estado com que o site abriu */
    dos últimos meses. A mesma linha é a mesma hora, operação, moeda e quantidade; se ela aparece duas vezes
    num arquivo (duas operações iguais no mesmo segundo), continua duas vezes. Cabeçalhos diferentes: null. */
 function juntarCsvBinance(velho, novo){
-  const linhas = t => t.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim());
-  const lv = linhas(velho), ln = linhas(novo);
+  const lv = linhasCsv(velho), ln = linhasCsv(novo);
   if(!lv.length || !ln.length || lv[0].trim() !== ln[0].trim()) return null;
   const cab = parseLinha(lv[0]).map(c => c.trim()), ix = ['Tempo', 'Operação', 'Moeda', 'Alterar'].map(n => cab.indexOf(n));
   if(ix.some(i => i < 0)) return null;
-  const chave = l => { const c = parseLinha(l); return ix.map(i => String(c[i] || '').trim()).join('|'); };
+  // "0.00100000" e "0.001" são a mesma quantidade: sem isso a mesma operação entrava duas vezes
+  const chave = l => { const c = parseLinha(l); return ix.map((i, n) => { const v = String(c[i] || '').trim(); return n === 3 && v !== '' && !isNaN(parseFloat(v)) ? String(parseFloat(v)) : v; }).join('|'); };
   const conta = l => l.slice(1).reduce((m, x) => { const k = chave(x); (m[k] = m[k] || []).push(x); return m; }, {});
   const cv = conta(lv), cn = conta(ln), fora = [];
   let novas = 0;
@@ -1979,7 +2019,7 @@ function juntarCsvBinance(velho, novo){
 async function lerArquivoCsv(f){
   const txt = await f.text();
   try{ const ev = eventosBinance(txt);
-    const velho = lsGet(LS.csv, null) || BINANCE_CSV_INICIAL;
+    const velho = csvAtual();
     let evVelho = []; try{ evVelho = velho ? eventosBinance(velho) : []; }catch(e){}
     const junto = evVelho.length ? juntarCsvBinance(velho, txt) : null;
     if(junto){
