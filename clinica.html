@@ -448,6 +448,26 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .fi-total .rot{font-size:11.5px; color:var(--text); font-weight:600}
 .fi-total .mais{font-size:10.5px; color:var(--muted); margin-top:1px}
 .fi-total:empty{display:none}
+/* encerramento e retorno (06/10/2026): a frase no alto da ficha e nos cartões dos encerrados */
+.fi-trat,.selo-trat{display:inline-block; margin-top:5px; border-radius:20px; padding:2px 10px; font-size:12px; font-weight:600; line-height:1.4}
+.selo-trat{align-self:flex-start; font-size:11px; padding:1px 8px; margin-top:4px}
+.fi-trat[hidden]{display:none}
+.fi-trat.enc,.selo-trat.enc{background:var(--neutral-chip); color:var(--text); border:1px solid var(--border-strong)}
+.fi-trat.volta,.selo-trat.volta{background:var(--ok-soft); color:var(--ok)}
+.fi-tratamento h3{margin-bottom:8px}
+.fi-linha-tempo{display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:13.5px}
+.fi-linha-tempo .lt{display:flex; align-items:center; gap:10px}
+.fi-linha-tempo .lt > span:nth-child(2){flex:1 1 auto}
+.lt-p{flex:0 0 10px; width:10px; height:10px; border-radius:50%; background:var(--ok)}
+.lt-p.enc{background:var(--faint)}
+.fi-sugestao{background:var(--warn-soft); color:var(--text); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; line-height:1.5}
+.fi-sugestao .btn{margin-left:4px}
+.fi-trat-form{display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px}
+.fi-trat-form .field{margin:0; flex:1 1 150px}
+.fi-trat-form .btn{flex:0 0 auto}
+.fi-pl{margin-top:10px}
+.fi-pl .pl-volta{font-size:12px; font-weight:600; color:var(--ok); margin:6px 0 2px}
+@media (max-width:700px){ .fi-trat-form .btn{flex:1 1 100%} }
 /* celular: o total desce para uma faixa inteira embaixo do nome, numa linha só */
 @media (max-width:540px){
   .fcab{flex-wrap:wrap}
@@ -1604,11 +1624,106 @@ function moeda(v){ v = Number(v)||0; var c = Math.round(v*100)/100; return "R$ "
 function pacienteEm(dia, hora, data){
   var achado = null, iso = chaveData(data);
   dados.pacientes.forEach(function(p){
+    if(encerradoEm(p, iso)) return;
     var h = horarioEm(p, iso);
     if(h.dia===dia && h.hora===hora && ehSemanaDo(h, data)) achado = p;
   });
   return achado;
 }
+/* Encerramento e retorno do tratamento (pedido dele, 06/10/2026: "no app não tem a parte de
+   encerramento do processo, a data de encerramento, a data que retornou").
+   p.encerramentos: [{data:"aaaa-mm-dd", tipo:"alta"|"inativo"|"suspenso", retorno:"aaaa-mm-dd", origem:"app"|"planilha"}].
+   "data" é o último dia do tratamento: a sessão desse dia ainda vale. Depois dela o horário fixo
+   some da agenda (sem sessão prevista, sem cobrança nova, sem pendência de prontuário) até o
+   "retorno", que vale do próprio dia em diante. Encaixe marcado à mão continua valendo, e o que
+   ele já devia continua aparecendo. Paciente sem encerramento fica exatamente como era. */
+var TIPOS_ENCERRAMENTO = {alta:"Alta clínica", inativo:"Inativo (parou)", suspenso:"Suspenso (pausa)"};
+function encerramentosDe(p){
+  return (p.encerramentos || []).filter(function(e){ return e && e.data; })
+    .sort(function(a,b){ return a.data < b.data ? -1 : (a.data > b.data ? 1 : 0); });
+}
+function encerradoEm(p, iso){
+  var l = p.encerramentos;
+  if(!l || !l.length) return false;
+  for(var i = 0; i < l.length; i++){
+    var e = l[i];
+    if(e && e.data && e.data < iso && (!e.retorno || iso < e.retorno)) return true;
+  }
+  return false;
+}
+/* a situação de hoje pelo último encerramento: encerrado (desde quando, por quê, se já tem volta
+   marcada), voltou (quando) ou null. Encerramento com data futura conta como "encerra em". */
+function tratamentoDe(p){
+  var l = encerramentosDe(p), ult = l[l.length - 1], hoje = chaveData(hoje0());
+  if(!ult) return null;
+  if(ult.retorno && ult.retorno <= hoje) return {encerrado:false, voltou:ult.retorno, saiu:ult.data, tipo:ult.tipo, e:ult};
+  return {encerrado:true, desde:ult.data, futuro:ult.data > hoje, tipo:ult.tipo, volta:ult.retorno || "", e:ult};
+}
+/* fora da agenda hoje: sai das listas de quem está em atendimento */
+function encerradoHoje(p){ var t = tratamentoDe(p); return !!(t && t.encerrado && !t.futuro); }
+function rotuloTipoEnc(tipo){ return {alta:"Alta clínica", inativo:"Inativo", suspenso:"Suspenso"}[tipo] || "Encerrado"; }
+/* a frase curta para o alto da ficha e os cartões */
+function textoTratamento(p){
+  var t = tratamentoDe(p);
+  if(!t) return null;
+  if(t.encerrado) return {classe:"enc", texto:(t.futuro ? "Encerra em " : "Encerrado em ") + dataLonga(deISO(t.desde)) + " · " + rotuloTipoEnc(t.tipo) +
+    (t.volta ? " · volta em " + dataLonga(deISO(t.volta)) : "")};
+  return {classe:"volta", texto:"Voltou em " + dataLonga(deISO(t.voltou)) + " · tinha encerrado em " + dataLonga(deISO(t.saiu))};
+}
+
+/* As voltas que a planilha mostra: no Registro cada ciclo é uma linha com Início e Final; quando a
+   linha seguinte começa mais de 21 dias depois do Final da anterior, ele parou e voltou. Intervalo
+   menor é só troca de ciclo (o quinzenal fica 14 dias sem sessão sem ter parado). */
+var DIAS_PAUSA = 21;
+function voltasDasLinhas(linhas){
+  var l = (linhas || []).filter(function(x){ return x && x.inicio; }), r = [];
+  for(var i = 1; i < l.length; i++){
+    var fimAnt = l[i-1].fim || l[i-1].inicio;
+    var dias = Math.round((deISO(l[i].inicio) - deISO(fimAnt)) / 86400000);
+    if(dias > DIAS_PAUSA) r.push({parou:fimAnt, voltou:l[i].inicio, dias:dias});
+  }
+  return r;
+}
+function linhasPlanilhaHTML(linhas){
+  var l = (linhas || []).filter(function(x){ return x && x.inicio; });
+  if(!l.length) return "";
+  var voltas = {};
+  voltasDasLinhas(l).forEach(function(v){ voltas[v.voltou] = v; });
+  return '<details class="fi-det fi-pl"><summary>Na planilha: ' + plural(l.length, "linha", "linhas") + ' no Registro</summary>' +
+    l.map(function(x){
+      var v = voltas[x.inicio];
+      return (v ? '<div class="pl-volta">Parou ' + v.dias + ' dias e voltou em ' + dataLonga(deISO(v.voltou)) + '</div>' : "") +
+        '<div class="recibo"><span>' + dataLonga(deISO(x.inicio)) + ' a ' + (x.fim ? dataLonga(deISO(x.fim)) : "hoje") + '</span>' +
+        '<span class="hint">' + esc(String(x.modalidade || "").replace(/\.$/, "")) + (x.sessoes ? " · " + plural(x.sessoes, "sessão", "sessões") : "") + '</span>' +
+        (x.status ? '<span class="meio">' + esc(String(x.status).replace(/\.$/, "")) + '</span>' : "") + '</div>';
+    }).join("") + '</details>';
+}
+/* Prepara o encerramento sem gravar: confere a data e conta quantas sessões já marcadas (realizada
+   ou falta) ficariam depois dela, para a ficha perguntar antes. aplicar() grava. */
+function encerrarTratamento(p, data, tipo, origem){
+  if(!data) return {erro:"Falta a data."};
+  var l = encerramentosDe(p), ult = l[l.length - 1];
+  if(ult && !ult.retorno) return {erro:"Ele já está encerrado desde " + dataLonga(deISO(ult.data)) + "."};
+  if(ult && ult.retorno && data < ult.retorno) return {erro:"A data precisa ser depois da volta, em " + dataLonga(deISO(ult.retorno)) + "."};
+  var marcadas = 0, hoje = hoje0(), de = somaDias(deISO(data), 1);
+  if(de <= hoje) sessoesDoPaciente(p, de, hoje).forEach(function(s){
+    if(s.estado === "realizada" || s.estado === "falta") marcadas++;
+  });
+  return {data:data, marcadas:marcadas, aplicar:function(){
+    if(!p.encerramentos) p.encerramentos = [];
+    p.encerramentos.push({data:data, tipo:TIPOS_ENCERRAMENTO[tipo] ? tipo : "inativo", origem:origem || "app"});
+  }};
+}
+/* a volta fecha o último encerramento; devolve o erro em texto, ou "" */
+function registrarRetorno(p, data){
+  if(!data) return "Falta a data.";
+  var ult = encerramentosDe(p).slice(-1)[0];
+  if(!ult || ult.retorno) return "Ele não está encerrado.";
+  if(data <= ult.data) return "A volta precisa ser depois do encerramento, em " + dataLonga(deISO(ult.data)) + ".";
+  ult.retorno = data;
+  return "";
+}
+
 /* Histórico de horários (pedido dele, 04/10/2026): mudar o dia, a hora ou a frequência vale dali em
    diante. Antes a mudança refazia também as semanas passadas: as sessões confirmadas sumiam e
    apareciam sessões falsas "a confirmar" no horário novo, que entravam na dívida.
@@ -2377,7 +2492,7 @@ function renderMeta(){
 function linha(a,b){ return '<div><span>'+a+'</span><span>'+b+'</span></div>'; }
 function horasUsadas(){
   var n=0;
-  dados.pacientes.forEach(function(p){ n += p.freq==="quinzenal" ? 0.5 : 1; });
+  dados.pacientes.forEach(function(p){ if(!encerradoHoje(p)) n += p.freq==="quinzenal" ? 0.5 : 1; });
   return n;
 }
 /* conta o que está divulgado e ainda sem paciente: "livre" ficaria ambíguo agora que
@@ -2413,6 +2528,11 @@ function selo(f){
   if(!f || !f.situacao) return "";
   return '<span class="selo '+classeFormulacao(f)+'">Formulação: '+esc(f.situacao)+'</span>';
 }
+/* os da agenda do app que encerraram o tratamento (têm ficha aqui), pelo motivo */
+function encerradosNoApp(tipo){
+  return dados.pacientes.filter(function(p){ var t = tratamentoDe(p); return encerradoHoje(p) && t.tipo === tipo; })
+    .sort(function(a,b){ return tratamentoDe(b).desde.localeCompare(tratamentoDe(a).desde); });
+}
 function arquivadosPorStatus(pedaco){
   return (dados.arquivados || []).filter(function(a){ return semAcento(a.status).indexOf(pedaco) === 0; });
 }
@@ -2442,11 +2562,11 @@ function movimentosDaSemana(){
 }
 
 function renderPacientes(){
-  var naAgenda = dados.pacientes.length;
-  var emTriagem = dados.pacientes.filter(function(p){ return semAcento(p.status||"").indexOf("triagem") === 0; }).length;
-  var altas = arquivadosPorStatus("alta").length;
-  var inativos = arquivadosPorStatus("inativo").length;
-  var suspensos = arquivadosPorStatus("suspenso").length;
+  var naAgenda = dados.pacientes.filter(function(p){ return !encerradoHoje(p); }).length;
+  var emTriagem = dados.pacientes.filter(function(p){ return !encerradoHoje(p) && semAcento(p.status||"").indexOf("triagem") === 0; }).length;
+  var altas = arquivadosPorStatus("alta").length + encerradosNoApp("alta").length;
+  var inativos = arquivadosPorStatus("inativo").length + encerradosNoApp("inativo").length;
+  var suspensos = arquivadosPorStatus("suspenso").length + encerradosNoApp("suspenso").length;
   var movimentos = movimentosDaSemana();
 
   var abas = [{k:"agenda", r:"Na agenda", n:naAgenda}];
@@ -2492,15 +2612,28 @@ function seloSuspensao(a){
 /* quem não está na agenda: veio da planilha e não tem ficha aqui, só o histórico */
 function desenharCarteira(pedaco){
   var alvo = document.getElementById("plist");
-  var lista = arquivadosPorStatus(pedaco);
-  if(!lista.length){
+  var lista = arquivadosPorStatus(pedaco), doApp = encerradosNoApp(pedaco);
+  if(!lista.length && !doApp.length){
     alvo.innerHTML = '<p class="pvazio">Ninguém aqui. Use "Ler a planilha" no alto da página para trazer a carteira inteira.</p>';
     return;
   }
   var h = '<div class="pgrid larga">';
+  /* encerrados no app: têm ficha aqui, então o cartão abre a ficha (e dela se registra a volta) */
+  doApp.forEach(function(p){
+    var t = tratamentoDe(p), tt = textoTratamento(p);
+    h += '<button type="button" class="pcard" data-fenc="'+esc(p.id)+'">' +
+      '<span class="ini">'+esc(inicial1(p))+'</span>' +
+      '<span class="corpo">' +
+        '<span class="n">'+esc(p.nomeCompleto || p.nome)+'</span>' +
+        '<span class="sub">'+(p.inicio ? dataLonga(deISO(p.inicio)) : "?")+' → '+dataLonga(deISO(t.desde))+'</span>' +
+        '<span class="cod">'+esc(p.codigo)+' · ficha no app</span>' +
+        '<span class="selo-trat enc">'+esc(tt.texto)+'</span>' +
+      '</span></button>';
+  });
   lista.forEach(function(a){
     var f = formulacaoDe(a.codigo);
     var periodo = (a.inicio ? dataLonga(deISO(a.inicio)) : "?") + " → " + (a.fim ? dataLonga(deISO(a.fim)) : "sem data de fim");
+    var voltas = voltasDasLinhas(a.linhas);
     h += '<div class="pcard estatico">' +
       '<span class="ini">'+esc((a.nome||"?").charAt(0).toUpperCase())+'</span>' +
       '<span class="corpo">' +
@@ -2508,6 +2641,8 @@ function desenharCarteira(pedaco){
         '<span class="sub">'+esc(periodo)+' · '+a.sessoes+(a.sessoes===1?" sessão":" sessões")+
           (a.ciclos>1 ? " · "+a.ciclos+" ciclos" : "")+'</span>' +
         '<span class="cod">'+esc(a.codigo)+' · '+esc(a.status.replace(/\.$/,""))+'</span>' +
+        (a.fim ? '<span class="selo-trat enc">'+(pedaco === "suspenso" ? "Última sessão em " : "Encerrado em ")+dataLonga(deISO(a.fim))+'</span>' : "") +
+        voltas.map(function(v){ return '<span class="selo-trat volta">Parou em '+dataCurta(deISO(v.parou))+' e voltou em '+dataLonga(deISO(v.voltou))+'</span>'; }).join("") +
         (Number(a.aPagar) > 0.5 ? '<span class="selo atraso">Deve ' + moeda(a.aPagar) + ' pela planilha</span>' : "") +
         (pedaco === "suspenso" ? seloSuspensao(a) +
           '<label class="susp-data">Suspenso desde <input type="date" data-cod="'+esc(a.codigo)+'" value="'+esc(suspensoDesde(a))+'"></label>' : "") +
@@ -2516,6 +2651,9 @@ function desenharCarteira(pedaco){
   });
   h += "</div>";
   alvo.innerHTML = h;
+  alvo.querySelectorAll("[data-fenc]").forEach(function(b){
+    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.fenc); if(p) abrirFicha(p, null, "cadastro"); });
+  });
   alvo.querySelectorAll(".susp-data input").forEach(function(c){
     c.addEventListener("change", function(){
       if(!c.value) return;
@@ -2552,7 +2690,7 @@ function desenharAgendaPacientes(soTriagem){
 
   ordemDias.forEach(function(dia){
     var doDia = dados.pacientes.filter(function(p){
-      if(p.dia!==dia) return false;
+      if(p.dia!==dia || encerradoHoje(p)) return false;
       return soTriagem ? semAcento(p.status||"").indexOf("triagem") === 0 : true;
     }).sort(function(a,b){ return a.hora-b.hora; });
     /* dia sem ninguém não vira grupo: sábado e domingo ficariam vazios toda semana */
@@ -2769,7 +2907,7 @@ function abrirFicha(p, foco, aba){
   fundo.innerHTML =
     '<div class="modal ficha">' +
       '<div class="fcab"><span class="ini grande" id="fi-ini"></span>' +
-        '<div class="fcab-nome"><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span></div>' +
+        '<div class="fcab-nome"><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span><span class="fi-trat" id="fi-trat" hidden></span></div>' +
         '<div class="fi-total" id="fi-total"></div></div>' +
       '<div class="tabs fi-abas" role="tablist" aria-label="Partes da ficha">' +
         '<button type="button" class="tab" role="tab" id="fi-aba-pagamento" data-fiaba="pagamento" aria-controls="fi-p-pagamento">Pagamento</button>' +
@@ -2811,6 +2949,7 @@ function abrirFicha(p, foco, aba){
         '<div class="fipag" id="fi-form"></div>' +
       '</div>' +
       '<div class="fi-aba" role="tabpanel" id="fi-p-cadastro" aria-labelledby="fi-aba-cadastro" hidden>' +
+      '<div class="fipag fi-tratamento" id="fi-tratamento"></div>' +
       '<div class="grid2">' +
         '<div class="field"><label for="fi-nome">Nome na agenda</label>' +
           '<input id="fi-nome" data-campo="nome" value="'+esc(p.nome)+'"><span class="hint">É o que aparece na grade.</span></div>' +
@@ -2844,6 +2983,7 @@ function abrirFicha(p, foco, aba){
     document.getElementById("fi-titulo").textContent = p.nome;
     document.getElementById("fi-sub").textContent = p.codigo+" · "+DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h";
     pintarTotal();
+    pintarTratamento();
     document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
     pintarSituacao();
     pintarChips();
@@ -2884,6 +3024,83 @@ function abrirFicha(p, foco, aba){
     el.title = (t.primeira ? "Primeira sessão em "+dataLonga(t.primeira)+". " : "") +
       (t.historicoAte ? "Prontuário até "+dataLonga(deISO(t.historicoAte))+" e agenda depois." : "Pela agenda, desde "+dataLonga(t.desde)+".");
     if(t.primeira) document.getElementById("fi-sub").textContent += " · desde "+dataLonga(t.primeira);
+  }
+  /* Encerramento e retorno (06/10/2026): a frase no alto, à vista em qualquer aba, e no Cadastro a
+     linha do tempo do tratamento com os botões de encerrar e de registrar a volta. */
+  function pintarTratamento(){
+    var tt = textoTratamento(p), selo = document.getElementById("fi-trat");
+    selo.hidden = !tt;
+    if(tt){ selo.className = "fi-trat " + tt.classe; selo.textContent = tt.texto; }
+    var t = tratamentoDe(p), l = encerramentosDe(p), hoje = chaveData(hoje0());
+    var h = '<h3>Tratamento</h3><div class="fi-linha-tempo">';
+    var inicio = p.inicio || (totalSessoesDe(p).primeira ? chaveData(totalSessoesDe(p).primeira) : "");
+    h += '<div class="lt"><span class="lt-p ok"></span><span>Começou em <b>' + (inicio ? dataLonga(deISO(inicio)) : "data desconhecida") + '</b></span></div>';
+    l.forEach(function(e, i){
+      var ultimo = i === l.length - 1;
+      h += '<div class="lt"><span class="lt-p enc"></span><span>' + (e.data > hoje ? "Encerra em " : "Encerrado em ") + '<b>' + dataLonga(deISO(e.data)) + '</b> · ' +
+        esc(rotuloTipoEnc(e.tipo)) + (e.origem === "planilha" ? ' <span class="hint">(da planilha)</span>' : "") + '</span>' +
+        (ultimo && !e.retorno ? '<button type="button" class="apagar" data-tdesfaz="enc">desfazer</button>' : "") + '</div>';
+      if(e.retorno) h += '<div class="lt"><span class="lt-p ok"></span><span>' + (e.retorno > hoje ? "Volta em " : "Voltou em ") + '<b>' + dataLonga(deISO(e.retorno)) + '</b></span>' +
+        (ultimo ? '<button type="button" class="apagar" data-tdesfaz="ret">desfazer</button>' : "") + '</div>';
+    });
+    h += '</div>';
+    /* o que a planilha diz hoje deste paciente, quando ela já o dá como fora e o app ainda não */
+    var stPl = semAcento(p.status || ""), tipoPl = stPl.indexOf("alta") === 0 ? "alta" : (stPl.indexOf("inativo") === 0 ? "inativo" : (stPl.indexOf("suspenso") === 0 ? "suspenso" : ""));
+    if(tipoPl && !(t && t.encerrado)){
+      h += '<div class="fi-sugestao">Na planilha ele está como <b>' + esc(String(p.status).replace(/\.$/, "")) + '</b>' +
+        (p.fim ? ', com fim em <b>' + dataLonga(deISO(p.fim)) + '</b>' : "") + '. ' +
+        (p.fim ? '<button type="button" class="btn sm" id="ft-da-planilha">Encerrar aqui em ' + dataCurta(deISO(p.fim)) + '</button>' : "") + '</div>';
+    }
+    if(t && t.encerrado){
+      h += '<div class="fi-trat-form"><div class="field"><label for="ft-data">Voltou em</label><input type="date" id="ft-data" value="' + (t.volta || hoje) + '"></div>' +
+        '<button type="button" class="btn primary" id="ft-voltar">Registrar retorno</button></div>' +
+        '<p class="hint">Da data da volta em diante ele aparece de novo na agenda, no horário fixo desta ficha (' + DIAS[p.dia] + ', ' + String(p.hora).padStart(2,"0") + 'h). Se o horário mudou, troque embaixo depois de registrar.</p>';
+    } else {
+      h += '<div class="fi-trat-form"><div class="field"><label for="ft-data">Último dia do tratamento</label><input type="date" id="ft-data" value="' + hoje + '"></div>' +
+        '<div class="field"><label for="ft-tipo">Motivo</label><select id="ft-tipo">' +
+          Object.keys(TIPOS_ENCERRAMENTO).map(function(k){ return opc(k, TIPOS_ENCERRAMENTO[k], "inativo"); }).join("") + '</select></div>' +
+        '<button type="button" class="btn" id="ft-encerrar">Encerrar tratamento</button></div>' +
+        '<p class="hint">A sessão desse dia ainda conta. Depois dele o horário sai da agenda: sem sessão prevista e sem cobrança nova. O que ele já deve continua aparecendo, e a ficha, os pagamentos e o prontuário ficam guardados.</p>';
+    }
+    h += linhasPlanilhaHTML(p.linhasPlanilha);
+    var el = document.getElementById("fi-tratamento");
+    el.innerHTML = h + '<p class="fi-trat-msg hint" id="ft-msg" role="status"></p>';
+    function msg(x){ document.getElementById("ft-msg").textContent = x; }
+    function depois(texto){ vencCache = null; devidoCache = null; salvar(); renderTudo(); resumo(); msg(texto); }
+    var bEnc = document.getElementById("ft-encerrar");
+    if(bEnc) bEnc.addEventListener("click", function(){
+      var r = encerrarTratamento(p, document.getElementById("ft-data").value, document.getElementById("ft-tipo").value, "app");
+      if(r.erro) return msg(r.erro);
+      if(r.marcadas && !confirm(plural(r.marcadas, "sessão marcada", "sessões marcadas") + " depois de " + dataLonga(deISO(r.data)) +
+        " (realizada ou falta) deixa" + (r.marcadas > 1 ? "m" : "") + " de contar na agenda e na conta dele. Encerrar mesmo assim?")) return;
+      r.aplicar();
+      depois("Encerrado em " + dataLonga(deISO(r.data)) + ". Para desfazer, use o desfazer ao lado da data.");
+    });
+    var bPl = document.getElementById("ft-da-planilha");
+    if(bPl) bPl.addEventListener("click", function(){
+      var r = encerrarTratamento(p, p.fim, tipoPl, "planilha");
+      if(r.erro) return msg(r.erro);
+      if(r.marcadas && !confirm(plural(r.marcadas, "sessão marcada", "sessões marcadas") + " depois de " + dataLonga(deISO(r.data)) + " deixa" + (r.marcadas > 1 ? "m" : "") + " de contar. Encerrar mesmo assim?")) return;
+      r.aplicar();
+      depois("Encerrado em " + dataLonga(deISO(r.data)) + ", como está na planilha.");
+    });
+    var bVol = document.getElementById("ft-voltar");
+    if(bVol) bVol.addEventListener("click", function(){
+      var erro = registrarRetorno(p, document.getElementById("ft-data").value);
+      if(erro) return msg(erro);
+      depois("Retorno registrado. Ele volta para a agenda em " + DIAS[p.dia] + ", " + String(p.hora).padStart(2,"0") + "h.");
+    });
+    el.querySelectorAll("[data-tdesfaz]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var ult = encerramentosDe(p).slice(-1)[0];
+        if(!ult) return;
+        if(b.dataset.tdesfaz === "ret"){ delete ult.retorno; depois("Retorno desfeito: ele volta a aparecer como encerrado."); return; }
+        if(!confirm("Desfazer o encerramento de " + dataLonga(deISO(ult.data)) + "? Ele volta para a agenda como antes.")) return;
+        p.encerramentos = (p.encerramentos || []).filter(function(e){ return e !== ult; });
+        if(!p.encerramentos.length) delete p.encerramentos;
+        depois("Encerramento desfeito.");
+      });
+    });
   }
   /* a situação do dinheiro numa frase, em cima de tudo */
   function pintarSituacao(){
@@ -3308,7 +3525,7 @@ function dataCurtaBR(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d
 function avisarHorarioOcupado(p){
   var esta = isoSegunda(new Date()), semanas = [esta, somaDias(esta, 7)];
   var outro = dados.pacientes.filter(function(x){
-    return x.id!==p.id && x.dia===p.dia && x.hora===p.hora &&
+    return x.id!==p.id && x.dia===p.dia && x.hora===p.hora && !encerradoHoje(x) &&
       semanas.some(function(w){ return ehSemanaDo(x, w) && ehSemanaDo(p, w); });
   })[0];
   if(outro) recado("Atenção: " + outro.nome + " já está nesse horário" + (p.freq==="quinzenal"||outro.freq==="quinzenal" ? " na mesma semana" : "") + ". A grade mostra só um dos dois.");
@@ -3588,7 +3805,7 @@ function textoPrevia(p, dataISO, valor){
 function situacaoPagamento(p){
   var u = ultimoPagamento(p);
   var v = proximoVencimento(p);
-  if(!v) return {chave:"sem", classe:"sem", texto:"Sem sessão marcada", venc:null, dias:null, ultimo:u, peso:4};
+  if(!v) return {chave:"sem", classe:"sem", texto:encerradoHoje(p) ? "Tratamento encerrado" : "Sem sessão marcada", venc:null, dias:null, ultimo:u, peso:4};
   var dias = Math.round((v - hoje0())/86400000);
   if(dias < 0) return {chave:"atraso", classe:"atraso", texto:"Atrasado "+(-dias)+(-dias>1?" dias":" dia"), venc:v, dias:dias, ultimo:u, peso:0};
   if(!u)       return {chave:"sem-registro", classe:"sem", texto:"Sem pagamento registrado", venc:v, dias:dias, ultimo:u, peso:1};
@@ -3734,7 +3951,11 @@ function renderPagamentos(){
   document.getElementById("pg-sub").textContent =
     recebidos.length + (recebidos.length===1 ? " pagamento registrado" : " pagamentos registrados");
 
-  var linhas = dados.pacientes.map(function(p){ return {p:p, s:situacaoPagamento(p)}; });
+  /* quem encerrou o tratamento só fica na lista enquanto ainda deve */
+  var linhas = dados.pacientes.filter(function(p){
+    if(!encerradoHoje(p)) return true;
+    var d = devidoDe(p); return (d && d.exato > 0.005) || situacaoPagamento(p).chave === "atraso";
+  }).map(function(p){ return {p:p, s:situacaoPagamento(p)}; });
   var deve = function(l){ var d = devidoDe(l.p); return d && d.valor > 0.5 ? d.valor : 0; };
   linhas.sort(function(a,b){
     if(deve(a) !== deve(b)) return deve(b) - deve(a);
@@ -3890,7 +4111,7 @@ function abasParaPlanilha(){
     "Início","Fim","Gênero","Suspenso desde","Deve (sessões)","Deve (R$)","Dívida conta desde"]];
   dados.pacientes.forEach(function(p){
     var d = devidoDe(p);
-    pacientes.push([vazio(p.codigo), vazio(p.nome), vazio(p.nomeCompleto), "Na agenda", vazio(String(p.status||"").replace(/\.$/,"")),
+    pacientes.push([vazio(p.codigo), vazio(p.nome), vazio(p.nomeCompleto), encerradoHoje(p) ? "Encerrado no app" : "Na agenda", vazio(String(p.status||"").replace(/\.$/,"")),
       vazio(p.freq), vazio(p.cobranca), Number(p.valor)||0, DIAS[p.dia] || "-", p.hora === undefined ? "-" : p.hora + "h",
       vazio(p.inicio), vazio(p.fim), vazio(p.genero), "-",
       d ? d.sessoes : "-", d ? d.valor : "-", d ? vazio(d.base) : "-"]);
@@ -3899,6 +4120,13 @@ function abasParaPlanilha(){
     pacientes.push([vazio(a.codigo), vazio(a.nome), "-", "Fora da agenda", vazio(String(a.status||"").replace(/\.$/,"")),
       "-", vazio(a.modalidade), Number(a.valor)||0, "-", "-", vazio(a.inicio), vazio(a.fim), "-", vazio(suspensoes[a.codigo]),
       "-", Number(a.aPagar)||0, a.aPagar ? "planilha, " + vazio(dados.arquivadosEm) : "-"]);
+  });
+
+  var encerramentos = [["Prontuário","Nome","Encerrado em","Motivo","Voltou em","De onde veio"]];
+  dados.pacientes.forEach(function(p){
+    encerramentosDe(p).forEach(function(e){
+      encerramentos.push([vazio(p.codigo), vazio(p.nome), e.data, rotuloTipoEnc(e.tipo), vazio(e.retorno), e.origem === "planilha" ? "Planilha" : "App"]);
+    });
   });
 
   var ciclos = [["Prontuário","Nome","Início","Cobrança","Valor","Aberto no app"]];
@@ -3935,6 +4163,7 @@ function abasParaPlanilha(){
   return [
     {nome:"Pacientes", linhas:pacientes},
     {nome:"Ciclos", linhas:ciclos},
+    {nome:"Encerramentos", linhas:encerramentos},
     {nome:"Sessões", linhas:[["Data","Hora","Prontuário","Nome","Situação","Valor cobrado","De onde veio"]].concat(
       sessoes.map(function(s){ return [s.data, s.hora, vazio(s.p.codigo), vazio(s.p.nome), s.situacao, s.valor, s.origem]; }))}
   ];
@@ -4184,7 +4413,7 @@ function renderPainel(){
   var ref = new Date(mesRef.getFullYear(), mesRef.getMonth(), 1);
   var ano = ref.getFullYear();
   var agora = numerosDoMes(ref);
-  var total = dados.pacientes.length;
+  var total = dados.pacientes.filter(function(p){ return !encerradoHoje(p); }).length;
   var nomeMes = ref.toLocaleDateString("pt-BR",{month:"long"});
   var c = dados.config;
 
@@ -5163,6 +5392,10 @@ function lerRegistro(celulas){
     var modo = ciclo.modalidade.indexOf("Mensal") === 0 ? "mensal" : (ciclo.modalidade.indexOf("Quinzenal") === 0 ? "quinzenal" : "avulsa");
     ciclo.lista = (anterior && anterior.lista ? anterior.lista : []).concat(
       ciclo.inicio && ciclo.valor > 0 ? [{inicio:ciclo.inicio, cobranca:modo, valor:ciclo.valor}] : []);
+    /* cada linha do Registro como está lá (início, fim, status, modalidade, sessões): é de onde o app
+       tira as datas de encerramento e de volta (06/10/2026) */
+    ciclo.linhas = (anterior && anterior.linhas ? anterior.linhas : []).concat([{inicio:ciclo.inicio, fim:ciclo.fim,
+      status:(status && status !== "-") ? status : "", modalidade:ciclo.modalidade, sessoes:ciclo.sessoes}]);
     porCodigo[codigo] = ciclo;
   });
   return porCodigo;
@@ -5336,7 +5569,7 @@ function montarLeitura(celulas, preenchimentos, registro){
       status: r.status, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || "",
       genero: r.genero || "",
       sessoesPlanilha: r.sessoesTotais || 0, cortesiaPlanilha: r.cortesia ? 1 : 0, aPagarPlanilha: r.aPagar || 0,
-      reguaPlanilha: r.regua, ciclos: r.lista || []
+      reguaPlanilha: r.regua, ciclos: r.lista || [], linhas: r.linhas || []
     });
   });
 
@@ -5354,7 +5587,7 @@ function montarLeitura(celulas, preenchimentos, registro){
     arquivados.push({
       codigo: codigo, nome: r.nome, status: r.status || "", valor: r.valor,
       modalidade: r.modalidade, inicio: r.primeiroInicio || r.inicio || "", fim: r.fim || "",
-      sessoes: r.sessoesTotais || 0, ciclos: r.ciclos || 1,
+      sessoes: r.sessoesTotais || 0, ciclos: r.ciclos || 1, linhas: r.linhas || [],
       /* o que a planilha diz que este prontuário ainda deve (coluna Valor a Pagar, que só aparece
          no ciclo mais recente): é a dívida de quem já saiu, que o app não tem como calcular */
       aPagar: r.aPagar || 0
@@ -5449,11 +5682,49 @@ function compararLeitura(leitura){
     if(a.cobranca !== p.cobranca) notas.push("cobrança " + a.cobranca + " para " + p.cobranca);
     if(notas.length) mudaram.push(p.nome + ": " + notas.join(", "));
   });
-  dados.pacientes.forEach(function(p){ if(!vindos[p.codigo]) sairam.push(p.nome + " (" + p.codigo + ")"); });
+  var encerram = [], porCod = {};
+  dados.pacientes.forEach(function(p){ porCod[p.codigo] = p; });
+  var saidas = {};
+  saidasDaLeitura(leitura, porCod).forEach(function(x){ saidas[x.antigo.codigo] = x; });
+  dados.pacientes.forEach(function(p){
+    if(vindos[p.codigo]) return;
+    var x = saidas[p.codigo];
+    if(x && x.tipo) encerram.push(p.nome + " (" + p.codigo + "): " + rotuloTipoEnc(x.tipo) + " desde " + dataLonga(deISO(x.fim)) + ". Fica no app como encerrado, com a ficha e os pagamentos.");
+    else if(x) return; /* já encerrado no app: continua igual */
+    else sairam.push(p.nome + " (" + p.codigo + ")");
+  });
 
   var divulgados = 0, reservados = 0;
   for(var k in leitura.blocos){ if(leitura.blocos[k] === "divulgado") divulgados++; else reservados++; }
-  return {novos:novos, sairam:sairam, mudaram:mudaram, divulgados:divulgados, reservados:reservados};
+  return {novos:novos, sairam:sairam, encerram:encerram, mudaram:mudaram, divulgados:divulgados, reservados:reservados};
+}
+
+/* os encerramentos de quem continua na agenda: os do app, e a volta fechada pela planilha quando ela
+   traz uma linha nova no Registro depois do encerramento aberto */
+function encerramentosDaLeitura(antigo, p){
+  if(!antigo || !antigo.encerramentos || !antigo.encerramentos.length) return undefined;
+  var l = JSON.parse(JSON.stringify(antigo.encerramentos));
+  var ult = encerramentosDe({encerramentos:l}).slice(-1)[0];
+  var linhas = p.linhas || [], nova = linhas.length ? linhas[linhas.length - 1].inicio : "";
+  if(ult && !ult.retorno && nova && nova > ult.data){ ult.retorno = nova; ult.retornoOrigem = "planilha"; }
+  return l;
+}
+/* quem a leitura tira da agenda e a planilha dá como alta, inativo ou suspenso, com data de Fim */
+function saidasDaLeitura(leitura, porCodigo){
+  var vindos = {}, arq = {};
+  leitura.pacientes.forEach(function(p){ vindos[p.codigo] = true; });
+  (leitura.arquivados || []).forEach(function(a){ arq[a.codigo] = a; });
+  var l = [];
+  Object.keys(porCodigo).forEach(function(cod){
+    var a = arq[cod], antigo = porCodigo[cod];
+    if(vindos[cod]) return;
+    /* encerrado aqui no app: fica, mesmo que a planilha ainda não diga nada */
+    if(tratamentoDe(antigo) && tratamentoDe(antigo).encerrado){ l.push({antigo:antigo, tipo:"", fim:"", status:antigo.status, linhas:a && a.linhas}); return; }
+    if(!a || !a.fim) return;
+    var st = semAcento(a.status || ""), tipo = st.indexOf("alta") === 0 ? "alta" : (st.indexOf("inativo") === 0 ? "inativo" : (st.indexOf("suspenso") === 0 ? "suspenso" : ""));
+    if(tipo) l.push({antigo:porCodigo[cod], tipo:tipo, fim:a.fim, status:a.status, linhas:a.linhas});
+  });
+  return l;
 }
 
 /* aplica mantendo o que é do site: id, link do Meet, pagamentos e as marcas da semana */
@@ -5492,9 +5763,32 @@ function aplicarLeitura(leitura){
       })),
       historico: antigo && antigo.historico ? antigo.historico : undefined,
       /* o resumo do prontuário vem do Claude, não da planilha: ler a planilha não pode apagá-lo */
-      prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined
+      prontuario: antigo && antigo.prontuario ? antigo.prontuario : undefined,
+      /* encerramentos e voltas são do app; a planilha só fecha a volta de quem estava encerrado
+         aqui e voltou lá com uma linha nova no Registro (06/10/2026) */
+      encerramentos: encerramentosDaLeitura(antigo, p),
+      linhasPlanilha: (p.linhas && p.linhas.length) ? p.linhas : (antigo ? antigo.linhasPlanilha : undefined)
     };
   });
+  /* Quem estava na agenda do app e a planilha agora dá como alta, inativo ou suspenso (saiu da grade)
+     não some mais: fica com a ficha, os pagamentos e o prontuário, encerrado na data do Fim da
+     planilha. Antes era apagado do app e a conta dele se perdia. */
+  var saindo = saidasDaLeitura(leitura, porCodigo);
+  saindo.forEach(function(x){
+    var a = x.antigo;
+    if(x.tipo && !(tratamentoDe(a) && tratamentoDe(a).encerrado)){
+      if(!a.encerramentos) a.encerramentos = [];
+      a.encerramentos.push({data:x.fim, tipo:x.tipo, origem:"planilha"});
+    }
+    if(x.linhas && x.linhas.length) a.linhasPlanilha = x.linhas;
+    if(x.status) a.status = x.status;
+    dados.pacientes.push(a);
+  });
+  if(leitura.arquivados){
+    var mantidos = {};
+    saindo.forEach(function(x){ mantidos[x.antigo.codigo] = true; });
+    leitura.arquivados = leitura.arquivados.filter(function(a){ return !mantidos[a.codigo]; });
+  }
   if(leitura.arquivados){ dados.arquivados = leitura.arquivados; dados.arquivadosEm = leitura.baseData || chaveData(hoje0()); marcarSuspensoes(); }
   if(leitura.formulacoes) dados.formulacoes = leitura.formulacoes;
   if(leitura.recebimentos) importarRecebimentos(leitura.recebimentos);
@@ -5510,7 +5804,7 @@ function mostrarLeitura(leitura){
     return "<h3>" + titulo + " (" + itens.length + ")</h3><ul><li>" +
       itens.map(function(x){ return esc(x); }).join("</li><li>") + "</li></ul>";
   };
-  var corpo = bloco("Entram na agenda", d.novos) + bloco("Saem da agenda", d.sairam) + bloco("Mudam", d.mudaram);
+  var corpo = bloco("Entram na agenda", d.novos) + bloco("Encerram o tratamento", d.encerram) + bloco("Saem da agenda", d.sairam) + bloco("Mudam", d.mudaram);
   if(!corpo) corpo = '<p class="nada">A agenda do site já está igual à da planilha. Só os horários divulgados e guardados serão reescritos.</p>';
   if(leitura.avisos.length){
     corpo += '<div class="alerta"><b>Confira antes:</b><ul><li>' +
