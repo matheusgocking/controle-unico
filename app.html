@@ -710,6 +710,110 @@ function alterarLancamento(cad, id){
   const novo = document.querySelector("[data-lanc]"); if (novo) novo.scrollIntoView({ block:"start", behavior:"smooth" });
 }
 
+// ---------- separar o pessoal da casa (06/10/2026) ----------
+// Em 05/10 o caderno do Dinheiro de um aparelho ficou ligado ao arquivo da Casa no Drive e gravou lá
+// o caderno pessoal inteiro (lançamentos, fixos, reserva, pendências). Por isso os lançamentos pessoais
+// apareciam na Casa, entravam no total e na média dela, e a Ana via. A trava em nuvem.js impede que
+// volte a acontecer; aqui ele separa o que já se misturou, com um toque, depois de uma cópia dos dois
+// cadernos no Drive. Nenhum lançamento é apagado nem muda de valor: cada um volta ao seu caderno.
+// Pessoal na Casa: tem tipo (Despesa, Receita, Aporte, Resgate) e não tem quem pagou.
+// Da casa no Dinheiro: tem quem pagou (lançamento pessoal nunca tem).
+const SO_DINHEIRO = ["gastosFixos", "reserva", "pendencias", "limites"];
+const pessoalNaCasa = l => !!l && !l.quem && !!l.tipo;
+const daCasaNoDinheiro = l => !!l && !!l.quem;
+function misturaNosCadernos(casa = livro.casa, din = livro.matheus){
+  const saem = casa.lancamentos.filter(pessoalNaCasa), voltam = din.lancamentos.filter(daCasaNoDinheiro);
+  const chaves = SO_DINHEIRO.filter(k => k in casa);
+  // a sobra da trava só pede separação se tiver lançamento pessoal que nenhum dos dois cadernos tem
+  const ids = new Set(din.lancamentos.concat(casa.lancamentos).map(l => l.id));
+  const soNaSobra = sobraDaTrava().filter(l => l && l.id && !l.quem && l.tipo && !ids.has(l.id));
+  return saem.length || voltam.length || chaves.length || soNaSobra.length ? { saem:saem.concat(soNaSobra), voltam, chaves } : null;
+}
+// Só lê: devolve os dois cadernos já separados. Na mesma linha (mesmo id) vale a versão que estava na
+// Casa, porque desde 05/10 era lá que o Dinheiro deste aparelho gravava (o arquivo do Dinheiro parou).
+// "sobra": o que o aparelho com o arquivo trocado tinha guardado quando a trava agiu (nuvem.js); um
+// lançamento pessoal que só exista lá também volta ao Dinheiro.
+const CH_TRAVA_DIN = "controle-unico-dinheiro-antes-da-trava";
+function sobraDaTrava(){ try { const g = JSON.parse(localStorage.getItem(CH_TRAVA_DIN)); return g && g.dados && Array.isArray(g.dados.lancamentos) ? g.dados.lancamentos : []; } catch(e){ return []; } }
+function separarCadernos(casa, din, sobra = []){
+  const C = JSON.parse(JSON.stringify(casa)), D = JSON.parse(JSON.stringify(din));
+  const saem = C.lancamentos.filter(pessoalNaCasa), voltam = D.lancamentos.filter(daCasaNoDinheiro);
+  const uniao = (meus, deLa) => {
+    const m = new Map(deLa.map(x => [x.id, x])), ja = new Set(meus.map(x => x.id));
+    return meus.map(x => m.has(x.id) ? m.get(x.id) : x).concat(deLa.filter(x => !ja.has(x.id)));
+  };
+  D.lancamentos = uniao(D.lancamentos.filter(l => !daCasaNoDinheiro(l)), saem);
+  const temNoDin = new Set(D.lancamentos.map(l => l.id)), naCasa = new Set(C.lancamentos.map(l => l.id));
+  sobra.filter(l => l && l.id && !l.quem && l.tipo && !temNoDin.has(l.id) && !naCasa.has(l.id)).forEach(l => { D.lancamentos.push(l); temNoDin.add(l.id); });
+  ["gastosFixos", "pendencias"].forEach(k => { if (Array.isArray(C[k])) D[k] = uniao(Array.isArray(D[k]) ? D[k] : [], C[k]); });
+  ["reserva", "limites"].forEach(k => { if (C[k] != null && typeof C[k] === "object") D[k] = C[k]; });
+  SO_DINHEIRO.forEach(k => delete C[k]);
+  const jaNaCasa = new Set(C.lancamentos.filter(l => !pessoalNaCasa(l)).map(l => l.id));
+  C.lancamentos = C.lancamentos.filter(l => !pessoalNaCasa(l))
+    .concat(voltam.filter(l => !jaNaCasa.has(l.id)).map(l => ({ id:l.id, data:l.data, quem:l.quem, descricao:l.descricao, categoria:l.categoria, valor:l.valor })));
+  D.caderno = "dinheiro"; C.caderno = "casa";
+  return { casa:C, din:D, saem, voltam };
+}
+const CH_SEPAROU = "controle-unico-separacao-casa";
+const semData = d => { const c = Object.assign({}, d); delete c.atualizadoEm; return JSON.stringify(c); };
+function separacaoGuardada(){ try { return JSON.parse(localStorage.getItem(CH_SEPAROU)); } catch(e){ return null; } }
+// o botão só aparece no app dele, com os dois cadernos já abertos do arquivo certo no Drive
+const podeSeparar = () => PERFIL !== "ana" && nuvem.matheus && nuvem.casa
+  && nuvem.matheus.conferido() && nuvem.casa.conferido() && nuvem.matheus.arquivoId() !== nuvem.casa.arquivoId();
+function painelSeparar(){
+  if (PERFIL === "ana") return "";
+  const m = misturaNosCadernos();
+  if (!m) {
+    const g = separacaoGuardada();
+    if (!g || g.depois !== semData(livro.casa) + semData(livro.matheus)) return "";
+    return `<section class="painel bloco aviso-fx"><p>Pessoal e casa separados em ${escH(g.quando)}: ${g.saem} lançamento${g.saem === 1 ? "" : "s"} voltaram ao Dinheiro.
+      A cópia de antes está no Drive, na pasta Controle Único - cópias.</p><p style="margin:8px 0 0"><button class="b s" type="button" id="desfazerSeparar">Desfazer a separação</button></p></section>`;
+  }
+  const n = m.saem.length, datas = m.saem.map(l => l.data || "").filter(Boolean).sort();
+  const extras = [m.chaves.includes("gastosFixos") && "gastos fixos", m.chaves.includes("reserva") && "reserva", m.chaves.includes("pendencias") && "pendências"].filter(Boolean);
+  const total = soma(m.saem.filter(l => l.tipo === "Despesa"), l => l.valor);
+  const linha = l => `<li>${dataCurta(l.data)}/${(l.data || "").slice(2, 4)} · ${escH(semPonto(l.descricao && l.descricao !== "-" ? l.descricao : nomeCat(l.categoria)))} · ${escH(semPonto(l.tipo))} · ${dinheiro(l.valor)}</li>`;
+  return `<section class="painel bloco aviso-fx" id="painelSeparar"><p><b>O caderno da Casa está com ${n} lançamento${n === 1 ? "" : "s"} pessoa${n === 1 ? "l" : "is"} seu${n === 1 ? "" : "s"}${datas.length ? ` (de ${dataCurta(datas[0])}/${datas[0].slice(2, 4)} a ${dataCurta(datas[datas.length - 1])}/${datas[datas.length - 1].slice(2, 4)})` : ""}${extras.length ? ", mais " + extras.join(", ") : ""}.</b>
+      Eles entram no total e na média da Casa (${dinheiro(total)} em despesas) e a Ana vê.${m.voltam.length ? ` E o seu Dinheiro está com ${m.voltam.length} compras da casa, que contam duas vezes no seu mês.` : ""}
+      Separar devolve cada um ao seu caderno, sem apagar nem mudar valor. Antes, o app guarda uma cópia dos dois cadernos no Drive.</p>
+    <details style="margin-top:8px"><summary>Ver os ${n} que saem da Casa</summary><ul class="nota" style="margin:6px 0 0;padding-left:18px">${m.saem.slice().sort((a, b) => (a.data || "").localeCompare(b.data || "")).map(linha).join("")}</ul></details>
+    <p style="margin:10px 0 0">${podeSeparar() ? `<button class="b p" type="button" id="separarAgora">Separar pessoal e casa</button>` : `<span class="nota">Abrindo os dois cadernos no Drive; o botão aparece quando estiverem abertos.</span>`}</p></section>`;
+}
+async function separarAgora(){
+  if (!podeSeparar()) return;
+  const r = separarCadernos(livro.casa, livro.matheus, sobraDaTrava());
+  const antesCasa = soma(livro.casa.lancamentos.filter(noMes), l => l.valor), depoisCasa = soma(r.casa.lancamentos.filter(noMes), l => l.valor);
+  if (!confirm(`${r.saem.length} lançamentos pessoais saem da Casa e voltam ao Dinheiro` + (r.voltam.length ? `, e ${r.voltam.length} compras da casa saem do Dinheiro` : "") +
+    `. A Casa de ${MESES[ref.getMonth()]} passa de ${dinheiro(antesCasa)} para ${dinheiro(depoisCasa)}. Nada é apagado. Separar?`)) return;
+  const b = document.getElementById("separarAgora"); if (b) { b.disabled = true; b.textContent = "Guardando a cópia no Drive…"; }
+  const agora = new Date(), carimbo = hojeISO() + " " + String(agora.getHours()).padStart(2, "0") + "h" + String(agora.getMinutes()).padStart(2, "0");
+  const antesDin = Object.assign({}, livro.matheus, { caderno:"dinheiro" });
+  try {
+    await Nuvem.copiaAvulsa("Controle Único - casa - antes de separar " + carimbo + ".json", JSON.stringify(livro.casa));
+    await Nuvem.copiaAvulsa("Controle Único - dinheiro - antes de separar " + carimbo + ".json", JSON.stringify(antesDin));
+  } catch(e) {
+    alert("Não consegui guardar a cópia no Drive, então não separei nada. Confira a internet e tente de novo.");
+    desenhar(); return;
+  }
+  const antes = { casa:JSON.parse(JSON.stringify(livro.casa)), din:JSON.parse(JSON.stringify(livro.matheus)) };
+  livro.matheus = arrumar.matheus(Object.assign(VAZIO.matheus(), r.din));
+  livro.casa = arrumar.casa(Object.assign(VAZIO.casa(), r.casa));
+  try { localStorage.removeItem(CH_TRAVA_DIN); } catch(e){}
+  try { localStorage.setItem(CH_SEPAROU, JSON.stringify({ quando:dataCurta(hojeISO()), saem:r.saem.length, antes,
+    depois:semData(livro.casa) + semData(livro.matheus) })); } catch(e){}
+  salvar("matheus"); salvar("casa");
+}
+// volta os dois cadernos como estavam, só enquanto nada mudou depois da separação
+function desfazerSeparar(){
+  const g = separacaoGuardada();
+  if (!g || g.depois !== semData(livro.casa) + semData(livro.matheus)) return;
+  if (!confirm("Voltar os dois cadernos como estavam antes de separar? Os lançamentos pessoais voltam a aparecer na Casa.")) return;
+  livro.matheus = arrumar.matheus(Object.assign(VAZIO.matheus(), g.antes.din));
+  livro.casa = arrumar.casa(Object.assign(VAZIO.casa(), g.antes.casa));
+  try { localStorage.removeItem(CH_SEPAROU); } catch(e){}
+  salvar("matheus"); salvar("casa");
+}
+
 // ---------- telas ----------
 // A Carteira juntou Dinheiro e cripto (28/09/2026): aqui ela é a visão do dinheiro; a cripto é outra página.
 const ABAS = [["tudo","Tudo"],["carteira","Carteira"],["casa","Casa"]];
@@ -925,7 +1029,7 @@ function telaTudo(){
     ? barraPartes(partes, "Patrimônio: reserva de emergência e cripto") + metaReserva(d.reserva, r.meta)
     : rosca(partes, "patrimônio", "Patrimônio: reserva de emergência e cripto");
 
-  return barraMes() + painelPrecisa() + avisoFechamento() + cardSituacao(d) + formLancamento("") + `
+  return barraMes() + painelSeparar() + painelPrecisa() + avisoFechamento() + cardSituacao(d) + formLancamento("") + `
 
   <div class="duas inv">
     <section class="painel"><h2>Patrimônio</h2>${patrimonio}
@@ -1438,7 +1542,7 @@ function telaDinheiro(){
     <div><button class="b p" type="submit">Guardar</button></div>
   </form></details>`;
 
-  return subabasDinheiro() + barraMes() + cardSituacao(d) + `
+  return subabasDinheiro() + barraMes() + painelSeparar() + cardSituacao(d) + `
   <div class="duas larga">
     <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
     <div class="coluna">
@@ -1550,7 +1654,7 @@ function telaCasa(){
       <div><button class="b p" type="submit">Guardar</button></div>
     </form><p class="nota">Os nomes ficam só no caderno da casa, no Drive.</p></details>`;
 
-  return barraMes() + cardCasa(c) + `
+  return barraMes() + painelSeparar() + cardCasa(c) + `
   <div class="duas larga">
     <section class="painel"><h2>Compras<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
     <div class="coluna">
@@ -1598,6 +1702,8 @@ function ligar(){
     li.onmouseenter = () => { r.classList.add("foco"); if (f) f.classList.add("on"); };
     li.onmouseleave = () => { r.classList.remove("foco"); if (f) f.classList.remove("on"); };
   });
+  { const b = document.getElementById("separarAgora"); if (b) b.onclick = () => { separarAgora(); }; }
+  { const b = document.getElementById("desfazerSeparar"); if (b) b.onclick = desfazerSeparar; }
   document.querySelectorAll("[data-apagar]").forEach(b => b.onclick = e => {
     e.stopPropagation();
     if (!confirm("Apagar esta linha?")) return;
