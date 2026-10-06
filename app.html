@@ -472,7 +472,7 @@ function contasClinica(){
     const mes = new Date(ref.getFullYear(), ref.getMonth(), 1);
     const n = w.numerosDoMes(mes), doMes = w.pagamentosDoMes(mes);
     const pacientes = soma(doMes.filter(dePaciente), g => g.valor);
-    return { ok:true, ativos:w.dados.pacientes.length, previsto:n.previsto, previstoTriagem:n.previstoTriagem || 0, recebido:n.recebido, pacientes,
+    return { ok:true, ativos:w.dados.pacientes.filter(p => !(w.encerradoHoje && w.encerradoHoje(p))).length, previsto:n.previsto, previstoTriagem:n.previstoTriagem || 0, recebido:n.recebido, pacientes,
              falta:Math.max(n.previsto - pacientes, 0), sessoes:n.sessoes, aConfirmar:n.aConfirmar || 0 };
   }
   // Sem a Clínica aberta: o recebido sai do caderno guardado neste aparelho; o previsto não.
