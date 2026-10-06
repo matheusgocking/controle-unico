@@ -307,3 +307,62 @@ test("Clínica: no mensal, um pagamento avulso soma ao que o mês já pagou", as
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Clínica: \"não haverá\" deixa o nome na grade, apagado, e o menu volta ao normal", async () => {
+  for (const largura of [1280, 390]) {
+    const { ctx, p, erros } = await abrir("clinica.html", { largura });
+    await p.evaluate(() => { dados.blocos = { "1-9":"divulgado" }; marcarSaida("2026-10-05|9", "cancelada"); renderTudo(); });
+    const cel = p.locator('.cell[data-data="2026-10-05"][data-hora="9"]');
+    assert.equal(await cel.getAttribute("class").then(c => c.includes("cancelada")), true);
+    assert.equal(await cel.locator(".nm").textContent(), "Paciente Mensal");
+    assert.equal(await cel.locator(".lab").textContent(), "Não haverá");
+    // o horário divulgado continua contando como livre e entrando na mensagem, como antes
+    assert.equal(await p.evaluate(() => horasDivulgadasSemana()), 1);
+    assert.match(await p.evaluate(() => textoDivulgacao()), /Segunda-feira:\* 09:00h/);
+    // tocar abre a escolha com "Não haverá" marcado; "Normal" desfaz
+    await cel.click();
+    assert.equal(await p.locator('.menu .op.on').textContent().then(t => t.startsWith("Não haverá")), true);
+    assert.equal(await p.locator('.menu .op').count(), 6);
+    await p.locator('.menu .op', { hasText:"Normal" }).click();
+    assert.equal(await p.evaluate(() => dados.excecoes["2026-10-05|9"]), undefined);
+    assert.equal(await cel.getAttribute("class").then(c => c.includes("cancelada")), false);
+    // tocar de novo na situação marcada também volta ao normal
+    await cel.click(); await p.locator('.menu .op', { hasText:"Faltou" }).click();
+    assert.equal(await p.evaluate(() => dados.excecoes["2026-10-05|9"].tipo), "falta");
+    await cel.click(); await p.locator('.menu .op', { hasText:"Faltou" }).click();
+    assert.equal(await p.evaluate(() => dados.excecoes["2026-10-05|9"]), undefined);
+    assert.deepEqual(erros, []);
+    await ctx.close();
+  }
+});
+
+test("Clínica: quem volta atrás do \"não haverá\" volta ao horário normal, sem virar encaixe", async () => {
+  for (const largura of [1280, 390]) {
+    const { ctx, p, erros } = await abrir("clinica.html", { largura });
+    const k = "2026-10-05|9";                                // segunda 9h: Paciente Mensal
+    const cel = p.locator('.cell[data-data="2026-10-05"][data-hora="9"]');
+    const venc = () => p.evaluate(() => { vencCache = null; devidoCache = null; return chaveData(proximoVencimento(acharPaciente("pA"))); });
+    const vencNormal = await venc();
+    // o registro que ficou no caso real: "não haverá" e o próprio paciente encaixado por cima
+    await p.evaluate(k => { marcarSaida(k, "cancelada"); porEntrada(k, { pacienteId:"pA" }); renderTudo(); }, k);
+    assert.equal(await cel.getAttribute("class").then(c => c.includes("encaixe")), true);
+    await cel.click();
+    await p.locator('.menu button[data-acao="voltar-proprio"]').click();
+    assert.equal(await p.evaluate(k => dados.excecoes[k], k), undefined);
+    assert.equal(await cel.getAttribute("class").then(c => c.includes("encaixe") || c.includes("cancelada")), false);
+    assert.equal(await cel.locator(".nm").textContent(), "Paciente Mensal");
+    assert.equal(await venc(), vencNormal, "o saldo volta a contar a sessão como antes");
+    // escolher o próprio paciente no "Encaixar alguém" também só desfaz o "não haverá"
+    await p.evaluate(k => { marcarSaida(k, "cancelada"); renderTudo(); }, k);
+    await cel.click();
+    await p.selectOption("#sel-extra", "pA");
+    assert.equal(await p.evaluate(k => dados.excecoes[k], k), undefined);
+    // outro paciente no lugar continua sendo encaixe, como antes
+    await p.evaluate(k => { marcarSaida(k, "cancelada"); renderTudo(); }, k);
+    await cel.click();
+    await p.selectOption("#sel-extra", "pB");
+    assert.deepEqual(await p.evaluate(k => dados.excecoes[k], k), { tipo:"cancelada", entra:{ pacienteId:"pB" } });
+    assert.deepEqual(erros, []);
+    await ctx.close();
+  }
+});
