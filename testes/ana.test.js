@@ -170,3 +170,53 @@ test("Ana, Plantões fixos: semana sim, semana não e última do mês", async ()
   assert.deepEqual(r.ult, ["2026-10-30", "2026-11-27"]);
   await ctx.close();
 });
+
+test("Ana, Plantões fixos: semana sim, semana não começa no primeiro dia escolhido, mesmo com a data no meio da semana", async () => {
+  const { ctx, p, erros, caderno } = await abrir(1280);
+  await p.click('#abas [data-a="plantoes"]');
+  await p.click("#dRegras > summary");
+  // "a partir de" numa segunda (05/10), regra de sábado: o primeiro é o sábado 10/10, não o 17/10
+  await p.selectOption("#fRegra [name=local]", "Local A"); await p.selectOption("#fRegra [name=periodo]", "Diurno");
+  await p.selectOption("#fRegra [name=dia]", "6"); await p.selectOption("#fRegra [name=quando]", "alternada");
+  await p.fill("#fRegra [name=inicio]", "2026-10-05");
+  await p.click("#fRegra [type=submit]"); await p.waitForTimeout(150);
+  assert.match(await p.textContent("ul.regras"), /sábados alternados, a partir de 10\/10/);
+  const g = (await caderno()).regrasPlantao[0];
+  assert.equal(g.inicio, "2026-10-10");
+  assert.deepEqual(await p.evaluate(() => plantoesDasRegras("2026-10").map(x => x.data)), ["2026-10-10", "2026-10-24"]);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Ana, Plantões fixos: o plantão apagado ou mudado de dia não volta ao lançar de novo", async () => {
+  const { ctx, p, erros, caderno } = await abrir(1280);
+  await p.evaluate(() => { cad.regrasPlantao.push({ id:"g1", local:"Local B", periodo:"Noturno", dia:5, quando:"toda", inicio:"2026-10-09", valor:0 }); salvar(); });
+  await p.click('#abas [data-a="plantoes"]');
+  await p.click("#dRegras > summary");
+  await p.selectOption("#fLancarRegras [name=ate]", "2026-10");
+  await p.click("#fLancarRegras [type=submit]"); await p.waitForTimeout(200);
+  let c = await caderno();
+  const sextas = c.plantoes.filter(x => x.local === "Local B" && x.periodo === "Noturno" && x.id !== "p2").map(x => x.data).sort();
+  assert.deepEqual(sextas, ["2026-10-09", "2026-10-16", "2026-10-23", "2026-10-30"]);
+  // apaga a de 16/10 e muda a de 23/10 para o sábado 24/10
+  const id16 = c.plantoes.find(x => x.data === "2026-10-16" && x.local === "Local B").id;
+  await p.click(`[data-apagar="plantoes:${id16}"]`); await p.waitForTimeout(150);
+  const id23 = c.plantoes.find(x => x.data === "2026-10-23" && x.local === "Local B").id;
+  await p.click(`[data-editar-plantao="${id23}"]`);
+  await p.fill("#fPlantao [name=data]", "2026-10-24");
+  await p.click("#fPlantao [type=submit]"); await p.waitForTimeout(150);
+  assert.deepEqual(await p.evaluate(() => plantoesDasRegras("2026-10").map(x => x.data)), []);
+  c = await caderno();
+  assert.deepEqual(c.regrasPlantao[0].pular.sort(), ["2026-10-16", "2026-10-23"]);
+  assert.deepEqual(c.plantoes.filter(x => x.local === "Local B" && x.periodo === "Noturno" && x.id !== "p2").map(x => x.data).sort(), ["2026-10-09", "2026-10-24", "2026-10-30"]);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Ana, Mês: o texto do Entra conta as entradas fixas também", async () => {
+  const { ctx, p, erros } = await abrir();
+  const t = await p.textContent(".k:has(> span:text-is('Entra')) small");
+  assert.equal(t.replace(/\s/g, " "), "R$ 2.500,00 de entradas fixas, R$ 2.000,00 de plantões e R$ 200,00 de atendimentos");
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
