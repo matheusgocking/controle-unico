@@ -733,6 +733,25 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 /* faixa "Hoje" em cima da grade da semana */
 .hoje-cab{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-bottom:12px}
 .hoje-cab .sub{margin:0}
+/* dias da semana na faixa de baixo (06/10/2026): o ponto vermelho diz que alguém do dia deve */
+.dias-faixa{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin:0 0 12px}
+.dia-chip{position:relative; display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 2px; min-height:48px; border:1px solid var(--border); border-radius:10px; background:var(--surface-2); color:var(--text); font:inherit; cursor:pointer}
+.dia-chip:hover{border-color:var(--accent-line)}
+.dia-chip .d{font-size:11px; color:var(--muted); text-transform:lowercase}
+.dia-chip .n{font-size:15px; font-weight:600; line-height:1.1}
+.dia-chip .q{font-size:10.5px; color:var(--faint)}
+.dia-chip.hoje .d{color:var(--accent); font-weight:700}
+.dia-chip.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.dia-chip.on .d,.dia-chip.on .q{color:var(--accent-ink); opacity:.85}
+.dia-chip .ponto{position:absolute; top:3px; right:3px; width:7px; height:7px; border-radius:50%; background:var(--devendo); box-shadow:0 0 0 2px var(--surface-2)}
+.dia-chip.on .ponto{box-shadow:0 0 0 2px var(--accent)}
+.dia-chip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.pcard .selo.divida{font-size:12.5px; padding:2px 10px}
+.hoje-vazio{margin:0; color:var(--muted); font-size:13px}
+/* dívida escrita na célula da grade, no computador; no celular a célula é estreita demais e a
+   dívida fica nos cartões do dia, logo abaixo da grade */
+.cell .dv{max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:10.5px; font-weight:700; color:var(--devendo); background:var(--surface); border-radius:6px; padding:0 5px; margin-top:1px}
+@media (max-width:700px){ .cell .dv{display:none} }
 .pcard .pr{font-size:11px; color:var(--muted)}
 /* ficha: bloco do prontuário, com as sessões que ainda não estão no Word (29/09/2026) */
 .fipag.pront{border-color:var(--accent-line); background:var(--accent-soft)}
@@ -959,6 +978,8 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
          depois da grade, não antes (pedido dele, 01/10/2026) -->
     <div class="panel hidden" id="hoje-faixa" style="margin-top:14px">
       <div class="hoje-cab"><h2 id="hoje-titulo">Hoje</h2><p class="sub" id="hoje-sub"></p></div>
+      <!-- os sete dias da semana (06/10/2026): hoje vem aberto, os outros num toque -->
+      <div class="dias-faixa" id="hoje-dias" role="group" aria-label="Dia da semana"></div>
       <div class="pgrid" id="hoje-cartoes"></div>
     </div>
 
@@ -1812,6 +1833,11 @@ function renderSemana(){
                     (info.saiu ? '<span class="saiu">'+esc(info.saiu)+'</span>' : "") +
                     (info.etiqueta ? '<span class="lab">'+esc(info.etiqueta)+'</span>' : "") +
                     (info.paciente && info.paciente.codigo ? '<span class="cod">'+esc(info.paciente.codigo)+'</span>' : "");
+      /* quanto o paciente deve, escrito na sessão (06/10/2026); some no celular, onde a célula é estreita */
+      if(info.paciente && ESTADO_DA_CLASSE[info.classe]){
+        var dvc = textoDevido(info.paciente);
+        if(dvc.classe==="atraso") b.insertAdjacentHTML("beforeend", '<span class="dv" title="'+esc(dvc.texto)+'">deve '+esc(dvc.texto.split(" · ").pop().replace(/^deve /, ""))+'</span>');
+      }
       /* tarja na borda direita quando o paciente daquela sessão está com pagamento vencido */
       if(info.classe==="sessao" && info.paciente && mapaDeAtraso()[info.paciente.id]) b.classList.add("devendo");
       /* o pagamento da sessão, numa marca própria no canto de baixo (06/10/2026): a cor da célula
@@ -1864,22 +1890,56 @@ function renderSemana(){
 }
 
 /* faixa "Hoje" em cima da grade (28/09/2026): os pacientes do dia em cartões, com a situação
-   da sessão, até quando o prontuário está registrado e o pagamento. Só aparece na semana de hoje. */
+   da sessão, até quando o prontuário está registrado e o pagamento.
+   Desde 06/10/2026 (pedido dele) tem os sete dias da semana: hoje vem aberto e os outros abrem
+   num toque; o ponto vermelho no dia diz que alguém dele deve, e o cartão diz quanto. A dívida
+   é a mesma da ficha e da aba Pagamentos (textoDevido): aqui só aparece, nenhuma conta muda. */
+var diaFaixa = null; /* chave do dia aberto na faixa; null = o padrão (hoje ou o primeiro com sessão) */
+function sessoesDaFaixa(d){ return sessoesDoDia(d).filter(function(s){ return s.estado!=="remarcada"; }); }
+function deveNaFaixa(p){ return textoDevido(p).classe==="atraso"; }
 function renderHoje(){
   var caixa = document.getElementById("hoje-faixa");
   var hoje = hoje0();
-  var lista = mesmoDia(inicioSemana(hoje), semana)
-    ? sessoesDoDia(hoje).filter(function(s){ return s.estado!=="remarcada"; }) : [];
-  caixa.classList.toggle("hidden", !lista.length);
-  if(!lista.length) return;
+  var dias = [];
+  for(var i=0;i<7;i++){ var d = somaDias(semana,i); dias.push({data:d, lista:sessoesDaFaixa(d)}); }
+  var temAlguma = dias.some(function(x){ return x.lista.length; });
+  caixa.classList.toggle("hidden", !temAlguma);
+  if(!temAlguma) return;
+  var aberto = dias.filter(function(x){ return chaveData(x.data)===diaFaixa; })[0] ||
+    dias.filter(function(x){ return mesmoDia(x.data, hoje); })[0] ||
+    dias.filter(function(x){ return x.lista.length; })[0];
+  var faixa = document.getElementById("hoje-dias");
+  faixa.innerHTML = "";
+  dias.forEach(function(x){
+    var b = document.createElement("button");
+    var devem = x.lista.filter(function(s){ return deveNaFaixa(s.paciente); }).length;
+    b.type = "button";
+    b.className = "dia-chip" + (x===aberto ? " on" : "") + (mesmoDia(x.data, hoje) ? " hoje" : "");
+    b.setAttribute("aria-pressed", x===aberto ? "true" : "false");
+    b.setAttribute("aria-label", DIAS[x.data.getDay()] + ", " + dataCurta(x.data) + ": " +
+      (x.lista.length ? plural(x.lista.length, "sessão", "sessões") : "sem sessão") +
+      (devem ? "; " + plural(devem, "paciente deve", "pacientes devem") : ""));
+    b.innerHTML = '<span class="d">'+(mesmoDia(x.data, hoje) ? "hoje" : DIAS_CURTO[x.data.getDay()])+'</span>' +
+      '<span class="n">'+x.data.getDate()+'</span>' +
+      '<span class="q">'+(x.lista.length || "–")+'</span>' +
+      (devem ? '<span class="ponto" aria-hidden="true"></span>' : "");
+    b.addEventListener("click", function(){ diaFaixa = chaveData(x.data); renderHoje(); });
+    faixa.appendChild(b);
+  });
+  var dia = aberto.data, lista = aberto.lista, ehHoje = mesmoDia(dia, hoje);
   var rot = {realizada:"realizada ✓", falta:"faltou", cortesia:"cortesia"};
-  document.getElementById("hoje-titulo").textContent = "Hoje · " + DIAS[hoje.getDay()].toLowerCase() + ", " + dataCurta(hoje);
-  document.getElementById("hoje-sub").textContent = lista.length + (lista.length>1 ? " sessões" : " sessão") + " · toque no cartão para abrir a ficha";
+  document.getElementById("hoje-titulo").textContent = (ehHoje ? "Hoje · " + DIAS[dia.getDay()].toLowerCase() : DIAS[dia.getDay()]) + ", " + dataCurta(dia);
+  var devedores = lista.filter(function(s){ return deveNaFaixa(s.paciente); }).length;
+  document.getElementById("hoje-sub").textContent = !lista.length ? "" :
+    lista.length + (lista.length>1 ? " sessões" : " sessão") +
+    (devedores ? " · " + plural(devedores, "paciente deve", "pacientes devem") : "") +
+    " · toque no cartão para abrir a ficha";
   var alvo = document.getElementById("hoje-cartoes");
   alvo.innerHTML = "";
+  if(!lista.length){ alvo.innerHTML = '<p class="hoje-vazio">Nenhuma sessão neste dia.</p>'; return; }
   lista.forEach(function(s){
     var p = s.paciente, pg = situacaoPagamento(p), pr = p.prontuario || {}, dv = textoDevido(p);
-    var estado = rot[s.estado] || (jaPassou(hoje, s.hora) ? "a confirmar" : "prevista");
+    var estado = rot[s.estado] || (jaPassou(dia, s.hora) ? "a confirmar" : "prevista");
     var c = document.createElement("button");
     c.className = "pcard";
     c.innerHTML =
@@ -1888,7 +1948,7 @@ function renderHoje(){
         '<span class="n">'+esc(p.nome)+'</span>' +
         '<span class="sub">'+String(s.hora).padStart(2,"0")+'h · '+estado+'</span>' +
         '<span class="pr">'+(pr.ultima ? "Prontuário até "+dataCurta(deISO(pr.ultima)) : esc(p.codigo||""))+'</span>' +
-        (dv.classe==="atraso" ? '<span class="selo atraso">'+esc(dv.texto)+'</span>'
+        (dv.classe==="atraso" ? '<span class="selo atraso divida" title="'+esc(dv.titulo||"")+'">'+esc(dv.texto)+'</span>'
                               : '<span class="selo '+pg.classe+'">'+esc(pg.texto)+'</span>') +
       '</span>';
     c.addEventListener("click", function(){ abrirFicha(p); });
