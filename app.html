@@ -319,6 +319,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 <script src="ler-xlsx.js"></script>
 <script src="categorias.js"></script>
 <script src="lancamento.js"></script>
+<script src="periodo-fixo.js"></script>
 <script src="grafico-meses.js"></script>
 <script src="nuvem.js"></script>
 <script>/* dentro da casca do Controle Único: a casca já mostra marca, abas e tema */ if (window.top !== window.self) document.documentElement.classList.add("na-casca");</script>
@@ -1611,6 +1612,9 @@ function ligar(){
   });
 }
 
+// a barra ‹ mês › acompanha a rolagem: quando sai pelo alto, uma cópia pequena fica fixa (periodo-fixo.js)
+PeriodoFixo.iniciar(() => document.querySelectorAll("#tela .mes"));
+
 // o botão flutuante só aparece quando o "+ Novo lançamento" da tela saiu da vista
 let fabObs = null;
 function vigiarFab(){
@@ -1620,14 +1624,22 @@ function vigiarFab(){
   fabObs = new IntersectionObserver(es => fab.classList.toggle("fora", es[es.length - 1].isIntersecting));
   fabObs.observe(alvo);
 }
-// o botão flutuante do celular abre o formulário da tela em que ele está e leva até ele
-document.getElementById("fab").onclick = () => {
+// abre o formulário de lançamento da tela em que ele está e leva até ele. É o que o botão + faz:
+// o do celular e, na casca, o + que escolhe entre lançamento e recebimento (06/10/2026)
+function abrirLancamento(){
+  const k = abaDoEndereco(); if (k && k !== aba) { aba = k; desenhar(); }   // a casca pode ter acabado de trocar a tela
   // nas telas de fixos, pendências e mês a mês não há formulário: o botão volta para os lançamentos
   if (!document.querySelector("[data-lanc]") && aba === "carteira") { vistaDin = "mes"; desenhar(); }
   const el = document.querySelector("[data-lanc]"); if (!el) return;
   FormLancamento.abrir(configLancamento(el.dataset.lanc || null));
   desenhar();
   const novo = document.querySelector("[data-lanc]"); if (novo) novo.scrollIntoView({ block:"start", behavior:"smooth" });
+}
+window.abrirLancamento = abrirLancamento;
+// dentro da casca o + do celular abre a escolha da casca (lançamento ou recebimento); sozinho, abre o formulário
+document.getElementById("fab").onclick = () => {
+  try { if (window.top !== window.self && window.parent.MaisLancar) { window.parent.MaisLancar.abrir(); return; } } catch(e){}
+  abrirLancamento();
 };
 document.getElementById("abas").onclick = e => {
   const b = e.target.closest("[data-a]"); if (!b) return; aba = b.dataset.a;
