@@ -217,6 +217,15 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 .ss-desde{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted)}
 .ss-desde input{padding:4px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:12.5px}
 /* paciente com pagamento vencido: uma tarja na borda direita, sem escrever nada na célula */
+/* pagamento da sessão (06/10/2026): bolinha no canto de baixo; a cor da célula fica para a presença */
+/* cores próprias, que aparecem tanto na sessão marcada quanto na realizada (verde-escura) */
+.cell .pgm{position:absolute; right:9px; bottom:5px; width:10px; height:10px; border-radius:50%; pointer-events:none; box-shadow:0 0 0 2px #fff}
+.cell .pgm-paga{background:#3ccf7e}
+.cell .pgm-aberta{background:#e5352c}
+.leg-pag{display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:8px; font-size:12.5px; color:var(--muted)}
+.leg-pag span{display:inline-flex; align-items:center; gap:6px}
+.leg-pag i{width:9px; height:9px; border-radius:50%; display:inline-block}
+.leg-pag .dica{color:var(--faint); font-size:11.5px}
 .cell.devendo{box-shadow:inset -5px 0 0 var(--devendo)}
 .cell.devendo:hover{box-shadow:inset -5px 0 0 var(--devendo), inset 0 0 0 9999px rgba(128,128,128,.14)}
 /* linha do "agora": horizontal, com o ponto na ponta esquerda, sobre a coluna de hoje */
@@ -474,6 +483,34 @@ p.pg-inteiro{margin:-6px 0 12px}
 .fipag h3{font-size:14px}
 .fipag .duas{display:flex; flex-wrap:wrap; gap:4px 22px; font-size:13px; color:var(--muted)}
 .fipag .duas b{color:var(--text); font-weight:600}
+/* ficha em abas (06/10/2026) */
+.ficha .fi-abas{display:flex; margin:-4px 0 14px}
+.ficha .fi-abas .tab{flex:1 1 0; text-align:center}
+.fi-situ{border-radius:var(--radius); padding:10px 14px; margin-bottom:12px; font-size:14px; font-weight:600; line-height:1.4}
+.fi-situ.ok{background:var(--ok-soft); color:var(--ok)}
+.fi-situ.atencao{background:var(--warn-soft); color:var(--warn)}
+.fi-situ.atraso{background:var(--devendo-soft); color:var(--devendo); box-shadow:inset 0 0 0 1px var(--devendo-line)}
+.fi-situ.sem{background:var(--neutral-chip); color:var(--muted)}
+.fipag.fi-reg{border-color:var(--accent-line); background:var(--accent-soft)}
+.fi-reg h3{margin-bottom:8px}
+.fi-chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px}
+.fi-chips .btn{background:var(--surface)}
+.fi-reg-campos{display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 10px}
+.fi-reg .field{margin-bottom:8px}
+.fi-reg input,.fi-reg select{width:100%}
+.fi-reg-campos input,.fi-reg-campos select{height:42px}
+.fi-previa{margin:2px 0 10px; font-size:13px; line-height:1.5; color:var(--text)}
+.fi-previa:empty{display:none}
+.fi-reg-botoes{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px}
+.fi-reg-botoes .hint{color:var(--ok); font-weight:600}
+details.fi-det > summary{cursor:pointer; font-weight:600; font-size:14px}
+details.fi-det > summary .hint{font-weight:400; margin-left:4px}
+details.fi-det[open] > summary{margin-bottom:6px}
+@media (max-width:640px){
+  .fi-reg-campos{grid-template-columns:1fr 1fr}
+  .fi-reg-campos .field:last-child{grid-column:1 / -1}
+  .fi-reg-botoes .btn{width:100%}
+}
 .obsform{margin-top:8px; font-size:12.5px; color:var(--text)}
 .obsform.faint{color:var(--faint); font-size:11.5px}
 
@@ -526,6 +563,7 @@ p.pg-inteiro{margin:-6px 0 12px}
   .cell .saiu{display:none}
   /* o código do prontuário ficava em cima do nome: menor, e o nome desce para dar lugar a ele */
   .cell .cod{font-size:7px; top:1px; right:2px; letter-spacing:0}
+  .cell .pgm{width:7px; height:7px; right:3px; bottom:3px; box-shadow:0 0 0 1.5px #fff}
   .cell:has(.cod){justify-content:flex-end; padding-bottom:3px}
   .cell.reservado .nm, .cell.reservado .lab, .cell.divulgado .nm{display:none}
   .cell.divulgado .lab{font-size:8px}
@@ -790,6 +828,12 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <span><i style="background:var(--t-falta-bg); border-color:var(--t-falta-bar)"></i>Faltou</span>
       <span><i style="background:var(--devendo); border-color:var(--devendo)"></i>Tarja à direita: pagamento vencido</span>
       <span class="dica">Clique no paciente para marcar a sessão como realizada, falta ou remarcada. Arraste o nome de um paciente para outro horário para remarcar. No canto, o código do prontuário.</span>
+    </div>
+    <!-- pagamento de cada sessão (06/10/2026), separado da presença -->
+    <div class="leg-pag" aria-label="Legenda do pagamento">
+      <span><i style="background:#3ccf7e"></i>Paga</span>
+      <span><i style="background:#e5352c"></i>Em aberto: já passou e não está paga</span>
+      <span class="dica">A bolinha sai do saldo de cada paciente, que paga da sessão mais antiga para a mais nova. Sessão futura sem bolinha ainda não foi paga, o que é normal.</span>
     </div>
   </section>
 
@@ -1570,6 +1614,8 @@ function sessoesDoDia(data, comCanceladas){
 }
 
 /* ---------------- render: semana ---------------- */
+var ESTADO_DA_CLASSE = {"sessao":"sessao", "sessao realizada":"realizada", "falta":"falta"};
+var TEXTO_PAGAMENTO_SESSAO = {paga:"Paga", aberta:"Em aberto: já passou e não está paga"};
 function renderSemana(){
   var grade = document.getElementById("grade");
   grade.innerHTML = "";
@@ -1613,8 +1659,14 @@ function renderSemana(){
                     (info.paciente && info.paciente.codigo ? '<span class="cod">'+esc(info.paciente.codigo)+'</span>' : "");
       /* tarja na borda direita quando o paciente daquela sessão está com pagamento vencido */
       if(info.classe==="sessao" && info.paciente && mapaDeAtraso()[info.paciente.id]) b.classList.add("devendo");
+      /* o pagamento da sessão, numa marca própria no canto de baixo (06/10/2026): a cor da célula
+         continua dizendo se ela aconteceu; a bolinha diz se está paga, pela conta do saldo */
+      var pgs = info.paciente ? pagamentoDaSessao(info.paciente, data, hora, ESTADO_DA_CLASSE[info.classe] || "") : "";
+      if(pgs) b.insertAdjacentHTML("beforeend", '<span class="pgm pgm-'+pgs+'" aria-hidden="true"></span>');
       if(info.aria) b.title = info.aria;
+      if(pgs) b.title = (b.title ? b.title + ". " : "") + TEXTO_PAGAMENTO_SESSAO[pgs];
       b.setAttribute("aria-label", DIAS[dia]+" "+hora+"h: "+(info.aria || (info.nome+" "+(info.saiu ? "no lugar de "+info.saiu+", " : "")+info.etiqueta).trim() || "livre") +
+        (pgs ? ", " + TEXTO_PAGAMENTO_SESSAO[pgs].toLowerCase() : "") +
         (info.paciente && mapaDeAtraso()[info.paciente.id] ? " (pagamento vencido)" : ""));
       b.dataset.dia = dia; b.dataset.hora = hora; b.dataset.data = chaveData(data);
       b.addEventListener("click", abrirMenu);
@@ -1636,12 +1688,18 @@ function renderSemana(){
       }
       grade.appendChild(b);
 
-      if(info.classe==="sessao" || info.classe==="sessao realizada"){ sessoes++; receita += valorSessao(info.paciente); }
+      if(info.classe==="sessao" || info.classe==="sessao realizada") sessoes++;
       if(info.classe==="cortesia") sessoes++; /* acontece, ocupa a hora, mas não entra na receita */
       if(info.classe==="divulgado") divulgadosLivres++;
     }
   }
 
+  /* a receita da semana é a mesma conta do saldo (06/10/2026): cada sessão que cobra, no preço do
+     ciclo do dia dela. Antes ia no preço de hoje e deixava de fora a falta sem aviso, que cobra. */
+  for(var dd = 0; dd < 7; dd++){
+    var diaR = somaDias(semana, dd);
+    sessoesDoDia(diaR).forEach(function(s){ if(cobraSessao(s.estado)) receita += valorSessaoEm(s.paciente, chaveData(diaR)); });
+  }
   document.getElementById("s-sessoes").textContent = sessoes;
   document.getElementById("s-receita").textContent = moeda(receita);
   document.getElementById("s-divulgados").textContent = divulgadosLivres;
@@ -2481,7 +2539,7 @@ function reabrirFicha(texto){
   try{ if(idAtivo){ ini = ativo.selectionStart; fim = ativo.selectionEnd; } }catch(e){}
   f.fechar();
   if(novo){
-    abrirFicha(novo, f.foco());
+    abrirFicha(novo, f.foco(), f.aba && f.aba());
     var volta = idAtivo && document.getElementById(idAtivo);
     if(volta && fichaAberta && fichaAberta.fundo.contains(volta)){
       volta.focus({preventScroll:true});
@@ -2491,20 +2549,59 @@ function reabrirFicha(texto){
   }
 }
 document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "hidden" && fichaAberta) fichaAberta.gravarJa(); });
-function abrirFicha(p, foco){
+function abrirFicha(p, foco, aba){
   fecharMenu();
   if(fichaAberta) fichaAberta.fechar();
   var fundo = document.createElement("div");
   fundo.className = "overlay";
+  /* A ficha em três abas (06/10/2026, pedido dele: "está tudo muito bagunçado"). Antes eram seis
+     blocos empilhados: prontuário, pagamentos, extrato, sessões, formulação e o cadastro. Agora:
+     Pagamento (abre primeiro, com o Registrar em destaque), Prontuário (prontuário, contagem das
+     sessões e a Formulação de Caso) e Cadastro (nome, horário, Meet, como chegou). */
   fundo.innerHTML =
-    '<div class="modal">' +
+    '<div class="modal ficha">' +
       '<div class="fcab"><span class="ini grande" id="fi-ini"></span>' +
         '<div><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span></div></div>' +
-      '<div class="fipag pront" id="fi-pront"></div>' +
-      '<div class="fipag" id="fi-pag"></div>' +
-      '<div class="fipag" id="fi-ext"></div>' +
-      '<div class="fipag" id="fi-sess"></div>' +
-      '<div class="fipag" id="fi-form"></div>' +
+      '<div class="tabs fi-abas" role="tablist" aria-label="Partes da ficha">' +
+        '<button type="button" class="tab" role="tab" id="fi-aba-pagamento" data-fiaba="pagamento" aria-controls="fi-p-pagamento">Pagamento</button>' +
+        '<button type="button" class="tab" role="tab" id="fi-aba-prontuario" data-fiaba="prontuario" aria-controls="fi-p-prontuario">Prontuário</button>' +
+        '<button type="button" class="tab" role="tab" id="fi-aba-cadastro" data-fiaba="cadastro" aria-controls="fi-p-cadastro">Cadastro</button>' +
+      '</div>' +
+      '<div class="fi-aba" role="tabpanel" id="fi-p-pagamento" aria-labelledby="fi-aba-pagamento">' +
+        '<div class="fi-situ" id="fi-situ"></div>' +
+        '<div class="fipag fi-reg" id="fi-reg">' +
+          '<h3>Registrar pagamento</h3>' +
+          '<div class="fi-chips" id="fi-chips"></div>' +
+          '<div class="fi-reg-campos">' +
+            '<div class="field"><label for="fr-valor">Valor (R$)</label><input type="number" id="fr-valor" min="0" step="10" inputmode="decimal" value="'+p.valor+'"></div>' +
+            '<div class="field"><label for="fr-data">Quando pagou</label><input type="date" id="fr-data" value="'+chaveData(hoje0())+'"></div>' +
+            '<div class="field"><label for="fr-meio">Como pagou</label><select id="fr-meio">' +
+              Object.keys(MEIOS).map(function(k){ return opc(k, MEIOS[k], "pix"); }).join("") + '</select></div>' +
+          '</div>' +
+          '<div class="field"><label for="fr-obs">Observação (opcional)</label><input id="fr-obs" placeholder="ex.: adiantou o ciclo de novembro"></div>' +
+          '<p class="fi-previa" id="fr-previa" role="status"></p>' +
+          '<div class="fi-reg-botoes"><button class="btn primary" id="fr-registrar">Registrar pagamento</button>' +
+            '<span class="hint" id="fr-feito" role="status"></span></div>' +
+        '</div>' +
+        '<div class="fipag" id="fi-pag"></div>' +
+        '<details class="fipag fi-det" id="fi-ext-det"><summary>Extrato <span class="hint" id="fi-ext-resumo"></span></summary><div id="fi-ext"></div></details>' +
+        '<details class="fipag fi-det" id="fi-ciclo"><summary>Ciclo e valor <span class="hint" id="fi-ciclo-resumo"></span></summary>' +
+          '<div class="grid2" style="margin-top:10px">' +
+            '<div class="field"><label for="fi-cobranca">Cobrança</label><select id="fi-cobranca" data-campo="cobranca">' +
+              opc("mensal","Ciclo mensal",p.cobranca)+opc("quinzenal","Quinzenal",p.cobranca)+opc("avulsa","Por sessão",p.cobranca)+'</select></div>' +
+            '<div class="field"><label for="fi-valor">Valor (R$)</label>' +
+              '<input type="number" id="fi-valor" data-campo="valor" value="'+p.valor+'" min="0" step="10"><span class="hint" id="fi-sessao"></span></div>' +
+          '</div>' +
+          '<p class="hint" style="margin:0 0 8px">Mudar a cobrança ou o valor aqui corrige o ciclo atual, desde o começo dele. Para mudar só daqui em diante, abra um ciclo novo embaixo.</p>' +
+          '<div id="fi-ciclos"></div>' +
+        '</details>' +
+      '</div>' +
+      '<div class="fi-aba" role="tabpanel" id="fi-p-prontuario" aria-labelledby="fi-aba-prontuario" hidden>' +
+        '<div class="fipag pront" id="fi-pront"></div>' +
+        '<div class="fipag" id="fi-sess"></div>' +
+        '<div class="fipag" id="fi-form"></div>' +
+      '</div>' +
+      '<div class="fi-aba" role="tabpanel" id="fi-p-cadastro" aria-labelledby="fi-aba-cadastro" hidden>' +
       '<div class="grid2">' +
         '<div class="field"><label for="fi-nome">Nome na agenda</label>' +
           '<input id="fi-nome" data-campo="nome" value="'+esc(p.nome)+'"><span class="hint">É o que aparece na grade.</span></div>' +
@@ -2514,12 +2611,6 @@ function abrirFicha(p, foco){
       '<div class="grid2">' +
         '<div class="field"><label for="fi-freq">Frequência</label><select id="fi-freq" data-campo="freq">' +
           opc("semanal","Toda semana",p.freq)+opc("quinzenal","A cada duas semanas",p.freq)+'</select></div>' +
-        '<div class="field"><label for="fi-cobranca">Cobrança</label><select id="fi-cobranca" data-campo="cobranca">' +
-          opc("mensal","Ciclo mensal",p.cobranca)+opc("quinzenal","Quinzenal",p.cobranca)+opc("avulsa","Por sessão",p.cobranca)+'</select></div>' +
-      '</div>' +
-      '<div class="grid2">' +
-        '<div class="field"><label for="fi-valor">Valor (R$)</label>' +
-          '<input type="number" id="fi-valor" data-campo="valor" value="'+p.valor+'" min="0" step="10"><span class="hint" id="fi-sessao"></span></div>' +
         '<div class="field"><label for="fi-dia">Horário fixo</label>' +
           '<span style="display:flex; gap:8px">' +
             '<select id="fi-dia" data-campo="dia">'+DIAS.map(function(d,i){ return opc(i,d,p.dia); }).join("")+'</select>' +
@@ -2532,8 +2623,10 @@ function abrirFicha(p, foco){
         '<input id="fi-meet" data-campo="meet" value="'+esc(p.meet||"")+'" placeholder="cole aqui a sala fixa dele"></div>' +
       '<div class="field"><label for="fi-origem">Como chegou</label>' +
         '<select id="fi-origem">'+opcoesOrigem(p.codigo)+'</select><span class="hint">Alimenta a aba Marketing: quantos pacientes cada anúncio trouxe.</span></div>' +
-      '<div class="acoes"><button class="btn ghost" id="fi-remover">Remover da agenda</button>' +
-        '<button class="btn primary" id="fi-fechar">Pronto</button></div>' +
+      '<p class="hint">A cobrança e o valor ficam na aba Pagamento, em "Ciclo e valor".</p>' +
+      '<div class="acoes" style="justify-content:flex-start"><button class="btn ghost" id="fi-remover">Remover da agenda</button></div>' +
+      '</div>' +
+      '<div class="acoes"><button class="btn primary" id="fi-fechar">Pronto</button></div>' +
     '</div>';
   document.body.appendChild(fundo);
 
@@ -2542,23 +2635,87 @@ function abrirFicha(p, foco){
     document.getElementById("fi-titulo").textContent = p.nome;
     document.getElementById("fi-sub").textContent = p.codigo+" · "+DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h";
     document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
+    pintarSituacao();
+    pintarChips();
+    pintarPrevia();
     pintarProntuario();
     pintarPagamentos();
     pintarExtrato();
     pintarSessoes();
     pintarFormulacao();
   }
-  /* extrato e ciclos de pagamento (01/10/2026): cada sessão no preço do ciclo dela, cada
-     pagamento e o saldo; embaixo, os ciclos e o campo para abrir um novo com o valor que ele
-     combinar. Sem histórico carregado mostra só os ciclos. */
+  /* abas da ficha: Pagamento abre primeiro; quem chega pelo prontuário (foco) cai no Prontuário */
+  var abaAtual = "pagamento";
+  function mostrarAba(nome){
+    abaAtual = nome;
+    fundo.querySelectorAll("[data-fiaba]").forEach(function(t){ t.setAttribute("aria-selected", t.dataset.fiaba===nome ? "true" : "false"); t.tabIndex = t.dataset.fiaba===nome ? 0 : -1; });
+    fundo.querySelectorAll(".fi-aba").forEach(function(el){ el.hidden = el.id !== "fi-p-"+nome; });
+  }
+  fundo.querySelectorAll("[data-fiaba]").forEach(function(t){
+    t.addEventListener("click", function(){ mostrarAba(t.dataset.fiaba); });
+    t.addEventListener("keydown", function(e){
+      if(e.key!=="ArrowRight" && e.key!=="ArrowLeft") return;
+      var l = Array.prototype.slice.call(fundo.querySelectorAll("[data-fiaba]")), i = l.indexOf(t);
+      var alvo = l[(i + (e.key==="ArrowRight" ? 1 : l.length - 1)) % l.length];
+      mostrarAba(alvo.dataset.fiaba); alvo.focus(); e.preventDefault();
+    });
+  });
+  mostrarAba(aba || (foco ? "prontuario" : "pagamento"));
+
+  /* a situação do dinheiro numa frase, em cima de tudo */
+  function pintarSituacao(){
+    var s = situacaoPagamento(p), dv = devidoDe(p), el = document.getElementById("fi-situ"), t, classe;
+    if(dv && dv.exato > 0.005){
+      classe = "atraso";
+      t = "Deve " + moeda(dv.exato) + (s.venc ? ", desde a sessão de " + dataLonga(s.venc) : "") + ".";
+    } else if(s.venc){
+      classe = s.classe === "atraso" ? "atraso" : (s.classe === "atencao" ? "atencao" : "ok");
+      t = (dv ? (dv.exato < -0.005 ? "Em dia, com " + textoDevido(p).texto + ". " : "Em dia. ") : "") +
+        "O próximo pagamento vence na sessão de " + dataLonga(s.venc) + ".";
+      if(!dv) t += " (Paciente sem histórico: a conta conhece só os pagamentos dos últimos meses.)";
+    } else if(!dv){
+      classe = "sem"; t = "Paciente sem histórico de pagamentos no app: não dá para saber se ficou alguma sessão para trás. Confira no extrato do banco.";
+    } else {
+      classe = "sem"; t = s.texto + ".";
+    }
+    el.className = "fi-situ " + classe;
+    el.textContent = t;
+  }
+  /* atalhos de valor: o ciclo dele e uma sessão do ciclo; o campo continua livre para outro valor */
+  function pintarChips(){
+    var vs = valorSessao(p), el = document.getElementById("fi-chips"), l = [];
+    if(p.cobranca !== "avulsa") l.push([p.valor, rotuloCobranca(p) + " · " + moeda(p.valor)]);
+    l.push([vs, "Uma sessão · " + moeda(vs)]);
+    el.innerHTML = l.map(function(x){ return '<button type="button" class="btn sm ghost" data-fvalor="'+x[0]+'">'+esc(x[1])+'</button>'; }).join("");
+    el.querySelectorAll("[data-fvalor]").forEach(function(b){
+      b.addEventListener("click", function(){ document.getElementById("fr-valor").value = b.dataset.fvalor; pintarPrevia(); });
+    });
+  }
+  function pintarPrevia(){
+    var v = Number(document.getElementById("fr-valor").value), d = document.getElementById("fr-data").value || chaveData(hoje0());
+    document.getElementById("fr-previa").textContent = v > 0 ? textoPrevia(p, d, v) : "Digite o valor que ele pagou.";
+  }
+  ["fr-valor","fr-data"].forEach(function(id){ document.getElementById(id).addEventListener("input", pintarPrevia); });
+  document.getElementById("fr-registrar").addEventListener("click", function(){
+    var v = Number(document.getElementById("fr-valor").value), d = document.getElementById("fr-data").value;
+    var feito = document.getElementById("fr-feito");
+    if(!(v > 0)){ feito.textContent = "Falta o valor."; return; }
+    if(!d){ feito.textContent = "Falta a data."; return; }
+    if(!registrarPagamento(p.id, d, v, document.getElementById("fr-meio").value, document.getElementById("fr-obs").value.trim())) return;
+    document.getElementById("fr-obs").value = "";
+    document.getElementById("fr-valor").value = p.valor;
+    resumo();
+    var venc = proximoVencimento(p);
+    feito.textContent = "Registrado: " + moeda(v) + " em " + dataLonga(deISO(d)) + "." + (venc ? " Próximo pagamento na sessão de " + dataLonga(venc) + "." : "");
+  });
+  /* extrato (01/10/2026) e ciclos: cada sessão no preço do ciclo dela, cada pagamento e o saldo.
+     Fica fechado; o resumo do saldo aparece no título. */
   var extratoInteiro = false;
   function pintarExtrato(){
     var el = document.getElementById("fi-ext");
-    var ext = extratoDe(p), h = '<div class="topo"><h3>Extrato</h3>';
+    var ext = extratoDe(p), h = "";
+    document.getElementById("fi-ext-resumo").textContent = ext ? "· cobrado " + moeda(ext.cobrado) + " · pago " + moeda(ext.pago) : "";
     if(ext){
-      h += '<span class="sit '+(ext.saldo > 0.005 ? "atraso" : "ok")+'">'+
-        (ext.saldo > 0.005 ? "Deve "+moeda(ext.saldo) : (ext.saldo < -0.005 ? "Crédito de "+moeda(-ext.saldo) : "Em dia"))+'</span>' +
-        '<span class="hint">cobrado '+moeda(ext.cobrado)+' · pago '+moeda(ext.pago)+'</span></div>';
       var linhas = ext.linhas.slice().reverse();
       if(!extratoInteiro) linhas = linhas.slice(0, 8);
       h += '<div class="extrato">';
@@ -2573,9 +2730,16 @@ function abrirFicha(p, foco){
       if(ext.linhas.length > 8) h += '<button class="btn sm ghost" id="fi-ext-mais" style="margin-top:8px">'+(extratoInteiro ? "Mostrar só os últimos" : "Ver o extrato inteiro ("+ext.linhas.length+" linhas)")+'</button>';
       h += '<p class="hint" style="margin:8px 0 0">Sessões até '+dataLonga(deISO(p.historico.ate))+' vêm do prontuário; depois, da agenda.</p>';
     } else {
-      h += '<span class="hint">o histórico do prontuário ainda não foi carregado; a dívida segue a conta da planilha</span></div>';
+      h += '<p class="hint" style="margin:8px 0 0">O histórico do prontuário ainda não foi carregado; a dívida segue a conta da planilha.</p>';
     }
-    h += '<div class="topo" style="margin-top:12px"><h3>Ciclos de pagamento</h3><span class="hint">a sessão vale o preço do ciclo em que caiu</span></div>';
+    el.innerHTML = h;
+    var mais = document.getElementById("fi-ext-mais");
+    if(mais) mais.addEventListener("click", function(){ extratoInteiro = !extratoInteiro; pintarExtrato(); });
+    pintarCiclos();
+  }
+  function pintarCiclos(){
+    var el = document.getElementById("fi-ciclos"), h = "";
+    document.getElementById("fi-ciclo-resumo").textContent = "· " + rotuloCobranca(p).toLowerCase() + ", " + moeda(p.valor);
     ciclosDe(p).forEach(function(c){
       h += '<div class="recibo"><span>'+(c.inicio ? "desde "+dataLonga(deISO(c.inicio)) : "desde o início")+'</span>' +
         '<span class="meio">'+rotuloCiclo(c)+'</span>' +
@@ -2588,8 +2752,6 @@ function abrirFicha(p, foco){
       '<div class="field" style="margin:0"><label for="ci-valor">Valor combinado (R$)</label><input type="number" id="ci-valor" min="0" step="10" value="'+p.valor+'" style="width:120px"></div>' +
       '<button class="btn sm" id="ci-abrir">Abrir ciclo</button></div>';
     el.innerHTML = h;
-    var mais = document.getElementById("fi-ext-mais");
-    if(mais) mais.addEventListener("click", function(){ extratoInteiro = !extratoInteiro; pintarExtrato(); });
     document.getElementById("ci-abrir").addEventListener("click", function(){
       var ini = document.getElementById("ci-inicio").value, valor = Number(document.getElementById("ci-valor").value);
       if(!ini || !(valor > 0)){ alert("Preencha a data de início e o valor combinado."); return; }
@@ -2816,34 +2978,26 @@ function abrirFicha(p, foco){
       (f.obs ? '<p class="obsform">'+esc(f.obs)+'</p>' : "") +
       '<p class="obsform faint">A planilha continua dona deste conteúdo; aqui é só espelho.</p>';
   }
-  /* o histórico do dinheiro dele fica na ficha, junto com o botão de registrar */
+  /* os últimos pagamentos dele, cada um com o apagar (o registrar fica em cima, em destaque) */
   function pintarPagamentos(){
-    var s = situacaoPagamento(p);
-    var lista = pagamentosDe(p.id).slice(0,5);
-    var h = '<div class="topo"><h3>Pagamentos</h3><span class="sit '+s.classe+'">'+esc(s.texto)+'</span>' +
-      '<button class="btn sm" id="fi-pagar" style="margin-left:auto">Recebi hoje</button></div>' +
-      '<div class="duas">' +
-        '<span>Último: <b>'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+" · "+moeda(s.ultimo.valor) : "nenhum")+'</b></span>' +
-        '<span>Próximo: <b>'+(s.venc ? dataLonga(s.venc) : "—")+'</b></span>' +
-        '<span>'+rotuloCobranca(p)+': <b>'+moeda(p.valor)+'</b></span>' +
-      '</div>';
-    var dv = textoDevido(p);
-    h += '<p style="margin:8px 0 0"><span class="sit '+dv.classe+'">'+esc(dv.texto.charAt(0).toUpperCase()+dv.texto.slice(1))+'</span> <span class="hint">'+esc(dv.titulo)+'</span></p>';
-    if(lista.length){
-      h += '<div style="margin-top:8px">';
-      lista.forEach(function(g){
-        h += '<div class="recibo"><span>'+dataLonga(deISO(g.data))+'</span>' +
-             '<span class="meio">'+esc(MEIOS[g.meio]||g.meio||"")+'</span>' +
-             (g.obs ? '<span class="hint">'+esc(g.obs)+'</span>' : "") +
-             '<span class="v">'+moeda(g.valor)+'</span></div>';
-      });
-      h += '</div>';
-    }
+    var todos = pagamentosDe(p.id), lista = todos.slice(0,5);
+    var h = '<div class="topo"><h3>Últimos pagamentos</h3>' + (todos.length > 5 ? '<span class="hint">os 5 mais recentes de '+todos.length+'; todos estão na aba Pagamentos</span>' : "") + '</div>';
+    if(!lista.length) h += '<p class="hint" style="margin:0">Nenhum pagamento registrado.</p>';
+    lista.forEach(function(g){
+      h += '<div class="recibo"><span>'+dataLonga(deISO(g.data))+'</span>' +
+           (g.meio ? '<span class="meio">'+esc(MEIOS[g.meio]||g.meio)+'</span>' : "") +
+           (g.obs ? '<span class="hint">'+esc(g.obs)+'</span>' : "") +
+           '<span class="v">'+moeda(g.valor)+'</span>' +
+           '<button class="apagar" data-fapagar="'+esc(g.id)+'" aria-label="Apagar o pagamento de '+esc(dataLonga(deISO(g.data)))+'">apagar</button></div>';
+    });
     var caixa = document.getElementById("fi-pag");
     caixa.innerHTML = h;
-    document.getElementById("fi-pagar").addEventListener("click", function(){
-      registrarPagamento(p.id, chaveData(hoje0()), p.valor, "pix", "");
-      pintarPagamentos();
+    caixa.querySelectorAll("[data-fapagar]").forEach(function(b){
+      b.addEventListener("click", function(){
+        if(!confirm("Apagar este pagamento? Ele sai da conta e o vencimento volta ao que era antes.")) return;
+        dados.pagamentos = dados.pagamentos.filter(function(g){ return g.id!==b.dataset.fapagar; });
+        salvar(); renderTudo(); resumo();
+      });
     });
   }
   resumo();
@@ -2910,7 +3064,7 @@ function abrirFicha(p, foco){
     if(esperaSalvar){ clearTimeout(esperaSalvar); esperaSalvar = null; salvar(); }
     if(esperaCampo){ clearTimeout(esperaCampo); esperaCampo = null; salvar(); renderTudo(); }
   }
-  fichaAberta = { p:p, fundo:fundo, fechar:fechar, gravarJa:gravarJa, foco:function(){ return abertoPront; } };
+  fichaAberta = { p:p, fundo:fundo, fechar:fechar, gravarJa:gravarJa, foco:function(){ return abertoPront; }, aba:function(){ return abaAtual; } };
   var devolverFoco = janela(fundo, fechar);
   fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
   document.getElementById("fi-fechar").addEventListener("click", fechar);
@@ -3141,6 +3295,72 @@ function calcularVencimento(p){
   });
   return fim && fim <= somaDias(hoje0(), 400) ? fim : null;
 }
+/* Pagamento de cada sessão (06/10/2026). Se a sessão aconteceu e se ela está paga são duas
+   perguntas diferentes: a cor da célula responde a primeira, e esta conta, a segunda. Nada aqui
+   é marcado à mão: o saldo paga sempre da sessão mais antiga para a mais nova, então tudo o que
+   vem antes do vencimento está pago e o que vem do vencimento em diante não. Devolve "paga",
+   "aberta" (já passou, cobra e o saldo não cobre) ou "" (futura ainda não paga, o normal; ou
+   sessão que não cobra). Sem base para a conta da dívida (paciente criado direto no app, sem
+   histórico nem planilha), o app não sabe o que ficou para trás nem se o dinheiro novo foi para
+   uma sessão antiga: não marca nenhuma sessão (conferência de 06/10/2026: antes quem não pagava
+   havia mais de 6 meses aparecia com todas as sessões futuras pagas). */
+function pagamentoDaSessao(p, data, hora, estado){
+  if(!cobraSessao(estado) || !devidoDe(p)) return "";
+  var v = proximoVencimento(p), passou = jaPassou(data, hora);
+  if(!v || data < v) return "paga";
+  return passou ? "aberta" : "";
+}
+/* Que sessões um pagamento novo pagaria, antes de ele salvar (06/10/2026). A conta é a mesma do
+   saldo: o pagamento entra de mentira, o app vê onde o vencimento estava e para onde vai, e tira o
+   pagamento de novo. Nada é gravado. As sessões que cobram entre um e outro são as que esse valor paga. */
+function previaPagamento(p, dataISO, valor){
+  var antes = proximoVencimento(p), dvAntes = devidoDe(p);
+  var falso = {id:"previa", pacienteId:p.id, nomePlanilha:"", data:dataISO, valor:Number(valor)||0, meio:"pix", obs:"", receita:"Prática Clínica."};
+  var depois, dvDepois;
+  dados.pagamentos.push(falso);
+  vencCache = null; devidoCache = null;
+  try { depois = calcularVencimento(p); dvDepois = devidoDe(p); }
+  finally {
+    var i = dados.pagamentos.indexOf(falso);
+    if(i >= 0) dados.pagamentos.splice(i, 1);
+    vencCache = null; devidoCache = null;
+  }
+  var pagas = [];
+  if(antes){
+    var l = sessoesQueCobram(p, antes, 60, false);
+    for(var k = 0; k < l.length && (!depois || l[k] < depois); k++) pagas.push(l[k]);
+  }
+  return {antes:antes, depois:depois, pagas:pagas, devidoAntes:dvAntes, devidoDepois:dvDepois};
+}
+/* a frase da prévia, para o registrar da ficha */
+function textoPrevia(p, dataISO, valor){
+  if(!(Number(valor) > 0)) return "";
+  /* sem base, a conta recomeça no pagamento novo e esquece o que ficou para trás (decisão 5, com o
+     Matheus): listar datas diria que o valor paga sessões que ele não paga. Só a conta em reais. */
+  if(!devidoDe(p)){
+    var vs0 = valorSessaoEm(p, dataISO), n0 = vs0 > 0 ? Math.floor(Number(valor) / vs0 + 1e-6) : 0;
+    var sobra0 = Math.round((Number(valor) - n0 * vs0) * 100) / 100;
+    return (vs0 > 0 ? moeda(valor) + (n0 > 0 ? " equivale a " + plural(n0, "sessão", "sessões") + " de " + moeda(vs0) + (sobra0 > 0.005 ? " e sobram " + moeda(sobra0) : "")
+      : " é menos que uma sessão de " + moeda(vs0)) + ". " : "") +
+      "Este paciente não tem histórico de pagamentos no app, então não dá para dizer quais sessões esse valor paga nem se ficou alguma para trás.";
+  }
+  var pr = previaPagamento(p, dataISO, valor), n = pr.pagas.length, partes = [];
+  if(!pr.antes) return "Não há sessão sem pagar na agenda. " + moeda(valor) + " fica de crédito.";
+  var datas = pr.pagas.slice(0, 6).map(dataCurta);
+  if(n > 6) datas.push("mais " + (n - 6));
+  if(n) partes.push(moeda(valor) + " paga " + plural(n, "sessão", "sessões") + ": " +
+    (datas.length > 1 ? datas.slice(0, -1).join(", ") + " e " + datas[datas.length - 1] : datas[0]) + ".");
+  else partes.push(moeda(valor) + " não chega a pagar uma sessão inteira.");
+  var d = pr.devidoDepois;
+  if(d && d.exato > 0.005) partes.push("Continua devendo " + moeda(d.exato) + ".");
+  else if(d && d.exato < -0.005){
+    var vs = valorSessao(p), resto = vs > 0 ? Math.round(((-d.exato) % vs) * 100) / 100 : 0;
+    if(resto > 0.005 && vs - resto > 0.005) partes.push("Sobram " + moeda(resto) + " de crédito para a próxima.");
+  }
+  if(pr.depois) partes.push("Próximo pagamento: na sessão de " + dataLonga(pr.depois) + ".");
+  else if(n) partes.push("Fica pago além do que a agenda mostra.");
+  return partes.join(" ");
+}
 /* peso ordena a tabela: atraso na frente, em dia no fim */
 function situacaoPagamento(p){
   var u = ultimoPagamento(p);
@@ -3203,10 +3423,20 @@ function plural(n, um, varios){ return String(n).replace(".", ",") + " " + (Math
 function textoDevido(p){
   var d = devidoDe(p);
   if(!d) return {classe:"sem", texto:"sem base", titulo:"Leia a planilha uma vez para o app saber quantas sessões já foram cobradas."};
-  var titulo = "Planilha até " + dataCurta(deISO(d.base)) + ", mais " + plural(d.depois, "sessão", "sessões") + " da agenda desde então; já pagou " + moeda(d.pago) + "." +
+  var titulo = d.extrato ? "Sessões do prontuário até " + dataCurta(deISO(d.base)) + " e da agenda depois, cada uma no preço do ciclo dela; já pagou " + moeda(d.pago) + "." :
+    "Planilha até " + dataCurta(deISO(d.base)) + ", mais " + plural(d.depois, "sessão", "sessões") + " da agenda desde então; já pagou " + moeda(d.pago) + "." +
     (d.valor > 0.5 && Math.abs(d.valor - d.exato) > 0.5 ? " A diferença exata é " + moeda(d.exato) + "." : "");
-  if(d.valor > 0.5) return {classe:"atraso", texto:"deve " + plural(d.sessoes, "sessão", "sessões") + " · " + moeda(d.valor), titulo:titulo};
-  if(d.valor < -0.5) return {classe:"ok", texto:plural(-d.sessoes, "sessão adiantada", "sessões adiantadas"), titulo:titulo};
+  /* em reais exatos (06/10/2026): antes quem devia R$ 25 aparecia "deve 1 sessão · R$ 125" e quem
+     tinha R$ 25 de crédito, "nada a pagar". Valor que fecha sessões inteiras continua com o mesmo texto. */
+  var vs = valorSessao(p), inteiro = Math.abs(d.valor - d.exato) <= 0.5;
+  if(d.exato > 0.005) return {classe:"atraso", titulo:titulo, texto: inteiro
+    ? "deve " + plural(d.sessoes, "sessão", "sessões") + " · " + moeda(d.valor)
+    : "deve " + moeda(d.exato)};
+  if(d.exato < -0.005){
+    if(inteiro) return {classe:"ok", texto:plural(-d.sessoes, "sessão adiantada", "sessões adiantadas"), titulo:titulo};
+    var resto = Math.round((-d.exato - (-d.sessoes) * vs) * 100) / 100;
+    return {classe:"ok", titulo:titulo, texto:(d.sessoes < 0 ? plural(-d.sessoes, "sessão adiantada", "sessões adiantadas") + " e " : "") + moeda(resto) + " de crédito"};
+  }
   return {classe:"ok", texto:"nada a pagar", titulo:titulo};
 }
 
