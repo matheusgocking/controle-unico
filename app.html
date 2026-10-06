@@ -1679,6 +1679,8 @@ document.getElementById("exportar").onclick = () => {
     abas.push({ nome:"Anúncios", linhas:[["Post","Começou","Terminou","Colocado","Gasto","Visualizações","Alcance","Conversas","Seguidores","Métricas lidas em","Pacientes"],
       ...(w.dados.anuncios || []).map(a => [a.post || "-", vazio(a.inicio), vazio(a.fim), vazio(a.colocado), vazio(a.gasto), vazio(a.views), vazio(a.alcance), vazio(a.conversas), vazio(a.seguidores), vazio(a.lidoEm),
         Object.keys(origens).filter(c => origens[c].anuncio === a.id).join(", ") || "-"])] });
+    // pacientes, ciclos e sessões, para a Clínica também ter a volta em planilha (05/10/2026)
+    if (typeof w.abasParaPlanilha === "function") abas.push(...w.abasParaPlanilha());
   }
   baixar(xlsx(abas), `Controle Único ${m}.xlsx`);
 };
