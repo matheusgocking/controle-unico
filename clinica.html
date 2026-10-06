@@ -441,6 +441,21 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .fcab{display:flex; align-items:center; gap:12px; margin-bottom:16px}
 .fcab h2{font-size:19px}
 .fcab .sub{color:var(--muted); font-size:12.5px; display:block; margin-top:2px}
+.fcab-nome{min-width:0; flex:1 1 0}
+/* o total de sessões, à direita do nome: número grande, legenda curta embaixo */
+.fi-total{flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; text-align:right; background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:12px; padding:6px 12px; line-height:1.15; cursor:default}
+.fi-total .n{font-family:var(--font); font-size:24px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums}
+.fi-total .rot{font-size:11.5px; color:var(--text); font-weight:600}
+.fi-total .mais{font-size:10.5px; color:var(--muted); margin-top:1px}
+.fi-total:empty{display:none}
+/* celular: o total desce para uma faixa inteira embaixo do nome, numa linha só */
+@media (max-width:540px){
+  .fcab{flex-wrap:wrap}
+  .fi-total{flex:1 1 100%; flex-direction:row; flex-wrap:wrap; align-items:baseline; justify-content:flex-start; gap:2px 8px; text-align:left; padding:7px 12px}
+  .fi-total .n{font-size:22px}
+  .fi-total .rot{font-size:13px}
+  .fi-total .mais{font-size:12px; margin-top:0}
+}
 
 /* ---------- painel ---------- */
 /* barras desenhadas em CSS: sem biblioteca, e a altura vem em px calculada no script,
@@ -2754,7 +2769,8 @@ function abrirFicha(p, foco, aba){
   fundo.innerHTML =
     '<div class="modal ficha">' +
       '<div class="fcab"><span class="ini grande" id="fi-ini"></span>' +
-        '<div><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span></div></div>' +
+        '<div class="fcab-nome"><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span></div>' +
+        '<div class="fi-total" id="fi-total"></div></div>' +
       '<div class="tabs fi-abas" role="tablist" aria-label="Partes da ficha">' +
         '<button type="button" class="tab" role="tab" id="fi-aba-pagamento" data-fiaba="pagamento" aria-controls="fi-p-pagamento">Pagamento</button>' +
         '<button type="button" class="tab" role="tab" id="fi-aba-prontuario" data-fiaba="prontuario" aria-controls="fi-p-prontuario">Prontuário</button>' +
@@ -2827,6 +2843,7 @@ function abrirFicha(p, foco, aba){
     document.getElementById("fi-ini").textContent = inicial1(p);
     document.getElementById("fi-titulo").textContent = p.nome;
     document.getElementById("fi-sub").textContent = p.codigo+" · "+DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h";
+    pintarTotal();
     document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
     pintarSituacao();
     pintarChips();
@@ -2855,6 +2872,19 @@ function abrirFicha(p, foco, aba){
   });
   mostrarAba(aba || (foco ? "prontuario" : "pagamento"));
 
+  /* o total de sessões no alto da ficha, à vista em qualquer aba (pedido dele, 06/10/2026).
+     Só mostra: não entra em saldo, vencimento nem previsto. */
+  function pintarTotal(){
+    var t = totalSessoesDe(p), el = document.getElementById("fi-total"), extra = [];
+    if(t.faltas) extra.push(plural(t.faltas, "falta cobrada", "faltas cobradas"));
+    if(t.aConfirmar) extra.push(t.aConfirmar + " a confirmar");
+    el.innerHTML = '<span class="n">'+t.feitas+'</span>' +
+      '<span class="rot">'+(t.feitas===1 ? "sessão feita" : "sessões feitas")+'</span>' +
+      (extra.length ? '<span class="mais">'+extra.join(" · ")+'</span>' : "");
+    el.title = (t.primeira ? "Primeira sessão em "+dataLonga(t.primeira)+". " : "") +
+      (t.historicoAte ? "Prontuário até "+dataLonga(deISO(t.historicoAte))+" e agenda depois." : "Pela agenda, desde "+dataLonga(t.desde)+".");
+    if(t.primeira) document.getElementById("fi-sub").textContent += " · desde "+dataLonga(t.primeira);
+  }
   /* a situação do dinheiro numa frase, em cima de tudo */
   function pintarSituacao(){
     var s = situacaoPagamento(p), dv = devidoDe(p), el = document.getElementById("fi-situ"), t, classe;
@@ -3997,6 +4027,32 @@ function faltaMarcar(){
   return falta;
 }
 /* conta as sessões de um paciente entre duas datas, pelo que a agenda registra */
+/* Total de sessões do paciente (06/10/2026): as do prontuário (histórico) até a data dele e,
+   dali em diante, as da agenda. "Feitas" são as realizadas e as cortesias; a falta sem aviso
+   fica à parte; a sessão que já passou sem o check fica "a confirmar"; "não haverá" e
+   remarcada não contam. Sem histórico, conta só a agenda desde o início do registro. */
+function totalSessoesDe(p){
+  var hoje = hoje0(), h = p.historico && p.historico.ate ? p.historico : null;
+  var r = {feitas:0, faltas:0, aConfirmar:0, primeira:null, historicoAte:h ? h.ate : "", desde:null};
+  if(h){
+    (h.sessoes || []).forEach(function(s){
+      if(s.situacao==="realizada") r.feitas++;
+      else if(s.situacao==="falta") r.faltas++;
+      else return;
+      if(!r.primeira || s.data < chaveData(r.primeira)) r.primeira = deISO(s.data);
+    });
+    r.desde = somaDias(deISO(h.ate), 1);
+  } else {
+    r.desde = mesDesde();
+    if(p.inicio && deISO(p.inicio) > r.desde) r.desde = deISO(p.inicio);
+  }
+  if(r.desde <= hoje){
+    var c = contarSessoesDe(p, r.desde, hoje);
+    r.feitas += c.realizadas + c.cortesias; r.faltas += c.faltas; r.aConfirmar += c.aConfirmar;
+  }
+  if(!r.primeira && p.inicio) r.primeira = deISO(p.inicio);
+  return r;
+}
 function contarSessoesDe(p, de, ate){
   var c = {realizadas:0, aConfirmar:0, previstas:0, faltas:0, remarcadas:0, canceladas:0, cortesias:0, naoCobrado:0};
   var hoje = hoje0();
