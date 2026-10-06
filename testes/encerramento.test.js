@@ -151,3 +151,39 @@ test("Ler a planilha: quem estava encerrado e voltou lá com linha nova ganha a 
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Ler a planilha: quem voltou pelo app não é encerrado de novo pelo fim antigo da planilha", async () => {
+  const { ctx, p, erros } = await abrir(1280, c => { c.pacientes.find(x => x.id === "pB").encerramentos = [{ data:"2026-09-15", tipo:"suspenso", origem:"app", retorno:"2026-09-29" }]; });
+  const r = await p.evaluate(() => {
+    const antes = { dev:JSON.stringify(devidoDe(dados.pacientes.find(x => x.id === "pB"))), d06:(pacienteEm(2, 9, deISO("2026-10-06")) || {}).id || null };
+    const fica = dados.pacientes.filter(x => x.id !== "pB").map(x => ({ codigo:x.codigo, nome:x.nome, freq:x.freq, cobranca:x.cobranca, valor:x.valor, dia:x.dia, hora:x.hora, status:"Ativo." }));
+    const leitura = { pacientes:fica, blocos:dados.blocos, avisos:[], baseData:"2026-10-07",
+      arquivados:[{ codigo:"T002", nome:"Paciente Avulso Completo", status:"Suspenso.", inicio:"2026-07-01", fim:"2026-09-15", sessoes:10, ciclos:1, linhas:[] }] };
+    const cmp = compararLeitura(leitura);
+    aplicarLeitura(leitura); devidoCache = null; vencCache = null;
+    const pb = dados.pacientes.find(x => x.id === "pB");
+    return { antes, encerram:cmp.encerram.length, sairam:cmp.sairam.length, enc:pb.encerramentos, hoje:encerradoHoje(pb),
+      d06:(pacienteEm(2, 9, deISO("2026-10-06")) || {}).id || null, dev:JSON.stringify(devidoDe(pb)), arquivado:dados.arquivados.some(a => a.codigo === "T002") };
+  });
+  assert.equal(r.encerram, 0); assert.equal(r.sairam, 0);
+  assert.deepEqual(r.enc, [{ data:"2026-09-15", tipo:"suspenso", origem:"app", retorno:"2026-09-29" }], "nenhum encerramento novo");
+  assert.equal(r.hoje, false);
+  assert.equal(r.d06, "pB", "continua na agenda depois da volta");
+  assert.equal(r.dev, r.antes.dev, "a dívida não muda");
+  assert.equal(r.arquivado, false);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Ler a planilha: fim da planilha depois da volta encerra de novo", async () => {
+  const { ctx, p, erros } = await abrir(1280, c => { c.pacientes.find(x => x.id === "pB").encerramentos = [{ data:"2026-09-01", tipo:"suspenso", origem:"app", retorno:"2026-09-08" }]; });
+  const r = await p.evaluate(() => {
+    const fica = dados.pacientes.filter(x => x.id !== "pB").map(x => ({ codigo:x.codigo, nome:x.nome, freq:x.freq, cobranca:x.cobranca, valor:x.valor, dia:x.dia, hora:x.hora, status:"Ativo." }));
+    aplicarLeitura({ pacientes:fica, blocos:dados.blocos, avisos:[], baseData:"2026-10-07",
+      arquivados:[{ codigo:"T002", nome:"X", status:"Inativo.", inicio:"2026-07-01", fim:"2026-09-29", sessoes:10, ciclos:1, linhas:[] }] });
+    return dados.pacientes.find(x => x.id === "pB").encerramentos.map(e => e.data + "|" + (e.retorno || ""));
+  });
+  assert.deepEqual(r, ["2026-09-01|2026-09-08", "2026-09-29|"]);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

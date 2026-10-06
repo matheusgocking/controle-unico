@@ -5783,6 +5783,10 @@ function saidasDaLeitura(leitura, porCodigo){
     /* encerrado aqui no app: fica, mesmo que a planilha ainda não diga nada */
     if(tratamentoDe(antigo) && tratamentoDe(antigo).encerrado){ l.push({antigo:antigo, tipo:"", fim:"", status:antigo.status, linhas:a && a.linhas}); return; }
     if(!a || !a.fim) return;
+    /* voltou pelo app depois do Fim que a planilha ainda mostra: a planilha está atrasada, e o fim
+       antigo não pode encerrá-lo de novo (conferência de 06/10/2026). Fica como está no app. */
+    var volta = encerramentosDe(antigo).reduce(function(m, e){ return e.retorno && e.retorno > m ? e.retorno : m; }, "");
+    if(volta && a.fim <= volta){ l.push({antigo:antigo, tipo:"", fim:"", status:"", linhas:a.linhas}); return; }
     var st = semAcento(a.status || ""), tipo = st.indexOf("alta") === 0 ? "alta" : (st.indexOf("inativo") === 0 ? "inativo" : (st.indexOf("suspenso") === 0 ? "suspenso" : ""));
     if(tipo) l.push({antigo:porCodigo[cod], tipo:tipo, fim:a.fim, status:a.status, linhas:a.linhas});
   });
