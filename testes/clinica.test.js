@@ -303,7 +303,7 @@ test("Clínica: no mensal, um pagamento avulso soma ao que o mês já pagou", as
   // o mês pago cobre 28/09, 05, 12 e 19/10; a sessão avulsa cobre 26/10; vence em 02/11
   assert.equal(r.soMes, "2026-10-26");
   assert.equal(r.comAvulso, "2026-11-02");
-  assert.match(r.dica, /R\$ 175 paga 1 sessão de R\$ 175/);
+  assert.match(r.dica, /R\$ 175 equivale a 1 sessão de R\$ 175/);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
