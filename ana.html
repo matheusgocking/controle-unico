@@ -462,10 +462,10 @@ function telaMes(){
   </div>
   <section class="painel" style="margin-top:18px"><h2>Entra e sai, mês a mês<span class="dir">toque num mês para abrir</span></h2>
     ${GraficoMeses.desenhar(GraficoMeses.meses(12, k).map(m => ({ k:m, entrou:entradas(m).total, saiu:saidas(m).total })), { aberto:k, entrou:"Entra", saiu:"Sai" })}</section>
-  <section class="painel" style="margin-top:18px"><h2>Plantões feitos em ${nome}<span class="dir"><button class="b s" data-ir="plantoes">Ver plantões</button></span></h2>
+  <section class="painel" style="margin-top:18px"><h2>Plantões de ${nome}<span class="dir"><button class="b s" data-ir="plantoes">Ver plantões</button></span></h2>
     <div class="stats" style="margin:0">
       <div class="stat"><span>Plantões</span><b>${cp.n}</b><small>de ${cp.nTotal} marcados</small></div>
-      <div class="stat"><span>Valor feito</span><b>${dinheiro(cp.total)}</b><small>regulares e extras</small></div>
+      <div class="stat"><span>Valor dos plantões</span><b>${dinheiro(cp.total)}</b><small>feitos e a fazer, sem os desmarcados</small></div>
       <div class="stat"><span>Não vai fazer</span><b>${dinheiro(cp.naoVai)}</b><small>regulares desmarcados</small></div>
       <div class="stat"><span>Extras</span><b>${dinheiro(cp.extras)}</b><small>que vai fazer</small></div>
     </div></section>`;
@@ -517,7 +517,7 @@ function telaPlantoes(){
       <div class="stat"><span>Regulares</span><b>${dinheiro(cp.potencial)}</b><small>se fizer todos</small></div>
       <div class="stat"><span>Não vai fazer</span><b>${dinheiro(cp.naoVai)}</b><small>regulares desmarcados</small></div>
       <div class="stat"><span>Extras</span><b>${dinheiro(cp.extras)}</b><small>que vai fazer</small></div>
-      <div class="stat"><span>Total do mês</span><b class="pos">${dinheiro(cp.total)}</b><small>regulares menos os que não vai, mais extras</small></div>
+      <div class="stat"><span>Valor dos plantões</span><b class="pos">${dinheiro(cp.total)}</b><small>regulares menos os que não vai, mais extras</small></div>
     </div>
     ${quando ? `<ul class="nota" style="margin:0 0 12px;padding-left:18px">${quando}</ul>` : ""}
     <div class="botoes-plantao">${form}${regras()}</div>
