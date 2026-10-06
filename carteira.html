@@ -262,6 +262,11 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
 @media (max-width:600px){ .wrap{ padding:14px 16px 44px; } .acoes{ margin-left:0; } .total{ font-size:36px; } .ocm{ display:none; } .diario li{ grid-template-columns:1fr; } }
 /* no celular a tabela de ativos rola dentro dela, sem empurrar a página para o lado; os filtros do Diário quebram linha (06/10/2026) */
 .rolaX{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+/* 06/10/2026: no celular "Em aberto" e "Retorno" ficavam fora da tela sem sinal; lá sai a coluna 24 h (fica no computador)
+   e a linha pequena embaixo do Em aberto pode quebrar, para a tabela caber na largura */
+@media (max-width:600px){ .rolaX table, .rolaX th{ font-size:12.5px; } .rolaX th, #ativos td{ padding-left:3px; padding-right:3px; } #ativos td small{ white-space:normal; }
+  /* se ainda assim não couber (celular estreito), uma sombra na borda mostra que a tabela rola para o lado */
+  .rolaX{ background:linear-gradient(to left, var(--surface) 30%, transparent) right / 24px 100% no-repeat local, radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.25), transparent) right / 12px 100% no-repeat scroll; } }
 @media (max-width:600px){ #filtroDiario{ display:flex; flex-wrap:wrap; max-width:100%; } #filtroDiario button{ flex:1 1 auto; } }
 @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 .nuvem{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin:0;opacity:.9}
@@ -285,6 +290,7 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
   #periodo button,.seg button{min-height:38px}
   .seg button{min-width:44px}
   #btnHistorico, #btnCsv{display:none}   /* tarefas de computador: refazer histórico e ler o CSV */
+  #drop{display:none}   /* não dá para arrastar arquivo no celular (06/10/2026) */
   input,select,textarea{font-size:16px}
 }
 </style>
@@ -379,7 +385,7 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
     </section>
     <section class="painel cheia" aria-label="Por onde o dinheiro passou"><h2>Por onde o dinheiro passou</h2>
       <div class="fluxo" id="fluxo"></div>
-      <div class="nota" style="margin-top:10px">Soma de todas as transferências desde 2021, pelo valor do dia de cada uma. Trocas, pools e tokens-golpe ficam de fora.</div>
+      <div class="nota" style="margin-top:10px">Soma de todas as transferências desde <span id="fluxoDesde">o início</span>, pelo valor do dia de cada uma. Trocas, pools e tokens-golpe ficam de fora.</div>
     </section>
   </div>
 
@@ -401,7 +407,7 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
         <span class="seg" id="agrupar"><button data-v="ativo" aria-pressed="true">Por ativo</button><button data-v="carteira">Por carteira</button></span>
       </span></h2>
       <div class="resumoAp" id="resumoAtivos"></div>
-      <div class="rolaX"><table><thead id="cabAtivos"><tr><th data-col="ativo">Ativo<span class="seta"></span></th><th class="ocm" data-col="q">Quantidade<span class="seta"></span></th><th class="ocm" data-col="avg">Preço médio<span class="seta"></span></th><th class="ocm" data-col="p">Preço<span class="seta"></span></th><th data-col="d1">24 h<span class="seta"></span></th><th data-col="v">Valor<span class="seta"></span></th><th data-col="res" title="O que você ganharia ou perderia vendendo esta moeda hoje, pelo preço médio">Em aberto<span class="seta"></span></th><th data-col="roi" title="Retorno sobre tudo o que a moeda custou, contando o que as vendas já renderam">Retorno<span class="seta"></span></th><th class="ocm" data-col="peso">Peso<span class="seta"></span></th></tr></thead><tbody id="ativos"></tbody></table></div>
+      <div class="rolaX"><table><thead id="cabAtivos"><tr><th data-col="ativo">Ativo<span class="seta"></span></th><th class="ocm" data-col="q">Quantidade<span class="seta"></span></th><th class="ocm" data-col="avg">Preço médio<span class="seta"></span></th><th class="ocm" data-col="p">Preço<span class="seta"></span></th><th class="ocm" data-col="d1">24 h<span class="seta"></span></th><th data-col="v">Valor<span class="seta"></span></th><th data-col="res" title="O que você ganharia ou perderia vendendo esta moeda hoje, pelo preço médio">Em aberto<span class="seta"></span></th><th data-col="roi" title="Retorno sobre tudo o que a moeda custou, contando o que as vendas já renderam">Retorno<span class="seta"></span></th><th class="ocm" data-col="peso">Peso<span class="seta"></span></th></tr></thead><tbody id="ativos"></tbody></table></div>
       <div class="nota" style="margin-top:8px">Preço médio e resultado contam desde que a moeda entrou na carteira, pelo preço daquele dia. Transferências entre as suas carteiras não mudam o preço médio. A coluna 24 h compara o preço de agora com o fechamento de ontem.</div>
     </section>
     <section class="painel cheia" aria-label="Quem mais rendeu">
@@ -1172,18 +1178,22 @@ function desenharGrafico(){
   grafico({ svg:'svg', dica:'dica', leg:null, S, modo:'series', series:est.series.filter(k => k === 'total' || temRede(k)), zoom:true });
 }
 // o mesmo gráfico serve à Visão geral (só patrimônio ou por rede) e à aba Aportes (patrimônio e total aportado)
+// no celular (06/10/2026) o desenho de 1000 de largura era espremido em ~330 px e os números dos eixos viravam letras de 4 px:
+// lá o viewBox fica com a largura real aproximada (340), com 3 datas em vez de 7
+const CELULAR = matchMedia('(max-width:700px)');
 function grafico(o){
-  const svg = document.getElementById(o.svg), W = 1000, H = 300, L = 84, R = 12, T = 12, B = 28;
+  const cel = CELULAR.matches, svg = document.getElementById(o.svg), W = cel ? 340 : 1000, H = 300, L = cel ? 68 : 84, R = 12, T = 12, B = 28;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const S = o.S, n = S.length;
   const leg = o.leg ? document.getElementById(o.leg) : { innerHTML:'' };
-  if(n < 2){ svg.innerHTML = `<text x="500" y="150" text-anchor="middle" fill="var(--faint)" font-size="14">O gráfico aparece quando o histórico terminar de ser montado.</text>`; leg.innerHTML = ''; return; }
+  if(n < 2){ svg.innerHTML = `<text x="${W/2}" y="150" text-anchor="middle" fill="var(--faint)" font-size="14">O gráfico aparece quando o histórico terminar de ser montado.</text>`; leg.innerHTML = ''; return; }
   const cv = (v, x) => est.moeda === 'USD' ? v / x.usd : v;
   const sr = o.series || [], valS = (k, x) => k === 'total' ? x.v : (x.r[k] || 0);
   const max = (o.modo === 'series' ? Math.max(...S.map(x => Math.max(0, ...sr.map(k => cv(valS(k, x), x))))) : Math.max(...S.map(x => Math.max(cv(x.v, x), o.aportes ? cv(x.a, x) : 0)))) * 1.1 || 1;
   const xs = i => L + (W - L - R) * i / (n - 1), ys = v => T + (H - T - B) * (1 - v / max);
   let h = '';
-  for(let g = 0; g <= 4; g++){ const v = max * g / 4, yy = T + (H - T - B) * (1 - g / 4); h += `<line class="grade" x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}"/><g class="eixo"><text x="${L-8}" y="${yy+4}" text-anchor="end">${(est.moeda === 'USD' ? 'US$ ' : 'R$ ') + (v >= 1000 ? (v/1000).toLocaleString('pt-BR', { maximumFractionDigits:1 }) + ' mil' : Math.round(v))}</text></g>`; }
-  const passos = 6;
+  for(let g = 0; g <= 4; g++){ const v = max * g / 4, yy = T + (H - T - B) * (1 - g / 4); h += `<line class="grade" x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}"/><g class="eixo v"><text x="${L-8}" y="${yy+4}" text-anchor="end">${(est.moeda === 'USD' ? 'US$ ' : 'R$ ') + (v >= 1000 ? (v/1000).toLocaleString('pt-BR', { maximumFractionDigits:1 }) + ' mil' : Math.round(v))}</text></g>`; }
+  const passos = cel ? 2 : 6;
   for(let k = 0; k <= passos; k++){ const i = Math.round((n - 1) * k / passos); h += `<g class="eixo"><text x="${xs(i)}" y="${H-8}" text-anchor="${k === 0 ? 'start' : k === passos ? 'end' : 'middle'}">${fmtDia(S[i].d)}</text></g>`; }
   if(o.modo === 'series'){
     for(const k of sr){
@@ -1218,7 +1228,7 @@ function grafico(o){
     const linhas = o.modo === 'series' ? sr.map(k => `<div><span>${k === 'total' ? 'Patrimônio' : REDES[k].nome}</span><b class="num v">${din(valS(k, x), x.usd)}</b></div>`).join('')
       : o.modo === 'linha' && !o.aportes ? `<div><span>Patrimônio</span><b class="num v">${din(x.v, x.usd)}</b></div>`
       : o.modo === 'linha'
-      ? `<div><span>Patrimônio</span><b class="num v">${din(x.v, x.usd)}</b></div><div><span>Aportado</span><b class="num v">${din(x.a, x.usd)}</b></div><div><span>Resultado</span><b class="num v ${sinal(x.v - x.a)}">${x.a ? pct(x.v / x.a - 1) : '—'}</b></div>` + (i && x.a - S[i-1].a >= 0.5 ? `<div><span>Aporte no dia</span><b class="num v">${din(x.a - S[i-1].a, x.usd)}</b></div>` : '')
+      ? `<div><span>Patrimônio</span><b class="num v">${din(x.v, x.usd)}</b></div><div><span>Aportado líquido</span><b class="num v">${din(x.a, x.usd)}</b></div><div><span>Resultado sobre o aportado líquido</span><b class="num v ${sinal(x.v - x.a)}">${x.a ? pct(x.v / x.a - 1) : '—'}</b></div>` + (i && x.a - S[i-1].a >= 0.5 ? `<div><span>Aporte no dia</span><b class="num v">${din(x.a - S[i-1].a, x.usd)}</b></div>` : '')
       : ORDEM.filter(r => x.r[r] >= 0.5).map(r => `<div><span>${REDES[r].nome}</span><b class="num v">${din(x.r[r], x.usd)}</b></div>`).join('');
     dica.innerHTML = `<div style="margin-bottom:4px"><b>${fmtDia(x.d)}</b></div>` + linhas;
     const px = xs(i) / W * bb.width; dica.style.left = Math.min(bb.width - 200, Math.max(0, px + 12)) + 'px'; dica.style.top = '10px'; dica.classList.add('on');
@@ -1238,7 +1248,8 @@ function desenharOnde(){
   const el = document.getElementById('onde'); const lin = linhasVivas(); const total = totalVivo();
   if(!lin.length){ el.innerHTML = '<p class="vazio">Buscando saldos…</p>'; return; }
   const por = {}; lin.forEach(x => por[x.rede] = (por[x.rede] || 0) + x.v);
-  const lista = Object.entries(por).sort((a, b) => b[1] - a[1]);
+  // só as redes com pelo menos R$ 1, como no "Patrimônio agora, em N lugares" do topo (06/10/2026: a rosca dizia 4 e o topo 3)
+  const lista = Object.entries(por).filter(([, v]) => v >= 1).sort((a, b) => b[1] - a[1]);
   const sel = est.ondeRede && por[est.ondeRede] ? est.ondeRede : null;
   const R0 = 68, C = 2 * Math.PI * R0; let acum = 0;
   // clicar numa fatia (ou na linha da legenda) mostra as moedas daquela rede
@@ -1579,6 +1590,8 @@ function ligarGrafo(svg){
 function desenharMapaFluxo(){
   const el = document.getElementById('fluxo');
   if(!HIST){ el.innerHTML = '<p class="vazio">Aparece quando o histórico terminar de ser montado.</p>'; return; }
+  // a data do primeiro movimento, em vez de "2021" fixo no texto (06/10/2026)
+  document.getElementById('fluxoDesde').textContent = HIST.mov.length ? fmtData(HIST.mov.at(-1).t) : 'o início';
   const NOME = { banco:'Banco', fora:'Fora das suas carteiras' };
   const ar = {}, add = (grupo, a, b, v) => { if(!v || a === b) return; const k = grupo + a + '>' + b; const e = ar[k] || (ar[k] = { grupo, a, b, v:0, n:0 }); e.v += v; e.n++; };
   for(const m of HIST.mov){
@@ -1641,7 +1654,7 @@ function desenharAtivos(){
   const linha = x => {
     const baixa = liquidezBaixa(x.g, x.v);
     return `<tr><td><b>${esc(x.sim)}</b>${baixa ? '<span class="selo">baixa liquidez</span>' : ''}<small>${est.agrupar === 'ativo' ? [...x.redes].map(tag).join('') : esc(nomeDe(x.g))}</small></td>
-      <td class="num v ocm">${qtd(x.q)}</td><td class="num ocm">${x.avg != null ? din(x.avg) : '—'}</td><td class="num ocm">${din(x.p)}</td><td class="num ${x.d1 != null ? sinalPct(x.d1) : ''}">${x.d1 != null ? pct(x.d1) : '—'}</td><td class="num v">${din(x.v)}</td>
+      <td class="num v ocm">${qtd(x.q)}</td><td class="num ocm">${x.avg != null ? din(x.avg) : '—'}</td><td class="num ocm">${din(x.p)}</td><td class="num ocm ${x.d1 != null ? sinalPct(x.d1) : ''}">${x.d1 != null ? pct(x.d1) : '—'}</td><td class="num v">${din(x.v)}</td>
       <td class="num v ${sinal(x.res)}">${x.res != null ? din(x.res) + `<small>${pct(x.res / (x.avg * x.q))}${Math.abs(x.real) >= 1 ? ', vendido: ' + din(x.real) : ''}</small>` : '—'}</td>
       <td class="num ${x.roi != null ? sinalPct(x.roi) : ''}">${x.roi != null ? pct(x.roi) : '—'}</td>
       <td class="num ocm">${(total ? x.v / total * 100 : 0).toLocaleString('pt-BR', { maximumFractionDigits:1 })}%<span class="peso"><i style="width:${total ? x.v / total * 100 : 0}%"></i></span></td></tr>`;
@@ -1688,20 +1701,23 @@ function desenharPools(){
   const txtStatus = { ativa:'Ativa', presa:'Presa numa farm desativada', encerrada:'Encerrada' };
   let h = '<ul class="lista">' + ps.slice().sort((a, b) => ordem[a.status] - ordem[b.status] || b.abertura - a.abertura).map(p => {
     const parte = p.totalSupply ? p.lpTotal / p.totalSupply : 0, valor = parte * p.reserveUSD * usd;
-    const comp = parte && p.r0 ? `${qtd(parte * p.r0)} ${esc(p.t0)} e ${qtd(parte * p.r1)} ${esc(p.t1)}` : '';
+    const comp = parte && p.r0 ? `<span class="v">${qtd(parte * p.r0)} ${esc(p.t0)} e ${qtd(parte * p.r1)} ${esc(p.t1)}</span>` : '';
+    // 06/10/2026: fora da PulseChain o valor da pool não é buscado (reserveUSD 0); mostrava R$ 0,00 como se ela estivesse vazia
+    const semValor = !p.reserveUSD;
     const rp = (HIST.resultadoPools || {})[p.par];
     const resTxt = !rp ? '' : p.status === 'encerrada' ? ` Resultado: <b class="num v ${sinal(rp.resultado)}">${din(rp.resultado)}</b> (o que voltou, pelo preço do dia da saída, menos o custo do que entrou).`
       : rp.aberto ? ` Custo do que entrou: <b class="num v">${din(rp.aberto)}</b>.` : '';
-    return `<li><div class="lin"><span><b>${esc(p.nome)}</b> <span class="${p.status === 'presa' ? 'selo' : 'nota'}">${txtStatus[p.status]}</span></span>${p.status !== 'encerrada' ? `<b class="num v">${din(valor)}</b>` : ''}</div>
-      <div class="nota">${REDES[p.rede].nome}. Entrou em ${fmtData(p.abertura)}${p.fechamento && p.status === 'encerrada' ? ', saiu em ' + fmtData(p.fechamento) : ''}.${comp && p.status !== 'encerrada' ? ' Hoje a sua parte é ' + comp + '.' : ''}${p.status === 'presa' ? ' O contrato da farm não existe mais, então não dá para retirar.' : ''}${resTxt}</div></li>`;
+    return `<li><div class="lin"><span><b>${esc(p.nome)}</b> <span class="${p.status === 'presa' ? 'selo' : 'nota'}">${txtStatus[p.status]}</span></span>${p.status !== 'encerrada' ? (semValor ? '<span class="nota">—</span>' : `<b class="num v">${din(valor)}</b>`) : ''}</div>
+      <div class="nota">${REDES[p.rede].nome}. Entrou em ${fmtData(p.abertura)}${p.fechamento && p.status === 'encerrada' ? ', saiu em ' + fmtData(p.fechamento) : ''}.${comp && p.status !== 'encerrada' ? ' Hoje a sua parte é ' + comp + '.' : ''}${p.status === 'presa' ? ' O contrato da farm não existe mais, então não dá para retirar.' : ''}${semValor && p.status !== 'encerrada' ? ' Valor de hoje não disponível.' : ''}${resTxt}</div></li>`;
   }).join('') + '</ul>';
   const rec = Object.entries(HIST.recompensas || {}).filter(([g, q]) => q > 0);
-  if(rec.length){ h += `<p class="nota" style="margin-top:10px">Recompensas recebidas das farms: ${rec.map(([g, q]) => `${qtd(q)} ${esc(simDe(g))}${VIVO && VIVO.precos[g] ? ' (hoje ' + din(q * VIVO.precos[g]) + ')' : ''}`).join(', ')}.</p>`; }
+  if(rec.length){ h += `<p class="nota" style="margin-top:10px">Recompensas recebidas das farms: ${rec.map(([g, q]) => `<span class="v">${qtd(q)}</span> ${esc(simDe(g))}${VIVO && VIVO.precos[g] ? ' (hoje <span class="v">' + din(q * VIVO.precos[g]) + '</span>)' : ''}`).join(', ')}.</p>`; }
   el.innerHTML = h;
 }
 function descreverMov(m){
-  const lado = l => l.map(([g, q]) => `${qtd(q)} ${esc(simDe(g))}`).join(' e ');
-  if(m.tipo === 'aporte') return `Aporte de ${din(m.valIn)} na Binance`;
+  // quantias e valores com class="v" para o "Esconder valores" (06/10/2026)
+  const lado = l => l.map(([g, q]) => `<span class="v">${qtd(q)}</span> ${esc(simDe(g))}`).join(' e ');
+  if(m.tipo === 'aporte') return `Aporte de <span class="v">${din(m.valIn)}</span> na Binance`;
   if(m.tipo === 'troca') return `Trocou ${lado(m.outs)} por ${lado(m.ins)}`;
   if(m.tipo === 'transferencia' && m.destino === m.rede) return `Saque de ${lado(m.outs)} devolvido pela Binance`;
   if(m.tipo === 'transferencia') return `Transferiu ${lado(m.outs)} da ${REDES[m.rede].nome} para a ${REDES[m.destino].nome}`;
@@ -1757,7 +1773,10 @@ function desenharDiario(){
     let depois = '';
     if(m.tipo === 'troca' && VIVO){
       const hojeIn = m.ins.reduce((a, [g, q]) => a + q * (pr(g) || 0), 0), hojeOut = m.outs.reduce((a, [g, q]) => a + q * (pr(g) || 0), 0);
-      if(hojeIn || hojeOut) depois = `<div class="depois">Hoje, o que você recebeu vale <b class="num v">${din(hojeIn)}</b>; o que deu valeria <b class="num v">${din(hojeOut)}</b>. <span class="${sinal(hojeIn - hojeOut)}">${hojeIn >= hojeOut ? 'A troca rendeu ' : 'Ficar parado teria rendido '}${din(Math.abs(hojeIn - hojeOut))} a mais.</span></div>`;
+      // 06/10/2026: moeda sem cotação de hoje contava como zero e inventava "A troca rendeu"; só compara com os dois lados cotados
+      const cotado = [...m.ins, ...m.outs].every(([g]) => pr(g) != null);
+      if(!cotado) depois = '<div class="depois">Sem cotação de hoje para comparar.</div>';
+      else if(hojeIn || hojeOut) depois = `<div class="depois">Hoje, o que você recebeu vale <b class="num v">${din(hojeIn)}</b>; o que deu valeria <b class="num v">${din(hojeOut)}</b>. <span class="${sinal(hojeIn - hojeOut)}">${hojeIn >= hojeOut ? 'A troca rendeu ' : 'Ficar parado teria rendido '}<span class="v">${din(Math.abs(hojeIn - hojeOut))}</span> a mais.</span></div>`;
     }
     const c = classeDe(m);
     const opcoes = (c.certo ? [] : ['A classificar']).concat(CATEGORIAS).map(o => `<option${o === c.cat ? ' selected' : ''}>${o}</option>`).join('');
@@ -1780,15 +1799,17 @@ function desenharVisita(){
 }
 function desenharPendencias(){
   const el = document.getElementById('pendencias'); const itens = [];
+  // no celular os botões Refazer histórico e Ler CSV ficam escondidos (06/10/2026): o texto não manda clicar no que não existe
+  const refazer = CELULAR.matches ? 'No computador, use Refazer histórico' : 'Clique em Refazer histórico';
   const usd = (VIVO && VIVO.usd) || 5;
   if(HIST){
-    for(const [g, t] of Object.entries(HIST.transito || {})){ if(t.q > 1e-9){ const v = t.q * ((VIVO && VIVO.precos[g]) || 0); if(v >= 5) itens.push([`${qtd(t.q)} ${esc(simDe(g))} sacados da Binance não chegaram em nenhuma carteira sua`, `Saques de ${[...new Set((t.datas || []).map(x => nomeMes[new Date(x).getMonth()] + '/' + String(new Date(x).getFullYear()).slice(2)))].join(', ')}. Hoje valeriam ${din(v)} e contam como saída do patrimônio.`]); } }
+    for(const [g, t] of Object.entries(HIST.transito || {})){ if(t.q > 1e-9){ const v = t.q * ((VIVO && VIVO.precos[g]) || 0); if(v >= 5) itens.push([`<span class="v">${qtd(t.q)}</span> ${esc(simDe(g))} sacados da Binance não chegaram em nenhuma carteira sua`, `Saques de ${[...new Set((t.datas || []).map(x => nomeMes[new Date(x).getMonth()] + '/' + String(new Date(x).getFullYear()).slice(2)))].join(', ')}. Hoje valeriam <span class="v">${din(v)}</span> e contam como saída do patrimônio.`]); } }
     if(HIST.golpe) itens.push([`${HIST.golpe} tokens-golpe ocultos`, 'Chegaram sem você pedir, com nomes como “Claim…”. Não abra os links nem tente vender. Para ver quais são, ou dizer que um deles é seu, toque na bolha vermelha do mapa.']);
     (HIST.pools || []).filter(p => p.status === 'presa').forEach(p => itens.push([`Pool ${esc(p.nome)} presa numa farm desativada`, 'O contrato da farm não existe mais. O valor está na aba Pools.']));
-    if(Date.now() - HIST.geradoEm > 7 * DIA_MS) itens.push(['Histórico com mais de uma semana', 'Clique em Refazer histórico para incluir os movimentos recentes no gráfico e no diário.']);
-    (HIST.avisos || []).forEach(a => itens.push([a, 'Tente Refazer histórico mais tarde.']));
+    if(Date.now() - HIST.geradoEm > 7 * DIA_MS) itens.push(['Histórico com mais de uma semana', refazer + ' para incluir os movimentos recentes no gráfico e no diário.']);
+    (HIST.avisos || []).forEach(a => itens.push([a, CELULAR.matches ? 'No computador, tente Refazer histórico mais tarde.' : 'Tente Refazer histórico mais tarde.']));
     // saldo de agora x histórico
-    if(VIVO){ const vivo = {}; VIVO.saldos.filter(s => !s.pool).forEach(s => vivo[s.rede + '|' + s.g] = (vivo[s.rede + '|' + s.g] || 0) + s.q); let dif = 0; const onde = new Set(); for(const k of new Set([...Object.keys(vivo), ...Object.keys(HIST.fim || {})])){ const [r, g] = k.split('|'); if(r === 'bsc' || r === 'binance') continue; const d = (vivo[k] || 0) - Math.max(0, (HIST.fim || {})[k] || 0); const v = Math.abs(d) * (VIVO.precos[g] || 0); if(v >= 5){ dif += v; onde.add(REDES[r].nome); } } if(dif >= 5) itens.push([`Diferença de ${din(dif)} entre o saldo de agora e o histórico`, `Em ${[...onde].join(', ')}. Pode ser movimento recente: clique em Refazer histórico.`]); }
+    if(VIVO){ const vivo = {}; VIVO.saldos.filter(s => !s.pool).forEach(s => vivo[s.rede + '|' + s.g] = (vivo[s.rede + '|' + s.g] || 0) + s.q); let dif = 0; const onde = new Set(); for(const k of new Set([...Object.keys(vivo), ...Object.keys(HIST.fim || {})])){ const [r, g] = k.split('|'); if(r === 'bsc' || r === 'binance') continue; const d = (vivo[k] || 0) - Math.max(0, (HIST.fim || {})[k] || 0); const v = Math.abs(d) * (VIVO.precos[g] || 0); if(v >= 5){ dif += v; onde.add(REDES[r].nome); } } if(dif >= 5) itens.push([`Diferença de <span class="v">${din(dif)}</span> entre o saldo de agora e o histórico`, `Em ${[...onde].join(', ')}. Pode ser movimento recente. ${refazer}.`]); }
   }
   itens.push(['A BNB Chain não tem histórico gratuito', 'Entra só o saldo de agora, sem passado no gráfico.']);
   if(VIVO && VIVO.erros && VIVO.erros.length) itens.unshift([`Não consegui ler o saldo de agora em ${VIVO.erros.join(', ')}`, 'Estou usando o último saldo conhecido. Clique em Atualizar para tentar de novo.']);
@@ -1797,18 +1818,19 @@ function desenharPendencias(){
 }
 /* ================= alertas: o que é urgente fica no sino do topo ================= */
 function calcularAlertas(){
-  const A = [], add = (nivel, id, titulo, detalhe, aba) => A.push({ nivel, id, titulo, detalhe, aba });
+  // comValor: o detalhe traz um valor em dinheiro e some com o "Esconder valores" (06/10/2026)
+  const A = [], add = (nivel, id, titulo, detalhe, aba, comValor) => A.push({ nivel, id, titulo, detalhe, aba, comValor });
   if(!VIVO) return A;
   const total = totalVivo();
   (VIVO.posicoes || []).filter(x => !x.teste && !x.dentro).forEach(x => add('urgente', 'faixa:' + x.id, `Pool ${simDe(x.g0)} / ${simDe(x.g1)} fora da faixa`, `O preço saiu da sua faixa (${x.p < x.pa ? 'abaixo' : 'acima'}); a posição parou de render taxas.`, 'pools'));
   const d1 = variacao(1), d7 = variacao(7);
-  if(d1 && d1.pct <= -0.10) add('urgente', 'queda24', `Patrimônio caiu ${pct(d1.pct).replace('−', '')} desde ontem`, `Queda de ${din(-d1.dif)} desde o fechamento de ontem.`, 'geral');
-  else if(d7 && d7.pct <= -0.15) add('atencao', 'queda7', `Patrimônio caiu ${pct(d7.pct).replace('−', '')} em 7 dias`, `Queda de ${din(-d7.dif)} na semana.`, 'geral');
+  if(d1 && d1.pct <= -0.10) add('urgente', 'queda24', `Patrimônio caiu ${pct(d1.pct).replace('−', '')} desde ontem`, `Queda de ${din(-d1.dif)} desde o fechamento de ontem.`, 'geral', true);
+  else if(d7 && d7.pct <= -0.15) add('atencao', 'queda7', `Patrimônio caiu ${pct(d7.pct).replace('−', '')} em 7 dias`, `Queda de ${din(-d7.dif)} na semana.`, 'geral', true);
   const por = {}; linhasVivas().forEach(x => { const o = por[x.g] || (por[x.g] = { v:0, p:x.p }); o.v += x.v; });
   for(const [g, o] of Object.entries(por)){
     const peso = total ? o.v / total : 0, p1 = precoAntes(g, 1);
     if(peso >= 0.05 && p1 && o.p / p1 - 1 <= -0.15) add('urgente', 'moeda24:' + g, `${simDe(g)} caiu ${pct(o.p / p1 - 1).replace('−', '')} desde ontem`, `É ${(peso * 100).toLocaleString('pt-BR', { maximumFractionDigits:1 })}% da sua carteira.`, 'ativos');
-    if(peso >= 0.05 && liquidezBaixa(g, o.v)) add('atencao', 'liq:' + g, `${simDe(g)} tem liquidez baixa`, `${din(o.v)} numa moeda difícil de vender pelo preço mostrado.`, 'ativos');
+    if(peso >= 0.05 && liquidezBaixa(g, o.v)) add('atencao', 'liq:' + g, `${simDe(g)} tem liquidez baixa`, `${din(o.v)} numa moeda difícil de vender pelo preço mostrado.`, 'ativos', true);
   }
   const f = VIVO.mercado && VIVO.mercado.fng && VIVO.mercado.fng[0];
   if(f && (f.v <= 20 || f.v >= 80)) add('atencao', 'medo:' + f.t, `Mercado em ${(MEDO[f.c] || f.c).toLowerCase()} (${f.v})`, 'Momento de humor extremo no mercado de cripto.', 'geral');
@@ -1822,7 +1844,7 @@ function desenharAlertas(){
   const A = calcularAlertas(), fortes = A.filter(a => a.nivel !== 'info'), c = document.getElementById('contaAlertas');
   c.textContent = fortes.length; c.classList.toggle('oculto', !fortes.length); c.classList.toggle('urgente', A.some(a => a.nivel === 'urgente'));
   const perm = 'Notification' in window ? Notification.permission : 'indisponivel';
-  document.getElementById('painelAlertas').innerHTML = (A.length ? A.map(a => `<div class="aviso-item ${a.nivel}" data-aba="${a.aba}" role="button" tabindex="0"><i></i><b>${esc(a.titulo)}</b><small>${esc(a.detalhe)}</small></div>`).join('') : '<p class="vazio" style="padding:10px">Nada urgente agora.</p>') +
+  document.getElementById('painelAlertas').innerHTML = (A.length ? A.map(a => `<div class="aviso-item ${a.nivel}" data-aba="${a.aba}" role="button" tabindex="0"><i></i><b>${esc(a.titulo)}</b><small${a.comValor ? ' class="v"' : ''}>${esc(a.detalhe)}</small></div>`).join('') : '<p class="vazio" style="padding:10px">Nada urgente agora.</p>') +
     `<div class="rodape"><span>Vermelho é urgente; laranja, atenção.</span>${perm === 'default' ? '<button class="btn" id="btnAvisos" style="font-size:12px;padding:4px 8px">Avisar no Windows</button>' : perm === 'granted' ? '<span>Avisos do Windows ligados</span>' : ''}</div>`;
   // aviso do Windows para o que é urgente e ainda não foi avisado (só com a página aberta)
   if(perm === 'granted'){
@@ -1952,6 +1974,8 @@ document.getElementById('abas').addEventListener('keydown', e => {
   if(j >= 0){ e.preventDefault(); abrirAba(ABAS[j], true); }
 });
 abrirAba(location.hash.slice(1));
+// ao girar o celular ou mudar a largura da janela, o gráfico e os textos do celular se refazem (06/10/2026)
+CELULAR.addEventListener('change', () => { desenharGrafico(); desenharAportes(); desenharPendencias(); });
 document.getElementById('btnMais').addEventListener('click', () => { est.limiteDiario += 30; desenharDiario(); });
 // o campo de anotação só aparece quando você pede
 document.getElementById('diario').addEventListener('click', e => { const b = e.target.closest('.anotar'); if(!b) return; const t = document.createElement('textarea'); t.dataset.id = b.dataset.id; t.placeholder = 'Por que fiz isso?'; t.setAttribute('aria-label', 'Anotação'); b.replaceWith(t); t.focus(); });

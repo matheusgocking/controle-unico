@@ -4033,12 +4033,14 @@ function renderPagamentos(){
 
   var emAtraso = 0, valorAtraso = 0, seteDias = 0;
   linhas.forEach(function(l){
-    if(l.s.chave==="atraso"){ emAtraso++; valorAtraso += Number(l.p.valor)||0; }
+    /* o que eles devem de verdade (06/10/2026): antes somava o preço do ciclo de cada um, e quem
+       devia R$ 125 aparecia como R$ 500 em atraso */
+    if(l.s.chave==="atraso"){ emAtraso++; var dva = devidoDe(l.p); valorAtraso += dva ? Math.max(0, dva.exato) : (Number(l.p.valor)||0); }
     if(l.s.dias!==null && l.s.dias>=0 && l.s.dias<=7) seteDias += Number(l.p.valor)||0;
   });
   document.getElementById("pg-atraso").textContent = emAtraso;
   document.getElementById("pg-atraso").parentNode.title = emAtraso
-    ? "Somam " + moeda(valorAtraso) + " em ciclos vencidos."
+    ? "Devem " + moeda(valorAtraso) + " ao todo."
     : "Ninguém com pagamento vencido.";
   document.getElementById("pg-semana").textContent = moeda(seteDias);
 
@@ -4054,7 +4056,7 @@ function renderPagamentos(){
         '<button class="linknome" data-ficha="'+esc(p.id)+'">'+esc(p.nome)+'</button></span></td>' +
       '<td data-rot="Deve"><span class="sit '+dv.classe+'" title="'+esc(dv.titulo)+'">'+esc(dv.texto)+'</span></td>' +
       '<td data-rot="Cobrança">'+rotuloCobranca(p)+'<br><span class="hint">'+valorDoCiclo(p)+'</span></td>' +
-      '<td data-rot="Último">'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio||"")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
+      '<td data-rot="Último">'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+(s.ultimo.meio ? ' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio) : "")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
       '<td data-rot="Próximo">'+(s.venc ? dataLonga(s.venc)+'<br><span class="hint">'+DIAS_CURTO[s.venc.getDay()].toLowerCase()+'</span>' : "—")+'</td>' +
       '<td class="pc-sit" data-rot="Situação"><span class="sit '+s.classe+'">'+esc(s.texto)+'</span></td>' +
       '<td class="num pc-acao"><button class="btn sm" data-recebi="'+esc(p.id)+'">Registrar pagamento</button></td>';
@@ -4082,7 +4084,8 @@ function renderPagamentos(){
   sel.innerHTML = dados.pacientes.slice()
     .sort(function(a,b){ return (a.dia-b.dia) || (a.hora-b.hora); })
     .map(function(p){
-      return '<option value="'+esc(p.id)+'">'+esc(p.nome)+' · '+DIAS_CURTO[p.dia]+' '+String(p.hora).padStart(2,"0")+'h</option>';
+      /* quem encerrou continua na lista (pode pagar o que ficou), mas sem parecer que ainda vem no horário */
+      return '<option value="'+esc(p.id)+'">'+esc(p.nome)+' · '+(encerradoHoje(p) ? "tratamento encerrado" : DIAS_CURTO[p.dia]+' '+String(p.hora).padStart(2,"0")+'h')+'</option>';
     }).join("") + '<option value="">Outra pessoa, fora da agenda</option>';
   if(escolhido) sel.value = escolhido;
   if(!document.getElementById("pg-data").value) document.getElementById("pg-data").value = chaveData(hoje0());
@@ -4388,7 +4391,9 @@ function renderSessoes(){
   document.getElementById("ss-desmarcadas").textContent = desmarcadas;
   document.getElementById("ss-cortesias").textContent = cortesias;
   document.getElementById("ss-valor").textContent = moeda(naoCobrado);
-  document.getElementById("ss-sub").textContent = lista.length + (lista.length===1 ? " sessão na agenda do mês" : " sessões na agenda do mês") +
+  /* o mesmo número do Mês (06/10/2026): antes este contava também remarcadas e "não haverá" e dava outro total */
+  var noMes = lista.length - desmarcadas;
+  document.getElementById("ss-sub").textContent = plural(noMes, "sessão no mês", "sessões no mês") + (desmarcadas ? " · " + plural(desmarcadas, "desmarcada", "desmarcadas") : "") +
     (foraDoRegistro(ref.getFullYear(), ref.getMonth()) ? " · antes de Contando desde: só projeção" : "");
 
   /* Três listas (pedido dele, 02/10/2026): o que falta marcar (sessão que já passou e ele não disse
@@ -4525,8 +4530,10 @@ function renderPainel(){
   if(dados.pacientes.some(function(p){ return devidoDe(p); })){
     var deve = [];
     dados.pacientes.forEach(function(p){ var d = devidoDe(p); if(d && d.valor > 0.5) deve.push({p:p, d:d, s:situacaoPagamento(p)}); });
-    deve.sort(function(a,b){ return b.d.valor - a.d.valor; });
-    var totalDeve = deve.reduce(function(t,x){ return t + x.d.valor; }, 0);
+    deve.sort(function(a,b){ return b.d.exato - a.d.exato; });
+    /* em reais exatos, como a ficha, a semana e a aba Pagamentos (06/10/2026): antes quem devia
+       R$ 100 aparecia aqui como uma sessão inteira, e o Cobrar pedia o valor da sessão */
+    var totalDeve = Math.round(deve.reduce(function(t,x){ return t + x.d.exato; }, 0) * 100) / 100;
     var totalSess = Math.round(deve.reduce(function(t,x){ return t + x.d.sessoes; }, 0) * 10) / 10;
     document.getElementById("pn-divida-rot").textContent = "Sessões já cobradas e não pagas";
     document.getElementById("pn-divida").textContent = moeda(totalDeve);
@@ -4539,7 +4546,7 @@ function renderPainel(){
           return '<tr class="linha-atraso"><td><div class="quem"><span class="ini">'+esc(inicial1(x.p))+'</span>' +
             '<button class="linknome" data-ficha="'+esc(x.p.id)+'">'+esc(x.p.nome)+'</button></div></td>' +
             '<td class="num">'+String(x.d.sessoes).replace(".", ",")+'</td>' +
-            '<td class="num"><b>'+moeda(x.d.valor)+'</b></td>' +
+            '<td class="num"><b>'+moeda(x.d.exato)+'</b></td>' +
             '<td><span class="sit '+x.s.classe+'">'+esc(x.s.texto)+'</span>' +
             '<button class="btn sm cobrar" data-cobrar="'+esc(x.p.id)+'">Cobrar</button></td></tr>';
         }).join("") +
@@ -4643,8 +4650,10 @@ function renderPainel(){
     return '<span'+(ano===hoje.getFullYear() && i===hoje.getMonth() ? ' class="agora"' : "")+'>'+nm+'</span>';
   }).join("");
 
+  /* só quem está em atendimento, como o número de pacientes no alto e as horas ocupadas (06/10/2026) */
+  var naAgenda = dados.pacientes.filter(function(p){ return !encerradoHoje(p); });
   var porCobranca = {}, porFreq = {};
-  dados.pacientes.forEach(function(p){
+  naAgenda.forEach(function(p){
     porCobranca[p.cobranca] = (porCobranca[p.cobranca]||0) + 1;
     porFreq[p.freq] = (porFreq[p.freq]||0) + 1;
   });
@@ -4661,7 +4670,7 @@ function renderPainel(){
     '</div>';
 
   var porDia = [0,0,0,0,0,0,0], valorDia = [0,0,0,0,0,0,0];
-  dados.pacientes.forEach(function(p){
+  naAgenda.forEach(function(p){
     porDia[p.dia]++;
     valorDia[p.dia] += (p.freq==="quinzenal" ? valorSessao(p)/2 : valorSessao(p));
   });
@@ -4685,7 +4694,7 @@ function renderPainel(){
     b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.ficha); if(p) abrirFicha(p); });
   });
   document.querySelectorAll("#v-painel [data-cobrar]").forEach(function(b){
-    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.cobrar), d = p && devidoDe(p); if(d) abrirCobranca(p.nome, d.sessoes, d.valor); });
+    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.cobrar), d = p && devidoDe(p); if(d) abrirCobranca(p.nome, Math.abs(d.valor - d.exato) <= 0.5 ? d.sessoes : 0, d.exato); });
   });
   document.querySelectorAll("#v-painel [data-cobrar-fora]").forEach(function(b){
     b.addEventListener("click", function(){

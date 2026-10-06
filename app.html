@@ -420,6 +420,7 @@ const nuvem = {};
 for (const c of (PERFIL === "ana" ? ["casa"] : Object.keys(VAZIO))) {
   nuvem[c] = Nuvem.caderno({
     id: ID_NUVEM[c], nome: NOME_DRIVE[c], rotulo: c === "casa" ? "o caderno da Casa" : "o caderno do Dinheiro",
+    caderno: VAZIO[c]().caderno,   // o campo "caderno" que o arquivo certo tem; outro valor é de outro caderno
     compartilhado: c === "casa",
     obter: () => livro[c],
     aplicar: d => { livro[c] = arrumar[c](Object.assign(VAZIO[c](), d)); try { localStorage.setItem(chaveCache(c), JSON.stringify(livro[c])); } catch(e){} desenhar(); },
@@ -478,7 +479,7 @@ function contasClinica(){
   // Sem a Clínica aberta: o recebido sai do caderno guardado neste aparelho; o previsto não.
   const c = lerLocal("controle-unico-clinica-cache");
   const doMes = c ? (c.pagamentos || []).filter(noMes) : [];
-  return { ok:false, ativos:c ? (c.pacientes || []).length : null, previsto:null, recebido:soma(doMes, g => g.valor),
+  return { ok:false, ativos:null, previsto:null, recebido:soma(doMes, g => g.valor),
            pacientes:soma(doMes.filter(dePaciente), g => g.valor), falta:null, sessoes:null };
 }
 // A Carteira grava o total de cada visita (cripto-v1-visita) neste mesmo navegador.
@@ -839,7 +840,7 @@ function veredito(d){
   if (semNada && !Nuvem.conectado()) return `<div class="veredito"><div class="topo-v"><b>Entre para ver o seu mês</b></div><p>Os números aparecem depois que você entrar com o Google, no botão Entrar lá em cima.</p></div>`;
   if (km < hoje) return d.sobra >= 0
     ? caixa("pos", true, "Fechou positivo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${dinheiro(d.sobra)} de sobra.`)
-    : caixa("neg", false, "Fechou negativo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${sinalDin(d.sobra)}.`);
+    : caixa("neg", false, "Fechou negativo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com falta de ${dinheiro(-d.sobra)}.`);
   const fim = d.fimDoMes;
   // Sem o previsto da Clínica não dá para dizer "mesmo que entre tudo o que falta": não se sabe quanto falta
   // (antes a caixa podia dizer "Não pode gastar" só porque a Clínica ainda não tinha aberto).
@@ -872,13 +873,13 @@ function cardSituacao(d){
   <section class="painel"><h2>Situação do mês<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
     <div class="situ seis">${veredito(d)}<div class="nums">
       <div class="linha-k">
-        <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small>${outros > 0.005 ? `<small>${dinheiro(outros)} de outras entradas</small>` : ""}${d.resgatesMes > 0.005 ? `<small class="k-res">e ${dinheiro(d.resgatesMes)} resgatados da reserva</small>` : ""}${d.aportesMes > 0.005 ? `<small class="k-res">${dinheiro(d.aportesMes)} guardados na reserva, não gastos</small>` : ""}</div>
+        <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small>${outros > 0.005 ? `<small>${dinheiro(outros)} de outras entradas</small>` : ""}${d.resgatesMes > 0.005 ? `<small class="k-res">fora isso, ${dinheiro(d.resgatesMes)} resgatados da reserva</small>` : ""}${d.aportesMes > 0.005 ? `<small class="k-res">${dinheiro(d.aportesMes)} guardados na reserva, não gastos</small>` : ""}</div>
         <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b>${d.entrou > 0.005 ? `<em class="pct-k${d.saiu > d.entrou + 0.005 ? " neg" : ""}">${Math.round(d.saiu / d.entrou * 100)}% do que recebi</em>` : ""}<small>${dinheiro(lancado)} lançados</small><small>${dinheiro(d.fixosMes)} de fixos</small><small>${dinheiro(d.minhaCasa)} da casa</small></div>
-        <div class="k destaque"><span>Saldo agora</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
+        <div class="k destaque"><span>${d.passado ? "Saldo do mês" : "Saldo agora"}</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
       </div>
       <div class="linha-k">
         <div class="k"><span>${d.passado ? "Ficou para receber" : "Ainda vou receber"}</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>${d.passado ? "sessões do mês que os pacientes ainda não pagaram" : "previsto da agenda menos o que os pacientes já pagaram"}</small>`}</div>
-        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("mês fechado") : `<b>${dinheiro(d.faltaSair)}</b><small>${corrente ? `fixos que vencem depois de hoje${d.semDia ? `, ${d.semDia} sem dia marcado` : ""}` : "fixos do mês"}</small>`}</div>
+        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("mês fechado") : `<b>${dinheiro(d.faltaSair)}</b><small>${corrente ? `fixos que vencem depois de hoje${d.semDia ? (d.semDia === 1 ? "; o fixo sem dia marcado já conta em Gastei" : `; os ${d.semDia} fixos sem dia marcado já contam em Gastei`) : ""}` : "fixos do mês"}</small>`}</div>
         <div class="k destaque"><span>${d.passado ? "Fechou o mês em" : "Fecha o mês em"}</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>${d.passado ? "o que entrou menos o que saiu no mês" : "saldo mais o que vou receber, menos o que vai sair"}</small></div>
       </div>
     </div></div>
@@ -927,13 +928,13 @@ function telaTudo(){
   return barraMes() + painelPrecisa() + avisoFechamento() + cardSituacao(d) + formLancamento("") + `
 
   <div class="duas inv">
-    <section class="painel"><h2>Patrimônio</h2>${patrimonio}
+    <section class="painel"><h2>Patrimônio${chaveMes(ref) !== chaveMes(new Date()) ? `<span class="dir">hoje, ${dataCurta(hojeISO())}</span>` : ""}</h2>${patrimonio}
       ${cart ? "" : `<p class="nota">Abra a Carteira cripto uma vez neste aparelho para o total dela entrar aqui.</p>`}</section>
     <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias(d)}</section>
   </div>
 
   <div class="duas igual">
-    <section class="painel"><h2>Casa<span class="dir"><span class="selo-b">${escH(balanca(c, p1, p2))}</span></span></h2>${roscaCasa(c)}
+    <section class="painel"><h2>Casa${c.total > 0.005 ? `<span class="dir"><span class="selo-b">${escH(balanca(c, p1, p2))}</span></span>` : ""}</h2>${roscaCasa(c)}
       <p class="nota">A balança mostra quem pagou mais no mês, não uma conta a acertar.</p></section>
     <section class="painel"><h2>Clínica</h2>
       <div class="stats duas-col">
@@ -1248,6 +1249,8 @@ function alertasFechamento(F){
   return a.sort((x, y) => (x[0] === "warn" ? 0 : 1) - (y[0] === "warn" ? 0 : 1));
 }
 
+// junta partes numa frase: "a", "a e b", "a, b e c"
+const frase = l => { l = l.filter(Boolean); return l.length < 2 ? (l[0] || "") : l.slice(0, -1).join(", ") + " e " + l[l.length - 1]; };
 function vistaFechamento(){
   const k = chaveMes(ref), kHoje = chaveMes(new Date()), kAnt = somaMes(kHoje, -1);
   const Nome = maiusc(nomeMes(k));
@@ -1267,14 +1270,14 @@ function vistaFechamento(){
     if (m === null) return `<small>sem meses anteriores para comparar</small>`;
     const d = v - m; if (Math.abs(d) < 0.005) return `<small>igual ao normal</small>`;
     const bom = maisBom ? d > 0 : d < 0;
-    return `<small class="${fugiu(v, m) ? (bom ? "pos" : "warn") : ""}">${dinheiro(Math.abs(d))} ${d > 0 ? "acima" : "abaixo"} do normal (${dinheiro(m)})</small>`;
+    return `<small class="${fugiu(v, m) ? (bom ? "pos" : "warn") : ""}">${dinheiro(Math.abs(d))} ${d > 0 ? "acima" : "abaixo"} do normal (${sinalDin(m)})</small>`;
   };
   const vsAnt = (v, a) => a > 0.005 ? `<small>${nomeMes(F.ant.k)}: ${dinheiro(a)}</small>` : "";
   const outros = din.entrou - din.pacientes;
   const nums = `<div class="nums"><div class="linha-k">
       <div class="k"><span>Recebi</span><b class="pos">${dinheiro(din.entrou)}</b>${contra(din.entrou, normal.entrou, true)}${vsAnt(din.entrou, F.ant.entrou)}${din.pacientes > 0.005 ? `<small>${dinheiro(din.pacientes)} de pacientes${outros > 0.005 ? `, ${dinheiro(outros)} de outras entradas` : ""}</small>` : ""}</div>
       <div class="k"><span>Gastei</span><b>${dinheiro(din.saiu)}</b>${contra(din.saiu, normal.saiu, false)}${vsAnt(din.saiu, F.ant.saiu)}${din.entrou > 0.005 ? `<small>${Math.round(din.saiu / din.entrou * 100)}% do que recebi</small>` : ""}</div>
-      <div class="k destaque"><span>Sobrou</span><b class="${din.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(din.sobra)}</b>${contra(din.sobra, normal.sobra, true)}${din.aportes > 0.005 || din.resgates > 0.005 ? `<small>ajustado pela reserva</small>` : ""}</div>
+      <div class="k destaque"><span>${din.sobra < -0.005 ? "Faltou" : "Sobrou"}</span><b class="${din.sobra < -0.005 ? "neg" : "pos"}">${dinheiro(Math.abs(din.sobra))}</b>${contra(din.sobra, normal.sobra, true)}${din.aportes > 0.005 || din.resgates > 0.005 ? `<small>ajustado pela reserva</small>` : ""}</div>
     </div></div>`;
 
   const alertas = alertasFechamento(F);
@@ -1303,7 +1306,8 @@ function vistaFechamento(){
       <small>${x.a < 0.005 ? "começou" : x.v < 0.005 ? `parou (era ${dinheiro(x.a)})` : `era ${dinheiro(x.a)}`}</small></li>`).join("")}</ul></section>` : "";
 
   const reserva = din.aportes > 0.005 || din.resgates > 0.005 || F.reservaFim !== null
-    ? `<p class="nota" style="margin-top:10px">Reserva de emergência:${din.aportes > 0.005 ? ` guardou ${dinheiro(din.aportes)}.` : ""}${din.resgates > 0.005 ? ` Tirou ${dinheiro(din.resgates)}.` : ""}${F.reservaFim !== null ? ` Terminou o mês com ${dinheiro(F.reservaFim)}.` : ""}</p>` : "";
+    ? `<p class="nota" style="margin-top:10px">Reserva de emergência: ${frase([din.aportes > 0.005 ? `guardou ${dinheiro(din.aportes)}` : "",
+        din.resgates > 0.005 ? `tirou ${dinheiro(din.resgates)}` : "", F.reservaFim !== null ? `terminou o mês com ${dinheiro(F.reservaFim)}` : ""])}.</p>` : "";
 
   return `<section class="painel"><h2>Como ${nomeMes(k)} fechou<span class="dir">${normal.n ? `normal: média de ${normal.n === 1 ? "1 mês" : normal.n + " meses"} antes` : ""}</span></h2>
     <div class="situ">${ver}${nums}</div>${reserva}</section>
@@ -1486,6 +1490,9 @@ function cardCasa(c){
   if (media === null) v = `<div class="veredito"><div class="topo-v"><b>Sem média ainda</b></div><p>A média aparece quando houver um mês fechado com compras, a partir de agosto de 2026.</p></div>`;
   else if (c.total > media + 0.005) v = caixa("warn", true, corrente ? "Já passou da média" : "Acima da média",
     `${corrente ? "Até hoje" : Nome} ${corrente ? "a casa gastou" : "gastou"} ${dinheiro(c.total - media)} a mais que a média de ${dinheiro(media)}.`);
+  // gastou exatamente a média: antes dizia "Faltam R$ 0,00 para chegar à média" (06/10/2026)
+  else if (Math.abs(c.total - media) < 0.005) v = caixa("pos", false, corrente ? "Chegou à média" : "Na média",
+    `${corrente ? "Até hoje a casa gastou" : Nome + " gastou"} ${dinheiro(c.total)}, igual à média.`);
   else v = caixa("pos", false, corrente ? "Dentro da média" : "Abaixo da média",
     corrente ? `Faltam ${dinheiro(media - c.total)} para chegar à média de ${dinheiro(media)}.`
              : `${Nome} ficou ${dinheiro(media - c.total)} abaixo da média de ${dinheiro(media)}.`);
