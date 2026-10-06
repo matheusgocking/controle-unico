@@ -3032,7 +3032,7 @@ function abrirFicha(p, foco, aba){
       '<div class="field"><label for="fi-origem">Como chegou</label>' +
         '<select id="fi-origem">'+opcoesOrigem(p.codigo)+'</select><span class="hint">Alimenta a aba Marketing: quantos pacientes cada anúncio trouxe.</span></div>' +
       '<p class="hint">A cobrança e o valor ficam na aba Pagamento, em "Ciclo e valor".</p>' +
-      '<div class="acoes" style="justify-content:flex-start"><button class="btn ghost" id="fi-remover">Remover da agenda</button></div>' +
+      '<div class="acoes" style="justify-content:flex-start"><button class="btn ghost" id="fi-remover">Apagar do app</button></div>' +
       '</div>' +
       '<div class="acoes"><button class="btn primary" id="fi-fechar">Pronto</button></div>' +
     '</div>';
@@ -3574,7 +3574,9 @@ function abrirFicha(p, foco, aba){
     var regs = dados.registros || {}, abertos = Object.keys(regs).filter(function(k){
       return k.slice(-(p.id.length + 1)) === "|" + p.id && regs[k] && regs[k].estado !== "feito";
     }).length;
-    if(!confirm("Tirar "+p.nome+" da agenda? A ficha na planilha continua lá." +
+    /* para quem parou o tratamento o caminho é "Encerrar tratamento", que guarda tudo (06/10/2026);
+       apagar é só para cadastro feito por engano */
+    if(!confirm("Apagar "+p.nome+" do app? A ficha, o vínculo com os pagamentos e o prontuário dele somem daqui.\n\nSe ele parou o tratamento, cancele e use \"Encerrar tratamento\", no alto do Cadastro: assim ele fica nos inativos com todo o histórico." +
       (abertos ? "\n\nAtenção: " + plural(abertos, "registro de prontuário ainda não foi", "registros de prontuário ainda não foram") + " para o Word. Fora da agenda, eles não aparecem mais aqui. Passe para o prontuário antes." : ""))) return;
     dados.pacientes = dados.pacientes.filter(function(x){ return x.id!==p.id; });
     salvar(); renderTudo(); fechar();
