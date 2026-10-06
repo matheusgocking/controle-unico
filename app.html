@@ -517,6 +517,14 @@ function balanca(c, p1, p2){
   return "empatado";
 }
 
+// Os fixos do mês que ainda não saíram: no mês corrente, os de dia depois de hoje; num mês futuro, todos;
+// num mês que já passou, nenhum (null). A Situação do mês e o Mês a mês usam a mesma conta.
+function fixosQueFaltam(km){
+  const agora = new Date(), kHoje = chaveMes(agora);
+  const fixosDoMes = livro.matheus.gastosFixos.filter(g => valorFixo(g, km) > 0);
+  return km === kHoje ? soma(fixosDoMes.filter(g => diaFixo(g, km) > agora.getDate()), g => valorFixo(g, km))
+    : km > kHoje ? soma(fixosDoMes, g => valorFixo(g, km)) : null;
+}
 function contasDinheiro(){
   const doMes = livro.matheus.lancamentos.filter(noMes);
   const cl = contasClinica();
@@ -531,8 +539,7 @@ function contasDinheiro(){
   const fixosDoMes = livro.matheus.gastosFixos.filter(g => valorFixo(g, km) > 0);
   // Mês futuro: nenhum fixo saiu ainda, todos ficam em "Ainda vai sair" (antes entravam em "Gastei"
   // como se já tivessem sido pagos, e a tela Gastos fixos dizia o contrário).
-  const faltaSair = km === kHoje ? soma(fixosDoMes.filter(g => diaFixo(g, km) > agora.getDate()), g => valorFixo(g, km))
-    : km > kHoje ? soma(fixosDoMes, g => valorFixo(g, km)) : null;
+  const faltaSair = fixosQueFaltam(km);
   const semDia = fixosDoMes.filter(g => !Number(g.dia)).length;
   // No mês corrente, o fixo cujo dia ainda não chegou fica só em "Ainda vai sair": antes ele entrava
   // também em "Gastei" e era descontado duas vezes no fim do mês (corrigido em 01/10/2026).
@@ -579,7 +586,9 @@ function mesDinheiro(k, pags = pagamentosClinica()){
   const m = { k,
     entrou: soma(lk.filter(l => l.tipo === "Receita"), l => l.valor) + soma(pags.filter(doK(k)), g => g.valor),
     saiu: soma(lk.filter(l => l.tipo === "Despesa" && l.categoria !== "Moradia"), l => l.valor)
-        + soma(livro.matheus.gastosFixos, g => valorFixo(g, k))
+        // no mês corrente, só os fixos que já saíram, como no "Gastei" da Situação do mês (06/10/2026: antes a
+        // lista descontava também os que ainda vão vencer e o mês dizia "sobrou" menos que o "Saldo agora")
+        + soma(livro.matheus.gastosFixos, g => valorFixo(g, k)) - (fixosQueFaltam(k) || 0)
         + soma(livro.casa.lancamentos.filter(doK(k)).filter(l => l.quem === eu), l => l.valor),
     aportes: soma(lk.filter(l => l.tipo === "Aporte"), l => l.valor),
     resgates: soma(lk.filter(l => l.tipo === "Resgate"), l => l.valor),
@@ -1146,7 +1155,7 @@ function vistaHistorico(){
   }).join("");
   return `<section class="painel bloco"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serie, { aberto:chaveMes(ref) })}</section>
     ${linhas ? `<section class="painel bloco"><h2>Cada mês<span class="dir">últimos 12 meses</span></h2>${linhas}</section>` : ""}
-    <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos (no mês corrente, também os que ainda vão vencer) e o que você pagou na casa. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela, a mesma conta do saldo da Situação do mês. No mês corrente, os fixos que ainda vão vencer já estão descontados; por isso o número fica abaixo do Saldo agora. As barras mostram só o que entrou e saiu.</p>`;
+    <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos que já saíram e o que você pagou na casa, o mesmo "Gastei" da Situação do mês. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela; no mês em andamento é o mesmo "Saldo agora" da Situação do mês. As barras mostram só o que entrou e saiu.</p>`;
 }
 
 // ---------- Fechamento do mês (05/10/2026) ----------
