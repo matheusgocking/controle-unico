@@ -282,3 +282,28 @@ test("Clínica: o histórico de pagamentos vem do mais recente para o mais antig
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Clínica: no mensal, um pagamento avulso soma ao que o mês já pagou", async () => {
+  const { ctx, p, erros } = await abrir("clinica.html");
+  const r = await p.evaluate(() => {
+    // Paciente Mensal (segunda 9h, R$ 700 o ciclo, R$ 175 a sessão), sem base da planilha
+    dados.pagamentos = [{ id:"g1", pacienteId:"pA", data:"2026-09-28", valor:700, meio:"pix", receita:"Prática Clínica." }];
+    vencCache = null; devidoCache = null;
+    const soMes = chaveData(proximoVencimento(acharPaciente("pA")));
+    dados.pagamentos.push({ id:"g2", pacienteId:"pA", data:"2026-10-04", valor:175, meio:"pix", receita:"Prática Clínica." });
+    vencCache = null; devidoCache = null;
+    const comAvulso = chaveData(proximoVencimento(acharPaciente("pA")));
+    mostrarView("pagamentos"); renderTudo();
+    document.getElementById("pg-paciente").value = "pA";
+    dicaPagamento(true);
+    const campo = document.getElementById("pg-valor");
+    campo.value = "175"; campo.dispatchEvent(new Event("input"));
+    return { soMes, comAvulso, dica: document.getElementById("pg-dica").textContent };
+  });
+  // o mês pago cobre 28/09, 05, 12 e 19/10; a sessão avulsa cobre 26/10; vence em 02/11
+  assert.equal(r.soMes, "2026-10-26");
+  assert.equal(r.comAvulso, "2026-11-02");
+  assert.match(r.dica, /R\$ 175 paga 1 sessão de R\$ 175/);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
