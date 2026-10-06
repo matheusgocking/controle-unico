@@ -3983,6 +3983,19 @@ function sessoesDoMes(ref){
   }
   return lista;
 }
+/* sessão que já passou e ele ainda não disse o que aconteceu, de qualquer mês desde "Contando desde":
+   a lista Falta marcar da aba Sessões e o aviso da aba Tudo usam esta mesma conta */
+function faltaMarcar(){
+  var falta = [], hoje = hoje0();
+  for(var dm = mesDesde(); dm <= hoje; dm = somaDias(dm, 1)){
+    (function(d){
+      sessoesDoDia(d, true).forEach(function(s){
+        if(s.estado==="sessao" && jaPassou(d, s.hora)) falta.push({data:d, hora:s.hora, paciente:s.paciente, estado:s.estado, origem:s.origem});
+      });
+    })(dm);
+  }
+  return falta;
+}
 /* conta as sessões de um paciente entre duas datas, pelo que a agenda registra */
 function contarSessoesDe(p, de, ate){
   var c = {realizadas:0, aConfirmar:0, previstas:0, faltas:0, remarcadas:0, canceladas:0, cortesias:0, naoCobrado:0};
@@ -4030,14 +4043,7 @@ function renderSessoes(){
      o que aconteceu, de qualquer mês desde "Contando desde"), o histórico do mês (o que já passou e
      tem marca: vai se formando conforme ele marca na grade ou aqui) e as previstas do mês. */
   var tb = document.getElementById("v-sessoes");
-  var falta = [];
-  for(var dm = mesDesde(); dm <= hoje; dm = somaDias(dm, 1)){
-    (function(d){
-      sessoesDoDia(d, true).forEach(function(s){
-        if(s.estado==="sessao" && jaPassou(d, s.hora)) falta.push({data:d, hora:s.hora, paciente:s.paciente, estado:s.estado, origem:s.origem});
-      });
-    })(dm);
-  }
+  var falta = faltaMarcar();
   var cronologica = function(a, b){ return (a.data - b.data) || (a.hora - b.hora); };
   var feitas = lista.filter(function(s){ return jaPassou(s.data, s.hora) && s.estado!=="sessao"; }).sort(function(a, b){ return cronologica(b, a); });
   var futuras = lista.filter(function(s){ return !jaPassou(s.data, s.hora); }).sort(cronologica);
@@ -5627,6 +5633,44 @@ window.abrirRecebimento = function(){
   mostrarView("pagamentos");
   abrirFormPagamento(true);
   document.getElementById("pg-form").scrollIntoView({ block:"start" });
+};
+/* "O que precisa de você", na aba Tudo (06/10/2026): a Clínica diz o que pede ação dela, com as
+   mesmas contas das telas dela (Pagamentos, Falta marcar e o Prontuário da ficha). Só lê. */
+window.avisosDaClinica = function(){
+  atrasoCache = null; devidoCache = null; vencCache = null;
+  var A = [];
+  dados.pacientes.forEach(function(p){
+    var s = situacaoPagamento(p);
+    if(s.chave==="atraso"){
+      var dv = textoDevido(p);
+      A.push({nivel:"urgente", titulo:p.nome + ": pagamento atrasado", detalhe:"Venceu em " + dataCurta(s.venc) + ", há " + plural(-s.dias, "dia", "dias") +
+        (dv.classe==="atraso" ? ". " + dv.texto.charAt(0).toUpperCase() + dv.texto.slice(1) + "." : "."), ordem:s.dias, abrir:{tipo:"paciente", id:p.id, aba:"pagamento"}});
+    } else if(s.chave==="hoje" || s.chave==="atencao"){
+      A.push({nivel:s.chave==="hoje" ? "atencao" : "info", titulo:p.nome + ": pagamento " + (s.dias===0 ? "vence hoje" : s.dias===1 ? "vence amanhã" : "vence em " + s.dias + " dias"),
+        detalhe:"Na sessão de " + dataCurta(s.venc) + ".", ordem:s.dias, abrir:{tipo:"paciente", id:p.id, aba:"pagamento"}});
+    }
+  });
+  var falta = faltaMarcar();
+  if(falta.length){
+    var maisAntiga = falta.reduce(function(a, b){ return b.data < a.data ? b : a; }).data;
+    A.push({nivel:"atencao", titulo:plural(falta.length, "sessão já passou", "sessões já passaram") + " sem marcar o que aconteceu",
+      detalhe:(falta.length > 1 ? "A mais antiga é de " : "Foi em ") + dataCurta(maisAntiga) + ". Enquanto não marcar, ela" + (falta.length > 1 ? "s ficam" : " fica") + " como a confirmar.",
+      ordem:0, abrir:{tipo:"marcar"}});
+  }
+  var comPront = [], nPront = 0;
+  dados.pacientes.forEach(function(p){ var n = pendenciasDe(p).length; if(n){ nPront += n; comPront.push(p); } });
+  if(nPront) A.push({nivel:"atencao", titulo:plural(nPront, "registro", "registros") + " do prontuário por escrever",
+    detalhe:comPront.length === 1 ? "De " + comPront[0].nome + "." : "De " + comPront.length + " pacientes. Cada um fica no Prontuário da ficha.",
+    ordem:1, abrir:comPront.length === 1 ? {tipo:"paciente", id:comPront[0].id, aba:"prontuario"} : {tipo:"marcar"}});
+  return A;
+};
+/* e leva ao lugar de cada aviso: a ficha do paciente ou a lista Falta marcar. Só abre telas. */
+window.abrirDoTudo = function(o){
+  if(!o) return;
+  if(o.tipo==="paciente"){ var p = acharPaciente(o.id); if(p) abrirFicha(p, null, o.aba || "pagamento"); return; }
+  mostrarView("sessoes");
+  var alvo = document.getElementById("ss-p-marcar");
+  if(alvo && !alvo.classList.contains("hidden")) alvo.scrollIntoView({block:"start"}); else window.scrollTo(0, 0);
 };
 document.getElementById("pg-cancelar").addEventListener("click", function(){ abrirFormPagamento(false); document.getElementById("pg-abrir").focus(); });
 document.getElementById("mk-novo").addEventListener("click", function(){ abrirAnuncio(""); });
