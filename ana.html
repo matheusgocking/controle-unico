@@ -321,6 +321,8 @@ const dataCurta = d => (d || "").slice(8, 10) + "/" + (d || "").slice(5, 7);
 const diaSemana = d => { const [a, m, x] = (d || "").split("-").map(Number); return new Date(a, m - 1, x).getDay(); };
 const somaDias = (d, n) => { const [a, m, x] = d.split("-").map(Number); const t = new Date(a, m - 1, x + n); return t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate()); };
 const valorNoMes = (g, k) => g.valores ? (Number(g.valores[k]) || 0) : 0;
+// fixo ou entrada que ainda vale neste mês: tem valor nele ou em algum mês depois (ou ainda não tem valor nenhum)
+const vale = (g, k) => !!g && (!g.valores || !Object.keys(g.valores).length || Object.keys(g.valores).some(m => m >= k && Number(g.valores[m]) > 0));
 const maiuscula = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 // valores em reais nos campos: só números, a vírgula anda sozinha (1025 vira 10,25), como no lançamento.
 // Campo de número do navegador não serve aqui: no iPhone a vírgula do teclado pode não ser aceita.
@@ -430,7 +432,7 @@ function telaMes(){
     : `<div class="veredito neg"><b>${passado ? "Fechou negativo" : "Falta no mês"}</b><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} em ${sinalDin(sobra)}: sai mais do que entra.</p></div>`;
   const semCasa = !s.casa ? `<p class="aviso">O que você pagou na casa ainda não aparece: abra a aba <b>Casa</b> uma vez e toque em "Escolher o que foi compartilhado comigo".</p>` : "";
 
-  const linhasEnt = e.fixas.map(x => `<tr><td class="c-desc"><b>${escH(comPonto(x.rot))}</b></td>
+  const linhasEnt = e.fixas.filter(x => vale(cad.receitasFixas.find(r => r.id === x.id), k)).map(x => `<tr><td class="c-desc"><b>${escH(comPonto(x.rot))}</b></td>
       <td class="dir"><input type="text" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="—" class="val" data-receita="${escH(x.id)}" value="${emReais(x.valor)}" aria-label="${escH(x.rot)} em ${nome}"></td>
       <td class="c-x"><button class="x" data-apagar="receitasFixas:${escH(x.id)}" aria-label="Apagar">×</button></td></tr>`).join("")
     + e.plantoes.map(x => `<tr><td class="c-desc"><b>${escH(x.rot)}</b><small class="nota" style="display:block">${x.n ? (x.n > 1 ? x.n + " plantões" : "1 plantão") + " de " + nomeMes(x.de) : "nenhum plantão de " + nomeMes(x.de)}</small></td>
@@ -728,7 +730,8 @@ function telaGastos(){
     <td class="c-cat">${escH(comPonto(l.categoria))}</td><td class="c-forma">${escH(comPonto(l.forma))}</td>
     <td class="c-val dir">${dinheiro(l.valor)}</td>
     <td class="c-x"><button class="x lapis" data-editar="${escH(l.id)}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
-  const fixos = cad.gastosFixos.slice().sort((a, b) => valorNoMes(b, k) - valorNoMes(a, k));
+  // o fixo tirado (ou que acabou antes deste mês) sai da lista; nos meses em que valia, continua aparecendo
+  const fixos = cad.gastosFixos.filter(g => vale(g, k)).sort((a, b) => valorNoMes(b, k) - valorNoMes(a, k));
   const tFixos = fixos.length ? `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Valor em ${nome}</th><th></th></tr></thead><tbody>
     ${fixos.map(g => `<tr><td class="c-desc"><b>${escH(comPonto(g.descricao))}</b><span class="so-cel">${escH(comPonto(g.categoria))}</span></td><td class="c-cat">${escH(comPonto(g.categoria))}</td>
       <td class="dir"><input type="text" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="—" class="val" data-fixo="${escH(g.id)}" value="${emReais(valorNoMes(g, k))}" aria-label="${escH(g.descricao)} em ${nome}"></td>
@@ -783,8 +786,24 @@ function ligar(){
   document.querySelectorAll("[data-mes]").forEach(b => b.onclick = () => { ref.setMonth(ref.getMonth() + Number(b.dataset.mes)); desenhar(); });
   document.querySelectorAll("[data-ir]").forEach(b => b.onclick = () => irPara(b.dataset.ir));
   document.querySelectorAll("[data-apagar]").forEach(b => b.onclick = () => {
-    if (!confirm("Apagar esta linha?")) return;
     const [lista, id] = b.dataset.apagar.split(":");
+    // × de gasto fixo ou de entrada fixa: tira deste mês em diante; os meses que já passaram continuam com o
+    // valor que tinham (como no app dele desde 06/10/2026). Antes apagava de todos os meses e o mês passado mudava.
+    if (lista === "gastosFixos" || lista === "receitasFixas") {
+      const g = cad[lista].find(x => x.id === id); if (!g) return;
+      const k = km(), nome = MESES[ref.getMonth()];
+      const antes = g.valores ? Object.keys(g.valores).filter(m => m < k && Number(g.valores[m]) > 0) : [];
+      if (antes.length) {
+        if (!confirm(`Tirar ${g.descricao} de ${nome} em diante? Os meses anteriores continuam com o valor que tinham.`)) return;
+        // zero neste mês (e não vazio) para o mês não oferecer "copiar do mês anterior" de volta
+        Object.keys(g.valores).forEach(m => { if (m > k) delete g.valores[m]; }); g.valores[k] = 0;
+      } else {
+        if (!confirm(`Apagar ${g.descricao}?`)) return;
+        cad[lista] = cad[lista].filter(x => x.id !== id);
+      }
+      salvar(); return;
+    }
+    if (!confirm("Apagar esta linha?")) return;
     if (lista === "plantoes") { const p = cad.plantoes.find(x => x.id === id); if (p) pularNasRegras(p); }
     cad[lista] = cad[lista].filter(x => x.id !== id); salvar();
   });
