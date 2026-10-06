@@ -3123,12 +3123,23 @@ function calcularVencimento(p){
     var credito = -dv.sessoes, fut = sessoesQueCobram(p, hoje0(), credito + 1, true);
     return fut.length > credito ? fut[credito] : null;
   }
-  /* sem base para a conta da dívida: o último pagamento cobre as sessões do dia dele em diante */
+  /* sem base para a conta da dívida: cada pagamento compra sessões no preço do ciclo do dia dele,
+     e os pagamentos se somam. Quem pagou o ciclo mensal e depois uma sessão avulsa fica com as
+     quatro do mês mais uma (05/10/2026: antes só o último pagamento contava e o avulso apagava
+     o mês já pago). Um pagamento que chega com o saldo anterior ainda cobrindo sessões continua
+     de onde o anterior parou; depois de um buraco, recomeça da data dele. */
   var u = ultimoPagamento(p);
   if(!u) return proximaSessaoApos(p, somaDias(hoje0(),-1)); /* nunca pagou: vence na próxima sessão */
-  var vs = valorSessaoEm(p, u.data), cobre = vs > 0 ? Math.max(1, Math.round((Number(u.valor)||0) / vs)) : 1;
-  var l = sessoesQueCobram(p, deISO(u.data), cobre + 1, false);
-  return l.length > cobre ? l[cobre] : null;
+  var corte = chaveData(somaDias(hoje0(), -180)), fim = null;
+  pagamentosDe(p.id).filter(function(g){ return g.data >= corte; }).reverse().forEach(function(g){
+    var vs = valorSessaoEm(p, g.data), cobre = vs > 0 ? Math.max(1, Math.round((Number(g.valor)||0) / vs)) : 1;
+    var de = deISO(g.data);
+    if(fim && fim > de) de = fim;
+    var l = sessoesQueCobram(p, de, cobre + 1, false);
+    fim = l.length > cobre ? l[cobre] : null;
+    if(!fim) fim = somaDias(de, 401); /* cobre mais do que a agenda mostra: segue cobrindo */
+  });
+  return fim && fim <= somaDias(hoje0(), 400) ? fim : null;
 }
 /* peso ordena a tabela: atraso na frente, em dia no fim */
 function situacaoPagamento(p){
@@ -3402,7 +3413,18 @@ function dicaPagamento(trocouPaciente){
   if(trocouPaciente || !campo.value) campo.value = p.valor;
   var s = situacaoPagamento(p);
   dica.textContent = rotuloCobranca(p) + " · " + moeda(p.valor) + " por ciclo · " +
-    (s.ultimo ? "último em " + dataLonga(deISO(s.ultimo.data)) : "sem pagamento registrado");
+    (s.ultimo ? "último em " + dataLonga(deISO(s.ultimo.data)) : "sem pagamento registrado") + quantasPaga(p);
+}
+/* quantas sessões o valor digitado paga, no preço da sessão do ciclo dele (05/10/2026): quem está
+   no mensal e pagou uma sessão só registra o valor dela, sem trocar o ciclo */
+function quantasPaga(p){
+  var v = Number(document.getElementById("pg-valor").value) || 0;
+  var data = document.getElementById("pg-data").value || chaveData(hoje0());
+  var vs = valorSessaoEm(p, data);
+  if(!(v > 0) || !(vs > 0)) return "";
+  var n = Math.floor(v / vs + 1e-6), sobra = Math.round((v - n * vs) * 100) / 100;
+  return ". " + moeda(v) + " paga " + (n > 0 ? plural(n, "sessão", "sessões") : "menos de uma sessão") +
+    " de " + moeda(vs) + (sobra > 0.5 && n > 0 ? " e sobram " + moeda(sobra) + " de crédito" : "") + ".";
 }
 
 /* ---------------- painel ---------------- */
@@ -5105,6 +5127,8 @@ document.getElementById("ss-desde").addEventListener("change", function(){
   salvar(); renderTudo();
 });
 document.getElementById("pg-paciente").addEventListener("change", function(){ dicaPagamento(true); });
+document.getElementById("pg-valor").addEventListener("input", function(){ dicaPagamento(false); });
+document.getElementById("pg-data").addEventListener("change", function(){ dicaPagamento(false); });
 /* o formulário de registrar fica fechado; o botão abre e já põe o foco em quem pagou */
 function abrirFormPagamento(abrir){
   document.getElementById("pg-form").classList.toggle("hidden", !abrir);
