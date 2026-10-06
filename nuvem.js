@@ -237,7 +237,7 @@ var Nuvem = (function(){
   }
   function acharPorNome(nome){
     var q = encodeURIComponent("name='" + nome.replace(/'/g, "\\'") + "' and trashed=false");
-    return api("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=drive&orderBy=createdTime&fields=files(id,modifiedTime)")
+    return api("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=drive&orderBy=createdTime&fields=files(id,modifiedTime,name)")
       .then(function(r){ return r.json(); }).then(function(j){ return j.files[0] || null; });
   }
   /* "urgente": a página está indo embora (aba fechando, app para o fundo). Com keepalive o navegador
@@ -245,7 +245,7 @@ var Nuvem = (function(){
      maior vai pelo caminho normal (e, se não der tempo, fica pendente para a próxima abertura). */
   var LIMITE_KEEPALIVE = 60000;
   function versaoDoArquivo(id, urgente){
-    return api("https://www.googleapis.com/drive/v3/files/" + id + "?fields=id,modifiedTime,trashed", urgente ? {keepalive:true} : null).then(function(r){ return r.json(); });
+    return api("https://www.googleapis.com/drive/v3/files/" + id + "?fields=id,modifiedTime,trashed,name", urgente ? {keepalive:true} : null).then(function(r){ return r.json(); });
   }
   function baixar(id){
     return api("https://www.googleapis.com/drive/v3/files/" + id + "?alt=media").then(function(r){ return r.json(); });
@@ -298,6 +298,20 @@ var Nuvem = (function(){
     });
   }
 
+  /* uma cópia avulsa na pasta das cópias, com o nome dado (usada antes de uma correção nos dados) */
+  function copiaAvulsa(nome, conteudo){
+    return acharPasta().then(function(pasta){ return criar(nome, conteudo, pasta); });
+  }
+  /* O nome de cada caderno no Drive (06/10/2026). Em 05/10 o caderno do Dinheiro de um aparelho ficou
+     ligado ao arquivo da Casa e gravou lá todos os lançamentos pessoais. Agora cada caderno confere o
+     nome do arquivo antes de ler ou gravar: se for o de outro caderno do Controle Único, larga esse
+     arquivo e procura o seu pelo nome. Um nome fora do padrão (arquivo renomeado à mão) continua valendo. */
+  function nomeNormal(n){ return String(n || "").normalize("NFC").trim().toLowerCase(); }
+  function ehDeOutroCaderno(v, nome){
+    if(!v || !v.name) return false;
+    var n = nomeNormal(v.name);
+    return n !== nomeNormal(nome) && /^controle único - /.test(n);
+  }
   function atualizar(id, conteudo, urgente){
     var op = {method:"PATCH", headers:{"Content-Type":"application/json; charset=UTF-8"}, body:conteudo};
     if(urgente && new Blob([conteudo]).size < LIMITE_KEEPALIVE) op.keepalive = true;
@@ -467,6 +481,18 @@ var Nuvem = (function(){
     var CH_T = "controle-unico-" + op.id + "-apagados";   // o que foi apagado de propósito (daqui ou de outro aparelho)
     var apagados = {};
     try{ apagados = JSON.parse(le(CH_T)) || {}; }catch(e){ apagados = {}; }
+    /* a versão do arquivo, conferindo que é mesmo o deste caderno (ver ehDeOutroCaderno) */
+    var conferido = false, trocou = false, trocas = 0;
+    var CH_TRAVA = "controle-unico-" + op.id + "-antes-da-trava";   // o que este aparelho tinha quando a trava agiu
+    /* o campo "caderno" do conteúdo, quando o caderno diz qual espera (Dinheiro e Casa dizem) */
+    function deOutroCaderno(d){ return !!(op.caderno && ehObjeto(d) && typeof d.caderno === "string" && d.caderno !== op.caderno); }
+    function versao(id, urgente){
+      return versaoDoArquivo(id, urgente).then(function(v){
+        if(ehDeOutroCaderno(v, op.nome)){ var e = new Error("arquivo de outro caderno (" + v.name + ")"); e.outroCaderno = true; throw e; }
+        if(v && v.id) conferido = true;
+        return v;
+      });
+    }
     function guardarApagados(){ guarda(CH_T, Object.keys(apagados).length ? JSON.stringify(apagados) : null); }
     var baseDados = function(){ return base == null ? undefined : semApagados(JSON.parse(base)); };
     /* o que vai para o Drive: os dados e a lista do que foi apagado desde a última troca */
@@ -485,7 +511,7 @@ var Nuvem = (function(){
       conferencia = setTimeout(function(){
         if(gravando || conectando || pendente || !arquivo || !temToken()) return;
         if(document.visibilityState && document.visibilityState !== "visible") return;
-        versaoDoArquivo(arquivo.id).then(function(v){
+        versao(arquivo.id).then(function(v){
           if(v.modifiedTime !== arquivo.modifiedTime) return trazer(arquivo.id, "Atualizado com o que mudou em outro aparelho, às " + hora() + ".");
         }).catch(function(){});
       }, 5000);
@@ -536,6 +562,8 @@ var Nuvem = (function(){
     function marcarArquivo(a){ arquivo = a ? {id:a.id, modifiedTime:a.modifiedTime} : null; guarda(CH_A, arquivo ? JSON.stringify(arquivo) : null); }
     c.pendente = function(){ return pendente; };
     c.arquivoId = function(){ return arquivo ? arquivo.id : null; };
+    /* já conferiu, nesta abertura, que o arquivo no Drive é o deste caderno */
+    c.conferido = function(){ return !!(arquivo && conferido); };
     /* dá a outra pessoa acesso de edição a este caderno, sem mandar e-mail (controle da Ana, 30/09/2026) */
     c.compartilharCom = function(email){
       if(!arquivo) return Promise.reject(new Error("o caderno ainda não está no Drive"));
@@ -546,6 +574,14 @@ var Nuvem = (function(){
 
     function falhou(e){
       gravando = false; conectando = false;
+      /* o arquivo guardado é o de outro caderno: nada foi gravado nele; procura o certo */
+      if(e && e.outroCaderno){
+        trocou = true; marcarArquivo(null); base = null; try{ localStorage.removeItem(CH_B); }catch(x){}
+        /* uma volta só: se o arquivo achado pelo nome também for de outro caderno, para e avisa, sem gravar nada */
+        if(trocas++ < 1){ setTimeout(c.conectar, 0); return; }
+        estado("O arquivo de " + (op.rotulo || "um caderno") + " no Drive parece ser de outro caderno. Nada foi gravado nele. Avise para conferir.", "erro");
+        return;
+      }
       if(e.message === "expirou"){ c.venceu(); renovar(); return; }
       estado("Não consegui falar com o Drive (" + e.message + "). O que você mudou está guardado neste aparelho" + (pendente ? " e vai de novo sozinho." : "."), "erro");
       /* tenta de novo sozinho, com espera crescente: 15 s, 1 min, 4 min, depois a cada 10 min */
@@ -562,8 +598,9 @@ var Nuvem = (function(){
     };
 
     function trazer(id, recado){
-      return versaoDoArquivo(id).then(function(v){
+      return versao(id).then(function(v){
         return baixar(id).then(function(d){
+          if(deOutroCaderno(d)){ var e = new Error("conteúdo de outro caderno (" + d.caderno + ")"); e.outroCaderno = true; throw e; }
           if(receber(d, v)) estado("Juntei o que mudou no outro aparelho com o que está aqui. Salvando…", "indo");
           else { estado(recado || ("Salvo no Drive · aberto às " + hora()), "ok"); talvezCopiar(); }
         });
@@ -575,7 +612,7 @@ var Nuvem = (function(){
       var local = op.obter(), texto = JSON.stringify(local), g = geracao;
       var envio = ehObjeto(local) ? JSON.stringify(Object.assign({}, local, (function(){ var o = {}; o[APAGADOS] = {}; return o; })())) : texto;
       return criar(op.nome, envio).then(function(novo){
-        marcarArquivo(novo); marcarBase(texto, novo.modifiedTime);
+        marcarArquivo(novo); marcarBase(texto, novo.modifiedTime); conferido = true;
         if(g === geracao) marcarPendente(false); else agendar();
         estado(op.temDados(local) ? "Caderno criado no Drive com o que estava neste aparelho." : "Caderno criado no Drive, ainda vazio.", "ok");
       }).catch(falhou);
@@ -585,15 +622,19 @@ var Nuvem = (function(){
       estado("Abrindo a janela do Google…", "indo");
       return abrirPicker(op.nome).then(function(id){
         if(!id){ return c.conectar(); }
-        return versaoDoArquivo(id).then(function(v){ marcarArquivo(v); return trazer(id, "Caderno compartilhado aberto às " + hora() + "."); });
+        return versao(id).then(function(v){ marcarArquivo(v); return trazer(id, "Caderno compartilhado aberto às " + hora() + "."); });
       }).catch(falhou);
     }
 
     /* o arquivo deste caderno no Drive: o já conhecido neste aparelho, ou o achado pelo nome */
     function localizar(){
-      var porNome = function(){ return acharPorNome(op.nome); };
+      var porNome = function(){ return acharPorNome(op.nome).then(function(f){ if(f) conferido = true; return f; }); };
       if(!arquivo) return porNome();
-      return versaoDoArquivo(arquivo.id).then(function(v){ return v.trashed ? porNome() : v; }, porNome);
+      return versao(arquivo.id).then(function(v){ return v.trashed ? porNome() : v; }, function(e){
+        /* ligado ao arquivo de outro caderno: larga o vínculo e procura o seu pelo nome */
+        if(e && e.outroCaderno){ trocou = true; marcarArquivo(null); base = null; try{ localStorage.removeItem(CH_B); }catch(x){} }
+        return porNome();
+      });
     }
 
     /* Depois de entrar: acha o caderno e decide quem vale, o Drive ou este aparelho. */
@@ -624,7 +665,17 @@ var Nuvem = (function(){
         /* o Drive mudou (ou este aparelho ainda não o conhecia): traz e junta com o que há aqui */
         if(!arquivo || arquivo.id !== achado.id) base = null;
         return baixar(achado.id).then(function(remoto){
+          if(deOutroCaderno(remoto)){ var e = new Error("conteúdo de outro caderno (" + remoto.caderno + ")"); e.outroCaderno = true; throw e; }
           if(!op.temDados(remoto) && op.temDados(op.obter())){ marcarArquivo(achado); conectando = false; return c.enviarAgora(); }
+          /* voltou ao arquivo certo depois de estar ligado ao de outro caderno: o que está neste aparelho
+             veio misturado do outro arquivo. Vale o arquivo certo; a cópia daqui fica guardada à parte
+             (CH_TRAVA), para que nada se perca e a separação possa usá-la. */
+          if(trocou){
+            trocou = false;
+            try{ localStorage.setItem(CH_TRAVA, JSON.stringify({quando:new Date().toISOString(), dados:op.obter()})); }catch(x){}
+            marcarPendente(false);
+            avisoGeral((op.rotulo ? op.rotulo[0].toUpperCase() + op.rotulo.slice(1) : "O caderno") + " estava abrindo o arquivo de outro caderno no Drive. Voltei ao arquivo certo.");
+          }
           if(receber(remoto, achado)) estado("Juntei o que mudou no outro aparelho com o que está aqui. Salvando…", "indo");
           else { estado("Salvo no Drive · aberto às " + hora(), "ok"); talvezCopiar(); }
         });
@@ -639,10 +690,13 @@ var Nuvem = (function(){
       if(!arquivo) return c.conectar();
       gravando = true;
       estado("Salvando no Drive…", "indo");
-      return versaoDoArquivo(arquivo.id, urgente).then(function(v){
+      return versao(arquivo.id, urgente).then(function(v){
         /* mudou em outro aparelho desde a última troca: junta antes de gravar, em vez de escolher um lado */
         if(v.modifiedTime !== arquivo.modifiedTime){
-          return baixar(arquivo.id).then(function(remoto){ receber(remoto, v); });
+          return baixar(arquivo.id).then(function(remoto){
+            if(deOutroCaderno(remoto)){ var e = new Error("conteúdo de outro caderno (" + remoto.caderno + ")"); e.outroCaderno = true; throw e; }
+            receber(remoto, v);
+          });
         }
       }).then(function(){
         var dados = op.obter(), texto = JSON.stringify(dados), g = geracao;
@@ -685,7 +739,7 @@ var Nuvem = (function(){
     c.aoVoltar = function(){
       if(!arquivo || !temToken() || gravando || conectando) return;
       if(pendente){ c.enviarAgora(); return; }
-      versaoDoArquivo(arquivo.id).then(function(v){
+      versao(arquivo.id).then(function(v){
         if(v.modifiedTime !== arquivo.modifiedTime) return trazer(arquivo.id, "Atualizado com o que mudou em outro aparelho, às " + hora() + ".");
       }).catch(falhou);
     };
@@ -800,6 +854,7 @@ var Nuvem = (function(){
     conectado: temToken,
     pior: pior, algumPendente: algumPendente, sair: sair,
     pararDeGravar: function(){ saindo = true; cadernos.forEach(function(c){ c.parar(); }); },
+    copiaAvulsa: copiaAvulsa,
     /* a junção das duas cópias, exposta para os testes automáticos (testes/) */
     juntar: juntar
   };

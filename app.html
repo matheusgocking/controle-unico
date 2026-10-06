@@ -420,6 +420,7 @@ const nuvem = {};
 for (const c of (PERFIL === "ana" ? ["casa"] : Object.keys(VAZIO))) {
   nuvem[c] = Nuvem.caderno({
     id: ID_NUVEM[c], nome: NOME_DRIVE[c], rotulo: c === "casa" ? "o caderno da Casa" : "o caderno do Dinheiro",
+    caderno: VAZIO[c]().caderno,   // o campo "caderno" que o arquivo certo tem; outro valor é de outro caderno
     compartilhado: c === "casa",
     obter: () => livro[c],
     aplicar: d => { livro[c] = arrumar[c](Object.assign(VAZIO[c](), d)); try { localStorage.setItem(chaveCache(c), JSON.stringify(livro[c])); } catch(e){} desenhar(); },
