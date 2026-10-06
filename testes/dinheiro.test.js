@@ -124,3 +124,20 @@ test("Recebi mostra embaixo o resgate e o aporte do mês na reserva", async () =
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("Listas do mês: no mesmo dia, o último lançado aparece primeiro", async () => {
+  const { ctx, f, erros } = await abrir();
+  const r = await f.evaluate(() => {
+    ref = new Date(2026, 9, 1);
+    const lanc = ordenar(livro.matheus.lancamentos.filter(noMes), "lanc").map(l => l.id);
+    ordem.lanc = { c:"data", d:1 };
+    const antigos = ordenar(livro.matheus.lancamentos.filter(noMes), "lanc").map(l => l.id);
+    ordem.lanc = { c:"data", d:-1 };
+    return { lanc, antigos };
+  });
+  // l2 e l3 são de 02/10, l4 e l5 de 03/10: l3 e l5 foram lançados depois
+  assert.deepEqual(r.lanc, ["l6", "l5", "l4", "l3", "l2", "l1"]);
+  assert.deepEqual(r.antigos, ["l1", "l2", "l3", "l4", "l5", "l6"]);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
