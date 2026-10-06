@@ -879,7 +879,7 @@ function cardSituacao(d){
       </div>
       <div class="linha-k">
         <div class="k"><span>${d.passado ? "Ficou para receber" : "Ainda vou receber"}</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>${d.passado ? "sessões do mês que os pacientes ainda não pagaram" : "previsto da agenda menos o que os pacientes já pagaram"}</small>`}</div>
-        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("mês fechado") : `<b>${dinheiro(d.faltaSair)}</b><small>${corrente ? `fixos que vencem depois de hoje${d.semDia ? `, ${d.semDia} sem dia marcado` : ""}` : "fixos do mês"}</small>`}</div>
+        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("mês fechado") : `<b>${dinheiro(d.faltaSair)}</b><small>${corrente ? `fixos que vencem depois de hoje${d.semDia ? (d.semDia === 1 ? "; o fixo sem dia marcado já conta em Gastei" : `; os ${d.semDia} fixos sem dia marcado já contam em Gastei`) : ""}` : "fixos do mês"}</small>`}</div>
         <div class="k destaque"><span>${d.passado ? "Fechou o mês em" : "Fecha o mês em"}</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>${d.passado ? "o que entrou menos o que saiu no mês" : "saldo mais o que vou receber, menos o que vai sair"}</small></div>
       </div>
     </div></div>
@@ -1268,14 +1268,14 @@ function vistaFechamento(){
     if (m === null) return `<small>sem meses anteriores para comparar</small>`;
     const d = v - m; if (Math.abs(d) < 0.005) return `<small>igual ao normal</small>`;
     const bom = maisBom ? d > 0 : d < 0;
-    return `<small class="${fugiu(v, m) ? (bom ? "pos" : "warn") : ""}">${dinheiro(Math.abs(d))} ${d > 0 ? "acima" : "abaixo"} do normal (${dinheiro(m)})</small>`;
+    return `<small class="${fugiu(v, m) ? (bom ? "pos" : "warn") : ""}">${dinheiro(Math.abs(d))} ${d > 0 ? "acima" : "abaixo"} do normal (${sinalDin(m)})</small>`;
   };
   const vsAnt = (v, a) => a > 0.005 ? `<small>${nomeMes(F.ant.k)}: ${dinheiro(a)}</small>` : "";
   const outros = din.entrou - din.pacientes;
   const nums = `<div class="nums"><div class="linha-k">
       <div class="k"><span>Recebi</span><b class="pos">${dinheiro(din.entrou)}</b>${contra(din.entrou, normal.entrou, true)}${vsAnt(din.entrou, F.ant.entrou)}${din.pacientes > 0.005 ? `<small>${dinheiro(din.pacientes)} de pacientes${outros > 0.005 ? `, ${dinheiro(outros)} de outras entradas` : ""}</small>` : ""}</div>
       <div class="k"><span>Gastei</span><b>${dinheiro(din.saiu)}</b>${contra(din.saiu, normal.saiu, false)}${vsAnt(din.saiu, F.ant.saiu)}${din.entrou > 0.005 ? `<small>${Math.round(din.saiu / din.entrou * 100)}% do que recebi</small>` : ""}</div>
-      <div class="k destaque"><span>Sobrou</span><b class="${din.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(din.sobra)}</b>${contra(din.sobra, normal.sobra, true)}${din.aportes > 0.005 || din.resgates > 0.005 ? `<small>ajustado pela reserva</small>` : ""}</div>
+      <div class="k destaque"><span>${din.sobra < -0.005 ? "Faltou" : "Sobrou"}</span><b class="${din.sobra < -0.005 ? "neg" : "pos"}">${dinheiro(Math.abs(din.sobra))}</b>${contra(din.sobra, normal.sobra, true)}${din.aportes > 0.005 || din.resgates > 0.005 ? `<small>ajustado pela reserva</small>` : ""}</div>
     </div></div>`;
 
   const alertas = alertasFechamento(F);
@@ -1487,6 +1487,9 @@ function cardCasa(c){
   if (media === null) v = `<div class="veredito"><div class="topo-v"><b>Sem média ainda</b></div><p>A média aparece quando houver um mês fechado com compras, a partir de agosto de 2026.</p></div>`;
   else if (c.total > media + 0.005) v = caixa("warn", true, corrente ? "Já passou da média" : "Acima da média",
     `${corrente ? "Até hoje" : Nome} ${corrente ? "a casa gastou" : "gastou"} ${dinheiro(c.total - media)} a mais que a média de ${dinheiro(media)}.`);
+  // gastou exatamente a média: antes dizia "Faltam R$ 0,00 para chegar à média" (06/10/2026)
+  else if (Math.abs(c.total - media) < 0.005) v = caixa("pos", false, corrente ? "Chegou à média" : "Na média",
+    `${corrente ? "Até hoje a casa gastou" : Nome + " gastou"} ${dinheiro(c.total)}, igual à média.`);
   else v = caixa("pos", false, corrente ? "Dentro da média" : "Abaixo da média",
     corrente ? `Faltam ${dinheiro(media - c.total)} para chegar à média de ${dinheiro(media)}.`
              : `${Nome} ficou ${dinheiro(media - c.total)} abaixo da média de ${dinheiro(media)}.`);
