@@ -2673,6 +2673,8 @@ function abrirFicha(p, foco, aba){
       t = (dv ? (dv.exato < -0.005 ? "Em dia, com " + textoDevido(p).texto + ". " : "Em dia. ") : "") +
         "O próximo pagamento vence na sessão de " + dataLonga(s.venc) + ".";
       if(!dv) t += " (Paciente sem histórico: a conta conhece só os pagamentos dos últimos meses.)";
+    } else if(!dv){
+      classe = "sem"; t = "Paciente sem histórico de pagamentos no app: não dá para saber se ficou alguma sessão para trás. Confira no extrato do banco.";
     } else {
       classe = "sem"; t = s.texto + ".";
     }
@@ -3299,11 +3301,12 @@ function calcularVencimento(p){
    vem antes do vencimento está pago e o que vem do vencimento em diante não. Devolve "paga",
    "aberta" (já passou, cobra e o saldo não cobre) ou "" (futura ainda não paga, o normal; ou
    sessão que não cobra). Sem base para a conta da dívida (paciente criado direto no app, sem
-   histórico nem planilha), o app não sabe o que ficou para trás: não marca as sessões passadas. */
+   histórico nem planilha), o app não sabe o que ficou para trás nem se o dinheiro novo foi para
+   uma sessão antiga: não marca nenhuma sessão (conferência de 06/10/2026: antes quem não pagava
+   havia mais de 6 meses aparecia com todas as sessões futuras pagas). */
 function pagamentoDaSessao(p, data, hora, estado){
-  if(!cobraSessao(estado)) return "";
+  if(!cobraSessao(estado) || !devidoDe(p)) return "";
   var v = proximoVencimento(p), passou = jaPassou(data, hora);
-  if(passou && !devidoDe(p)) return "";
   if(!v || data < v) return "paga";
   return passou ? "aberta" : "";
 }
@@ -3332,6 +3335,15 @@ function previaPagamento(p, dataISO, valor){
 /* a frase da prévia, para o registrar da ficha */
 function textoPrevia(p, dataISO, valor){
   if(!(Number(valor) > 0)) return "";
+  /* sem base, a conta recomeça no pagamento novo e esquece o que ficou para trás (decisão 5, com o
+     Matheus): listar datas diria que o valor paga sessões que ele não paga. Só a conta em reais. */
+  if(!devidoDe(p)){
+    var vs0 = valorSessaoEm(p, dataISO), n0 = vs0 > 0 ? Math.floor(Number(valor) / vs0 + 1e-6) : 0;
+    var sobra0 = Math.round((Number(valor) - n0 * vs0) * 100) / 100;
+    return (vs0 > 0 ? moeda(valor) + (n0 > 0 ? " equivale a " + plural(n0, "sessão", "sessões") + " de " + moeda(vs0) + (sobra0 > 0.005 ? " e sobram " + moeda(sobra0) : "")
+      : " é menos que uma sessão de " + moeda(vs0)) + ". " : "") +
+      "Este paciente não tem histórico de pagamentos no app, então não dá para dizer quais sessões esse valor paga nem se ficou alguma para trás.";
+  }
   var pr = previaPagamento(p, dataISO, valor), n = pr.pagas.length, partes = [];
   if(!pr.antes) return "Não há sessão sem pagar na agenda. " + moeda(valor) + " fica de crédito.";
   var datas = pr.pagas.slice(0, 6).map(dataCurta);

@@ -111,7 +111,7 @@ test("Pagamento: com a base da planilha, a marca segue a mesma dívida", async (
   await ctx.close();
 });
 
-test("Pagamento: sem base nenhuma, o passado fica sem marca e o futuro pago aparece pago", async () => {
+test("Pagamento: sem base nenhuma, nenhuma sessão ganha bolinha", async () => {
   const { ctx, p, erros } = await abrir();
   const r = await p.evaluate(() => {
     const b = acharPaciente("pB");
@@ -121,8 +121,41 @@ test("Pagamento: sem base nenhuma, o passado fica sem marca e o futuro pago apar
       m: ["2026-09-29","2026-10-06","2026-10-13","2026-10-20"].map(d => pagamentoDaSessao(b, deISO(d), 9, "sessao")) };
   });
   assert.equal(r.base, null);
-  assert.equal(r.venc, "2026-10-20");
-  assert.deepEqual(r.m, ["", "paga", "paga", ""], "sem saber desde quando cobrar, o app não diz se o passado está pago");
+  assert.equal(r.venc, "2026-10-20", "a conta de vencimento continua a mesma da main");
+  assert.deepEqual(r.m, ["", "", "", ""], "sem saber o que ficou para trás, o app não diz se a sessão está paga");
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Pagamento sem base (conferência 06/10): quem não paga há mais de 6 meses não aparece como pago", async () => {
+  const { ctx, p, erros } = await abrir();
+  const r = await p.evaluate(() => {
+    const b = acharPaciente("pB");
+    dados.pagamentos = [{ id:"g1", pacienteId:"pB", data:"2026-03-03", valor:200, meio:"pix", receita:"Prática Clínica." }];
+    semana = deISO("2026-10-04"); renderTudo();
+    return { m: ["2026-09-29","2026-10-06","2026-10-13"].map(d => pagamentoDaSessao(b, deISO(d), 9, "sessao")),
+      bolinha: !!document.querySelector('.cell[data-data="2026-10-06"][data-hora="9"] .pgm'),
+      previa: textoPrevia(b, "2026-10-04", 200) };
+  });
+  assert.deepEqual(r.m, ["", "", ""], "antes: as futuras apareciam pagas");
+  assert.equal(r.bolinha, false);
+  assert.doesNotMatch(r.previa, /Não há sessão sem pagar/, "antes: dizia que não havia sessão sem pagar");
+  assert.match(r.previa, /^R\$ 200 equivale a 1 sessão de R\$ 200\. Este paciente não tem histórico/);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Prévia sem base (conferência 06/10): não lista datas que o valor não paga", async () => {
+  const { ctx, p, erros } = await abrir();
+  const r = await p.evaluate(() => {
+    const b = acharPaciente("pB");
+    dados.pagamentos = [{ id:"g1", pacienteId:"pB", data:"2026-08-10", valor:400, meio:"pix", receita:"Prática Clínica." }];
+    renderTudo();
+    return { cem: textoPrevia(b, "2026-10-04", 100), quinhentos: textoPrevia(b, "2026-10-04", 500) };
+  });
+  assert.doesNotMatch(r.cem, /\d\d\/\d\d/, "nenhuma data na prévia (antes: \"R$ 100 paga 7 sessões: 24/08...\")");
+  assert.match(r.cem, /^R\$ 100 é menos que uma sessão de R\$ 200\./);
+  assert.match(r.quinhentos, /^R\$ 500 equivale a 2 sessões de R\$ 200 e sobram R\$ 100\./);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
