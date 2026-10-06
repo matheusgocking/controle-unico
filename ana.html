@@ -197,6 +197,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   table.entradas tr{grid-template-columns:minmax(0,1fr) auto 22px !important}
   table.porpac tr{grid-template-columns:minmax(0,1fr) auto auto !important}
   table.atend td.c-desc b{white-space:normal;overflow:visible}   /* o nome do paciente quebra em duas linhas em vez de ser cortado */
+  table.gastos td.c-desc b,table.gastos .so-cel,table.fixos td.c-desc b,table.fixos .so-cel{white-space:normal;overflow:visible}   /* descrição longa quebra em vez de ser cortada */
   td.c-cat,td.c-forma{display:none}
   .so-cel{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   td.c-desc{min-width:0} td.c-desc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -411,6 +412,12 @@ function notaMesSeguinte(){
   return (seg.length ? `O plantão de ${lista} entra no mês seguinte ao que foi feito.` : "Nenhum local está marcado para pagar no mês seguinte.")
     + ` Isso se marca para cada local em Plantões, "Valores e locais".`;
 }
+// "R$ 2.500,00 de entradas fixas, R$ 2.000,00 de plantões e R$ 450,00 de atendimentos": só as partes que existem
+function partesEntra(e){
+  const p = [[soma(e.fixas, x => x.valor), "de entradas fixas"], [soma(e.plantoes, x => x.valor), "de plantões"], [e.atend.valor, "de atendimentos"]]
+    .filter(([v]) => v > 0.005).map(([v, t]) => dinheiro(v) + " " + t);
+  return p.length ? (p.length > 1 ? p.slice(0, -1).join(", ") + " e " + p[p.length - 1] : p[0]) : "nada ainda";
+}
 function telaMes(){
   const k = km(), e = entradas(k), s = saidas(k), sobra = e.total - s.total;
   const passado = k < chaveMes(new Date());
@@ -440,7 +447,7 @@ function telaMes(){
   return barraMes() + `
   <section class="painel"><h2>Situação do mês</h2>
     <div class="situ">${ver}<div class="linha-k">
-      <div class="k"><span>Entra</span><b class="pos">${dinheiro(e.total)}</b><small>${dinheiro(soma(e.plantoes, x => x.valor))} de plantões${e.atend.valor ? " e " + dinheiro(e.atend.valor) + " de atendimentos" : ""}</small></div>
+      <div class="k"><span>Entra</span><b class="pos">${dinheiro(e.total)}</b><small>${partesEntra(e)}</small></div>
       <div class="k"><span>Sai</span><b>${dinheiro(s.total)}</b><small>${dinheiro(s.lancado)} lançados, ${dinheiro(s.fixosMes)} de fixos${s.casa ? " e " + dinheiro(s.casa.valor) + " pagos na casa" : ""}</small></div>
       <div class="k destaque"><span>Sobra</span><b class="${sobra < -0.005 ? "neg" : "pos"}">${sinalDin(sobra)}</b><small>entra menos sai</small></div>
     </div></div>
@@ -528,7 +535,7 @@ const FREQS = [["toda","toda semana"],["alternada","semana sim, semana não"],["
 const DIAS_PLURAL = ["domingos","segundas","terças","quartas","quintas","sextas","sábados"];
 function fraseRegra(g){
   const dia = DIAS[g.dia], quando = g.quando === "toda" ? `tod${g.dia === 0 || g.dia === 6 ? "o" : "a"} ${dia}`
-    : g.quando === "alternada" ? `${DIAS_PLURAL[g.dia]} alternados, a partir de ${dataCurta(g.inicio)}`
+    : g.quando === "alternada" ? `${DIAS_PLURAL[g.dia]} alternados, a partir de ${dataCurta(primeiroDaRegra(g))}`
     : g.quando === "ultima" ? `últim${g.dia === 0 || g.dia === 6 ? "o" : "a"} ${dia} do mês`
     : `${g.quando}ª ${dia} do mês`.replace(/ª (domingo|sábado)/, "º $1");
   return `${escH(g.local)}, ${escH(String(g.periodo).toLowerCase())}, ${quando}`;
@@ -543,13 +550,26 @@ function regraNoDia(g, iso){
   if (g.quando === "ultima") return Number(somaDias(iso, 7).slice(5, 7)) !== Number(iso.slice(5, 7));
   return Math.floor((dia - 1) / 7) + 1 === Number(g.quando);
 }
+// o primeiro dia em que a regra vale, a partir do "a partir de"
+function primeiroDaRegra(g){
+  for (let d = g.inicio || hojeISO(), i = 0; i < 15; i++, d = somaDias(d, 1)) if (regraNoDia(g, d)) return d;
+  return g.inicio;
+}
+// o plantão apagado ou mudado de dia que veio de uma regra: a regra guarda o dia para não lançar de novo
+function pularNasRegras(p){
+  cad.regrasPlantao.forEach(g => {
+    if (g.local !== p.local || g.periodo !== p.periodo || !regraNoDia(g, p.data)) return;
+    g.pular = Array.isArray(g.pular) ? g.pular : [];
+    if (!g.pular.includes(p.data)) g.pular.push(p.data);
+  });
+}
 // os plantões que "Lançar até" criaria, sem gravar nada
 function plantoesDasRegras(ate){
   const novos = [], existe = new Set(cad.plantoes.map(p => p.data + "|" + p.local + "|" + p.periodo));
   const fim = ate + "-31";
   for (let d = hojeISO(); d <= fim; d = somaDias(d, 1)) {
     cad.regrasPlantao.forEach(g => {
-      if (!regraNoDia(g, d)) return;
+      if (!regraNoDia(g, d) || (Array.isArray(g.pular) && g.pular.includes(d))) return;
       const chave = d + "|" + g.local + "|" + g.periodo; if (existe.has(chave)) return;
       const valor = Number(g.valor) > 0 ? Number(g.valor) : Number((cad.tabelaPlantao[g.local] || {})[diaSemana(d)]) || 0;
       existe.add(chave);
@@ -570,7 +590,7 @@ function regras(){
     : `<p class="vazio">Nenhuma regra ainda. Exemplo: Hospital, noturno, toda sexta.</p>`;
   const desfazer = ultimosLancados ? `<p class="aviso" style="background:var(--pos-soft)">${ultimosLancados.length} ${ultimosLancados.length === 1 ? "plantão lançado" : "plantões lançados"}. <button class="b s" type="button" id="desfazerRegras">Desfazer</button></p>` : "";
   return `<details class="novo" id="dRegras"${ultimosLancados ? " open" : ""}><summary>↻ Plantões que se repetem</summary>
-    <p>Diga como os plantões se repetem e o app lança os que faltam, até o mês escolhido. Os que já estão lançados não mudam.</p>
+    <p>Diga como os plantões se repetem e o app lança os que faltam, até o mês escolhido. Os que já estão lançados não mudam, e o que você apagar ou mudar de dia não volta.</p>
     ${lista}
     <form class="linha" id="fRegra" autocomplete="off" style="margin-top:10px">
       <div><label>Local</label><select name="local">${cad.locais.map(L => `<option>${escH(L.nome)}</option>`).join("")}</select></div>
@@ -582,7 +602,7 @@ function regras(){
       <div><button class="b p" type="submit">Guardar regra</button></div></form>
     ${cad.regrasPlantao.length ? `<form class="linha" id="fLancarRegras" style="margin-top:10px">
       <div class="largo"><label>Lançar os que faltam até</label><select name="ate">${meses.map(k => `<option value="${k}"${k === padrao ? " selected" : ""}>${nomeMes(k)} de ${k.slice(0, 4)}</option>`).join("")}</select></div>
-      <div><button class="b p" type="submit">Lançar plantões</button></div></form>` : ""}
+      <div><button class="b p" type="submit">Lançar</button></div></form>` : ""}
     ${desfazer}</details>`;
 }
 
@@ -600,7 +620,7 @@ function telaAtendimentos(){
   const form = `<form class="linha" id="fAtend" autocomplete="off">
     <input type="hidden" name="id" value="">
     <div class="largo" style="grid-column:span 2"><label>Paciente</label><input name="paciente" list="lista-pacientes" placeholder="nome do paciente" required></div>
-    <div><label>Valor pago</label><input name="valor" inputmode="numeric" placeholder="0,00" required data-dinheiro></div>
+    <div><label>Valor pago</label><input name="valor" type="text" inputmode="numeric" autocomplete="off" placeholder="0,00" required data-dinheiro></div>
     <div><label>Dia do pagamento</label><input type="date" name="data" value="${k === chaveMes(new Date()) ? hojeISO() : k + "-01"}" required></div>
     <div><button class="b p" type="submit" data-botao-atend>Lançar</button></div>
     <div class="hidden" data-so-editando><button class="b" type="button" data-cancelar="fAtend">Cancelar</button></div></form>
@@ -725,7 +745,7 @@ function telaGastos(){
   return barraMes() + `
   <div class="duas larga">
     <section class="painel"><h2>Gastos de ${nome}<span class="dir">${lst.length} no mês · ${dinheiro(soma(lst, l => l.valor))}</span></h2>${form}
-      ${lst.length ? `${ordemCelular()}<table class="t">${cabecalho()}<tbody>${linhas}</tbody></table>`
+      ${lst.length ? `${ordemCelular()}<table class="t gastos">${cabecalho()}<tbody>${linhas}</tbody></table>`
         : `<p class="vazio">Nenhum gasto lançado em ${nome}.</p>`}${formCat}</section>
     <section class="painel"><h2>Gastos fixos<span class="dir">${dinheiro(soma(fixos, g => valorNoMes(g, k)))} em ${nome}</span></h2>${copiaFixos(k)}${formFixo}${tFixos}</section>
   </div>`;
@@ -765,6 +785,7 @@ function ligar(){
   document.querySelectorAll("[data-apagar]").forEach(b => b.onclick = () => {
     if (!confirm("Apagar esta linha?")) return;
     const [lista, id] = b.dataset.apagar.split(":");
+    if (lista === "plantoes") { const p = cad.plantoes.find(x => x.id === id); if (p) pularNasRegras(p); }
     cad[lista] = cad[lista].filter(x => x.id !== id); salvar();
   });
   const porValor = (sel, lista) => document.querySelectorAll(`[${sel}]`).forEach(i => i.onchange = () => {
@@ -812,7 +833,10 @@ function ligar(){
     const valor = deReais(d.valor);
     if (!(valor > 0)) { delete f.dataset.limpo; alert("Falta o valor."); return; }
     const p = d.id && cad.plantoes.find(x => x.id === d.id);
-    if (p) Object.assign(p, { data:d.data, periodo:d.periodo, local:d.local, tipo:d.tipo, valor });
+    if (p) {
+      if (p.data !== d.data || p.local !== d.local || p.periodo !== d.periodo) pularNasRegras(p);
+      Object.assign(p, { data:d.data, periodo:d.periodo, local:d.local, tipo:d.tipo, valor });
+    }
     else {
       const n = Math.max(1, Math.min(Number(d.semanas) || 1, 26));
       for (let i = 0; i < n; i++) cad.plantoes.push({ id:novoId(), data:somaDias(d.data, 7 * i), periodo:d.periodo, local:d.local,
@@ -834,7 +858,8 @@ function ligar(){
   const fpe = document.getElementById("fPlantao");
   if (fpe && fpe.elements.id.value) modoEdicao(fpe, true, "Guardar alteração");
   liga("fRegra", d => {
-    cad.regrasPlantao.push({ id:novoId(), local:d.local, periodo:d.periodo, dia:Number(d.dia), quando:d.quando, inicio:d.inicio || hojeISO(), valor:deReais(d.valor) || 0 });
+    let inicio = d.inicio || hojeISO(); while (diaSemana(inicio) !== Number(d.dia)) inicio = somaDias(inicio, 1);
+    cad.regrasPlantao.push({ id:novoId(), local:d.local, periodo:d.periodo, dia:Number(d.dia), quando:d.quando, inicio, valor:deReais(d.valor) || 0 });
     ultimosLancados = null; salvar();
   });
   liga("fLancarRegras", d => {
