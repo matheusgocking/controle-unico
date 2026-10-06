@@ -74,3 +74,23 @@ test("Arquivo do Dinheiro com conteúdo de outro caderno: não grava nada nele e
   assert.ok(/outro caderno/.test(await A.f().evaluate(() => document.getElementById("nuvem-texto").textContent)));
   await A.ctx.close();
 });
+
+test("Aparelho trocado que só abre depois de o Dinheiro já ter sido gravado pelo app novo: não leva as compras da casa ao Dinheiro", async () => {
+  const drive = criarDrive();
+  // o app novo sempre grava a lista de apagados junto; é ela que fazia o aparelho juntar o que tinha
+  const din = drive.novo({ name:NOME_D }, JSON.stringify(Object.assign({}, D.dinheiro, { __apagados:{ "lancamentos:velho": Date.now() } })));
+  const casa = drive.novo({ name:NOME_C }, JSON.stringify(D.casa));
+  // o que este aparelho tinha: o Dinheiro misturado com as compras da casa
+  const misturado = Object.assign({}, D.dinheiro, { lancamentos: D.dinheiro.lancamentos.concat(D.casa.lancamentos.map(l => Object.assign({}, l, { tipo:"", forma:"" }))) });
+  const A = await aparelho(drive, { dinheiroArquivo: JSON.stringify({ id:casa.id, modifiedTime:casa.modifiedTime }), cacheDinheiro:misturado });
+  assert.ok(await ate(async () => (await A.f().evaluate(() => nuvem.matheus.arquivoId())) === din.id), "o Dinheiro deveria voltar ao próprio arquivo");
+  await espera(2500);
+  assert.deepEqual(drive.ler(NOME_D).lancamentos.map(l => l.id).sort(), D.dinheiro.lancamentos.map(l => l.id).sort(), "o Dinheiro no Drive continua só com o pessoal");
+  assert.deepEqual((await A.f().evaluate(() => livro.matheus.lancamentos.map(l => l.id))).sort(), D.dinheiro.lancamentos.map(l => l.id).sort(), "a tela mostra o arquivo certo");
+  // o que o aparelho tinha fica guardado para a separação
+  const guardado = await A.f().evaluate(() => JSON.parse(localStorage.getItem("controle-unico-dinheiro-antes-da-trava")).dados.lancamentos.length);
+  assert.equal(guardado, misturado.lancamentos.length);
+  assert.ok(!drive.ler(NOME_C).lancamentos.some(l => l.tipo), "nada pessoal na Casa");
+  assert.deepEqual(A.erros, []);
+  await A.ctx.close();
+});
