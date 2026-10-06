@@ -239,6 +239,13 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 .legend span{display:inline-flex; align-items:center}
 .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; border:1px solid rgba(128,128,128,.35)}
 .legend .dica{color:var(--faint); flex-basis:100%}
+details.leg-dobra > summary{display:none}
+@media (max-width:700px){
+  details.leg-dobra{margin-top:12px; border:1px solid var(--border); border-radius:var(--radius); padding:0 12px; background:var(--surface)}
+  details.leg-dobra > summary{display:list-item; cursor:pointer; padding:11px 0; font-size:13px; font-weight:600; color:var(--muted)}
+  details.leg-dobra[open]{padding-bottom:12px}
+  details.leg-dobra .legend{margin-top:0}
+}
 .avisobar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:var(--radius); padding:10px 12px; margin-bottom:14px; font-size:13px}
 
 /* ---------- menu de célula ---------- */
@@ -477,6 +484,28 @@ p.pg-inteiro{margin:-6px 0 12px}
   table.pg-cartoes td.pc-sit .sit{white-space:normal; text-align:center}
   table.pg-cartoes td.pc-acao{grid-column:1/-1; text-align:left}
   table.pg-cartoes td.pc-acao .btn{width:100%; min-height:40px}
+  /* as listas da aba Sessões (06/10/2026): a tabela de 5 colunas não cabia e a situação e o valor
+     ficavam fora da tela. Cada sessão vira um bloco: dia, hora e paciente em cima, valor à direita,
+     e a situação embaixo, na largura toda, fácil de tocar */
+  table.ss-cartoes thead{display:none}
+  table.ss-cartoes, table.ss-cartoes tbody{display:block}
+  table.tab.ss-cartoes{white-space:normal}
+  table.ss-cartoes tr{display:grid; grid-template-columns:auto auto minmax(0,1fr) auto; gap:4px 8px; align-items:center; padding:10px 2px; border-bottom:1px solid var(--border)}
+  table.ss-cartoes td{display:block; padding:0; border:0; min-width:0}
+  table.ss-cartoes td[colspan]{grid-column:1/-1}
+  table.ss-cartoes td.sc-dia{grid-column:1; grid-row:1; color:var(--muted)}
+  table.ss-cartoes td.sc-hora{grid-column:2; grid-row:1; color:var(--muted)}
+  table.ss-cartoes td.sc-quem{grid-column:3; grid-row:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  table.ss-cartoes td.sc-quem .linknome{min-height:0; padding:0; font-weight:600}
+  table.ss-cartoes td.sc-cobra{grid-column:4; grid-row:1; text-align:right}
+  table.ss-cartoes td.sc-sit{grid-column:1/-1; grid-row:2}
+  table.ss-cartoes td.sc-sit select.situacao{width:100%}
+  /* Painel, "Quem está devendo" (06/10/2026): a tabela empurrava a página para o lado no celular */
+  #pn-devendo table.tab th,#pn-devendo table.tab td{padding-left:5px; padding-right:5px}
+  #pn-devendo .quem .ini{display:none}
+  #pn-devendo .sit{white-space:normal}
+  /* Sessões: cinco números em três colunas, para "3 a confirmar · 9 previstas" caber sem espremer */
+  #v-sessoes .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 .fipag{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin-bottom:14px}
 .fipag .topo{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:6px}
@@ -578,6 +607,19 @@ details.fi-det[open] > summary{margin-bottom:6px}
 /* feriado: faixa azul em cima do dia, com o nome escrito */
 .day.feriado{border-color:var(--info); box-shadow:inset 0 3px 0 var(--info)}
 .day .fer{font-size:11px; font-weight:600; color:var(--info); line-height:1.25}
+/* Mês no celular (06/10/2026): a pílula "1 sessão" não cabia no dia e passava por cima do vizinho.
+   No celular fica só o número; o dia sem sessão fica em branco, sem a pílula "livre" */
+@media (max-width:700px){
+  .month{gap:4px}
+  .day{min-height:64px; padding:5px 4px; gap:3px; min-width:0; overflow:hidden}
+  .day .num{font-size:13px}
+  .day .pill{padding:2px 7px}
+  .day .pill b{font-size:14px}
+  .day .pill .pw,.day .pill.vazio{display:none}
+  .day .linha{font-size:10px}
+  .day .linha span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .day .fer{font-size:9.5px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+}
 .chip-fer{display:inline-block; margin-left:6px; border-radius:20px; padding:0 7px; font-size:10.5px; font-weight:600; background:var(--info-soft); color:var(--info)}
 /* cada situação da aba Sessões com a sua cor, as mesmas da grade */
 select.situacao.s-realizada{background:var(--ok-soft); color:var(--ok); border-color:var(--ok); font-weight:600}
@@ -819,6 +861,10 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <div class="pgrid" id="hoje-cartoes"></div>
     </div>
 
+    <!-- no celular a legenda fica fechada num toque (06/10/2026): eram 14 linhas embaixo da grade;
+         no computador ela abre sozinha, como antes -->
+    <details class="leg-dobra" id="leg-semana">
+    <summary>Legenda das cores</summary>
     <div class="legend">
       <span><i style="background:var(--t-sessao-bg); border-color:var(--t-sessao-bar)"></i>Sessão do horário fixo</span>
       <span><i style="background:var(--t-divulgado-bg); border-color:var(--t-divulgado-bar)"></i>Atendimento divulgado: pintado, entra na mensagem</span>
@@ -836,6 +882,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <span><i style="background:#e5352c"></i>Em aberto: já passou e não está paga</span>
       <span class="dica">A bolinha sai do saldo de cada paciente, que paga da sessão mais antiga para a mais nova. Sessão futura sem bolinha ainda não foi paga, o que é normal.</span>
     </div>
+    </details>
   </section>
 
   <!-- ============ MÊS ============ -->
@@ -887,7 +934,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <h2>Falta marcar</h2>
       <p class="sub" id="ss-marcar-sub"></p>
       <div class="tabwrap">
-        <table class="tab" id="ss-marcar">
+        <table class="tab ss-cartoes" id="ss-marcar">
           <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
           <tbody></tbody>
         </table>
@@ -906,7 +953,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
         <span><i style="background:var(--t-sessao-bg); border-color:var(--t-sessao-bar); border-style:dashed"></i>Cortesia</span>
       </div>
       <div class="tabwrap">
-        <table class="tab" id="ss-tabela">
+        <table class="tab ss-cartoes" id="ss-tabela">
           <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
           <tbody></tbody>
         </table>
@@ -917,7 +964,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <h2>Sessões previstas <small class="ss-n" id="ss-previstas-n"></small></h2>
       <p class="sub">O que ainda vai acontecer neste mês, pela agenda. Depois da hora, a sessão sobe para "Falta marcar" até você dizer o que aconteceu.</p>
       <div class="tabwrap">
-        <table class="tab" id="ss-previstas">
+        <table class="tab ss-cartoes" id="ss-previstas">
           <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
           <tbody></tbody>
         </table>
@@ -1159,7 +1206,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 
     <div class="panel">
       <h2>Situação de cada paciente</h2>
-      <p class="sub">Primeiro quem deve mais. "Deve" são as sessões já cobradas e ainda não pagas, como na planilha. "Recebi hoje" registra um pagamento de hoje, no valor do ciclo dele.</p>
+      <p class="sub">Primeiro quem deve mais. "Deve" são as sessões já cobradas e ainda não pagas, como na planilha. "Registrar pagamento" abre a ficha do paciente com o valor do ciclo preenchido e mostra quais sessões ele paga antes de salvar.</p>
       <div class="tabwrap">
         <table class="tab pg-cartoes" id="pg-tabela">
           <thead><tr>
@@ -2095,7 +2142,7 @@ function renderMes(){
     cel.className = "day" + (fimDeSemana ? " fds" : "") + (noMes ? "" : " fora") + (mesmoDia(d,hoje) ? " hoje" : "") + (feriado ? " feriado" : "");
     cel.innerHTML = '<div class="num">'+d.getDate()+'</div>' +
       (feriado ? '<span class="fer">Feriado · '+esc(feriado)+'</span>' : "") +
-      '<span class="pill'+(ss.length?"":" vazio")+'">'+(ss.length ? '<b>'+ss.length+'</b>'+(ss.length>1?"sessões":"sessão") : "livre")+'</span>' +
+      '<span class="pill'+(ss.length?"":" vazio")+'">'+(ss.length ? '<b>'+ss.length+'</b><span class="pw">'+(ss.length>1?"sessões":"sessão")+'</span>' : "livre")+'</span>' +
       (ss.length ? '<div class="linha"><span>'+ss.map(function(s){ return String(s.hora)+"h"; }).join(" · ")+'</span></div>' : "");
     /* o dia também abre pelo teclado (Tab até ele e Enter) */
     cel.tabIndex = 0; cel.setAttribute("role","button");
@@ -3543,11 +3590,11 @@ function renderPagamentos(){
       '<td class="pc-quem"><span class="quem"><span class="ini">'+esc(inicial1(p))+'</span>' +
         '<button class="linknome" data-ficha="'+esc(p.id)+'">'+esc(p.nome)+'</button></span></td>' +
       '<td data-rot="Deve"><span class="sit '+dv.classe+'" title="'+esc(dv.titulo)+'">'+esc(dv.texto)+'</span></td>' +
-      '<td data-rot="Cobrança">'+rotuloCobranca(p)+'<br><span class="hint">'+moeda(p.valor)+' por ciclo</span></td>' +
+      '<td data-rot="Cobrança">'+rotuloCobranca(p)+'<br><span class="hint">'+valorDoCiclo(p)+'</span></td>' +
       '<td data-rot="Último">'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio||"")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
       '<td data-rot="Próximo">'+(s.venc ? dataLonga(s.venc)+'<br><span class="hint">'+DIAS_CURTO[s.venc.getDay()].toLowerCase()+'</span>' : "—")+'</td>' +
       '<td class="pc-sit" data-rot="Situação"><span class="sit '+s.classe+'">'+esc(s.texto)+'</span></td>' +
-      '<td class="num pc-acao"><button class="btn sm" data-recebi="'+esc(p.id)+'">Recebi hoje</button></td>';
+      '<td class="num pc-acao"><button class="btn sm" data-recebi="'+esc(p.id)+'">Registrar pagamento</button></td>';
     tb.appendChild(tr);
   });
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
@@ -3556,12 +3603,13 @@ function renderPagamentos(){
       if(p) abrirFicha(p);
     });
   });
+  /* 06/10/2026: antes era "Recebi hoje", que gravava o valor do ciclo com um toque, sem mostrar o
+     que ele pagava. Agora abre a ficha na aba Pagamento, com o mesmo registrar: valor do ciclo
+     já preenchido e a prévia das sessões que ele paga, antes de salvar */
   tb.querySelectorAll("[data-recebi]").forEach(function(b){
     b.addEventListener("click", function(){
       var p = acharPaciente(b.dataset.recebi);
-      if(!p) return;
-      if(!registrarPagamento(p.id, chaveData(hoje0()), p.valor, "pix", "")) return;
-      avisarPagamento(p.nome + " pagou " + moeda(p.valor) + " hoje. Está no topo do histórico, se precisar apagar.");
+      if(p) abrirFicha(p, null, "pagamento");
     });
   });
 
@@ -3643,20 +3691,15 @@ function dicaPagamento(trocouPaciente){
   if(!p){ dica.textContent = sel.value === "" ? "Fora da agenda: escreva de quem veio e escolha a origem." : ""; return; }
   if(trocouPaciente || !campo.value) campo.value = p.valor;
   var s = situacaoPagamento(p);
-  dica.textContent = rotuloCobranca(p) + " · " + moeda(p.valor) + " por ciclo · " +
-    (s.ultimo ? "último em " + dataLonga(deISO(s.ultimo.data)) : "sem pagamento registrado") + quantasPaga(p);
+  /* a prévia é a mesma da ficha (06/10/2026): antes esta tela dizia só quantas sessões o valor
+     pagava e a ficha dizia quais; agora as duas dizem o mesmo */
+  var v = Number(campo.value) || 0, data = document.getElementById("pg-data").value || chaveData(hoje0());
+  dica.textContent = rotuloCobranca(p) + " · " + valorDoCiclo(p) + " · " +
+    (s.ultimo ? "último em " + dataLonga(deISO(s.ultimo.data)) : "sem pagamento registrado") + "." +
+    (v > 0 ? " " + textoPrevia(p, data, v) : "");
 }
-/* quantas sessões o valor digitado paga, no preço da sessão do ciclo dele (05/10/2026): quem está
-   no mensal e pagou uma sessão só registra o valor dela, sem trocar o ciclo */
-function quantasPaga(p){
-  var v = Number(document.getElementById("pg-valor").value) || 0;
-  var data = document.getElementById("pg-data").value || chaveData(hoje0());
-  var vs = valorSessaoEm(p, data);
-  if(!(v > 0) || !(vs > 0)) return "";
-  var n = Math.floor(v / vs + 1e-6), sobra = Math.round((v - n * vs) * 100) / 100;
-  return ". " + moeda(v) + " paga " + (n > 0 ? plural(n, "sessão", "sessões") : "menos de uma sessão") +
-    " de " + moeda(vs) + (sobra > 0.5 && n > 0 ? " e sobram " + moeda(sobra) + " de crédito" : "") + ".";
-}
+/* "R$ 700 por ciclo"; para quem paga por sessão, "R$ 200 por sessão" (antes dizia "por ciclo") */
+function valorDoCiclo(p){ return moeda(p.valor) + (p.cobranca === "avulsa" ? " por sessão" : " por ciclo"); }
 
 /* ---------------- cópia em planilha ----------------
    Abas da Clínica para o "Baixar planilha" da Carteira (05/10/2026): a regra dele é só trocar
@@ -3886,11 +3929,11 @@ function renderSessoes(){
         }).join("") + '</select>';
     }
     tr.innerHTML =
-      '<td>'+DIAS_CURTO[s.data.getDay()]+', '+dataCurta(s.data)+(feriadoEm(s.data) ? '<span class="chip-fer" title="'+esc(feriadoEm(s.data))+'">feriado</span>' : "")+'</td>' +
-      '<td>'+String(s.hora).padStart(2,"0")+'h</td>' +
-      '<td><button class="linknome" data-ficha="'+esc(s.paciente.id)+'">'+esc(nomeCurto(s.paciente))+'</button></td>' +
-      '<td>'+situacao+'</td>' +
-      '<td class="num">'+(cobraSessao(s.estado) ? moeda(valorSessaoEm(s.paciente, chaveData(s.data))) : '<span class="hint">'+moeda(valorSessaoEm(s.paciente, chaveData(s.data)))+' não cobrado</span>')+'</td>';
+      '<td class="sc-dia">'+DIAS_CURTO[s.data.getDay()]+', '+dataCurta(s.data)+(feriadoEm(s.data) ? '<span class="chip-fer" title="'+esc(feriadoEm(s.data))+'">feriado</span>' : "")+'</td>' +
+      '<td class="sc-hora">'+String(s.hora).padStart(2,"0")+'h</td>' +
+      '<td class="sc-quem"><button class="linknome" data-ficha="'+esc(s.paciente.id)+'">'+esc(nomeCurto(s.paciente))+'</button></td>' +
+      '<td class="sc-sit">'+situacao+'</td>' +
+      '<td class="num sc-cobra">'+(cobraSessao(s.estado) ? moeda(valorSessaoEm(s.paciente, chaveData(s.data))) : '<span class="hint">'+moeda(valorSessaoEm(s.paciente, chaveData(s.data)))+' não cobrado</span>')+'</td>';
     return tr;
   }
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
@@ -5336,6 +5379,7 @@ document.querySelector(".top .tabs").addEventListener("scroll", function(){ dica
 window.addEventListener("resize", function(){ dicaDeAbas(); });
 if(window.ResizeObserver) new ResizeObserver(function(){ dicaDeAbas(); }).observe(document.querySelector(".top .tabs"));
 /* na semana, a lista de baixo mostra o mês em que a semana cai (pela quarta-feira dela) */
+(function(){ var d = document.getElementById("leg-semana"); if(d && !window.matchMedia("(max-width:700px)").matches) d.open = true; })();
 function mesDaSemana(){ var q = somaDias(semana, 3); mesRef = new Date(q.getFullYear(), q.getMonth(), 1); }
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
