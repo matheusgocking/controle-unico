@@ -223,6 +223,28 @@ th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 .fe-cat li.warn > small{color:var(--warn);font-weight:600} .fe-cat li.pos > small{color:var(--pos);font-weight:600}
 .fe-cat li:not(:has(> small)){grid-template-columns:minmax(0,1fr) auto}
 .fe-aviso{margin-bottom:16px}
+/* O que precisa de você (aba Tudo) */
+.pv{margin-bottom:16px}
+.pv h2{margin-bottom:8px}
+.pv-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--neg-soft);color:var(--neg);font-weight:700;font-size:12px}
+.pv-l{list-style:none;margin:0;padding:0}
+.pv-l li{border-top:1px solid var(--line)} .pv-l li:first-child{border-top:0}
+.pv-i{display:flex;align-items:center;gap:12px;width:100%;padding:10px 4px;border:0;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer;border-radius:8px}
+.pv-i:hover{background:var(--surface-2)}
+.pv-i > i{flex:none;width:10px;height:10px;border-radius:99px;background:var(--faint)}
+.pv-l li.urgente .pv-i > i{background:var(--neg)} .pv-l li.atencao .pv-i > i{background:var(--warn)}
+.pv-t{flex:1;min-width:0;display:grid;gap:2px}
+.pv-t b{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
+.pv-t small{color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
+.pv-t small em{font-style:normal;font-weight:600;color:var(--text)}
+.pv-seta{flex:none;width:18px;height:18px;color:var(--faint)}
+.pv-mais summary{cursor:pointer;color:var(--muted);font-size:13px;padding:6px 4px}
+.pv-mais .pv-l{border-top:1px solid var(--line)}
+.pv-nota{margin:6px 0 0}
+.pv-ok{padding-block:12px}
+.pv-ok p{margin:0;display:flex;align-items:center;gap:10px;font-size:14px}
+.pv-ok b{font-weight:600}
+.pv-ok-i{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:99px;background:var(--pos-soft);color:var(--pos);font-size:13px;font-weight:700}
 .k small.pos{color:var(--pos);font-weight:600} .k small.warn{color:var(--warn);font-weight:600}
 .lim{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:12px}
 .lim li{display:grid;gap:4px}
@@ -902,7 +924,7 @@ function telaTudo(){
     ? barraPartes(partes, "Patrimônio: reserva de emergência e cripto") + metaReserva(d.reserva, r.meta)
     : rosca(partes, "patrimônio", "Patrimônio: reserva de emergência e cripto");
 
-  return barraMes() + avisoFechamento() + cardSituacao(d) + formLancamento("") + `
+  return barraMes() + painelPrecisa() + avisoFechamento() + cardSituacao(d) + formLancamento("") + `
 
   <div class="duas inv">
     <section class="painel"><h2>Patrimônio</h2>${patrimonio}
@@ -1307,6 +1329,92 @@ function avisoFechamento(){
     <button type="button" class="b s" data-fech="${k}">Ver o fechamento</button></section>`;
 }
 
+// "O que precisa de você" (06/10/2026, ideia do primeiro desenho do app): no alto da aba Tudo, o
+// que pede ação hoje, de todas as áreas, num lugar só. Cada aviso vem da conta que a tela dele já faz
+// (a Clínica responde pela dela) e o toque leva até lá. Só lê: nada aqui grava nem muda número.
+const NIVEL_PRECISA = { urgente:0, atencao:1, info:2 };
+function avisosPrecisa(){
+  const A = [], km = chaveMes(ref), agora = new Date(), hoje = agora.getDate();
+  // Clínica: atrasos e vencimentos, sessões sem marcar e prontuário por escrever
+  const w = janelaClinica();
+  if (w && typeof w.avisosDaClinica === "function") {
+    try { w.avisosDaClinica().forEach(a => A.push({ ...a, area:"Clínica", ir:{ clinica:a.abrir } })); } catch(e){}
+  }
+  // Dinheiro: fixos do mês ainda não copiados, fixos que vencem nos próximos dias, limites, pendências
+  const copiar = fixosParaCopiar(km).length;
+  if (copiar) A.push({ nivel:"atencao", area:"Dinheiro", titulo:`Gastos fixos de ${MESES[ref.getMonth()]} ainda não copiados`,
+    detalhe:`${copiar} ${copiar === 1 ? "cobrou" : "cobraram"} no mês passado. Sem eles, "Fecha o mês em" fica sem essas contas.`, ir:{ din:"fixos" } });
+  const vencem = livro.matheus.gastosFixos.map(g => ({ g, dia:diaFixo(g, km), v:valorFixo(g, km) }))
+    .filter(x => x.v > 0 && x.dia >= hoje && x.dia <= hoje + 3).sort((a, b) => a.dia - b.dia);
+  vencem.forEach(x => A.push({ nivel:"info", area:"Dinheiro", ordem:x.dia - hoje,
+    titulo:`${semPonto(x.g.descricao || nomeCat(x.g.categoria))}: ${x.dia === hoje ? "sai hoje" : x.dia === hoje + 1 ? "sai amanhã" : `sai em ${x.dia - hoje} dias`}`,
+    detalhe:`${dinheiro(x.v)}, gasto fixo do dia ${x.dia}.`, ir:{ din:"fixos" } }));
+  const lim = livro.matheus.limites || {}, gasto = Object.fromEntries(porCategoria());
+  Object.keys(lim).filter(c => Number(lim[c]) > 0).forEach(c => {
+    const teto = Number(lim[c]), foi = gasto[c] || 0;
+    if (foi > teto * 1.0005) A.push({ nivel:"atencao", area:"Dinheiro", titulo:`${semPonto(nomeCat(c))} passou do limite`,
+      detalhe:`${dinheiro(foi)} de ${dinheiro(teto)}: ${dinheiro(foi - teto)} acima.`, ir:{ din:"mes" } });
+    else if (foi >= teto * PERTO_DO_LIMITE) A.push({ nivel:"info", area:"Dinheiro", titulo:`${semPonto(nomeCat(c))} perto do limite`,
+      detalhe:`Sobram ${dinheiro(teto - foi)} de ${dinheiro(teto)}.`, ir:{ din:"mes" } });
+  });
+  const abertas = (livro.matheus.pendencias || []).filter(p => !pendQuitada(p));
+  if (abertas.length) {
+    const rec = soma(abertas.filter(p => p.tipo === "receber"), restantePend), pag = soma(abertas.filter(p => p.tipo === "pagar"), restantePend);
+    A.push({ nivel:"info", area:"Dinheiro", titulo:`${abertas.length} ${abertas.length === 1 ? "pendência em aberto" : "pendências em aberto"}`,
+      detalhe:[rec > 0.005 ? `${dinheiro(rec)} a receber` : "", pag > 0.005 ? `${dinheiro(pag)} a pagar` : ""].filter(Boolean).join(" e ") + ".", ir:{ din:"pend" } });
+  }
+  // Cripto: os avisos fortes da Carteira (menos o humor do mercado, que não pede nada dele), se ela está aberta; senão, a pool fora da faixa da última leitura
+  let cripto = null;
+  try { const f = window.parent.document.getElementById("q-carteira"), cw = f && f.contentWindow;
+    if (cw && typeof cw.calcularAlertas === "function") cripto = cw.calcularAlertas().filter(a => a.nivel !== "info" && !String(a.id).startsWith("medo")); } catch(e){}
+  if (cripto) cripto.forEach(a => A.push({ nivel:a.nivel, area:"Cripto", titulo:a.titulo, detalhe:a.detalhe, ir:{ cripto:true } }));
+  else {
+    const vivo = lerLocal("cripto-v1-vivo"), fora = vivo && Array.isArray(vivo.posicoes) ? vivo.posicoes.filter(x => x && !x.teste && !x.dentro).length : 0;
+    if (fora) A.push({ nivel:"urgente", area:"Cripto", titulo:`${fora === 1 ? "1 pool fora" : fora + " pools fora"} da faixa`,
+      detalhe:`Parada${fora === 1 ? "" : "s"}, sem render taxas. Leitura de ${new Date(vivo.t).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}.`, ir:{ cripto:true } });
+  }
+  return A.map((a, i) => ({ ...a, i })).sort((a, b) => NIVEL_PRECISA[a.nivel] - NIVEL_PRECISA[b.nivel] || (a.ordem || 0) - (b.ordem || 0) || a.i - b.i);
+}
+let avisosNaTela = [];
+// no celular a lista mostra três e guarda o resto em "Mais", para a Situação do mês continuar perto do alto
+const precisaVisiveis = () => { try { return matchMedia("(max-width:700px)").matches ? 3 : 5; } catch(e){ return 5; } };
+function painelPrecisa(){
+  if (PERFIL === "ana" || chaveMes(ref) !== chaveMes(new Date())) { avisosNaTela = []; return ""; }
+  const A = avisosNaTela = avisosPrecisa();
+  const clinicaAbriu = !!janelaClinica();
+  const semNada = !livro.matheus.lancamentos.length && !livro.matheus.gastosFixos.length && !livro.casa.lancamentos.length;
+  if (!A.length && semNada && !clinicaAbriu) return "";
+  const espera = clinicaAbriu ? "" : `<p class="nota pv-nota">Os avisos da Clínica aparecem quando ela terminar de abrir.</p>`;
+  if (!A.length) return `<section class="painel pv pv-ok"><p><span class="pv-ok-i" aria-hidden="true">✓</span><b>Nada precisa de você agora.</b></p>${espera}</section>`;
+  const fortes = A.filter(a => a.nivel !== "info").length;
+  const item = (a, i) => `<li class="${a.nivel}"><button type="button" class="pv-i" data-precisa="${i}">
+      <i aria-hidden="true"></i><span class="pv-t"><b>${escH(a.titulo)}</b><small><em>${a.area}</em> · ${escH(a.detalhe)}</small></span>
+      <svg class="pv-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>`;
+  const n = precisaVisiveis(), vis = A.slice(0, n), resto = A.slice(n);
+  return `<section class="painel pv" aria-label="O que precisa de você"><h2>O que precisa de você<span class="dir">${fortes ? `<span class="pv-n">${fortes}</span> ${fortes === 1 ? "pede ação" : "pedem ação"}` : `${A.length} ${A.length === 1 ? "lembrete" : "lembretes"}`}</span></h2>
+    <ul class="pv-l">${vis.map(item).join("")}</ul>
+    ${resto.length ? `<details class="pv-mais"><summary>Mais ${resto.length} ${resto.length === 1 ? "aviso" : "avisos"}</summary><ul class="pv-l">${resto.map((a, j) => item(a, j + n)).join("")}</ul></details>` : ""}${espera}</section>`;
+}
+// leva ao lugar do aviso: a casca troca a tela (assim o título e as abas acompanham)
+function irPrecisa(a){
+  if (!a || !a.ir) return;
+  const casca = (() => { try { return window.top !== window.self && typeof window.parent.mostrar === "function" ? window.parent : null; } catch(e){ return null; } })();
+  if (a.ir.din) {
+    vistaDin = a.ir.din;
+    if (casca) casca.mostrar("carteira");
+    else { aba = "carteira"; try { location.hash = aba; } catch(e){} desenhar(); }
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (!casca) return;   // fora da casca não há Clínica nem Cripto ao lado
+  if (a.ir.cripto) { casca.mostrar("cripto"); return; }
+  if (a.ir.clinica) {
+    casca.mostrar("clinica");
+    const w = janelaClinica();
+    if (w && typeof w.abrirDoTudo === "function") w.abrirDoTudo(a.ir.clinica);
+  }
+}
+
 function telaDinheiro(){
   if (vistaDin === "fixos") return subabasDinheiro() + barraMes() + vistaFixos();
   if (vistaDin === "pend") return subabasDinheiro() + painelPendencias();
@@ -1559,6 +1667,7 @@ function ligar(){
     if (vistaDin === "fech" && chaveMes(ref) >= chaveMes(new Date())) { const d = new Date(); ref = new Date(d.getFullYear(), d.getMonth() - 1, 1); }
     desenhar();
   });
+  document.querySelectorAll("[data-precisa]").forEach(b => b.onclick = () => irPrecisa(avisosNaTela[Number(b.dataset.precisa)]));
   document.querySelectorAll("[data-fech]").forEach(b => b.onclick = () => {
     const k = b.dataset.fech;
     ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1);
