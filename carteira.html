@@ -408,7 +408,7 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
       </span></h2>
       <div class="resumoAp" id="resumoAtivos"></div>
       <div class="rolaX"><table><thead id="cabAtivos"><tr><th data-col="ativo">Ativo<span class="seta"></span></th><th class="ocm" data-col="q">Quantidade<span class="seta"></span></th><th class="ocm" data-col="avg">Preço médio<span class="seta"></span></th><th class="ocm" data-col="p">Preço<span class="seta"></span></th><th class="ocm" data-col="d1">24 h<span class="seta"></span></th><th data-col="v">Valor<span class="seta"></span></th><th data-col="res" title="O que você ganharia ou perderia vendendo esta moeda hoje, pelo preço médio">Em aberto<span class="seta"></span></th><th data-col="roi" title="Retorno sobre tudo o que a moeda custou, contando o que as vendas já renderam">Retorno<span class="seta"></span></th><th class="ocm" data-col="peso">Peso<span class="seta"></span></th></tr></thead><tbody id="ativos"></tbody></table></div>
-      <div class="nota" style="margin-top:8px">Preço médio e resultado contam desde que a moeda entrou na carteira, pelo preço daquele dia. Transferências entre as suas carteiras não mudam o preço médio. A coluna 24 h compara o preço de agora com o fechamento de ontem.</div>
+      <div class="nota" style="margin-top:8px">Preço médio e resultado contam desde que a moeda entrou na carteira, pelo preço daquele dia. Transferências entre as suas carteiras não mudam o preço médio. A coluna 24 h compara o preço de agora com o fechamento de ontem (21h de Brasília). Em aberto e Retorno contam sempre em reais.</div>
     </section>
     <section class="painel cheia" aria-label="Quem mais rendeu">
       <h2>Quem mais rendeu<span class="dir"><span class="seg" id="periodoRend"><button data-v="7">7 dias</button><button data-v="30" aria-pressed="true">30 dias</button><button data-v="90">90 dias</button><button data-v="365">1 ano</button></span></span></h2>
@@ -518,8 +518,8 @@ const TOKENS = {
   'solana:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB':'USD',
 };
 // sobe quando o histórico passa a guardar algo novo; um histórico de versão antiga é refeito sozinho
-const VERSAO_HIST = 4;   // 4: moeda sacada da Binance que chega com outro nome casa pelo símbolo (06/10/2026). 3: saque em reais vira resgate para o banco e moedas marcadas como "não é golpe" (04/10/2026)
-const LS = { precos:'cripto-v1-precos', hist:'cripto-v1-hist', csv:'cripto-v1-binance', diario:'cripto-v1-diario', visita:'cripto-v1-visita', tema:'cripto-v1-tema', vivo:'cripto-v1-vivo', classe:'cripto-v1-classe' };
+const VERSAO_HIST = 5;   // 5: guarda as moedas paradas em pool v2 aberta (emPool), que passam a entrar no total de hoje (06/10/2026). 4: moeda sacada da Binance que chega com outro nome casa pelo símbolo (06/10/2026). 3: saque em reais vira resgate para o banco e moedas marcadas como "não é golpe" (04/10/2026)
+const LS = { precos:'cripto-v1-precos', hist:'cripto-v1-hist', csv:'cripto-v1-binance', diario:'cripto-v1-diario', visita:'cripto-v1-visita', total:'cripto-v1-total', tema:'cripto-v1-tema', vivo:'cripto-v1-vivo', classe:'cripto-v1-classe' };
 const lsGet = (k, d) => { try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } };
 // o caderno do Drive é avisado mesmo quando o navegador recusa guardar a cópia (sem espaço): antes a anotação nem chegava ao Drive
 const lsSet = (k, v) => { let ok = true; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ ok = false; } if(window.aoGravarCarteira) aoGravarCarteira(k, v); return ok; };
@@ -920,7 +920,8 @@ function contabilizar(ev, precos, todos){
 }
 
 /* série diária de patrimônio, por rede */
-function montarSerie(ev, precos){
+// saida (opcional) recebe as moedas que ficaram em pool aberta no fim, para o total de hoje contar igual ao gráfico (06/10/2026)
+function montarSerie(ev, precos, saida){
   const evs = ev.filter(e => !e.excluido || e.lp).slice().sort((a, b) => a.t - b.t);
   if(!evs.length) return [];
   const hold = {}; ORDEM.forEach(r => hold[r] = {});
@@ -948,6 +949,7 @@ function montarSerie(ev, precos){
     for(const ep of Object.values(emPool)){ let v = 0; for(const [g, q] of Object.entries(ep.q)) if(q > 1e-12) v += q * pr(g); redes[ep.rede] += v; total += v; }
     serie.push({ d, v: total, a: aporte, r: redes, usd: precoEm(precos.USD, d) || 5 });
   }
+  if(saida) saida.emPool = Object.entries(emPool).map(([par, ep]) => ({ par, rede:ep.rede, q:Object.fromEntries(Object.entries(ep.q).filter(([, q]) => q > 1e-12)) })).filter(ep => Object.keys(ep.q).length);
   return serie;
 }
 
@@ -974,10 +976,10 @@ async function refazerHistorico(){
   const precos = await atualizarPrecos(usados.concat(['USD']), Date.parse(dia(inicio)), aviso);
   aviso('calculando');
   const conta = contabilizar(ev.filter(e => !e.excluido), precos, ev);
-  const serie = montarSerie(ev, precos);
+  const saida = {}, serie = montarSerie(ev, precos, saida);
   // quantidade que o histórico diz existir hoje, por rede e grupo
   const fim = {}; ev.filter(e => !e.excluido).forEach(e => { const k = e.rede + '|' + e.g; fim[k] = (fim[k] || 0) + e.q; });
-  const hist = { versao: VERSAO_HIST, geradoEm: Date.now(), serie, pos: conta.pos, transito: conta.transito, taxas: conta.taxas, aportado: conta.aportado, resgatado: conta.resgatado, mov: conta.mov.reverse(), pools, recompensas, farms, resultadoPools: conta.resultadoPools, golpe: golpe.size, golpeLista: [...golpe].map(g => ({ g, rede:g.split(':')[0], sim:simDe(g), nome:nomeDe(g) })), fim, info: infoToken, avisos: avisosMontagem.slice() };
+  const hist = { versao: VERSAO_HIST, geradoEm: Date.now(), serie, pos: conta.pos, transito: conta.transito, taxas: conta.taxas, aportado: conta.aportado, resgatado: conta.resgatado, mov: conta.mov.reverse(), pools, recompensas, farms, resultadoPools: conta.resultadoPools, golpe: golpe.size, golpeLista: [...golpe].map(g => ({ g, rede:g.split(':')[0], sim:simDe(g), nome:nomeDe(g) })), fim, info: infoToken, avisos: avisosMontagem.slice(), emPool: saida.emPool };
   if(!lsSet(LS.hist, hist)){ hist.serie = hist.serie.filter((x, i, a) => i % 2 === 0 || i === a.length - 1); lsSet(LS.hist, hist); }
   return hist;
 }
@@ -1112,16 +1114,23 @@ function miudo(ax){
   return '0,0' + String(zeros).replace(/\d/g, c => '₀₁₂₃₄₅₆₇₈₉'[c]) + String(sig).replace(/0+$/, '');
 }
 // preço de fechamento de dias atrás, pelo cache de preços diários
+// O dia conta pelo horário de Brasília (UTC−3): o fechamento diário é às 21h, e entre 21h e meia-noite a data UTC já é
+// amanhã, então "ontem" virava o fechamento de hoje e "Desde ontem" media só a última hora (06/10/2026)
 function precoAntes(g, dias){
   if(g === 'BRL') return 1;
   const m = PRECOS[g];
-  return m && Object.keys(m).length ? precoEm(m, dia(Date.now() - dias * DIA_MS)) : 0;
+  return m && Object.keys(m).length ? precoEm(m, dia(Date.now() - 3 * 3600e3 - dias * DIA_MS)) : 0;
 }
-// quanto as moedas de agora variaram em N dias (sem contar aportes e movimentos)
-function variacao(dias){
+// No modo US$, quanto vale hoje em reais o dólar de N dias atrás: o valor de antes vai pelo dólar daquele dia, e a
+// variação sai em dólar (antes saía a dos reais, e o próprio dólar digital aparecia subindo ou caindo). 0: sem o dólar daquele dia
+function cambio(dias){ if(est.moeda !== 'USD') return 1; const u0 = precoAntes('USD', dias); return u0 && VIVO && VIVO.usd ? VIVO.usd / u0 : 0; }
+// quanto as moedas de agora variaram em N dias (sem contar aportes e movimentos); naMoeda: na moeda da tela (R$ ou US$)
+function variacao(dias, naMoeda){
+  const k = naMoeda ? cambio(dias) : 1; if(!k) return null;
   let agora = 0, antes = 0;
-  linhasVivas().forEach(x => { const p0 = precoAntes(x.g, dias); if(!p0 || !x.p) return; antes += x.q * p0; agora += x.v; });
-  return antes ? { dif: agora - antes, pct: agora / antes - 1 } : null;
+  linhasVivas().forEach(x => { const p0 = precoAntes(x.g, dias); if(!p0 || !x.p) return; antes += x.q * p0 * k; agora += x.v; });
+  // arredonda ao centavo: em US$ a sobra de conta virava "−US$ 0,0₁₁1"
+  return antes ? { dif: Math.round((agora - antes) * 100) / 100, pct: agora / antes - 1 } : null;
 }
 const qtd = q => q >= 1000 ? q.toLocaleString('pt-BR', { maximumFractionDigits:0 }) : q.toLocaleString('pt-BR', { maximumSignificantDigits:5 });
 const pct = v => !isFinite(v) ? '—' : Math.abs(v) < 0.0005 ? '0%' : (v > 0 ? '+' : '−') + Math.abs(v * 100).toLocaleString('pt-BR', { maximumFractionDigits:1 }) + '%';
@@ -1153,12 +1162,22 @@ function desenharTopo(){
   const temBinance = VIVO && VIVO.saldos.some(s => s.rede === 'binance' && s.q * (VIVO.precos[s.g] || 0) >= 1);
   const csvAte = temBinance ? ultimoCsvBinance() : null;
   document.getElementById('subtotal').textContent = VIVO ? `Patrimônio agora, em ${nRedes} lugares. Cotações de ${new Date(VIVO.t).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}.${csvAte ? ` Binance: saldo do CSV, com movimentos até ${new Date(csvAte).toLocaleDateString('pt-BR')}.` : ''}` : 'Buscando saldos…';
-  document.getElementById('mudou').innerHTML = VIVO ? [[1, 'Desde ontem'], [7, '7 dias']].map(([d, rot]) => { const x = variacao(d); return x ? `<span>${rot}<b class="num v ${sinal(x.dif)}">${x.dif > 0 ? '+' : ''}${din(x.dif)} (${pct(x.pct)})</b></span>` : ''; }).join('') : '';
+  document.getElementById('mudou').innerHTML = VIVO ? [[1, 'Desde ontem'], [7, '7 dias']].map(([d, rot]) => { const x = variacao(d, true); return x ? `<span>${rot}<b class="num v ${sinal(x.dif)}">${x.dif > 0 ? '+' : ''}${din(x.dif)} (${pct(x.pct)})</b></span>` : ''; }).join('') : '';
   const serie = serieVisivel();
   const pv = document.getElementById('periodoVar');
   // em "Tudo" a variação partiria do primeiro aporte e só repetiria o Resultado
   pv.parentElement.hidden = !est.periodo;
-  if(serie.length > 1){ const ini = serie[0].v, fim = VIVO ? total : serie[serie.length-1].v; pv.textContent = pct(fim / ini - 1); pv.className = 'num v ' + sinal(fim - ini); document.getElementById('rotPeriodo').textContent = 'Desde ' + fmtDia(serie[0].d); }
+  // Rendimento do período sem contar aporte e resgate como ganho ou perda (antes um aporte de R$ 3.000 aparecia como alta).
+  // Mesma conta do Rendimento total: a base é o que havia no começo mais o aportado líquido no período. Em US$, cada valor
+  // vai pelo dólar do seu dia (06/10/2026).
+  if(serie.length > 1){
+    const u = x => est.moeda === 'USD' ? x.usd || 5 : 1, ult = serie[serie.length-1], fim = (VIVO ? total : ult.v) / u(ult);
+    let base = serie[0].v / u(serie[0]); for(let i = 1; i < serie.length; i++) base += (serie[i].a - serie[i-1].a) / u(serie[i]);
+    const r = base > 0 ? fim / base - 1 : NaN;
+    pv.textContent = pct(r); pv.className = 'num v ' + sinalPct(r);
+    document.getElementById('rotPeriodo').textContent = 'Desde ' + fmtDia(serie[0].d) + ', sem contar aportes';
+    pv.parentElement.title = 'Quanto o patrimônio rendeu no período. O que você aportou ou sacou para o banco no período não conta como ganho nem como perda.';
+  }
 }
 function serieVisivel(periodo = est.periodo){
   if(!HIST || !HIST.serie.length) return [];
@@ -1326,7 +1345,8 @@ function desenharRendimento(){
   if(!VIVO){ el.innerHTML = '<p class="vazio">Buscando saldos…</p>'; return; }
   const total = totalVivo(), d = est.periodoRend, por = {};
   linhasVivas().forEach(x => { if(x.g === 'BRL') return; const o = por[x.g] || (por[x.g] = { g:x.g, q:0, v:0, p:x.p }); o.q += x.q; o.v += x.v; });
-  const lin = Object.values(por).filter(x => x.v >= 10).map(x => { const p0 = precoAntes(x.g, d); return { ...x, ch: p0 && x.p ? x.p / p0 - 1 : null }; }).filter(x => x.ch != null).sort((a, b) => b.ch - a.ch);
+  const k = cambio(d);   // em US$, variação em dólar (06/10/2026)
+  const lin = Object.values(por).filter(x => x.v >= 10).map(x => { const p0 = precoAntes(x.g, d); return { ...x, ch: p0 && x.p && k ? x.p / (p0 * k) - 1 : null }; }).filter(x => x.ch != null).sort((a, b) => b.ch - a.ch);
   if(!lin.length){ el.innerHTML = '<p class="vazio">Sem preços antigos para comparar ainda.</p>'; return; }
   const maxAbs = Math.max(...lin.map(x => Math.abs(x.ch)), 0.01);
   el.innerHTML = '<ul class="lista rend">' + lin.map(x => {
@@ -1634,15 +1654,20 @@ function desenharAtivos(){
   const miudos = est.pequenos ? lista.filter(x => x.v < 10) : [];
   if(est.pequenos) lista = lista.filter(x => x.v >= 10);
   // números de cada linha, calculados uma vez para mostrar e para ordenar
-  const temCustoVendido = HIST && HIST.versao >= 2;
+  const temCustoVendido = HIST && HIST.versao >= 2, k1 = cambio(1);
+  // O custo é da moeda inteira (transferir entre carteiras não muda o preço médio), então o Retorno também: em "Por carteira"
+  // cada linha usava o custo e as vendas da moeda toda com o valor só daquela rede e saía menor. O "vendido" também é da
+  // moeda e aparece só em "Por ativo": em "Por carteira" se repetia em cada rede (06/10/2026)
+  const daMoeda = {}; linhasVivas().filter(x => !x.pool).forEach(x => { const o = daMoeda[x.g] || (daMoeda[x.g] = { q:0, v:0 }); o.q += x.q; o.v += x.v; });
   lista.forEach(x => {
     const p = HIST && HIST.pos[x.g];
     x.avg = p && p.q > 1e-12 ? p.custo / p.q : null;
     x.res = x.avg != null ? x.v - x.avg * x.q : null; x.real = p ? p.realizado : 0;
-    const p1 = x.g === 'BRL' ? 0 : precoAntes(x.g, 1); x.d1 = p1 && x.p ? x.p / p1 - 1 : null;
+    const p1 = x.g === 'BRL' ? 0 : precoAntes(x.g, 1); x.d1 = p1 && x.p && k1 ? x.p / (p1 * k1) - 1 : null;   // em US$, em dólar (06/10/2026)
     // ROI: tudo o que a moeda já devolveu (valor de hoje + o que as vendas renderam) sobre tudo o que custou
     const investido = p ? p.custo + (p.custoVendido || 0) : 0;
-    x.roi = temCustoVendido && investido > 0.01 ? (p.custo + (p.custoVendido || 0) + (x.res || 0) + x.real) / investido - 1 : null;
+    const m = daMoeda[x.g], resMoeda = x.avg != null && m ? m.v - x.avg * m.q : 0;
+    x.roi = temCustoVendido && investido > 0.01 ? (p.custo + (p.custoVendido || 0) + resMoeda + x.real) / investido - 1 : null;
     x.sim = simDe(x.g);
   });
   const { col, dir } = est.ordem;
@@ -1655,7 +1680,7 @@ function desenharAtivos(){
     const baixa = liquidezBaixa(x.g, x.v);
     return `<tr><td><b>${esc(x.sim)}</b>${baixa ? '<span class="selo">baixa liquidez</span>' : ''}<small>${est.agrupar === 'ativo' ? [...x.redes].map(tag).join('') : esc(nomeDe(x.g))}</small></td>
       <td class="num v ocm">${qtd(x.q)}</td><td class="num ocm">${x.avg != null ? din(x.avg) : '—'}</td><td class="num ocm">${din(x.p)}</td><td class="num ocm ${x.d1 != null ? sinalPct(x.d1) : ''}">${x.d1 != null ? pct(x.d1) : '—'}</td><td class="num v">${din(x.v)}</td>
-      <td class="num v ${sinal(x.res)}">${x.res != null ? din(x.res) + `<small>${pct(x.res / (x.avg * x.q))}${Math.abs(x.real) >= 1 ? ', vendido: ' + din(x.real) : ''}</small>` : '—'}</td>
+      <td class="num v ${sinal(x.res)}">${x.res != null ? din(x.res) + `<small>${pct(x.res / (x.avg * x.q))}${Math.abs(x.real) >= 1 && est.agrupar === 'ativo' ? ', vendido: ' + din(x.real) : ''}</small>` : '—'}</td>
       <td class="num ${x.roi != null ? sinalPct(x.roi) : ''}">${x.roi != null ? pct(x.roi) : '—'}</td>
       <td class="num ocm">${(total ? x.v / total * 100 : 0).toLocaleString('pt-BR', { maximumFractionDigits:1 })}%<span class="peso"><i style="width:${total ? x.v / total * 100 : 0}%"></i></span></td></tr>`;
   };
@@ -1860,6 +1885,10 @@ let ocupado = false;
 async function atualizarVivo(){
   status('Buscando saldos e cotações…', true);
   const { saldos, erros } = await saldosAgora(HIST);
+  // Pool v2 aberta (PulseX e parecidas): as moedas paradas nela continuam suas e entram no total como o gráfico conta (montarSerie).
+  // Antes ficavam fora só hoje: o Total saía menor e o gráfico caía no último dia (06/10/2026). O token da pool já é pulado
+  // em saldosAgora, e o pool:true deixa estas linhas fora do último saldo conhecido e da conferência com o histórico.
+  ((HIST && HIST.emPool) || []).forEach(ep => Object.entries(ep.q).forEach(([g, q]) => { if(q > 1e-12) saldos.push({ rede:ep.rede, g, q, pool:true }); }));
   const grupos = [...new Set(saldos.map(s => s.g).concat(Object.keys((HIST && HIST.recompensas) || {})).concat(HIST ? HIST.mov.slice(0, 60).flatMap(m => m.ins.concat(m.outs).map(x => x[0])) : []))];
   const { precos, liq, usd, velhos } = await precosAgora(grupos);
   const antes = VIVO;
@@ -1877,6 +1906,13 @@ async function atualizarVivo(){
   const temPreco = [...new Set(saldos.filter(s => s.q * (precos[s.g] || 0) >= 1).map(s => s.g))].filter(g => g !== 'BRL' && PRECOS[g] && Object.keys(PRECOS[g]).length);
   if(temPreco.length){ try{ PRECOS = await atualizarPrecos(temPreco, Date.now() - 30 * DIA_MS, t => status('Buscando ' + t + '…', true)); }catch(e){ console.warn('preços recentes', e); } }
 }
+// Total para a aba Tudo, gravado a cada leitura completa: abertura, Atualizar e histórico refeito (CSV novo, "não é golpe").
+// Antes ia junto com a visita, só na abertura, e a aba Tudo ficava com o número velho (06/10/2026). A visita continua só da
+// abertura, para "Desde a sua última visita". Só com tudo lido: rede fora do ar ou cotação antiga levaria um número errado.
+function gravarTotal(){
+  if(!VIVO || (VIVO.erros && VIVO.erros.length) || (VIVO.velhos && VIVO.velhos.length)) return false;
+  lsSet(LS.total, { t:Date.now(), total:totalVivo() }); return true;
+}
 async function iniciar(){
   tudo();
   if(ocupado) return; ocupado = true;
@@ -1886,9 +1922,8 @@ async function iniciar(){
     if(velho){ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); await atualizarVivo(); }
     tudo();
     status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }));
-    // registra a visita de agora para a próxima vez
-    // só com tudo lido: um total com rede fora do ar ou cotação antiga levaria um número errado para a aba Tudo
-    if(!(VIVO.erros && VIVO.erros.length) && !(VIVO.velhos && VIVO.velhos.length)) lsSet(LS.visita, { t:Date.now(), total:totalVivo(), precos:VIVO.precos });
+    // registra a visita de agora para a próxima vez (só com tudo lido, como o total da aba Tudo)
+    if(gravarTotal()) lsSet(LS.visita, { t:Date.now(), total:totalVivo(), precos:VIVO.precos });
   }catch(e){ console.error(e); status('Algo falhou: ' + e.message + '. Clique em Atualizar para tentar de novo.'); }
   ocupado = false;
   window.__pronto = true;
@@ -1950,12 +1985,12 @@ seg('tema', null, v => {
 { const t = lsGet(LS.tema, 'auto'); const b = document.querySelector(`#tema [data-v="${t}"]`); if(b) b.click(); }
 document.getElementById('pequenos').addEventListener('change', e => { est.pequenos = e.target.checked; desenharAtivos(); });
 document.getElementById('btnOlho').addEventListener('click', e => { const on = document.body.classList.toggle('privado'); e.target.setAttribute('aria-pressed', on); e.target.textContent = on ? 'Mostrar valores' : 'Esconder valores'; });
-document.getElementById('btnAtualizar').addEventListener('click', async () => { if(ocupado) return; ocupado = true; try{ await atualizarVivo(); tudo(); status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui atualizar: ' + e.message); } ocupado = false; seguirFila(); });
+document.getElementById('btnAtualizar').addEventListener('click', async () => { if(ocupado) return; ocupado = true; try{ await atualizarVivo(); tudo(); gravarTotal(); status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui atualizar: ' + e.message); } ocupado = false; seguirFila(); });
 // CSV importado ou "não é golpe" marcado durante uma leitura: o histórico é refeito quando ela termina
 // (antes o pedido se perdia e a tela só mudava 12 horas depois, 06/10/2026)
 let refazerDepois = false;
 function seguirFila(){ if(refazerDepois && !ocupado){ refazerDepois = false; refazerTudo(); } }
-async function refazerTudo(){ if(ocupado){ refazerDepois = true; return; } ocupado = true; try{ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); PRECOS = lsGet(LS.precos, {}); await atualizarVivo(); tudo(); status('Histórico refeito às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui refazer o histórico: ' + e.message); } ocupado = false; seguirFila(); }
+async function refazerTudo(){ if(ocupado){ refazerDepois = true; return; } ocupado = true; try{ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); PRECOS = lsGet(LS.precos, {}); await atualizarVivo(); tudo(); gravarTotal(); status('Histórico refeito às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui refazer o histórico: ' + e.message); } ocupado = false; seguirFila(); }
 document.getElementById('btnHistorico').addEventListener('click', () => { if(!ocupado && confirm('Refazer o histórico relê todas as transações e leva uns 2 minutos. Continuar?')) refazerTudo(); });
 // abas: a aba aberta fica no endereço da página (#ativos, #pools, #diario)
 const ABAS = ['geral', 'mapa', 'ativos', 'aportes', 'pools', 'diario'];

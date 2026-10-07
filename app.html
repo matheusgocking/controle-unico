@@ -482,10 +482,13 @@ function contasClinica(){
   return { ok:false, ativos:null, previsto:null, recebido:soma(doMes, g => g.valor),
            pacientes:soma(doMes.filter(dePaciente), g => g.valor), falta:null, sessoes:null };
 }
-// A Carteira grava o total de cada visita (cripto-v1-visita) neste mesmo navegador.
+// A Carteira grava neste mesmo navegador o total de cada leitura completa (cripto-v1-total): abrir, Atualizar, ler CSV.
+// Antes de 06/10/2026 só havia o da abertura (cripto-v1-visita), que ficava velho depois de Atualizar; ele ainda vale
+// enquanto a Carteira não gravar o novo. Fica o mais recente dos dois.
 function carteiraAgora(){
-  const v = lerLocal("cripto-v1-visita");
-  return v && typeof v.total === "number" ? { total:v.total, t:v.t } : null;
+  const ler = k => { const v = lerLocal(k); return v && typeof v.total === "number" ? { total:v.total, t:v.t } : null; };
+  const novo = ler("cripto-v1-total"), visita = ler("cripto-v1-visita");
+  return novo && !(visita && visita.t > novo.t) ? novo : visita;
 }
 
 // ---------- contas ----------
@@ -962,7 +965,7 @@ function telaTudo(){
     do Mês. Saldo agora: recebi menos gastei, menos o que foi para a reserva (aporte) e mais o que saiu dela (resgate), como a linha Total
     da planilha; o gasto feito com o dinheiro resgatado entra normalmente em Gastei. Ainda vou receber: a mesma conta do Painel da Clínica, pela agenda e pela cobrança de cada paciente, menos o que
     os pacientes já pagaram. Ainda vai sair: gastos fixos com dia depois de hoje, que só entram em Gastei quando o dia chega (fixo sem dia conta como já pago). A seta compara o fim do mês com zero.
-    Cripto: o total da última vez que a Carteira cripto abriu neste aparelho.
+    Cripto: o total da última leitura completa da Carteira cripto neste aparelho (ao abrir ou ao clicar em Atualizar).
   </details>`;
 }
 
@@ -1813,7 +1816,7 @@ window.addEventListener("hashchange", () => {
 // a Clínica e a Carteira gravam neste mesmo navegador: quando mudam, a aba Tudo acompanha
 window.addEventListener("storage", e => {
   const digitando = document.activeElement && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
-  if (!digitando && (e.key === "controle-unico-clinica-cache" || e.key === "cripto-v1-visita")) desenhar();
+  if (!digitando && (e.key === "controle-unico-clinica-cache" || e.key === "cripto-v1-visita" || e.key === "cripto-v1-total")) desenhar();
 });
 document.getElementById("tema").onclick = () => {
   const r = document.documentElement;
