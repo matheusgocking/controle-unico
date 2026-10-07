@@ -536,12 +536,12 @@ var Nuvem = (function(){
     }
     /* põe na tela a versão do Drive juntada com o que está neste aparelho agora (inclusive o que
        ele lançou enquanto o Drive era baixado); se sobrou algo daqui, manda de volta */
-    function receber(bruto, v){
+    function receber(bruto, v, soArquivo){
       var remoto = semApagados(bruto), apagadosLa = apagadosDe(bruto);
       if(apagadosLa){ Object.keys(apagadosLa).forEach(function(k){ if(!(k in apagados)) apagados[k] = apagadosLa[k]; }); guardarApagados(); }
       var textoRemoto = JSON.stringify(remoto);
       var local = op.obter();
-      var juntado = (pendente || geracao || apagadosLa) && op.temDados(local)
+      var juntado = !soArquivo && (pendente || geracao || apagadosLa) && op.temDados(local)
         ? juntar(baseDados(), local, remoto, base == null, "", apagadosLa)
         : remoto;
       var sobrou = juntado !== remoto && JSON.stringify(juntado) !== textoRemoto;
@@ -669,14 +669,16 @@ var Nuvem = (function(){
           if(!op.temDados(remoto) && op.temDados(op.obter())){ marcarArquivo(achado); conectando = false; return c.enviarAgora(); }
           /* voltou ao arquivo certo depois de estar ligado ao de outro caderno: o que está neste aparelho
              veio misturado do outro arquivo. Vale o arquivo certo; a cópia daqui fica guardada à parte
-             (CH_TRAVA), para que nada se perca e a separação possa usá-la. */
+             (CH_TRAVA), para que nada se perca e a separação possa usá-la. Sem juntar: juntar levaria ao
+             arquivo certo o que veio do outro (06/10/2026, conferência da separação). */
+          var soArquivo = trocou;
           if(trocou){
             trocou = false;
             try{ localStorage.setItem(CH_TRAVA, JSON.stringify({quando:new Date().toISOString(), dados:op.obter()})); }catch(x){}
             marcarPendente(false);
             avisoGeral((op.rotulo ? op.rotulo[0].toUpperCase() + op.rotulo.slice(1) : "O caderno") + " estava abrindo o arquivo de outro caderno no Drive. Voltei ao arquivo certo.");
           }
-          if(receber(remoto, achado)) estado("Juntei o que mudou no outro aparelho com o que está aqui. Salvando…", "indo");
+          if(receber(remoto, achado, soArquivo)) estado("Juntei o que mudou no outro aparelho com o que está aqui. Salvando…", "indo");
           else { estado("Salvo no Drive · aberto às " + hora(), "ok"); talvezCopiar(); }
         });
       }).catch(falhou).then(function(){ conectando = false; });
