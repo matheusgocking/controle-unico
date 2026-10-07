@@ -780,7 +780,8 @@ var Nuvem = (function(){
     var tipo = aviso ? "erro" : (e.tipo === "escolha" ? "erro" : e.tipo);
     if(pt){ pt.className = "nuvem-ponto" + (tipo ? " " + tipo : ""); pt.title = el.textContent; }
     /* a casca usa isto para mostrar o texto só quando ele importa (erro ou aviso) */
-    if(el.parentNode && el.parentNode.dataset) el.parentNode.dataset.estado = tipo || "nada";
+    /* "escolha": há botões para ele escolher, que só o módulo mostra; dentro da casca, só então a linha do módulo aparece */
+    if(el.parentNode && el.parentNode.dataset) el.parentNode.dataset.estado = (!aviso && e.acoes && e.acoes.length) ? "escolha" : (tipo || "nada");
     if(bt) bt.classList.toggle("hidden", temToken() || reconectando);
     if(ac){
       ac.innerHTML = "";
@@ -826,7 +827,10 @@ var Nuvem = (function(){
     return outrasJanelas().some(function(w){ try{ return !!(w.Nuvem && w.Nuvem.algumPendente && w.Nuvem.algumPendente()); }catch(e){ return false; } });
   }
   function sair(){
-    var aviso = temPendente()
+    /* sem login o ponto nunca fica verde: diz claro que o que só está aqui se perde (06/10/2026) */
+    var aviso = temPendente() && !temToken()
+      ? "ATENÇÃO: há mudanças guardadas só neste aparelho, que ainda não foram para o Google Drive. Se sair agora, elas se perdem.\n\nToque em Cancelar, entre com o Google e espere o ponto ficar verde. Ou toque em OK para sair e perder essas mudanças."
+      : temPendente()
       ? "ATENÇÃO: há mudanças que ainda não chegaram ao Google Drive. Se sair agora, elas se perdem.\n\nEspere o ponto ficar verde (\"Salvo no Drive\") e tente de novo, ou toque em OK para sair assim mesmo."
       : "Sair deste aparelho?\n\nO app apaga deste navegador as cópias dos cadernos guardadas aqui e a conexão com o Google. Nada é apagado do seu Google Drive: é só entrar de novo para ver tudo.";
     if(!confirm(aviso)) return;

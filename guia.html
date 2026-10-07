@@ -107,7 +107,7 @@ a{color:var(--accent)}
     <h2>Lançar um gasto ou uma entrada</h2>
     <p class="serve">O mesmo formulário serve no Tudo, no Dinheiro e na Casa.</p>
     <ul>
-      <li>Toque em <kbd>+ Novo lançamento</kbd>. No celular há também o botão redondo <kbd>+</kbd> no canto da tela.</li>
+      <li>Toque em <kbd>+ Novo lançamento</kbd>. O botão redondo <kbd>+</kbd> no canto da tela pergunta o que lançar: <b>Lançamento</b> (gasto, receita ou compra da casa) ou <b>Recebimento de paciente</b> (abre o registrar pagamento da Clínica).</li>
       <li>Primeiro diga de quem é: <b>Pessoal</b> (só seu, entra inteiro no seu mês) ou <b>Casa</b> (dividido, entra na balança com a Ana). No Tudo essa escolha é obrigatória; no Dinheiro e na Casa ela já vem marcada.</li>
       <li>Depois: o que é (despesa, receita, aporte ou resgate da reserva), o dia (<kbd>Hoje</kbd>, <kbd>Ontem</kbd> ou outro), a categoria, a descrição se quiser, o valor e a forma de pagamento (ou quem comprou, na Casa).</li>
       <li>No valor, digite só os números: a vírgula anda sozinha (1025 vira 10,25).</li>
@@ -212,7 +212,7 @@ a{color:var(--accent)}
     <h2>Conferir</h2>
     <p class="serve">Compara o app com as planilhas, item por item.</p>
     <ul>
-      <li>No computador é o botão <kbd>Conferir</kbd> no alto; no celular fica no menu <kbd>⋯</kbd>.</li>
+      <li>Fica no menu <kbd>⋯</kbd>, em <b>Conferir com as planilhas</b>.</li>
       <li>Escolha as planilhas: elas são lidas no próprio aparelho, nada é enviado.</li>
       <li>Desde outubro de 2026 serve à Clínica. Dinheiro e Casa são conferidos pelo extrato do banco.</li>
     </ul>
@@ -221,7 +221,9 @@ a{color:var(--accent)}
   <section id="menu">
     <h2>Menu ⋯</h2>
     <ul>
-      <li><b>Tema escuro</b> ou <b>Tema claro</b>.</li>
+      <li><b>Conferir com as planilhas</b>: abre a Conferência. Lá dentro, o mesmo item vira <b>Sair da conferência</b>.</li>
+      <li><b>Mudar para tema escuro</b> ou <b>Mudar para tema claro</b>.</li>
+      <li><b>Guia rápido</b>: esta página.</li>
       <li><b>Privacidade</b>: o que o app acessa e como tirar o acesso.</li>
       <li><b>Sair deste aparelho</b>: apaga deste aparelho o que o app guardou e o acesso ao Google. O que está no Drive não é tocado.</li>
       <li>No fim do menu, a versão do app (a data em que foi publicada).</li>
@@ -330,5 +332,17 @@ a{color:var(--accent)}
 </div>
 
 </main>
+<script>
+/* Voltar ao app volta pelo histórico quando veio do próprio app (06/10/2026), como a Privacidade:
+   antes criava um passo novo, e o Voltar do celular abria o Guia de novo */
+(function(){
+  var ref = ""; try { ref = document.referrer; } catch(e){}
+  var daqui = ref && ref.indexOf(location.origin + "/") === 0;
+  var links = document.querySelectorAll("a.voltar");
+  for (var i = 0; i < links.length; i++) links[i].addEventListener("click", function(e){
+    if (daqui && history.length > 1) { e.preventDefault(); history.back(); }
+  });
+})();
+</script>
 </body>
 </html>
