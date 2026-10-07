@@ -138,7 +138,7 @@ var FormLancamento = (function(){
     if (o === "pessoal" && !est.forma) est.forma = lembrado("forma") || "";
     if (o === "casa" && (!est.quem || cfg.casa.pessoas.indexOf(est.quem) < 0)) est.quem = cfg.casa.eu || cfg.casa.pessoas[0] || "";
 
-    var h = '<button type="button" class="lanc-abrir" aria-expanded="' + est.aberto + '">' + (est.aberto ? "Fechar o lançamento" : "+ Novo lançamento") + '</button>';
+    var h = '<button type="button" class="lanc-abrir" aria-expanded="' + est.aberto + '">' + (est.aberto ? "Cancelar" : "+ Novo lançamento") + '</button>';
     if (est.aberto){
       h += '<form class="lanc-form ' + (o || "") + '" novalidate>';
       if (alterando){

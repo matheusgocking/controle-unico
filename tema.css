@@ -25,6 +25,7 @@
   --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d;
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-/* dentro da casca, a linha do Drive de cada módulo só aparece quando há erro ou escolha a fazer:
-   o estado normal já está no ponto da barra de cima (04/10/2026) */
-.na-casca .nuvem:not([data-estado="erro"]){display:none !important}
+/* dentro da casca, a linha do Drive de cada módulo só aparece quando há uma escolha a fazer (os botões
+   ficam no módulo): o estado normal e o erro já estão na barra de cima (04/10/2026; 06/10/2026: o erro
+   aparecia duas vezes, na casca e no módulo) */
+.na-casca .nuvem:not([data-estado="escolha"]){display:none !important}
