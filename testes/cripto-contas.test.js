@@ -222,3 +222,19 @@ test("13. No modo US$, as variações são em dólar", async () => {
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test("6b. Retorno de moeda com parte numa pool aberta não conta o ganho da pool sem o custo dela", async () => {
+  const { ctx, pg, erros } = await abrir();
+  // Caso da conferência: 2.000.000 PLS a R$ 0,0005 (R$ 1.000); metade foi para uma pool v2 aberta (o custo dessa metade
+  // fica na pool, não no preço médio). O PLS sobe para R$ 0,001: custou R$ 1.000 e vale R$ 2.000, retorno +100%.
+  const r = await pg.evaluate(() => {
+    HIST = { versao:VERSAO_HIST, geradoEm:Date.now(), serie:[], pos:{ PLS:{ q:1000000, custo:500, custoVendido:0, realizado:0 } }, mov:[], pools:[], fim:{}, aportado:0, resgatado:0 };
+    PRECOS = {};
+    VIVO = { t:Date.now(), saldos:[{ rede:"pulsechain", g:"PLS", q:1000000 }, { rede:"pulsechain", g:"PLS", q:1000000, pool:true }], precos:{ BRL:1, USD:5, PLS:0.001 }, liq:{}, usd:5, erros:[], velhos:[], mercado:{}, posicoes:[] };
+    est.agrupar = "ativo"; desenharAtivos();
+    return [...document.querySelectorAll("#ativos tr:not(.grupo)")].map(tr => tr.children[7].textContent);
+  });
+  assert.deepEqual(r, ["+100%"]);   // a primeira versão da PR mostrava +200%
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

@@ -1658,7 +1658,7 @@ function desenharAtivos(){
   // O custo é da moeda inteira (transferir entre carteiras não muda o preço médio), então o Retorno também: em "Por carteira"
   // cada linha usava o custo e as vendas da moeda toda com o valor só daquela rede e saía menor. O "vendido" também é da
   // moeda e aparece só em "Por ativo": em "Por carteira" se repetia em cada rede (06/10/2026)
-  const daMoeda = {}; linhasVivas().forEach(x => { const o = daMoeda[x.g] || (daMoeda[x.g] = { q:0, v:0 }); o.q += x.q; o.v += x.v; });
+  const daMoeda = {}; linhasVivas().filter(x => !x.pool).forEach(x => { const o = daMoeda[x.g] || (daMoeda[x.g] = { q:0, v:0 }); o.q += x.q; o.v += x.v; });
   lista.forEach(x => {
     const p = HIST && HIST.pos[x.g];
     x.avg = p && p.q > 1e-12 ? p.custo / p.q : null;
