@@ -3759,10 +3759,15 @@ function calcularVencimento(p){
   var dv = devidoDe(p);
   if(dv){
     if(dv.sessoes > 0){
-      /* devendo: desde a primeira sessão que o saldo não cobriu */
+      /* devendo: desde a primeira sessão que o saldo não cobriu. O dinheiro paga da sessão mais
+         antiga para a mais nova: soma o que cada sessão cobra até passar do total pago, e a que
+         passou é a primeira em aberto (auditoria de 06/10/2026: antes voltava até o começo da
+         dívida, e quem pagou metade aparecia atrasado desde a primeira sessão, com as pagas em vermelho) */
       if(dv.extrato){
-        var ls = extratoDe(p).linhas, desde = null;
-        for(var i = ls.length - 1; i >= 0 && ls[i].saldo > 0.005; i--) if(ls[i].cobrado > 0) desde = ls[i].data;
+        var ext = extratoDe(p), cum = 0, desde = null;
+        for(var i = 0; i < ext.linhas.length && !desde; i++){
+          if(ext.linhas[i].cobrado > 0){ cum += ext.linhas[i].cobrado; if(cum > ext.pago + 0.005) desde = ext.linhas[i].data; }
+        }
         if(desde) return deISO(desde);
       }
       var passadas = [], hoje = hoje0();
