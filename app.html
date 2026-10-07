@@ -1063,6 +1063,8 @@ async function importarPendencias(arquivo){
 // tela ficavam mal organizados). A chave fica no alto; o mês aberto vale para todas.
 const VISTAS_DIN = [["mes","Lançamentos"],["fixos",'<span class="so-larg">Gastos fixos</span><span class="so-cel">Fixos</span>'],["pend","Pendências"],["hist","Mês a mês"],["fech",'<span class="so-larg">Fechamento</span><span class="so-cel">Fechou</span>']];
 let vistaDin = "mes";
+// o mês que a Tudo mostrava antes de "Ver o fechamento": ao voltar para a Tudo, ela volta a ele
+let voltaDoFech = null;
 function subabasDinheiro(){
   const n = pendencias().filter(p => !pendQuitada(p)).length;
   return `<div class="subabas" role="group" aria-label="O que mostrar no Dinheiro">${VISTAS_DIN.map(([k, nome]) =>
@@ -1675,12 +1677,17 @@ function ligar(){
     desenhar();
   });
   document.querySelectorAll("[data-precisa]").forEach(b => b.onclick = () => irPrecisa(avisosNaTela[Number(b.dataset.precisa)]));
+  // "Ver o fechamento" troca a tela pela casca, como os avisos de "O que precisa de você" (06/10/2026):
+  // antes trocava só aqui dentro, e o título, a aba acesa e o Voltar ficavam na Tudo
   document.querySelectorAll("[data-fech]").forEach(b => b.onclick = () => {
     const k = b.dataset.fech;
+    if (aba === "tudo") voltaDoFech = ref;
     ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1);
-    aba = "carteira"; vistaDin = "fech";
-    try { location.hash = aba; } catch(e){}
-    desenhar(); window.scrollTo(0, 0);
+    vistaDin = "fech";
+    const casca = (() => { try { return window.top !== window.self && typeof window.parent.mostrar === "function" ? window.parent : null; } catch(e){ return null; } })();
+    if (casca) casca.mostrar("carteira");
+    else { aba = "carteira"; try { location.replace("#carteira"); } catch(e){} desenhar(); }
+    window.scrollTo(0, 0);
   });
 
   // o formulário único de lançamento (lancamento.js) entra em cada lugar marcado na tela
@@ -1799,6 +1806,7 @@ function abaDoEndereco(){
 window.addEventListener("hashchange", () => {
   const k = abaDoEndereco();
   if (k && k !== aba) aba = k;
+  if (aba === "tudo" && voltaDoFech) { if (vistaDin === "fech") { vistaDin = "mes"; ref = voltaDoFech; } voltaDoFech = null; }
   desenhar();   // redesenha mesmo na mesma aba: a Clínica ou a Carteira podem ter mudado
 });
 // a Clínica e a Carteira gravam neste mesmo navegador: quando mudam, a aba Tudo acompanha

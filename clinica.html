@@ -677,6 +677,17 @@ details.fi-det[open] > summary{margin-bottom:6px}
 .na-casca #nuvem-entrar{display:none !important}
 #nuvem-texto{flex:1 1 0; min-width:0}
 .na-casca .brand h1{display:none}
+/* na casca o tema é o do menu ⋯ dela, que vale para o app inteiro e fica guardado (06/10/2026) */
+.na-casca #tema{display:none !important}
+/* na casca, o fim da página não fica atrás do botão + dela */
+.na-casca .wrap{padding-bottom:96px !important}
+.foot a[href="privacidade.html"]{color:var(--accent)}
+/* a lista "Prontuário por escrever", aberta pelo aviso da aba Tudo */
+.pront-lista{display:grid; gap:6px; margin:12px 0 0; padding:0; list-style:none}
+.pront-lista button{display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; text-align:left;
+  border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text); font:inherit; padding:10px 12px; border-radius:9px; cursor:pointer; min-height:44px}
+.pront-lista button:hover{border-color:var(--accent)}
+.pront-lista small{color:var(--muted); white-space:nowrap}
 @media (max-width:700px){
   .wrap{padding:12px 12px 40px}
   .top{gap:10px; margin-bottom:12px}
@@ -1416,7 +1427,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   </section>
 
   <div class="foot">
-    <span>Os dados vão do seu navegador direto para o seu Google Drive, no arquivo "Controle Único - clínica.json". <a href="privacidade.html">Privacidade</a>.</span>
+    <span>Os dados vão do seu navegador direto para o seu Google Drive, no arquivo "Controle Único - clínica.json". <a href="privacidade.html" target="_top">Privacidade</a>.</span>
     <span style="display:flex; gap:8px">
       <button class="btn sm" id="exportar">Exportar dados</button>
       <button class="btn sm" id="importar">Importar dados</button>
@@ -4079,6 +4090,8 @@ function renderPagamentos(){
     .map(function(p){
       return '<option value="'+esc(p.id)+'">'+esc(p.nome)+' · '+DIAS_CURTO[p.dia]+' '+String(p.hora).padStart(2,"0")+'h</option>';
     }).join("") + '<option value="">Outra pessoa, fora da agenda</option>';
+  /* o + da casca abre o formulário sem ninguém escolhido (06/10/2026): antes vinha o primeiro da agenda */
+  sel.insertAdjacentHTML("afterbegin", '<option value="?" disabled hidden>Escolha quem pagou</option>');
   if(escolhido) sel.value = escolhido;
   if(!document.getElementById("pg-data").value) document.getElementById("pg-data").value = chaveData(hoje0());
   dicaPagamento(false);
@@ -4146,7 +4159,7 @@ function dicaPagamento(trocouPaciente){
   var p = acharPaciente(sel.value);
   /* "Outra pessoa": aparece o campo de escrever de quem veio */
   document.getElementById("pg-quem-campo").classList.toggle("hidden", !!p || sel.value !== "");
-  if(!p){ dica.textContent = sel.value === "" ? "Fora da agenda: escreva de quem veio e escolha a origem." : ""; return; }
+  if(!p){ dica.textContent = sel.value === "" ? "Fora da agenda: escreva de quem veio e escolha a origem." : sel.value === "?" ? "Escolha quem pagou: o valor vem do paciente." : ""; return; }
   if(trocouPaciente || !campo.value) campo.value = p.valor;
   var s = situacaoPagamento(p);
   /* a prévia é a mesma da ficha (06/10/2026): antes esta tela dizia só quantas sessões o valor
@@ -6037,6 +6050,8 @@ document.getElementById("pg-valor").addEventListener("input", function(){ dicaPa
 document.getElementById("pg-data").addEventListener("change", function(){ dicaPagamento(false); });
 /* o formulário de registrar fica fechado; o botão abre e já põe o foco em quem pagou */
 function abrirFormPagamento(abrir){
+  /* a data é a de hoje toda vez que abre (o app pode ter passado a noite aberto) */
+  if(abrir && document.getElementById("pg-form").classList.contains("hidden")) document.getElementById("pg-data").value = chaveData(hoje0());
   document.getElementById("pg-form").classList.toggle("hidden", !abrir);
   document.getElementById("pg-abrir").setAttribute("aria-expanded", abrir ? "true" : "false");
   document.getElementById("pg-abrir").classList.toggle("hidden", abrir);
@@ -6047,6 +6062,11 @@ document.getElementById("pg-abrir").addEventListener("click", function(){ abrirF
    formulário de registrar, sem nada novo nas contas */
 window.abrirRecebimento = function(){
   mostrarView("pagamentos");
+  /* sem paciente e sem valor: ele escolhe quem pagou, e o valor vem desse paciente */
+  document.getElementById("pg-paciente").value = "?";
+  document.getElementById("pg-valor").value = "";
+  document.getElementById("pg-data").value = chaveData(hoje0());
+  dicaPagamento(false);
   abrirFormPagamento(true);
   document.getElementById("pg-form").scrollIntoView({ block:"start" });
 };
@@ -6076,14 +6096,50 @@ window.avisosDaClinica = function(){
   var comPront = [], nPront = 0;
   dados.pacientes.forEach(function(p){ var n = pendenciasDe(p).length; if(n){ nPront += n; comPront.push(p); } });
   if(nPront) A.push({nivel:"atencao", titulo:plural(nPront, "registro", "registros") + " do prontuário por escrever",
-    detalhe:comPront.length === 1 ? "De " + comPront[0].nome + "." : "De " + comPront.length + " pacientes. Cada um fica no Prontuário da ficha.",
-    ordem:1, abrir:comPront.length === 1 ? {tipo:"paciente", id:comPront[0].id, aba:"prontuario"} : {tipo:"marcar"}});
+    detalhe:"De " + nomesEm(comPront) + ".",
+    ordem:1, abrir:comPront.length === 1 ? {tipo:"paciente", id:comPront[0].id, aba:"prontuario"} : {tipo:"prontuario"}});
   return A;
 };
-/* e leva ao lugar de cada aviso: a ficha do paciente ou a lista Falta marcar. Só abre telas. */
+/* "Paciente Mensal e Paciente Avulso"; com mais de três, "A, B, C e mais 2" */
+function nomesEm(lista){
+  var n = lista.map(function(p){ return p.nome; });
+  if(n.length > 3) return n.slice(0, 3).join(", ") + " e mais " + (n.length - 3);
+  return n.length > 1 ? n.slice(0, -1).join(", ") + " e " + n[n.length - 1] : (n[0] || "");
+}
+/* o aviso do prontuário com mais de um paciente (06/10/2026): antes levava à grade da semana, onde não
+   há nada de prontuário. Agora abre a lista de quem tem registro por escrever; cada nome abre a ficha
+   na aba Prontuário. Só abre telas. */
+function abrirProntuarioPendente(){
+  var lista = dados.pacientes.map(function(p){ return {p:p, n:pendenciasDe(p).length}; }).filter(function(x){ return x.n; });
+  if(!lista.length){ mostrarView("sessoes"); return; }
+  if(lista.length === 1){ abrirFicha(lista[0].p, null, "prontuario"); return; }
+  fecharMenu();
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal"><h2>Prontuário por escrever</h2>' +
+    '<p class="sub">Toque num paciente para abrir o Prontuário da ficha dele.</p>' +
+    '<ul class="pront-lista">' + lista.map(function(x){
+      return '<li><button type="button" data-pront="'+esc(x.p.id)+'"><b>'+esc(x.p.nome)+'</b><small>'+plural(x.n, "registro", "registros")+'</small></button></li>';
+    }).join("") + '</ul>' +
+    '<div class="acoes"><button class="btn" id="pp-fechar">Fechar</button></div></div>';
+  document.body.appendChild(fundo);
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar, fundo.querySelector("[data-pront]"));
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
+  document.getElementById("pp-fechar").addEventListener("click", fechar);
+  fundo.querySelectorAll("[data-pront]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var p = acharPaciente(b.dataset.pront);
+      fundo.remove();
+      if(p) abrirFicha(p, null, "prontuario");
+    });
+  });
+}
+/* e leva ao lugar de cada aviso: a ficha do paciente, a lista do prontuário ou a lista Falta marcar. Só abre telas. */
 window.abrirDoTudo = function(o){
   if(!o) return;
   if(o.tipo==="paciente"){ var p = acharPaciente(o.id); if(p) abrirFicha(p, null, o.aba || "pagamento"); return; }
+  if(o.tipo==="prontuario"){ abrirProntuarioPendente(); return; }
   mostrarView("sessoes");
   var alvo = document.getElementById("ss-p-marcar");
   if(alvo && !alvo.classList.contains("hidden")) alvo.scrollIntoView({block:"start"}); else window.scrollTo(0, 0);
@@ -6102,6 +6158,7 @@ document.getElementById("pg-add").addEventListener("click", function(){
   var origem = document.getElementById("pg-origem").value;
   var data = document.getElementById("pg-data").value;
   var valor = Number(document.getElementById("pg-valor").value);
+  if(document.getElementById("pg-paciente").value === "?"){ avisarPagamento("Escolha quem pagou."); document.getElementById("pg-paciente").focus(); return; }
   if(!p && !quem){ avisarPagamento("Escolha quem pagou, ou escreva de quem veio."); return; }
   if(!data){ avisarPagamento("Falta a data do pagamento."); return; }
   if(!(valor > 0)){ avisarPagamento("Falta o valor."); return; }

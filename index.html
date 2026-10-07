@@ -186,10 +186,14 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   /* no celular o + da casca só aparece na Clínica; na Tudo e na Carteira o + da própria tela abre esta escolha */
   .mais{right:14px; bottom:14px}
   .mais-bt{width:54px; height:54px}
-  :root:not([data-tela="clinica"]) .mais-bt{display:none}
-  :root:not([data-tela="clinica"]) .mais-lista{bottom:68px}   /* em cima do + da tela, sem cobri-lo */
+  /* a Cripto não tem + próprio: o da casca aparece lá também (06/10/2026) */
+  :root:not([data-tela="clinica"]):not([data-tela="cripto"]) .mais-bt{display:none}
+  :root:not([data-tela="clinica"]):not([data-tela="cripto"]) .mais-lista{bottom:68px}   /* em cima do + da tela, sem cobri-lo */
 }
 :root[data-tela="conferir"] .mais{display:none}
+/* com uma janela do módulo aberta (a ficha do paciente, por exemplo), o + sai da frente:
+   antes ele ficava por cima do botão Pronto da ficha (06/10/2026) */
+:root[data-janela] .mais{display:none}
 </style>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="nuvem.js"></script>
@@ -204,8 +208,8 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
     <details class="menu" id="menu">
       <summary class="bt" title="Mais opções" aria-label="Mais opções"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></summary>
       <div class="menu-lista">
-        <button type="button" id="conferir" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg>Conferir com as planilhas</button>
-        <button type="button" id="tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor"/></svg><span id="tema-rot">Tema escuro</span></button>
+        <button type="button" id="conferir" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg><span id="conferir-rot">Conferir com as planilhas</span></button>
+        <button type="button" id="tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor"/></svg><span id="tema-rot">Mudar para tema escuro</span></button>
         <a href="guia.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></svg>Guia rápido</a>
         <a href="privacidade.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/></svg>Privacidade</a>
         <button type="button" class="sair" id="sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg>Sair deste aparelho</button>
@@ -269,9 +273,30 @@ function quadro(k, src){
   quadros[k] = f;
   // a aba Tudo pergunta os números do mês à Clínica: quando ela carrega, a Tudo se redesenha
   if (k === "clinica") f.addEventListener("load", function(){
+    // um link que abriu outra página dentro do quadro (a Privacidade, antes) não fica no lugar da Clínica
+    try { if (!/\/clinica\.html$/.test(f.contentWindow.location.pathname)) { f.contentWindow.location.replace(src); return; } } catch(e){}
     try { quadros.app && quadros.app.contentWindow.desenhar(); } catch(e){}
   });
+  f.addEventListener("load", function(){ vigiarJanelas(f); });
   return f;
+}
+
+/* as janelas do módulo (.overlay, como a ficha do paciente) escondem o + da casca enquanto estão abertas */
+function janelaAberta(){
+  var f = atual && PAGINAS[atual] && quadros[PAGINAS[atual].quadro];
+  try { return !!(f && f.contentDocument && f.contentDocument.querySelector("body > .overlay")); } catch(e){ return false; }
+}
+function marcarJanela(){
+  var aberta = janelaAberta();
+  document.documentElement.toggleAttribute("data-janela", aberta);
+  if (aberta && window.MaisLancar) MaisLancar.fechar();
+}
+function vigiarJanelas(f){
+  try {
+    var w = f.contentWindow, b = f.contentDocument.body;
+    if (b && w.MutationObserver) new w.MutationObserver(marcarJanela).observe(b, { childList:true });
+  } catch(e){}
+  marcarJanela();
 }
 
 /* O botão Voltar do celular (05/10/2026): cada troca de tela vira um passo do histórico da casca,
@@ -280,6 +305,7 @@ function quadro(k, src){
 function mostrar(p, comoFicou){
   p = ANTIGOS[p] || p;
   var cfg = PAGINAS[p]; if (!cfg) return;
+  var de = atual;
   var novo = !quadros[cfg.quadro];
   var f = quadro(cfg.quadro, cfg.src);
   if (!novo && cfg.quadro === "app"){
@@ -291,6 +317,8 @@ function mostrar(p, comoFicou){
   atual = p;
   document.documentElement.setAttribute("data-tela", p);
   if (window.MaisLancar) MaisLancar.fechar();
+  if (window.menu) menu.open = false;
+  marcarJanela();
   // voltou para um módulo já aberto: ele confere se o Drive mudou em outro aparelho
   if (!novo) { try { f.contentWindow.Nuvem.aoMostrar(); } catch(e){} }
   var b = document.querySelectorAll("#abas button");
@@ -304,23 +332,31 @@ function mostrar(p, comoFicou){
     try { localStorage.setItem("cu-carteira-vista", p); } catch(e){}
   }
   document.getElementById("conferir").setAttribute("aria-pressed", String(p === "conferir"));
+  // na Conferência o mesmo item do menu tira dela: o nome diz isso (06/10/2026)
+  document.getElementById("conferir-rot").textContent = p === "conferir" ? "Sair da conferência" : "Conferir com as planilhas";
   // a conferência não vira a tela de abertura: ao voltar ao app ele cai no módulo de sempre
   if (p !== "conferir") { try { localStorage.setItem("cu-painel-aba", p); } catch(e){} }
   // comoFicou: a tela veio do próprio histórico (Voltar, Avançar) ou é a de abertura, e não ganha passo novo
   var anterior = (location.hash || "").replace("#", "");
   try {
     if (comoFicou || anterior === p) history.replaceState(null, "", "#" + p);
-    else history.pushState(null, "", "#" + p);
+    else history.pushState({ de: de }, "", "#" + p);
   } catch(e){}
 }
 window.addEventListener("popstate", function(){
+  menu.open = false;
   var p = (location.hash || "").replace("#", "");
   p = ANTIGOS[p] || p;
   if (PAGINAS[p] && p !== atual) mostrar(p, true);
 });
 var antesDeConferir = "tudo";
+/* sair da Conferência pelo menu desfaz o passo de entrar: o Voltar depois não a abre de novo */
 function alternarConferir(){
-  if (atual === "conferir") mostrar(antesDeConferir);
+  if (atual === "conferir"){
+    var st = history.state;
+    if (st && st.de === antesDeConferir) history.back();
+    else mostrar(antesDeConferir, true);
+  }
   else { antesDeConferir = atual || "tudo"; mostrar("conferir"); }
 }
 var menu = document.getElementById("menu");
@@ -331,6 +367,8 @@ document.getElementById("sair").addEventListener("click", function(){ menu.open 
 // o menu fecha ao tocar fora dele ou com Esc
 document.addEventListener("click", function(e){ if (menu.open && !menu.contains(e.target)) menu.open = false; });
 document.addEventListener("keydown", function(e){ if (e.key === "Escape" && menu.open){ menu.open = false; menu.querySelector("summary").focus(); } });
+// um toque na página do módulo (outra janela) não chega aqui: a casca perde o foco, e o menu fecha
+window.addEventListener("blur", function(){ setTimeout(function(){ if (menu.open && document.activeElement && document.activeElement.tagName === "IFRAME") menu.open = false; }, 0); });
 
 document.getElementById("abas").addEventListener("click", function(e){
   var b = e.target.closest("button[data-p]");
@@ -399,7 +437,8 @@ function escuroAgora(){
   var r = document.documentElement;
   return r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
 }
-function rotuloTema(){ document.getElementById("tema-rot").textContent = escuroAgora() ? "Tema claro" : "Tema escuro"; }
+// o item diz o que o toque faz, não o tema de agora (06/10/2026)
+function rotuloTema(){ document.getElementById("tema-rot").textContent = escuroAgora() ? "Mudar para tema claro" : "Mudar para tema escuro"; }
 function aplicarTema(v){
   document.documentElement.dataset.theme = v;
   rotuloTema();
