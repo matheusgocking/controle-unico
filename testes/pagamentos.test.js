@@ -251,3 +251,24 @@ test("Ficha: quem chega pelo prontuário cai na aba Prontuário, com a Formulaç
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+/* Auditoria de 06/10/2026: o dinheiro paga da sessão mais antiga para a mais nova também quando o
+   pagamento cobre só parte da dívida. Antes o vencimento voltava ao começo da dívida. */
+test("Pagamento parcial: as sessões mais antigas ficam pagas e o vencimento é a primeira em aberto", async () => {
+  const { ctx, p, erros } = await abrir();
+  const r = await p.evaluate(`(${MONTAR})(["2026-09-07","2026-09-14","2026-09-21","2026-09-28"], [["2026-10-01", 350]])`)
+    .then(() => p.evaluate(() => {
+      const a = acharPaciente("pA"), s = situacaoPagamento(a);
+      const meio = (dados.pagamentos[0].valor = 600, renderTudo(), chaveData(situacaoPagamento(a).venc));
+      dados.pagamentos[0].valor = 350; renderTudo();
+      return { venc: chaveData(s.venc), dias: s.dias, devido: textoDevido(a).texto, meio,
+        bolinhas: ["2026-09-07","2026-09-14","2026-09-21","2026-09-28"].map(d => pagamentoDaSessao(a, deISO(d), 9, "realizada")) };
+    }));
+  assert.equal(r.venc, "2026-09-21", "R$ 350 pagam as sessões de 07 e 14/09");
+  assert.equal(r.dias, -13);
+  assert.equal(r.devido, "deve 2 sessões · R$ 350");
+  assert.deepEqual(r.bolinhas, ["paga", "paga", "aberta", "aberta"]);
+  assert.equal(r.meio, "2026-09-28", "com R$ 600 pagos só a última fica em aberto (faltam R$ 100)");
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
