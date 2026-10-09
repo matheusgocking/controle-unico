@@ -455,6 +455,18 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .fi-trat.enc,.selo-trat.enc{background:var(--neutral-chip); color:var(--text); border:1px solid var(--border-strong)}
 .fi-trat.volta,.selo-trat.volta{background:var(--ok-soft); color:var(--ok)}
 .fi-tratamento h3{margin-bottom:8px}
+/* dados do paciente no Cadastro (09/10/2026) */
+.dp-topo{display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:6px}
+.dp-topo h3{margin:0}
+.dp-vazio{margin:0 0 10px}
+.dp-grade{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); column-gap:12px}
+.dp-grade .dp-grupo,.dp-grade .dp-larga{grid-column:1 / -1}
+.dp-grupo{margin:6px 0 8px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--muted)}
+.dp-grade .field{margin-bottom:10px}
+.dp-whats{color:var(--accent)}
+.fi-agenda-t{margin:4px 0 10px}
+.dp-modal{max-width:640px}
+@media (max-width:520px){ .dp-grade{grid-template-columns:minmax(0,1fr)} }
 .fi-linha-tempo{display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:13.5px}
 .fi-linha-tempo .lt{display:flex; align-items:center; gap:10px}
 .fi-linha-tempo .lt > span:nth-child(2){flex:1 1 auto}
@@ -469,7 +481,7 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .fi-pl .pl-volta{font-size:12px; font-weight:600; color:var(--ok); margin:6px 0 2px}
 .fi-ant{margin-top:10px}
 .fi-ant .linhas > div{display:flex; justify-content:space-between; gap:12px; font-size:13px; padding:3px 0; border-bottom:1px solid var(--border)}
-.pcard .pc-acoes{margin-top:6px}
+.pcard .pc-acoes{margin-top:6px; display:flex; gap:6px; flex-wrap:wrap}
 @media (max-width:700px){ .fi-trat-form .btn{flex:1 1 100%} }
 /* celular: o total desce para uma faixa inteira embaixo do nome, numa linha só */
 @media (max-width:540px){
@@ -1279,7 +1291,10 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <div id="plist"></div>
       <div style="margin-top:14px; display:flex; gap:8px">
         <button class="btn" id="add-paciente">Adicionar paciente</button>
+        <button class="btn ghost" id="trazer-dados">Trazer dados da planilha</button>
+        <input type="file" id="arquivo-dados" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
       </div>
+      <p class="hint" style="margin-top:6px">"Trazer dados da planilha" só copia os dados pessoais da aba Registro de Pacientes (nascimento, CPF, contato, emergência) para quem ainda não tem. Não mexe em agenda, sessões nem pagamentos.</p>
     </div>
   </section>
 
@@ -2190,11 +2205,229 @@ function quando(q){
 var cacheNomes = null;
 function nomeCompletoDe(p){
   if(p.nomeCompleto) return p.nomeCompleto;
+  var cad = cadastroDe(p.codigo);
+  if(cad && cad.nomeCompleto) return cad.nomeCompleto;
   if(!cacheNomes){
     cacheNomes = {};
     (dados.pagamentos || []).forEach(function(g){ if(g.codigo && g.nomePlanilha) cacheNomes[g.codigo] = g.nomePlanilha; });
   }
   return cacheNomes[p.codigo] || p.nome || "";
+}
+/* ---------------- dados do paciente (09/10/2026) ----------------
+   Pedido dele: "não faz sentido não ter" o registro do paciente no app. A planilha guarda, na aba
+   Registro de Pacientes, nascimento, CPF, contato, contato de emergência, psiquiatra etc.; o app
+   nunca guardou nada disso (só o prontuário, o nome curto e o gênero do texto). Agora fica em
+   dados.cadastros[prontuário], para valer também para quem já saiu da agenda e continuar o mesmo
+   se o paciente voltar. Só cadastro: não entra em agenda, saldo, vencimento, previsto nem dívida. */
+var CAMPOS_DADOS = [
+  {grupo:"Quem é"},
+  {k:"nomeCompleto", rot:"Nome completo", larga:true},
+  {k:"nascimento", rot:"Data de nascimento", tipo:"date"},
+  {k:"cpf", rot:"CPF", modo:"numeric"},
+  {k:"identidade", rot:"Identidade de gênero"},
+  {k:"estadoCivil", rot:"Estado civil"},
+  {k:"escolaridade", rot:"Escolaridade"},
+  {k:"ocupacao", rot:"Ocupação"},
+  {k:"cidade", rot:"Cidade"},
+  {k:"uf", rot:"Estado (UF)"},
+  {k:"nacionalidade", rot:"Nacionalidade"},
+  {grupo:"Contato"},
+  {k:"celular", rot:"Celular", tipo:"tel"},
+  {k:"email", rot:"E-mail", tipo:"email"},
+  {grupo:"Em caso de emergência"},
+  {k:"emergNome", rot:"Nome"},
+  {k:"emergRelacao", rot:"Relação ou parentesco"},
+  {k:"emergCelular", rot:"Celular", tipo:"tel"},
+  {k:"psiquiatra", rot:"Psiquiatra", larga:true},
+  {grupo:"Atendimento"},
+  {k:"psicoterapia", rot:"Tipo de psicoterapia"},
+  {k:"tipoPagamento", rot:"Tipo de pagamento", dica:"Regular ou valor social."}
+];
+function cadastroDe(codigo){
+  codigo = String(codigo || "").trim();
+  return codigo && dados.cadastros && dados.cadastros[codigo] ? dados.cadastros[codigo] : null;
+}
+/* idade em anos completos no dia de hoje */
+function idadeDe(iso){
+  var n = iso ? deISO(iso) : null, h = hoje0();
+  if(!n || isNaN(n.getTime())) return null;
+  var a = h.getFullYear() - n.getFullYear();
+  if(h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--;
+  return a >= 0 && a < 130 ? a : null;
+}
+/* "(27) 99758-2342" vira o link do WhatsApp; sem DDD ou curto demais, fica sem link */
+function linkWhats(tel){
+  var d = String(tel || "").replace(/\D/g, "");
+  if(d.length === 10 || d.length === 11) d = "55" + d;
+  return d.length >= 12 && d.length <= 13 ? "https://wa.me/" + d : "";
+}
+function quantosDados(c){
+  return c ? CAMPOS_DADOS.filter(function(f){ return f.k && String(c[f.k] || "").trim(); }).length : 0;
+}
+/* desenha o bloco num lugar da tela e grava cada campo em dados.cadastros. aoMudar redesenha o resto. */
+function pintarDados(el, codigo, nomeAgenda, aoMudar){
+  codigo = String(codigo || "").trim();
+  var total = CAMPOS_DADOS.filter(function(f){ return f.k; }).length;
+  if(!codigo){
+    el.innerHTML = '<h3>Dados do paciente</h3><p class="hint" style="margin:0">Preencha o número do prontuário (embaixo, em Agenda) para guardar os dados do paciente.</p>';
+    return;
+  }
+  var c = cadastroDe(codigo) || {}, cheios = quantosDados(c), espera = null;
+  var h = '<div class="dp-topo"><h3>Dados do paciente</h3><span class="hint" id="dp-conta">' +
+    (cheios ? cheios + " de " + total + " preenchidos" : "Nada preenchido ainda") + '</span></div>';
+  if(!cheios) h += '<p class="hint dp-vazio">Ninguém escreveu os dados de ' + esc(nomeAgenda || codigo) + ' no app ainda. ' +
+    'Para trazer de uma vez os que estão na aba Registro de Pacientes da planilha, use "Trazer dados da planilha" em Pacientes.</p>';
+  h += '<div class="dp-grade">';
+  CAMPOS_DADOS.forEach(function(f){
+    if(f.grupo){ h += '<p class="dp-grupo">' + esc(f.grupo) + '</p>'; return; }
+    var v = c[f.k] || "", id = "dp-" + f.k, extra = "";
+    if(f.k === "nascimento"){ var ida = idadeDe(v); extra = '<span class="hint" id="dp-idade">' + (ida !== null ? ida + " anos" : "") + '</span>'; }
+    if(f.tipo === "tel") extra = '<a class="hint dp-whats" data-whats="' + f.k + '" target="_blank" rel="noopener"' +
+      (linkWhats(v) ? ' href="' + esc(linkWhats(v)) + '"' : ' hidden') + '>Abrir no WhatsApp</a>';
+    if(f.dica) extra = '<span class="hint">' + esc(f.dica) + '</span>';
+    h += '<div class="field' + (f.larga ? ' dp-larga' : '') + '"><label for="' + id + '">' + esc(f.rot) + '</label>' +
+      '<input id="' + id + '" data-dado="' + f.k + '" type="' + (f.tipo || "text") + '"' + (f.modo ? ' inputmode="' + f.modo + '"' : "") +
+      ' value="' + esc(v) + '" autocomplete="off">' + extra + '</div>';
+  });
+  h += '</div>';
+  el.innerHTML = h;
+  el.querySelectorAll("[data-dado]").forEach(function(inp){
+    inp.addEventListener("input", function(){
+      if(!dados.cadastros) dados.cadastros = {};
+      var reg = dados.cadastros[codigo] || (dados.cadastros[codigo] = {});
+      var v = inp.value.trim();
+      if(v) reg[inp.dataset.dado] = v; else delete reg[inp.dataset.dado];
+      if(!Object.keys(reg).length) delete dados.cadastros[codigo];
+      if(inp.dataset.dado === "nascimento"){ var ida = idadeDe(v), s = el.querySelector("#dp-idade"); if(s) s.textContent = ida !== null ? ida + " anos" : ""; }
+      var w = el.querySelector('[data-whats="' + inp.dataset.dado + '"]');
+      if(w){ var l = linkWhats(v); w.hidden = !l; if(l) w.href = l; else w.removeAttribute("href"); }
+      var n = quantosDados(dados.cadastros[codigo]);
+      el.querySelector("#dp-conta").textContent = n ? n + " de " + total + " preenchidos" : "Nada preenchido ainda";
+      if(inp.dataset.dado === "nomeCompleto") cacheNomes = null;
+      /* grava quando ele para de digitar, não a cada letra (igual aos outros campos da ficha) */
+      clearTimeout(espera);
+      espera = setTimeout(function(){ espera = null; salvar(); if(aoMudar) aoMudar(); }, 500);
+      pintarDados.pendente = function(){ if(espera){ clearTimeout(espera); espera = null; salvar(); if(aoMudar) aoMudar(); } };
+    });
+  });
+}
+/* quem já saiu da agenda não tem ficha: os dados abrem numa janela própria */
+function abrirDadosArquivado(a){
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal dp-modal"><h2>' + esc(a.nome || a.codigo) + '</h2>' +
+    '<p class="sub">' + esc(a.codigo) + ' · ' + esc(String(a.status || "").replace(/\.$/, "")) + '</p>' +
+    '<div class="fipag" id="dp-arq"></div>' +
+    '<div class="acoes"><button class="btn primary" id="dp-fechar">Pronto</button></div></div>';
+  document.body.appendChild(fundo);
+  pintarDados(document.getElementById("dp-arq"), a.codigo, a.nome);
+  function fechar(){ if(pintarDados.pendente) pintarDados.pendente(); pintarDados.pendente = null; fundo.remove(); devolver(); renderPacientes(); }
+  var devolver = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target === fundo) fechar(); });
+  document.getElementById("dp-fechar").addEventListener("click", fechar);
+}
+
+/* Trazer da planilha só os dados pessoais (aba Registro de Pacientes). Não é o "Ler a planilha" que
+   saiu em 09/10: não mexe em agenda, sessão, pagamento, ciclo, encerramento nem dívida. E só
+   preenche campo vazio: o que ele já escreveu no app fica como está. */
+var COLUNAS_DADOS = {
+  codigo:       function(t){ return t.indexOf("prontuario") >= 0; },
+  nomeCompleto: function(t){ return t.indexOf("nome completo") === 0; },
+  nascimento:   function(t){ return t.indexOf("data de nascimento") === 0 || t.indexOf("nascimento") === 0; },
+  cpf:          function(t){ return t === "cpf" || t.indexOf("cpf") === 0; },
+  nacionalidade:function(t){ return t.indexOf("nacionalidade") === 0; },
+  uf:           function(t){ return t.indexOf("estado (uf)") === 0 || t === "uf"; },
+  cidade:       function(t){ return t.indexOf("cidade") === 0; },
+  identidade:   function(t){ return t.indexOf("identidade de genero") === 0; },
+  estadoCivil:  function(t){ return t.indexOf("estado civil") === 0; },
+  escolaridade: function(t){ return t.indexOf("escolaridade") === 0; },
+  ocupacao:     function(t){ return t.indexOf("ocupacao") === 0; },
+  emergNome:    function(t){ return t.indexOf("contato de emergencia") === 0 && t.indexOf("nome") >= 0; },
+  emergRelacao: function(t){ return t.indexOf("contato de emergencia") === 0 && (t.indexOf("relacao") >= 0 || t.indexOf("parentesco") >= 0); },
+  emergCelular: function(t){ return t.indexOf("contato de emergencia") === 0 && t.indexOf("celular") >= 0; },
+  psiquiatra:   function(t){ return t.indexOf("psiquiatra") >= 0; },
+  celular:      function(t){ return t.indexOf("telefone") === 0 || (t.indexOf("celular") === 0); },
+  email:        function(t){ return t.indexOf("e-mail") === 0 || t.indexOf("email") === 0; },
+  psicoterapia: function(t){ return t.indexOf("tipo de psicoterapia") === 0; },
+  tipoPagamento:function(t){ return t.indexOf("tipo de pagamento") === 0; }
+};
+function lerDadosDoRegistro(celulas){
+  var cab = cabecalhoDaAba(celulas, COLUNAS_DADOS);
+  if(!cab.codigo || !cab.nomeCompleto) throw new Error("a aba de Registro está com colunas diferentes do esperado");
+  var linhas = linhasDaAba(celulas), porCodigo = {};
+  Object.keys(linhas).sort(function(a,b){ return a-b; }).forEach(function(n){
+    var l = linhas[n], codigo = String(l[cab.codigo] || "").trim();
+    if(!codigo || codigo === "-") return;
+    var r = porCodigo[codigo] || (porCodigo[codigo] = {});
+    /* uma linha por ciclo de tratamento: a mais recente que tiver o campo manda */
+    Object.keys(cab).forEach(function(k){
+      if(k === "codigo") return;
+      var v = String(l[cab[k]] == null ? "" : l[cab[k]]).replace(/\s+/g, " ").trim();
+      if(!v || v === "-") return;
+      if(k === "nascimento"){ v = dataDoExcel(v) || (/^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : ""); if(!v) return; }
+      else if(k !== "email") v = v.replace(/\.$/, "");
+      r[k] = v;
+    });
+  });
+  return porCodigo;
+}
+/* soma ao caderno só o que falta; devolve quantos pacientes e campos ganharam dado */
+function juntarDados(lidos){
+  if(!dados.cadastros) dados.cadastros = {};
+  var conta = {pacientes:0, campos:0, naAgenda:0, fora:0};
+  var naAgenda = {};
+  dados.pacientes.forEach(function(p){ if(p.codigo) naAgenda[String(p.codigo).trim()] = true; });
+  Object.keys(lidos).forEach(function(codigo){
+    var reg = dados.cadastros[codigo] || {}, novos = 0;
+    Object.keys(lidos[codigo]).forEach(function(k){
+      if(String(reg[k] || "").trim()) return;
+      reg[k] = lidos[codigo][k]; novos++;
+    });
+    if(!novos) return;
+    dados.cadastros[codigo] = reg;
+    conta.pacientes++; conta.campos += novos;
+    if(naAgenda[codigo]) conta.naAgenda++; else conta.fora++;
+  });
+  cacheNomes = null;
+  return conta;
+}
+function lerSoRegistro(buffer){
+  var zip = lerZip(buffer);
+  return Promise.all([
+    extrair(zip, "xl/workbook.xml"),
+    extrair(zip, "xl/_rels/workbook.xml.rels"),
+    extrair(zip, "xl/sharedStrings.xml")
+  ]).then(function(partes){
+    if(!partes[0]) throw new Error("não achei a estrutura do arquivo");
+    var textos = lerTextos(partes[2]), alvos = {}, abas = {};
+    var rels = partes[1] ? xmlDe(partes[1]).getElementsByTagName("Relationship") : [];
+    for(var r=0;r<rels.length;r++) alvos[rels[r].getAttribute("Id")] = rels[r].getAttribute("Target");
+    var lista = xmlDe(partes[0]).getElementsByTagName("sheet");
+    for(var s=0;s<lista.length;s++) abas[lista[s].getAttribute("name")] = "xl/" + (alvos[lista[s].getAttribute("r:id")] || "").replace(/^\/?xl\//, "");
+    var nome = acharAba(abas, "registro");
+    if(!nome) throw new Error("não achei a aba Registro de Pacientes nesse arquivo");
+    return extrair(zip, abas[nome]).then(function(folha){ return lerDadosDoRegistro(lerAba(folha, textos)); });
+  });
+}
+function trazerDadosDoArquivo(arquivo){
+  if(typeof DecompressionStream === "undefined"){ recado("Este navegador não abre o .xlsx sozinho. Use o Chrome."); return Promise.resolve(); }
+  return arquivo.arrayBuffer().then(lerSoRegistro).then(function(lidos){
+    var n = Object.keys(lidos).length;
+    if(!n){ recado("Não achei nenhum paciente na aba Registro."); return; }
+    /* conta antes de gravar, numa cópia, para a pergunta dizer o que vai mudar */
+    var antes = dados.cadastros, copia = JSON.parse(JSON.stringify(dados.cadastros || {}));
+    dados.cadastros = copia;
+    var c = juntarDados(lidos);
+    dados.cadastros = antes; cacheNomes = null;
+    if(!c.campos){ recado("Os dados dos " + n + " pacientes da planilha já estão no app. Nada a trazer."); return; }
+    if(!confirm("Achei " + plural(n, "paciente", "pacientes") + " no Registro da planilha.\n\n" +
+      "Vou preencher os dados pessoais (nascimento, CPF, contato, emergência, psiquiatra...) de " +
+      plural(c.pacientes, "paciente", "pacientes") + ": " + c.naAgenda + " na agenda e " + c.fora + " que já saíram.\n\n" +
+      "Só preenche campo vazio: o que você já escreveu no app fica. Não mexe em agenda, sessões, pagamentos nem dívida.")) return;
+    juntarDados(lidos);
+    salvar(); renderTudo();
+    recado("Pronto: dados de " + plural(c.pacientes, "paciente", "pacientes") + " no app.");
+  }).catch(function(err){ recado("Não consegui ler: " + err.message); });
 }
 function nomeGrade(p){
   var partes = nomeCompletoDe(p).trim().split(/\s+/);
@@ -2764,13 +2997,20 @@ function desenharCarteira(pedaco){
         (pedaco === "suspenso" ? seloSuspensao(a) +
           '<label class="susp-data">Suspenso desde <input type="date" data-cod="'+esc(a.codigo)+'" value="'+esc(suspensoDesde(a))+'"></label>' : "") +
         (f ? selo(f) : "") +
-        '<span class="pc-acoes"><button type="button" class="btn sm" data-voltar="'+esc(a.codigo)+'">Voltar à agenda</button></span>' +
+        '<span class="pc-acoes"><button type="button" class="btn sm" data-voltar="'+esc(a.codigo)+'">Voltar à agenda</button>' +
+          '<button type="button" class="btn sm ghost" data-dados="'+esc(a.codigo)+'">Dados'+(quantosDados(cadastroDe(a.codigo)) ? "" : " (vazio)")+'</button></span>' +
       '</span></div>';
   });
   h += "</div>";
   alvo.innerHTML = h;
   alvo.querySelectorAll("[data-fenc]").forEach(function(b){
     b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.fenc); if(p) abrirFicha(p, null, "cadastro"); });
+  });
+  alvo.querySelectorAll("[data-dados]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var a = (dados.arquivados || []).filter(function(x){ return x.codigo === b.dataset.dados; })[0];
+      if(a) abrirDadosArquivado(a);
+    });
   });
   alvo.querySelectorAll("[data-voltar]").forEach(function(b){
     b.addEventListener("click", function(){
@@ -3078,6 +3318,8 @@ function abrirFicha(p, foco, aba){
       '</div>' +
       '<div class="fi-aba" role="tabpanel" id="fi-p-cadastro" aria-labelledby="fi-aba-cadastro" hidden>' +
       '<div class="fipag fi-tratamento" id="fi-tratamento"></div>' +
+      '<div class="fipag fi-dados" id="fi-dados"></div>' +
+      '<h3 class="fi-agenda-t">Agenda</h3>' +
       '<div class="grid2">' +
         '<div class="field"><label for="fi-nome">Nome na agenda</label>' +
           '<input id="fi-nome" data-campo="nome" value="'+esc(p.nome)+'"><span class="hint">É o que aparece na grade.</span></div>' +
@@ -3121,7 +3363,13 @@ function abrirFicha(p, foco, aba){
     pintarExtrato();
     pintarSessoes();
     pintarFormulacao();
+    /* os dados do paciente só redesenham quando o prontuário muda: redesenhar a cada letra tiraria o foco */
+    if(dadosDoCodigo !== String(p.codigo || "").trim()){
+      dadosDoCodigo = String(p.codigo || "").trim();
+      pintarDados(document.getElementById("fi-dados"), p.codigo, p.nome, function(){ renderTudo(); pintarTotal(); });
+    }
   }
+  var dadosDoCodigo = null;
   /* abas da ficha: Pagamento abre primeiro; quem chega pelo prontuário (foco) cai no Prontuário */
   var abaAtual = "pagamento";
   function mostrarAba(nome){
@@ -3579,13 +3827,18 @@ function abrirFicha(p, foco, aba){
   /* "como chegou" é guardado por prontuário: se o código muda, a marca vai junto. Ela sai do código onde
      está guardada (não do que está meio digitado) e nunca cai em cima da marca de outro paciente: apagar
      uma letra de "P10" passa por "P1", que pode ser de outra pessoa (04/10/2026) */
-  var codigoDaOrigem = p.codigo;
+  var codigoDaOrigem = p.codigo, codigoDosDados = String(p.codigo || "").trim();
   fundo.querySelectorAll("[data-campo]").forEach(function(el){
     el.addEventListener("input", function(){
       var campo = el.dataset.campo;
       if(campo==="codigo" && dados.origens && dados.origens[codigoDaOrigem] && el.value && el.value !== codigoDaOrigem && !dados.origens[el.value]){
         dados.origens[el.value] = dados.origens[codigoDaOrigem]; delete dados.origens[codigoDaOrigem];
         codigoDaOrigem = el.value;
+      }
+      /* os dados do paciente também são guardados por prontuário e vão junto, com o mesmo cuidado */
+      if(campo==="codigo" && dados.cadastros && dados.cadastros[codigoDosDados] && el.value && el.value !== codigoDosDados && !dados.cadastros[el.value]){
+        dados.cadastros[el.value] = dados.cadastros[codigoDosDados]; delete dados.cadastros[codigoDosDados];
+        codigoDosDados = el.value;
       }
       /* o horário novo vale de amanhã em diante; o de hoje e o passado ficam como eram */
       if(campo==="dia"||campo==="hora"||campo==="freq") guardarHorario(p, chaveData(somaDias(hoje0(), 1)));
@@ -3634,6 +3887,7 @@ function abrirFicha(p, foco, aba){
 
   function fechar(){ gravarJa(); fundo.remove(); if(fichaAberta && fichaAberta.fundo===fundo) fichaAberta = null; devolverFoco(); }
   function gravarJa(){
+    if(pintarDados.pendente){ pintarDados.pendente(); pintarDados.pendente = null; }
     if(esperaSalvar){ clearTimeout(esperaSalvar); esperaSalvar = null; salvar(); }
     if(esperaCampo){ clearTimeout(esperaCampo); esperaCampo = null; salvar(); renderTudo(); }
   }
@@ -4310,7 +4564,14 @@ function abasParaPlanilha(){
     {nome:"Ciclos", linhas:ciclos},
     {nome:"Encerramentos", linhas:encerramentos},
     {nome:"Sessões", linhas:[["Data","Hora","Prontuário","Nome","Situação","Valor cobrado","De onde veio"]].concat(
-      sessoes.map(function(s){ return [s.data, s.hora, vazio(s.p.codigo), vazio(s.p.nome), s.situacao, s.valor, s.origem]; }))}
+      sessoes.map(function(s){ return [s.data, s.hora, vazio(s.p.codigo), vazio(s.p.nome), s.situacao, s.valor, s.origem]; }))},
+    /* os dados pessoais (09/10/2026): agora só existem no app, então vão junto na cópia */
+    {nome:"Dados dos pacientes", linhas:[["Prontuário"].concat(CAMPOS_DADOS.filter(function(f){ return f.k; }).map(function(f){
+      return f.k.indexOf("emerg") === 0 ? "Emergência: " + f.rot : f.rot; }))].concat(
+      Object.keys(dados.cadastros || {}).sort().map(function(cod){
+        var c = dados.cadastros[cod];
+        return [cod].concat(CAMPOS_DADOS.filter(function(f){ return f.k; }).map(function(f){ return vazio(c[f.k]); }));
+      }))}
   ];
 }
 
@@ -6268,6 +6529,12 @@ document.getElementById("add-paciente").addEventListener("click", function(){
   var novo = {id:novoId("p"), codigo:"", nome:"Novo paciente", freq:"semanal", cobranca:"mensal", valor:dados.config.mensal, dia:1, hora:14, meet:""};
   dados.pacientes.push(novo);
   salvar(); renderTudo(); abrirFicha(novo);
+});
+document.getElementById("trazer-dados").addEventListener("click", function(){ document.getElementById("arquivo-dados").click(); });
+document.getElementById("arquivo-dados").addEventListener("change", function(e){
+  var arquivo = e.target.files[0];
+  e.target.value = "";
+  if(arquivo) trazerDadosDoArquivo(arquivo);
 });
 document.getElementById("exportar").addEventListener("click", function(){
   var blob = new Blob([JSON.stringify(dados,null,2)], {type:"application/json"});

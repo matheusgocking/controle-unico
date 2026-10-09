@@ -51,7 +51,7 @@ test("Clínica: as abas da planilha trazem pacientes, ciclos e sessões sem mexe
     return { abas, igual: antes === JSON.stringify(dados) };
   });
   assert.ok(r.igual, "montar as abas não grava nada");
-  assert.deepEqual(r.abas.map(a => a.nome), ["Pacientes", "Ciclos", "Encerramentos", "Sessões"]);
+  assert.deepEqual(r.abas.map(a => a.nome), ["Pacientes", "Ciclos", "Encerramentos", "Sessões", "Dados dos pacientes"]);
 
   const [pac, cic, enc, ses] = r.abas.map(a => a.linhas);
   assert.equal(enc.length, 1, "ninguém encerrado: só o cabeçalho");
@@ -85,7 +85,7 @@ test("Carteira: o Baixar planilha leva as abas da Clínica junto", async () => {
     window.URL.createObjectURL = () => "blob:teste";
     document.getElementById("exportar").click();
   }));
-  assert.deepEqual(nomes.slice(-6), ["Recebimentos", "Anúncios", "Pacientes", "Ciclos", "Encerramentos", "Sessões"]);
+  assert.deepEqual(nomes.slice(-7), ["Recebimentos", "Anúncios", "Pacientes", "Ciclos", "Encerramentos", "Sessões", "Dados dos pacientes"]);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
