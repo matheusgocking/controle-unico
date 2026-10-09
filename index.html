@@ -109,6 +109,8 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 .menu-lista button:hover,.menu-lista a:hover{background:var(--bg)}
 .menu-lista svg{width:18px; height:18px; flex:none; color:var(--muted)}
 .menu-lista .sair{color:#b3261e}
+:root[data-theme="dark"] .menu-lista .sair{color:#f2a09b}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .menu-lista .sair{color:#f2a09b} }
 .menu-lista .sair svg{color:currentColor}
 .menu-lista .versao{padding:8px 12px 4px; border-top:1px solid var(--line); margin-top:4px; color:var(--muted); font-size:12px}
 /* versão do app: a data da publicação, lida de versao.json (pedido dele, 29/09/2026) */
@@ -151,6 +153,9 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 
 /* ---------- celular: barra do app em cima, abas embaixo ---------- */
 @media (max-width:700px){
+  /* Entrar e o menu "..." ficam com 32 px de altura no desenho; a área que aceita o toque cresce para 44 px */
+  .dir .bt{position:relative}
+  .dir .bt::after{content:""; position:absolute; inset:-6px -4px}
   header{background:var(--barra); color:var(--barra-ink); border-bottom:0; padding:6px 12px; padding-top:calc(6px + env(safe-area-inset-top,0px)); min-height:48px}
   .marca{display:none}
   .titulo{display:block}
@@ -173,7 +178,7 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
     background:var(--surface); border-top:1px solid var(--line); border-bottom:0;
     padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));
   }
-  nav button{flex-direction:column; gap:2px; font-size:11px; padding:6px 2px; border-radius:10px; min-height:52px; justify-content:center}
+  nav button{flex-direction:column; gap:2px; font-size:12px; padding:6px 2px; border-radius:10px; min-height:52px; justify-content:center}
   nav button svg{width:22px; height:22px}
   nav button[aria-pressed="true"]{background:transparent; color:var(--accent); box-shadow:none}
   nav button[aria-pressed="true"] svg{background:color-mix(in srgb, var(--accent) 16%, transparent); border-radius:99px; padding:2px 12px; width:46px; box-sizing:content-box}

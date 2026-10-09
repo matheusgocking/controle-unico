@@ -13,18 +13,24 @@
   --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --radius:8px;
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#8f9bab;
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#9aa6b6;
   --accent:#c8a4f2; --accent-soft:#2e2140;
   --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
   --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d;
 }}
 :root[data-theme="dark"]{
-  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#8f9bab;
+  --bg:#10141a; --surface:#171c24; --surface-2:#1f252f; --line:#303845; --text:#eef2f7; --muted:#aab6c6; --faint:#9aa6b6;
   --accent:#c8a4f2; --accent-soft:#2e2140;
   --pos:#7fd3ac; --pos-soft:#183a2e; --neg:#f2a09b; --neg-soft:#3d1a18; --warn:#efb87c; --warn-soft:#3f2c15;
   --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#818d9d;
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* revisão pela skill de design e usabilidade (09/10/2026): no escuro, o cinza das notas (#8f9bab) dava 4,4:1
+   sobre os cartões cinza, abaixo do mínimo de leitura; #9aa6b6 dá 5,4:1 no fundo mais claro. E quem pede
+   ao aparelho "menos movimento" não vê nada deslizando ou piscando em nenhuma página. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important}
+}
 /* dentro da casca, a linha do Drive de cada módulo só aparece quando há uma escolha a fazer (os botões
    ficam no módulo): o estado normal e o erro já estão na barra de cima (04/10/2026; 06/10/2026: o erro
    aparecia duas vezes, na casca e no módulo) */

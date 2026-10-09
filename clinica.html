@@ -213,9 +213,11 @@ button,input,select,textarea{font:inherit; color:inherit}
 select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:12.5px; max-width:100%}
 @media (max-width:700px){ select.situacao{min-height:40px; font-size:16px} } /* área de toque; abaixo de 16 px o iPhone dá zoom */
 @media (max-width:700px){
-  .btn{min-height:40px} .btn.sm{min-height:36px}
+  /* área de toque de 44 px no celular (revisão pela skill de design, 09/10/2026) */
+  .btn{min-height:44px} .btn.sm{min-height:44px}
+  .filtro{min-height:44px}
   #prev,#next,#ss-prev,#ss-next{min-width:44px}
-  .linknome{padding:8px 0;min-height:36px}
+  .linknome{padding:8px 0;min-height:44px}
   #ss-desde{font-size:16px; min-height:40px}
   .wrap a[href="privacidade.html"]{display:inline-block; padding:10px 8px}
 }
@@ -371,7 +373,7 @@ details.leg-dobra > summary{display:none}
 .field{display:flex; flex-direction:column; gap:4px; margin-bottom:12px}
 .field label{font-size:12.5px; color:var(--muted)}
 .field input,.field select{padding:8px 10px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2)}
-.field .hint,.hint{font-size:11.5px; color:var(--faint)}
+.field .hint,.hint{font-size:12px; color:var(--faint)}
 .grid2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px}
 /* no celular a ficha sobrava para o lado (29/09/2026): os campos descem um embaixo do outro */
 @media (max-width:700px){ .grid2{grid-template-columns:minmax(0,1fr)} .field input,.field select{min-width:0; width:100%} }
@@ -407,8 +409,8 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .ini.grande{width:46px; height:46px; font-size:19px}
 .pcard .corpo{display:flex; flex-direction:column; min-width:0; gap:1px}
 .pcard .n{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.pcard .sub{font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.pcard .cod{font-size:10.5px; color:var(--faint); letter-spacing:.04em}
+.pcard .sub{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pcard .cod{font-size:11.5px; color:var(--faint); letter-spacing:.04em}
 /* cada dia é um grupo: o cabeçalho diz o dia, quantos são e quanto o dia rende por semana */
 /* filtros da aba Pacientes: a agenda é o padrão, o resto da carteira vem da planilha */
 .filtros{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px}
@@ -424,7 +426,7 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .selo.ok{background:var(--ok-soft); color:var(--ok)}
 .selo.atencao{background:var(--warn-soft); color:var(--warn)}
 .selo.atraso{background:var(--devendo-soft); color:var(--devendo)}
-.selo.sem{background:var(--neutral-chip); color:var(--faint)}
+.selo.sem{background:var(--neutral-chip); color:var(--muted)}
 .susp-data{margin-top:4px; font-size:11px; color:var(--muted)}
 .susp-data input{font:inherit; color:var(--text); background:transparent; border:1px solid var(--border); border-radius:6px; padding:1px 4px}
 .linhas.movs div{font-size:12.5px}
@@ -577,7 +579,7 @@ details.tabela summary:hover{color:var(--text)}
 .sit.atencao{background:var(--warn-soft); color:var(--warn)}
 /* a linha inteira do atrasado já é rosada: a pastilha ganha contorno para não sumir nela */
 .sit.atraso{background:var(--devendo-soft); color:var(--devendo); box-shadow:inset 0 0 0 1px var(--devendo-line)}
-.sit.sem{background:var(--neutral-chip); color:var(--faint)}
+.sit.sem{background:var(--neutral-chip); color:var(--muted)}
 table.tab tr.linha-atraso td{background:var(--devendo-soft)}
 table.tab td.num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
 table.tab td .quem{display:flex; align-items:center; gap:9px}
@@ -656,7 +658,8 @@ p.pg-inteiro{margin:-6px 0 12px}
   table.ss-cartoes td.sc-dia{grid-column:1; grid-row:1; color:var(--muted)}
   table.ss-cartoes td.sc-hora{grid-column:2; grid-row:1; color:var(--muted)}
   table.ss-cartoes td.sc-quem{grid-column:3; grid-row:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  table.ss-cartoes td.sc-quem .linknome{min-height:0; padding:0; font-weight:600}
+  table.ss-cartoes td.sc-quem .linknome{min-height:44px; padding:0; font-weight:600}
+  table.ss-cartoes tr{padding-top:0}
   table.ss-cartoes td.sc-cobra{grid-column:4; grid-row:1; text-align:right}
   table.ss-cartoes td.sc-sit{grid-column:1/-1; grid-row:2}
   table.ss-cartoes td.sc-sit select.situacao{width:100%}
