@@ -213,6 +213,8 @@ for (const largura of [375, 1280]) {
     await p.click('[data-fvalor="175"]');
     assert.equal(await p.inputValue("#fr-valor"), "175");
     await p.fill("#fr-valor", "150");
+    assert.match(await p.textContent("#fr-previa"), /Escolha acima qual é o caso/);
+    await p.click('#fr-caso input[value="pacote"]');
     assert.match(await p.textContent("#fr-previa"), /R\$ 150 não chega a pagar uma sessão inteira\. Continua devendo R\$ 550/);
     await p.selectOption("#fr-meio", "dinheiro");
     await p.click("#fr-registrar");

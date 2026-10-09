@@ -298,11 +298,16 @@ test("Clínica: no mensal, um pagamento avulso soma ao que o mês já pagou", as
     dicaPagamento(true);
     const campo = document.getElementById("pg-valor");
     campo.value = "175"; campo.dispatchEvent(new Event("input"));
-    return { soMes, comAvulso, dica: document.getElementById("pg-dica").textContent };
+    // valor menor que o ciclo: o app pergunta o caso; aqui é a avulsa dentro do pacote
+    const pergunta = document.querySelectorAll('#pg-caso input[name="pg-caso"]').length;
+    const op = document.querySelector('#pg-caso input[value="pacote"]');
+    op.checked = true; op.dispatchEvent(new Event("change", { bubbles:true }));
+    return { pergunta, soMes, comAvulso, dica: document.getElementById("pg-dica").textContent };
   });
   // o mês pago cobre 28/09, 05, 12 e 19/10; a sessão avulsa cobre 26/10; vence em 02/11
   assert.equal(r.soMes, "2026-10-26");
   assert.equal(r.comAvulso, "2026-11-02");
+  assert.equal(r.pergunta, 2);
   assert.match(r.dica, /R\$ 175 equivale a 1 sessão de R\$ 175/);
   assert.deepEqual(erros, []);
   await ctx.close();
