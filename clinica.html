@@ -715,6 +715,7 @@ details.fi-det[open] > summary{margin-bottom:6px}
 .modal h2{font-size:18px; margin-bottom:6px}
 .modal textarea{width:100%; min-height:260px; padding:12px; border:1px solid var(--border-strong); border-radius:9px; background:var(--surface-2); font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; resize:vertical}
 .modal .acoes{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
+.copias-limpas summary{cursor:pointer} .copias-limpas ul{margin:6px 0 0; padding-left:18px}
 .foot{margin-top:26px; color:var(--faint); font-size:12px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between}
 .hidden{display:none !important}
 /* ---------- celular ---------- */
@@ -1483,6 +1484,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <input type="file" id="arquivo" accept="application/json" class="hidden">
       <button class="btn sm ghost" id="tema">Tema</button>
     </span>
+    <span class="copias-limpas" id="copiasLimpas" style="flex-basis:100%"></span>
   </div>
 </div>
 
@@ -6843,6 +6845,7 @@ var cadernoClinica = Nuvem.caderno({
   temDados: function(d){ return !!(d && d.pacientes && d.pacientes.length); }
 });
 Nuvem.iniciar();
+Nuvem.mostrarLimpeza(document.getElementById("copiasLimpas"));
 </script>
 </body>
 </html>
