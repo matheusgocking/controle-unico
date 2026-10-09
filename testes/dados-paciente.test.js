@@ -84,8 +84,8 @@ for (const largura of [390, 1280]) {
     assert.ok(r.agendaIgual, "fichas da agenda iguais");
     assert.equal(r.grade, "Ana Souza", "a grade usa o nome completo do cadastro");
 
-    /* a ficha mostra e grava os dados no Cadastro */
-    await p.evaluate(() => { abrirFicha(dados.pacientes[0], null, "cadastro"); });
+    /* a ficha mostra e grava os dados na aba Dados (09/10/2026: antes ficavam no fim do Cadastro) */
+    await p.evaluate(() => { abrirFicha(dados.pacientes[0], null, "dados"); });
     await p.waitForTimeout(200);
     assert.equal(await p.inputValue("#dp-nomeCompleto"), "Ana Teste Souza");
     assert.equal(await p.textContent("#dp-idade"), "26 anos");
@@ -99,6 +99,7 @@ for (const largura of [390, 1280]) {
     await p.screenshot({ path: require("path").join(process.env.FOTOS || require("os").tmpdir(), "dados-ficha-" + largura + ".png") });
 
     /* trocar o prontuário leva os dados junto */
+    await p.click("#fi-aba-cadastro");
     await p.fill("#fi-codigo", "T99");
     await p.waitForTimeout(700);
     const mov = await p.evaluate(c => ({ velho: !!dados.cadastros[c], novo: dados.cadastros.T99 && dados.cadastros.T99.nomeCompleto }), codigo);

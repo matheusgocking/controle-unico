@@ -227,6 +227,7 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 .cell .pgm{position:absolute; right:9px; bottom:5px; width:10px; height:10px; border-radius:50%; pointer-events:none; box-shadow:0 0 0 2px #fff}
 .cell .pgm-paga{background:#3ccf7e}
 .cell .pgm-aberta{background:#e5352c}
+.cell .pgm-apagar{background:#fff; box-shadow:0 0 0 2px #fff, inset 0 0 0 2.5px #e5352c}
 .leg-pag{display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:8px; font-size:12.5px; color:var(--muted)}
 .leg-pag span{display:inline-flex; align-items:center; gap:6px}
 .leg-pag i{width:9px; height:9px; border-radius:50%; display:inline-block}
@@ -482,6 +483,31 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .fi-pl .pl-volta{font-size:12px; font-weight:600; color:var(--ok); margin:6px 0 2px}
 .fi-ant{margin-top:10px}
 .fi-ant .linhas > div{display:flex; justify-content:space-between; gap:12px; font-size:13px; padding:3px 0; border-bottom:1px solid var(--border)}
+/* saldo de sessões e o bloco "Cobrar" (09/10/2026) */
+.pcard .selo.saldo{font-size:11.5px}
+.cobrar{border:1px solid var(--devendo-line, var(--border)); background:var(--devendo-soft); border-radius:12px; padding:10px 12px; margin:0 0 14px}
+.cobrar.ok{border-color:var(--border); background:var(--ok-soft)}
+.cobrar-cab{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin-bottom:8px}
+.cobrar-cab b{color:var(--devendo); font-size:15px}
+.cobrar-lista{display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:6px}
+.cobrar-it{display:flex; flex-direction:column; align-items:flex-start; gap:1px; text-align:left; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--devendo); border-radius:9px; padding:7px 10px; cursor:pointer; color:var(--text); font:inherit; min-height:44px}
+.cobrar-it.atencao{border-left-color:var(--warn)}
+.cobrar-it:hover{border-color:var(--accent-line)}
+.cobrar-it .n{font-weight:600}
+.cobrar-it .t{font-size:12.5px; font-weight:600; color:var(--devendo)}
+.cobrar-it.atencao .t{color:var(--warn)}
+.cobrar-it .d{font-size:11.5px; color:var(--muted)}
+@media (max-width:700px){ .cobrar-lista{grid-template-columns:1fr 1fr} }
+/* últimas sessões na ficha */
+.fi-ultimas .topo{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; justify-content:space-between}
+.fu-lista{display:flex; flex-direction:column}
+.fu{display:grid; grid-template-columns:minmax(78px,auto) 1fr auto; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--border); font-size:13px}
+.fu:first-child{border-top:0}
+.fu.fut{color:var(--muted)}
+.fu-d{font-variant-numeric:tabular-nums; white-space:nowrap}
+.fu-t{min-width:0}
+@media (max-width:700px){ .fu{font-size:12.5px} }
+.dp-vazio{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:4px 0 10px}
 .pcard .pc-acoes{margin-top:6px; display:flex; gap:6px; flex-wrap:wrap}
 @media (max-width:700px){ .fi-trat-form .btn{flex:1 1 100%} }
 /* celular: o total desce para uma faixa inteira embaixo do nome, numa linha só */
@@ -649,6 +675,9 @@ p.pg-inteiro{margin:-6px 0 12px}
 /* ficha em abas (06/10/2026) */
 .ficha .fi-abas{display:flex; margin:-4px 0 14px}
 .ficha .fi-abas .tab{flex:1 1 0; text-align:center}
+.ficha .fi-abas .tab.vazio::after{content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--warn); margin-left:5px; vertical-align:2px}
+/* quatro abas cabem no celular sem rolar: menos folga e letra um pouco menor (09/10/2026) */
+@media (max-width:700px){ .ficha .fi-abas{gap:2px} .ficha .fi-abas .tab{padding:7px 2px; font-size:13px; flex:1 1 auto} }
 .fi-situ{border-radius:var(--radius); padding:10px 14px; margin-bottom:12px; font-size:14px; font-weight:600; line-height:1.4}
 .fi-situ.ok{background:var(--ok-soft); color:var(--ok)}
 .fi-situ.atencao{background:var(--warn-soft); color:var(--warn)}
@@ -1054,7 +1083,8 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
     <div class="leg-pag" aria-label="Legenda do pagamento">
       <span><i style="background:#3ccf7e"></i>Paga</span>
       <span><i style="background:#e5352c"></i>Em aberto: já passou e não está paga</span>
-      <span class="dica">A bolinha sai do saldo de cada paciente, que paga da sessão mais antiga para a mais nova. Sessão futura sem bolinha ainda não foi paga, o que é normal.</span>
+      <span><i style="background:#fff; box-shadow:inset 0 0 0 2px #e5352c"></i>Nos próximos 7 dias e ainda não paga: cobrar</span>
+      <span class="dica">A bolinha sai do saldo de cada paciente, que paga da sessão mais antiga para a mais nova. Sessão mais distante sem bolinha ainda não foi paga, o que é normal.</span>
     </div>
     </details>
   </section>
@@ -1287,6 +1317,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <h2>Pacientes e horários fixos</h2>
       <p class="sub">Separados por dia da semana, na ordem em que você atende. Clique num paciente para abrir a ficha dele. A agenda repete sozinha: toda semana, ou a cada duas semanas para os quinzenais.</p>
       <!-- filtros: a agenda é o padrão; o resto da carteira vem da planilha -->
+      <div id="pcobrar"></div>
       <div class="filtros" id="pfiltros" role="tablist" aria-label="O que mostrar"></div>
       <!-- os grupos de dia entram aqui; a grade de cartões (.pgrid) fica dentro de cada dia -->
       <div id="plist"></div>
@@ -1319,6 +1350,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       </div>
     </div>
 
+    <div id="pg-cobrar"></div>
     <div class="pg-acoes">
       <button class="btn primary" id="pg-abrir" aria-expanded="false" aria-controls="pg-form">+ Registrar pagamento</button>
       <span id="pg-feito" class="hint" role="status"></span>
@@ -1956,7 +1988,7 @@ function sessoesDoDia(data, comCanceladas){
 
 /* ---------------- render: semana ---------------- */
 var ESTADO_DA_CLASSE = {"sessao":"sessao", "sessao realizada":"realizada", "falta":"falta"};
-var TEXTO_PAGAMENTO_SESSAO = {paga:"Paga", aberta:"Em aberto: já passou e não está paga"};
+var TEXTO_PAGAMENTO_SESSAO = {paga:"Paga", aberta:"Em aberto: já passou e não está paga", apagar:"Ainda não paga: cobrar antes da sessão"};
 function renderSemana(){
   var grade = document.getElementById("grade");
   grade.innerHTML = "";
@@ -2008,6 +2040,8 @@ function renderSemana(){
       /* o pagamento da sessão, numa marca própria no canto de baixo (06/10/2026): a cor da célula
          continua dizendo se ela aconteceu; a bolinha diz se está paga, pela conta do saldo */
       var pgs = info.paciente ? pagamentoDaSessao(info.paciente, data, hora, ESTADO_DA_CLASSE[info.classe] || "") : "";
+      /* sessão dos próximos 7 dias que o saldo não cobre: anel vermelho, cobrar antes (09/10/2026) */
+      if(!pgs && info.paciente && aPagarEmBreve(info.paciente, data, hora, ESTADO_DA_CLASSE[info.classe] || "")) pgs = "apagar";
       if(pgs) b.insertAdjacentHTML("beforeend", '<span class="pgm pgm-'+pgs+'" aria-hidden="true"></span>');
       if(info.aria) b.title = info.aria;
       if(pgs) b.title = (b.title ? b.title + ". " : "") + TEXTO_PAGAMENTO_SESSAO[pgs];
@@ -2285,8 +2319,9 @@ function pintarDados(el, codigo, nomeAgenda, aoMudar){
   var c = cadastroDe(codigo) || {}, cheios = quantosDados(c), espera = null;
   var h = '<div class="dp-topo"><h3>Dados do paciente</h3><span class="hint" id="dp-conta">' +
     (cheios ? cheios + " de " + total + " preenchidos" : "Nada preenchido ainda") + '</span></div>';
-  if(!cheios) h += '<p class="hint dp-vazio">Ninguém escreveu os dados de ' + esc(nomeAgenda || codigo) + ' no app ainda. ' +
-    'Para trazer de uma vez os que estão na aba Registro de Pacientes da planilha, use "Trazer dados da planilha" em Pacientes.</p>';
+  if(!cheios) h += '<div class="dp-vazio"><p class="hint" style="margin:0">Ninguém escreveu os dados de ' + esc(nomeAgenda || codigo) + ' no app ainda. ' +
+    'Dá para escrever aqui embaixo, ou trazer de uma vez os de todos os pacientes da aba Registro de Pacientes da planilha.</p>' +
+    '<button type="button" class="btn sm" data-trazer-dados>Trazer dados da planilha</button></div>';
   h += '<div class="dp-grade">';
   CAMPOS_DADOS.forEach(function(f){
     if(f.grupo){ h += '<p class="dp-grupo">' + esc(f.grupo) + '</p>'; return; }
@@ -2301,6 +2336,8 @@ function pintarDados(el, codigo, nomeAgenda, aoMudar){
   });
   h += '</div>';
   el.innerHTML = h;
+  var bTrazer = el.querySelector("[data-trazer-dados]");
+  if(bTrazer) bTrazer.addEventListener("click", function(){ document.getElementById("arquivo-dados").click(); });
   el.querySelectorAll("[data-dado]").forEach(function(inp){
     inp.addEventListener("input", function(){
       if(!dados.cadastros) dados.cadastros = {};
@@ -2330,7 +2367,9 @@ function abrirDadosArquivado(a){
     '<div class="fipag" id="dp-arq"></div>' +
     '<div class="acoes"><button class="btn primary" id="dp-fechar">Pronto</button></div></div>';
   document.body.appendChild(fundo);
-  pintarDados(document.getElementById("dp-arq"), a.codigo, a.nome);
+  var arq = document.getElementById("dp-arq");
+  arq.dataset.codigo = a.codigo; arq.dataset.nome = a.nome || "";
+  pintarDados(arq, a.codigo, a.nome);
   function fechar(){ if(pintarDados.pendente) pintarDados.pendente(); pintarDados.pendente = null; fundo.remove(); devolver(); renderPacientes(); }
   var devolver = janela(fundo, fechar);
   fundo.addEventListener("click", function(e){ if(e.target === fundo) fechar(); });
@@ -2436,6 +2475,10 @@ function trazerDadosDoArquivo(arquivo){
       "Só preenche campo vazio: o que você já escreveu no app fica. Não mexe em agenda, sessões, pagamentos nem dívida.")) return;
     juntarDados(lidos);
     salvar(); renderTudo();
+    /* trazido de dentro da ficha: ela reabre na aba Dados, já preenchida */
+    if(fichaAberta && fichaAberta.p){ var pf = fichaAberta.p; fichaAberta.fechar(); abrirFicha(pf, null, "dados"); }
+    var arq = document.getElementById("dp-arq");
+    if(arq && arq.dataset.codigo) pintarDados(arq, arq.dataset.codigo, arq.dataset.nome);
     recado("Pronto: dados de " + plural(c.pacientes, "paciente", "pacientes") + " no app.");
   }).catch(function(err){ recado("Não consegui ler: " + err.message); });
 }
@@ -2946,6 +2989,8 @@ function renderPacientes(){
     b.addEventListener("click", function(){ filtroPacientes = b.dataset.f; renderPacientes(); });
   });
 
+  var pc = document.getElementById("pcobrar");
+  if(filtroPacientes === "agenda") blocoCobrancas(pc); else pc.innerHTML = "";
   if(filtroPacientes === "remarcados") return desenharMovimentos(movimentos);
   if(filtroPacientes !== "agenda" && filtroPacientes !== "triagem") return desenharCarteira(filtroPacientes);
   desenharAgendaPacientes(filtroPacientes === "triagem");
@@ -3105,6 +3150,7 @@ function desenharAgendaPacientes(soTriagem){
           /* o dia já está no cabeçalho do grupo; no cartão sobra a hora e o valor */
           '<span class="sub">'+String(p.hora).padStart(2,"0")+'h · '+moeda(valorSessao(p))+' por sessão</span>' +
           '<span class="cod">'+esc(p.codigo)+(p.freq==="quinzenal" ? " · quinzenal" : "")+'</span>' +
+          seloSaldo(p) +
           selo(formulacaoDe(p.codigo)) +
         '</span>';
       c.addEventListener("click", function(){ abrirFicha(p); });
@@ -3120,6 +3166,33 @@ function desenharAgendaPacientes(soTriagem){
   if(!alvo.children.length){
     alvo.innerHTML = '<p class="pvazio">Nenhum paciente na agenda. Use o botão abaixo para adicionar o primeiro.</p>';
   }
+}
+/* o saldo no cartão do paciente: vermelho para quem deve ou não tem sessão paga pela frente */
+function seloSaldo(p){
+  var s = saldoDe(p);
+  if(s.fora) return "";
+  return '<span class="selo '+s.classe+' saldo" title="'+esc(s.detalhe || "")+'">'+esc(s.texto)+'</span>';
+}
+/* "Cobrar" (09/10/2026): quem deve ou está sem saldo, com quanto, num bloco só. Aparece no alto de
+   Pacientes e de Pagamentos. O nome abre a ficha na aba Pagamento. */
+function blocoCobrancas(el){
+  var l = cobrancasAFazer(), vermelhos = l.filter(function(x){ return x.s.peso <= 1; }), soma = 0;
+  vermelhos.forEach(function(x){ soma += x.s.deve || 0; });
+  if(!l.length){
+    el.innerHTML = '<div class="cobrar ok"><b>Ninguém para cobrar.</b> <span class="hint">Todos na agenda têm pelo menos duas sessões pagas pela frente.</span></div>';
+    return;
+  }
+  var h = '<div class="cobrar"><div class="cobrar-cab"><b>Cobrar</b><span class="hint">' +
+    (vermelhos.length ? plural(vermelhos.length, "paciente", "pacientes") + " em vermelho" + (soma > 0.005 ? " · " + moeda(soma) + " devidos" : "") : "ninguém em vermelho") +
+    (l.length > vermelhos.length ? " · " + (l.length - vermelhos.length) + " com só a próxima paga" : "") + '</span></div><div class="cobrar-lista">';
+  l.forEach(function(x){
+    h += '<button type="button" class="cobrar-it '+x.s.classe+'" data-cobrar="'+esc(x.p.id)+'"><span class="n">'+esc(x.p.nome)+'</span>' +
+      '<span class="t">'+esc(x.s.texto)+'</span>' + (x.s.detalhe ? '<span class="d">'+esc(x.s.detalhe)+'</span>' : "") + '</button>';
+  });
+  el.innerHTML = h + '</div></div>';
+  el.querySelectorAll("[data-cobrar]").forEach(function(b){
+    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.cobrar); if(p) abrirFicha(p, null, "pagamento"); });
+  });
 }
 function inicial1(p){ var n=(p.nome||"?").trim(); return n ? n.charAt(0).toUpperCase() : "?"; }
 
@@ -3289,11 +3362,13 @@ function abrirFicha(p, foco, aba){
         '<div class="fi-total" id="fi-total"></div></div>' +
       '<div class="tabs fi-abas" role="tablist" aria-label="Partes da ficha">' +
         '<button type="button" class="tab" role="tab" id="fi-aba-pagamento" data-fiaba="pagamento" aria-controls="fi-p-pagamento">Pagamento</button>' +
+        '<button type="button" class="tab" role="tab" id="fi-aba-dados" data-fiaba="dados" aria-controls="fi-p-dados">Dados</button>' +
         '<button type="button" class="tab" role="tab" id="fi-aba-prontuario" data-fiaba="prontuario" aria-controls="fi-p-prontuario">Prontuário</button>' +
         '<button type="button" class="tab" role="tab" id="fi-aba-cadastro" data-fiaba="cadastro" aria-controls="fi-p-cadastro">Cadastro</button>' +
       '</div>' +
       '<div class="fi-aba" role="tabpanel" id="fi-p-pagamento" aria-labelledby="fi-aba-pagamento">' +
         '<div class="fi-situ" id="fi-situ"></div>' +
+        '<div class="fipag fi-ultimas" id="fi-ultimas"></div>' +
         '<div class="fipag fi-reg" id="fi-reg">' +
           '<h3>Registrar pagamento</h3>' +
           '<div class="fi-chips" id="fi-chips"></div>' +
@@ -3321,6 +3396,12 @@ function abrirFicha(p, foco, aba){
           '<div id="fi-ciclos"></div>' +
         '</details>' +
       '</div>' +
+      /* os dados pessoais numa aba própria, a um toque ao abrir o paciente (09/10/2026, pedido dele:
+         "quando eu clico no paciente, eu preciso saber todas as informações pessoais"). Antes ficavam
+         no fim do Cadastro, embaixo do tratamento. */
+      '<div class="fi-aba" role="tabpanel" id="fi-p-dados" aria-labelledby="fi-aba-dados" hidden>' +
+        '<div class="fipag fi-dados" id="fi-dados"></div>' +
+      '</div>' +
       '<div class="fi-aba" role="tabpanel" id="fi-p-prontuario" aria-labelledby="fi-aba-prontuario" hidden>' +
         '<div class="fipag pront" id="fi-pront"></div>' +
         '<div class="fipag" id="fi-sess"></div>' +
@@ -3328,7 +3409,6 @@ function abrirFicha(p, foco, aba){
       '</div>' +
       '<div class="fi-aba" role="tabpanel" id="fi-p-cadastro" aria-labelledby="fi-aba-cadastro" hidden>' +
       '<div class="fipag fi-tratamento" id="fi-tratamento"></div>' +
-      '<div class="fipag fi-dados" id="fi-dados"></div>' +
       '<h3 class="fi-agenda-t">Agenda</h3>' +
       '<div class="grid2">' +
         '<div class="field"><label for="fi-nome">Nome na agenda</label>' +
@@ -3366,6 +3446,7 @@ function abrirFicha(p, foco, aba){
     pintarTratamento();
     document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
     pintarSituacao();
+    pintarUltimas();
     pintarChips();
     pintarPrevia();
     pintarProntuario();
@@ -3376,8 +3457,9 @@ function abrirFicha(p, foco, aba){
     /* os dados do paciente só redesenham quando o prontuário muda: redesenhar a cada letra tiraria o foco */
     if(dadosDoCodigo !== String(p.codigo || "").trim()){
       dadosDoCodigo = String(p.codigo || "").trim();
-      pintarDados(document.getElementById("fi-dados"), p.codigo, p.nome, function(){ renderTudo(); pintarTotal(); });
+      pintarDados(document.getElementById("fi-dados"), p.codigo, p.nome, function(){ renderTudo(); pintarTotal(); pintarAbaDados(); });
     }
+    pintarAbaDados();
   }
   var dadosDoCodigo = null;
   /* abas da ficha: Pagamento abre primeiro; quem chega pelo prontuário (foco) cai no Prontuário */
@@ -3514,6 +3596,36 @@ function abrirFicha(p, foco, aba){
     }
     el.className = "fi-situ " + classe;
     el.textContent = t;
+  }
+  /* a aba Dados diz no nome se falta tudo: "Dados (vazio)" */
+  function pintarAbaDados(){
+    var n = quantosDados(cadastroDe(p.codigo));
+    var t = document.getElementById("fi-aba-dados");
+    t.classList.toggle("vazio", !n);
+    t.title = n ? "" : "Nenhum dado pessoal preenchido ainda";
+  }
+  /* As últimas sessões e se cada uma foi paga (09/10/2026, pedido dele). Só mostra: a conta é a do
+     saldo, que paga da sessão mais antiga para a mais nova. */
+  var ultimasTodas = false;
+  function pintarUltimas(){
+    var el = document.getElementById("fi-ultimas"), l = ultimasSessoesDe(p), sd = saldoDe(p);
+    var ROT = {paga:"paga", parte:"paga em parte", aberta:"não paga", proxima:"ainda não paga", "proxima-paga":"já paga", "nao-cobra":"não cobra", "":""};
+    var CL = {paga:"ok", parte:"atencao", aberta:"atraso", proxima:"atraso", "proxima-paga":"ok", "nao-cobra":"sem", "":"sem"};
+    var h = '<div class="topo"><h3>Últimas sessões</h3><span class="sit '+sd.classe+'">'+esc(sd.texto)+'</span></div>';
+    if(!l.length) h += '<p class="hint" style="margin:0">Nenhuma sessão ainda.</p>';
+    var mostrar = ultimasTodas ? l : l.slice(0, 8);
+    h += '<div class="fu-lista">';
+    mostrar.forEach(function(x){
+      h += '<div class="fu'+(x.futura ? " fut" : "")+'"><span class="fu-d">'+esc(DIAS_CURTO[x.d.getDay()].toLowerCase())+' '+dataCurta(x.d)+
+        (x.d.getFullYear() !== hoje0().getFullYear() ? "/"+x.d.getFullYear() : "")+'</span>' +
+        '<span class="fu-t">'+esc(x.texto)+'</span>' +
+        (x.pag ? '<span class="sit '+CL[x.pag]+'">'+ROT[x.pag]+'</span>' : '<span class="hint">sem conta</span>') + '</div>';
+    });
+    h += '</div>';
+    if(l.length > 8) h += '<button type="button" class="btn sm ghost" id="fu-mais" style="margin-top:8px">'+(ultimasTodas ? "Mostrar só as últimas" : "Ver todas ("+l.length+")")+'</button>';
+    el.innerHTML = h;
+    var b = document.getElementById("fu-mais");
+    if(b) b.addEventListener("click", function(){ ultimasTodas = !ultimasTodas; pintarUltimas(); });
   }
   /* atalhos de valor: o ciclo dele e uma sessão do ciclo; o campo continua livre para outro valor */
   function pintarChips(){
@@ -4291,6 +4403,80 @@ function textoDevido(p){
   return {classe:"ok", texto:"nada a pagar", titulo:titulo};
 }
 
+/* Saldo de sessões (09/10/2026, pedido dele: "quais pacientes têm saldo de sessão; os que não têm
+   precisam aparecer já como vermelho"). Só lê a conta de sempre (devidoDe e o vencimento); nada aqui
+   muda saldo, dívida ou previsto. Saldo é quantas sessões já estão pagas e ainda não aconteceram.
+   Vermelho: deve, ou não tem nenhuma sessão paga pela frente (o pagamento é adiantado, então a
+   próxima sessão já é uma cobrança). Amarelo: só a próxima está paga. Verde: duas ou mais. */
+function saldoDe(p){
+  var d = devidoDe(p), v = proximoVencimento(p);
+  if(encerradoHoje(p)){
+    if(d && d.exato > 0.005) return {classe:"atraso", n:0, deve:d.exato, venc:null, texto:"deve " + moeda(d.exato), detalhe:"tratamento encerrado", cobrar:true, peso:0};
+    return {classe:"sem", n:0, venc:null, texto:"tratamento encerrado", detalhe:"", cobrar:false, peso:9, fora:true};
+  }
+  if(!d) return {classe:"sem", n:null, venc:v, texto:"sem conta de saldo", detalhe:"o app não tem o começo da conta deste paciente", cobrar:false, peso:5};
+  var vd = v ? "vence na sessão de " + dataCurta(v) : "";
+  if(d.exato > 0.005) return {classe:"atraso", n:0, deve:d.exato, venc:v, texto:"deve " + moeda(d.exato), detalhe:v ? "desde a sessão de " + dataCurta(v) : "", cobrar:true, peso:0};
+  var n = d.sessoes < 0 ? -d.sessoes : 0;
+  if(!n) return {classe:"atraso", n:0, venc:v, texto:"sem saldo", detalhe:v ? "a próxima sessão (" + dataCurta(v) + ") não está paga" : "nenhuma sessão paga pela frente", cobrar:true, peso:1};
+  if(n === 1) return {classe:"atencao", n:1, venc:v, texto:"saldo: 1 sessão", detalhe:vd, cobrar:true, peso:2};
+  return {classe:"ok", n:n, venc:v, texto:"saldo: " + n + " sessões", detalhe:vd, cobrar:false, peso:3};
+}
+/* quem cobrar agora, de quem deve mais para quem só não tem saldo; amarelo vem depois */
+function cobrancasAFazer(){
+  return dados.pacientes.map(function(p){ return {p:p, s:saldoDe(p)}; })
+    .filter(function(x){ return x.s.cobrar; })
+    .sort(function(a,b){ return (a.s.peso - b.s.peso) || ((b.s.deve || 0) - (a.s.deve || 0)) ||
+      ((a.s.venc ? a.s.venc.getTime() : 9e15) - (b.s.venc ? b.s.venc.getTime() : 9e15)); });
+}
+/* sessão que vem nos próximos 7 dias e o saldo não cobre: na semana ganha um anel vermelho, para a
+   cobrança ser feita antes (09/10/2026). Só tela; a conta é a do vencimento. */
+function aPagarEmBreve(p, data, hora, estado){
+  if(!cobraSessao(estado) || !devidoDe(p) || jaPassou(data, hora)) return false;
+  if(data > somaDias(hoje0(), 7)) return false;
+  var v = proximoVencimento(p);
+  return !!(v && data >= v);
+}
+/* As sessões do paciente, da mais nova para a mais antiga, cada uma com o pagamento dela, mais as duas
+   próximas. A conta é a do extrato (o dinheiro paga da sessão mais antiga para a mais nova), a mesma
+   que dá o vencimento. Sem extrato, cai na bolinha da semana (pagamentoDaSessao). Só mostra. */
+function ultimasSessoesDe(p){
+  var l = [], hoje = hoje0(), ext = extratoDe(p);
+  if(ext){
+    var cum = 0, desde = somaDias(deISO(ext.ate || p.historico.ate), 1);
+    ext.linhas.forEach(function(x){
+      if(x.ordem !== 0) return;
+      var pag;
+      if(!(x.cobrado > 0)) pag = "nao-cobra";
+      else { var antes = cum; cum += x.cobrado; pag = cum <= ext.pago + 0.005 ? "paga" : (antes < ext.pago - 0.005 ? "parte" : "aberta"); }
+      l.push({d:deISO(x.data), texto:x.texto, pag:pag});
+    });
+    /* da agenda, as que não cobram (o extrato só traz as que cobram) */
+    var ROTN = {remarcada:"Remarcada", cancelada:"Não haverá", cortesia:"Cortesia"};
+    if(desde <= hoje) sessoesDoPaciente(p, desde, hoje).forEach(function(x){
+      if(ROTN[x.estado] && (x.estado !== "cortesia" || jaPassou(x.data, x.hora))) l.push({d:x.data, texto:ROTN[x.estado], pag:"nao-cobra"});
+    });
+  } else {
+    var ROT = {sessao:"Sessão (a confirmar)", realizada:"Sessão realizada", falta:"Não compareceu (cobrada)", remarcada:"Remarcada", cancelada:"Não haverá", cortesia:"Cortesia"};
+    var de = somaDias(hoje, -120);
+    if(p.inicio && deISO(p.inicio) > de) de = deISO(p.inicio);
+    sessoesDoPaciente(p, de, hoje).forEach(function(x){
+      if(!ROT[x.estado] || (x.estado === "sessao" && !jaPassou(x.data, x.hora))) return;
+      var pg = cobraSessao(x.estado) ? pagamentoDaSessao(p, x.data, x.hora, x.estado) : "nao-cobra";
+      l.push({d:x.data, texto:ROT[x.estado], pag:pg});
+    });
+  }
+  l.sort(function(a,b){ return b.d - a.d; });
+  /* as duas próximas, no alto */
+  var fut = [];
+  if(!encerradoHoje(p)) sessoesDoPaciente(p, hoje, somaDias(hoje, 45)).forEach(function(x){
+    if(fut.length >= 2 || !cobraSessao(x.estado) || x.estado !== "sessao" || jaPassou(x.data, x.hora)) return;
+    var pg = devidoDe(p) ? (pagamentoDaSessao(p, x.data, x.hora, x.estado) === "paga" ? "proxima-paga" : "proxima") : "";
+    fut.push({d:x.data, texto:"Próxima sessão, " + String(x.hora).padStart(2,"0") + "h", pag:pg, futura:true});
+  });
+  return fut.reverse().concat(l);
+}
+
 /* a grade pergunta isso célula por célula: calcula uma vez por desenho, não vinte */
 function mapaDeAtraso(){
   if(atrasoCache) return atrasoCache;
@@ -4388,6 +4574,7 @@ function renderPagamentos(){
     : "Ninguém com pagamento vencido.";
   document.getElementById("pg-semana").textContent = moeda(seteDias);
 
+  blocoCobrancas(document.getElementById("pg-cobrar"));
   var tb = document.querySelector("#pg-tabela tbody");
   tb.innerHTML = "";
   linhas.forEach(function(l){
