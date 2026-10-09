@@ -4820,7 +4820,7 @@ var cacheMes = {};
 function numerosDoMes(ref){
   var chave = ref.getFullYear()+"-"+ref.getMonth();
   if(cacheMes[chave]) return cacheMes[chave];
-  var cont = {}, avulsas = {}, cicloDoMes = {}, sessoes = 0, aConfirmar = 0, previstas = 0, hojeN = hoje0();
+  var valorPac = {}, sessoes = 0, aConfirmar = 0, previstas = 0, hojeN = hoje0();
   for(var i=0;i<31;i++){
     var d = new Date(ref.getFullYear(), ref.getMonth(), 1+i);
     if(d.getMonth()!==ref.getMonth()) break;
@@ -4830,23 +4830,18 @@ function numerosDoMes(ref){
       if(confirmada(s.estado)) sessoes++;
       else if(s.estado==="sessao"){ if(jaPassou(d, s.hora)) aConfirmar++; else previstas++; }
       /* a receita segue a cobrança: falta sem aviso cobra, cortesia não (regra das 24 horas) */
-      if(cobraSessao(s.estado)){
-        cont[s.paciente.id] = (cont[s.paciente.id]||0)+1;
-        /* o preço é o do ciclo em que a sessão caiu: a avulsa soma sessão por sessão; o ciclo
-           mensal ou quinzenal entra uma vez, pelo valor do último ciclo do mês. Assim abrir um
-           ciclo novo não muda o previsto dos meses que já passaram (04/10/2026) */
-        var iso = chaveData(d), cic = cicloEm(s.paciente, iso);
-        if(cic.cobranca==="avulsa") avulsas[s.paciente.id] = (avulsas[s.paciente.id]||0) + valorSessao(cic);
-        else cicloDoMes[s.paciente.id] = cic;
-      }
+      /* o previsto é a mesma conta do saldo (decisões 2 e 7, 09/10/2026): o mensal é pacote de 4
+         sessões, então cada sessão que cobra entra pelo preço do ciclo do dia dela (R$ 500 / 4 =
+         R$ 125). Mês com 5 semanas prevê R$ 625, como o saldo cobra. Antes o mensal e o quinzenal
+         entravam uma vez por mês, pelo valor cheio, e discordavam do saldo. */
+      if(cobraSessao(s.estado)) valorPac[s.paciente.id] = (valorPac[s.paciente.id]||0) + valorSessaoEm(s.paciente, chaveData(d));
     });
   }
   /* Matheus, 27/09/2026: o projetado geral é só de quem está ativo, como na planilha;
      quem está em triagem aparece ao lado, sem entrar no número principal */
   var previsto = 0, previstoTriagem = 0;
   dados.pacientes.forEach(function(p){
-    var n = cont[p.id]||0; if(n<=0) return;
-    var r = (avulsas[p.id]||0) + (cicloDoMes[p.id] ? Number(cicloDoMes[p.id].valor)||0 : 0);
+    var r = valorPac[p.id]||0; if(!r) return;
     if(p.status === "Triagem.") previstoTriagem += r; else previsto += r;
   });
   /* o que entrou é tudo; o que falta receber compara só pacientes com pacientes (regra dele, 27/09/2026) */
