@@ -1321,12 +1321,15 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <div class="filtros" id="pfiltros" role="tablist" aria-label="O que mostrar"></div>
       <!-- os grupos de dia entram aqui; a grade de cartões (.pgrid) fica dentro de cada dia -->
       <div id="plist"></div>
-      <div style="margin-top:14px; display:flex; gap:8px">
+      <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px">
         <button class="btn" id="add-paciente">Adicionar paciente</button>
         <button class="btn ghost" id="trazer-dados">Trazer dados da planilha</button>
         <input type="file" id="arquivo-dados" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
+        <button class="btn ghost" id="trazer-saidos">Sessões de quem saiu</button>
+        <button class="btn ghost" id="desfazer-saidos" hidden>Desfazer a carga</button>
+        <input type="file" id="arquivo-saidos" accept=".json,application/json" class="hidden">
       </div>
-      <p class="hint" style="margin-top:6px">"Trazer dados da planilha" só copia os dados pessoais da aba Registro de Pacientes (nascimento, CPF, contato, emergência) para quem ainda não tem. Não mexe em agenda, sessões nem pagamentos.</p>
+      <p class="hint" style="margin-top:6px">"Trazer dados da planilha" só copia os dados pessoais da aba Registro de Pacientes (nascimento, CPF, contato, emergência) para quem ainda não tem. Não mexe em agenda, sessões nem pagamentos. "Sessões de quem saiu" lê o arquivo com as sessões do prontuário de quem já saiu da agenda e, depois de mostrar a prévia, passa a dívida dessas pessoas para a conta do app.</p>
     </div>
   </section>
 
@@ -1781,9 +1784,9 @@ function sessoesAnterioresHTML(p){
 function anteriorHTML(ant){
   var total = 0;
   ant.recibos.forEach(function(g){ total += Number(g.valor) || 0; });
-  var deve = ant.a && Number(ant.a.aPagar) > 0.5;
+  var ca = ant.a ? contaArquivado(ant.a) : null, deve = ca && ca.exato > 0.5;
   return '<details class="fi-det fi-ant"><summary>Tratamento anterior: ' + plural(ant.recibos.length, "pagamento", "pagamentos") +
-    (ant.recibos.length ? ' · ' + moeda(total) : "") + (deve ? ' · ficou devendo ' + moeda(ant.a.aPagar) : "") + '</summary>' +
+    (ant.recibos.length ? ' · ' + moeda(total) : "") + (deve ? ' · ficou devendo ' + moeda(ca.exato) : "") + '</summary>' +
     (ant.recibos.length ? '<div class="linhas">' + ant.recibos.map(function(g){
       return '<div><span>' + dataLonga(deISO(g.data)) + '</span><span>' + moeda(g.valor) + '</span></div>';
     }).join("") + '</div>' : "") +
@@ -1932,27 +1935,193 @@ function historicoDe(p){
 function extratoDe(p){
   var hist = historicoDe(p);
   if(!hist) return null;
-  var linhas = [], cortesia = p.cortesiaPlanilha ? 1 : 0;
-  var ROT = {realizada:"Sessão realizada", falta:"Não compareceu (cobrada)", avisou:"Avisou e não veio"};
-  (hist.sessoes || []).forEach(function(s){
-    var c = cicloEm(p, s.data), cobra = s.situacao==="realizada" || s.situacao==="falta";
-    var v = cobra ? valorSessao(c) : 0, texto = ROT[s.situacao] || s.situacao;
-    if(cobra && cortesia){ v = 0; cortesia = 0; texto += " (cortesia)"; }
-    linhas.push({data:s.data, ordem:0, texto:texto, tipo:rotuloCiclo(c), cobrado:v, pago:0, n:s.n});
-  });
+  var linhas = linhasDoHistorico(p, hist, p.cortesiaPlanilha ? 1 : 0);
   var de = somaDias(deISO(hist.ate), 1), ROTA = {sessao:"Sessão (a confirmar)", realizada:"Sessão realizada", falta:"Não compareceu (cobrada)"};
   sessoesDoPaciente(p, de, hoje0()).forEach(function(s){
     if(!cobraSessao(s.estado) || !jaPassou(s.data, s.hora)) return;
     var iso = chaveData(s.data), c = cicloEm(p, iso);
     linhas.push({data:iso, ordem:0, texto:ROTA[s.estado], tipo:rotuloCiclo(c), cobrado:valorSessao(c), pago:0});
   });
-  pagamentosDe(p.id).forEach(function(g){
+  return fecharExtrato(linhas, pagamentosDe(p.id), hist);
+}
+/* as sessões do prontuário, cada uma no preço do ciclo dela; a primeira cobrada vira a cortesia */
+function linhasDoHistorico(p, hist, cortesia){
+  var linhas = [], ROT = {realizada:"Sessão realizada", falta:"Não compareceu (cobrada)", avisou:"Avisou e não veio"};
+  (hist.sessoes || []).forEach(function(s){
+    var c = cicloEm(p, s.data), cobra = s.situacao==="realizada" || s.situacao==="falta";
+    var v = cobra ? valorSessao(c) : 0, texto = ROT[s.situacao] || s.situacao;
+    if(cobra && cortesia){ v = 0; cortesia = 0; texto += " (cortesia)"; }
+    linhas.push({data:s.data, ordem:0, texto:texto, tipo:rotuloCiclo(c), cobrado:v, pago:0, n:s.n});
+  });
+  return linhas;
+}
+function fecharExtrato(linhas, pagamentos, hist){
+  pagamentos.forEach(function(g){
     linhas.push({data:g.data, ordem:1, texto:"Pagamento", tipo:"", cobrado:0, pago:Number(g.valor)||0});
   });
   linhas.sort(function(a,b){ return a.data < b.data ? -1 : (a.data > b.data ? 1 : a.ordem - b.ordem); });
   var saldo = 0, cobrado = 0, pago = 0;
   linhas.forEach(function(l){ saldo += l.cobrado - l.pago; cobrado += l.cobrado; pago += l.pago; l.saldo = Math.round(saldo*100)/100; });
   return {linhas:linhas, cobrado:cobrado, pago:pago, saldo:Math.round(saldo*100)/100, ate:hist.ate, doApp:!!hist.doApp};
+}
+/* Dívida de quem já saiu da agenda, pelo app (decisão dele, 09/10/2026). Antes era o "Valor a
+   Pagar" da planilha na última leitura (a.aPagar). Com as sessões do prontuário carregadas no
+   cartão (a.conta, pelo botão "Sessões de quem saiu", com prévia e desfazer), vale a mesma conta
+   do extrato de quem está na agenda: cada sessão cobrada no preço do ciclo dela (mensal é pacote
+   de 4), menos uma cortesia, menos tudo o que esse prontuário pagou. Quem não foi carregado
+   continua com o número da planilha, e a tela diz de onde ele veio. */
+function cobrancaDaModalidade(m){
+  m = semAcento(m || "");
+  return m.indexOf("mensal") === 0 ? "mensal" : (m.indexOf("quinzenal") === 0 ? "quinzenal" : "avulsa");
+}
+/* o arquivado no formato que ciclosDe, cicloEm e valorSessao entendem */
+function contaComoPaciente(a){
+  var ciclos = (a.conta && a.conta.ciclos) || [];
+  return {codigo:a.codigo, inicio:a.inicio || "", cobranca:cobrancaDaModalidade(a.modalidade), valor:Number(a.valor)||0, ciclos:ciclos};
+}
+/* os pagamentos desse prontuário que não são de uma ficha da agenda (recibos antigos, sem ficha) */
+function pagamentosArquivado(a){
+  return (dados.pagamentos || []).filter(function(g){
+    return dePaciente(g) && g.codigo && g.codigo === a.codigo && (!g.pacienteId || !acharPaciente(g.pacienteId));
+  });
+}
+function extratoArquivado(a){
+  if(!a || !a.conta || !a.conta.ate) return null;
+  var p = contaComoPaciente(a), hist = {ate:a.conta.ate, sessoes:a.conta.sessoes || []};
+  return fecharExtrato(linhasDoHistorico(p, hist, a.conta.cortesia ? 1 : 0), pagamentosArquivado(a), hist);
+}
+/* quanto quem saiu deve: {exato, sessoes, valor, app}. exato positivo = deve; negativo = crédito.
+   Em sessões, pelo valor da sessão do último ciclo, como na agenda. */
+function contaArquivado(a){
+  var ext = extratoArquivado(a);
+  if(ext){
+    var ultimo = ciclosDe(contaComoPaciente(a)).slice(-1)[0], vs = valorSessao(ultimo);
+    var n = !(vs > 0) ? 0 : (ext.saldo > 0.005 ? Math.ceil(ext.saldo / vs - 1e-6) : -Math.floor(-ext.saldo / vs + 1e-6));
+    return {exato:ext.saldo, sessoes:n, valor:n * vs, app:true, ate:ext.ate, pago:ext.pago, cobrado:ext.cobrado, extrato:ext};
+  }
+  var v = Number(a.aPagar) || 0;
+  return {exato:v, sessoes:0, valor:v, app:false};
+}
+/* o selo do cartão de quem saiu: quanto deve (ou tem de crédito) e de onde veio o número */
+function seloContaArquivado(a){
+  var c = contaArquivado(a), titulo = c.app
+    ? "Conta do app: " + moeda(c.cobrado) + " em sessões do prontuário até " + dataCurta(deISO(c.ate)) + ", já pagou " + moeda(c.pago) + "."
+    : "Valor a Pagar da planilha na última leitura.";
+  if(c.exato > 0.5) return '<span class="selo atraso" title="' + esc(titulo) + '">Deve ' + moeda(c.exato) + (c.app ? "" : " pela planilha") + '</span>';
+  if(c.app && c.exato < -0.5) return '<span class="selo ok" title="' + esc(titulo) + '">' + moeda(-c.exato) + ' de crédito</span>';
+  return "";
+}
+function abrirExtratoArquivado(a){
+  var c = contaArquivado(a);
+  if(!c.app) return;
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal"><h2>Extrato de ' + esc(a.nome) + '</h2>' +
+    '<p class="sub">' + esc(a.codigo) + ' · sessões do prontuário até ' + dataLonga(deISO(c.ate)) + ' e os pagamentos desse prontuário. ' +
+    (c.exato > 0.5 ? 'Deve <b>' + moeda(c.exato) + '</b>.' : (c.exato < -0.5 ? 'Tem <b>' + moeda(-c.exato) + '</b> de crédito.' : 'Nada a pagar.')) + '</p>' +
+    '<div style="max-height:55vh; overflow:auto"><table class="tab"><thead><tr><th>Data</th><th>O quê</th><th class="num">Cobrado</th><th class="num">Pago</th><th class="num">Saldo</th></tr></thead><tbody>' +
+    c.extrato.linhas.map(function(l){
+      return '<tr><td>' + dataCurta(deISO(l.data)) + '</td><td>' + esc(l.texto) + (l.tipo ? '<br><span class="hint">' + esc(l.tipo) + '</span>' : "") + '</td>' +
+        '<td class="num">' + (l.cobrado ? moeda(l.cobrado) : "") + '</td><td class="num">' + (l.pago ? moeda(l.pago) : "") + '</td><td class="num">' + moeda(l.saldo) + '</td></tr>';
+    }).join("") + '</tbody></table></div>' +
+    '<div class="acoes"><button class="btn" id="ext-fora-fechar">Fechar</button></div></div>';
+  document.body.appendChild(fundo);
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
+  document.getElementById("ext-fora-fechar").addEventListener("click", fechar);
+}
+/* Carga das sessões de quem saiu (09/10/2026). O arquivo é um .json montado a partir dos
+   prontuários no computador dele (nunca fica no site, que é público): {tipo:"sessoes-de-quem-saiu",
+   pacientes:[{codigo, ate, sessoes:[{data, n, situacao}], ciclos:[{inicio, cobranca, valor}], cortesia}],
+   pendentes:[{codigo, motivo}]}. Antes de gravar, a prévia mostra paciente por paciente o número
+   da planilha e o do app; os pendentes (prontuário e planilha divergem, esperando a palavra dele)
+   não entram e continuam pela planilha. Desfazer tira tudo e volta aos números da planilha. */
+function lerSessoesDeQuemSaiu(texto){
+  var j = JSON.parse(texto);
+  if(!j || j.tipo !== "sessoes-de-quem-saiu" || !Array.isArray(j.pacientes)) throw new Error("este arquivo não é o das sessões de quem saiu");
+  return j;
+}
+function planoSessoesDeQuemSaiu(j){
+  var porCodigo = {}, pendente = {};
+  (j.pendentes || []).forEach(function(x){ pendente[x.codigo] = x.motivo || "esperando sua decisão"; });
+  (dados.arquivados || []).forEach(function(a){ porCodigo[a.codigo] = a; });
+  var entra = [], fora = [];
+  j.pacientes.forEach(function(h){
+    var a = porCodigo[h.codigo];
+    if(pendente[h.codigo]){ fora.push({codigo:h.codigo, nome:a ? a.nome : h.codigo, motivo:pendente[h.codigo]}); return; }
+    if(!a){ fora.push({codigo:h.codigo, nome:h.codigo, motivo:"não está entre quem saiu da agenda"}); return; }
+    if(!h.ate || !Array.isArray(h.sessoes)){ fora.push({codigo:h.codigo, nome:a.nome, motivo:"arquivo sem as sessões"}); return; }
+    var conta = {ate:h.ate, sessoes:h.sessoes.filter(function(s){ return s && s.data && s.data <= h.ate; }),
+      ciclos:(h.ciclos || []).filter(function(c){ return c && c.inicio && Number(c.valor) > 0; }), cortesia:h.cortesia ? 1 : 0};
+    var antes = contaArquivado(a), guardada = a.conta;
+    a.conta = conta;
+    var depois = contaArquivado(a);
+    a.conta = guardada;
+    entra.push({a:a, conta:conta, planilha:Number(a.aPagar) || 0, app:depois.exato, sessoes:conta.sessoes.length, antes:antes});
+  });
+  Object.keys(pendente).forEach(function(c){
+    if(fora.some(function(x){ return x.codigo === c; })) return;
+    var a = porCodigo[c];
+    fora.push({codigo:c, nome:a ? a.nome : c, motivo:pendente[c]});
+  });
+  return {entra:entra, fora:fora};
+}
+function aplicarSessoesDeQuemSaiu(plano){
+  var hoje = chaveData(hoje0());
+  plano.entra.forEach(function(x){ x.conta.carregadoEm = hoje; x.a.conta = x.conta; });
+  dados.sessoesSaidosEm = hoje;
+  salvar(); renderTudo();
+}
+function desfazerSessoesDeQuemSaiu(){
+  (dados.arquivados || []).forEach(function(a){ delete a.conta; });
+  delete dados.sessoesSaidosEm;
+  salvar(); renderTudo();
+}
+function carregadosDeQuemSaiu(){ return (dados.arquivados || []).filter(function(a){ return !!a.conta; }).length; }
+function previaSessoesDeQuemSaiu(plano){
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  var tp = 0, ta = 0, iguais = 0;
+  plano.entra.forEach(function(x){ tp += x.planilha; ta += x.app; if(Math.abs(x.planilha - x.app) <= 0.5) iguais++; });
+  var linha = function(x){
+    var dif = Math.abs(x.planilha - x.app) > 0.5;
+    return '<tr' + (dif ? ' class="linha-atraso"' : '') + '><td><b>' + esc(x.a.nome) + '</b><br><span class="hint">' + esc(x.a.codigo) + ' · ' + plural(x.sessoes, "sessão", "sessões") + '</span></td>' +
+      '<td class="num">' + moeda(x.planilha) + '</td><td class="num"><b>' + moeda(x.app) + '</b></td><td>' + (dif ? "diferente" : "igual") + '</td></tr>';
+  };
+  fundo.innerHTML = '<div class="modal"><h2>Dívida de quem saiu, pelo app</h2>' +
+    '<p class="sub">O app passa a calcular a dívida destes ' + plural(plano.entra.length, "paciente", "pacientes") + ' pelas sessões do prontuário e pelos pagamentos, ' +
+    'cada sessão no preço do ciclo dela. Nada muda em agenda, sessões ou pagamentos. Negativo é crédito.</p>' +
+    '<p class="sub"><b>' + iguais + ' de ' + plano.entra.length + '</b> dão o mesmo valor da planilha. Total pela planilha ' + moeda(tp) + ', pelo app <b>' + moeda(Math.round(ta*100)/100) + '</b>.</p>' +
+    '<div style="max-height:45vh; overflow:auto"><table class="tab"><thead><tr><th>Paciente</th><th class="num">Planilha</th><th class="num">App</th><th></th></tr></thead><tbody>' +
+    plano.entra.map(linha).join("") + '</tbody></table></div>' +
+    (plano.fora.length ? '<p class="hint" style="margin-top:10px">Ficam como estão (continuam pela planilha): ' +
+      plano.fora.map(function(x){ return esc(x.nome) + ' (' + esc(x.codigo) + ', ' + esc(x.motivo) + ')'; }).join("; ") + '.</p>' : "") +
+    '<div class="acoes"><button class="btn" id="sqs-cancelar">Cancelar</button><button class="btn primary" id="sqs-aplicar">Passar para a conta do app</button></div></div>';
+  document.body.appendChild(fundo);
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
+  document.getElementById("sqs-cancelar").addEventListener("click", fechar);
+  document.getElementById("sqs-aplicar").addEventListener("click", function(){
+    fechar();
+    aplicarSessoesDeQuemSaiu(plano);
+    recado("Pronto: dívida de " + plural(plano.entra.length, "paciente", "pacientes") + " pelo app. Para voltar à planilha, use “Desfazer a carga” em Pacientes.");
+  });
+}
+function sessoesDeQuemSaiuDoArquivo(arquivo){
+  return arquivo.text().then(function(t){
+    var plano = planoSessoesDeQuemSaiu(lerSessoesDeQuemSaiu(t));
+    if(!plano.entra.length){ recado("Nenhum paciente desse arquivo pode entrar agora."); return; }
+    previaSessoesDeQuemSaiu(plano);
+  }).catch(function(err){ recado("Não consegui ler: " + err.message); });
+}
+function pintarBotaoQuemSaiu(){
+  var b = document.getElementById("desfazer-saidos");
+  if(!b) return;
+  var n = carregadosDeQuemSaiu();
+  b.hidden = !n;
+  b.textContent = "Desfazer a carga (" + n + ")";
 }
 /* Carga do histórico lido dos prontuários (feita pelo Claude, uma vez por paciente):
    lista de {codigo, ate, sessoes:[{data, n, situacao}]}. Devolve quantos pacientes recebeu. */
@@ -2978,6 +3147,7 @@ function movimentosDaSemana(){
 }
 
 function renderPacientes(){
+  pintarBotaoQuemSaiu();
   var naAgenda = dados.pacientes.filter(function(p){ return !encerradoHoje(p); }).length;
   var emTriagem = dados.pacientes.filter(function(p){ return !encerradoHoje(p) && semAcento(p.status||"").indexOf("triagem") === 0; }).length;
   var altas = arquivadosPorStatus("alta").length + encerradosNoApp("alta").length;
@@ -3061,12 +3231,13 @@ function desenharCarteira(pedaco){
         '<span class="cod">'+esc(a.codigo)+' · '+esc(a.status.replace(/\.$/,""))+'</span>' +
         (a.fim ? '<span class="selo-trat enc">'+(pedaco === "suspenso" ? "Última sessão em " : "Encerrado em ")+dataLonga(deISO(a.fim))+'</span>' : "") +
         voltas.map(function(v){ return '<span class="selo-trat volta">Parou em '+dataCurta(deISO(v.parou))+' e voltou em '+dataLonga(deISO(v.voltou))+'</span>'; }).join("") +
-        (Number(a.aPagar) > 0.5 ? '<span class="selo atraso">Deve ' + moeda(a.aPagar) + ' pela planilha</span>' : "") +
+        seloContaArquivado(a) +
         (pedaco === "suspenso" ? seloSuspensao(a) +
           '<label class="susp-data">Suspenso desde <input type="date" data-cod="'+esc(a.codigo)+'" value="'+esc(suspensoDesde(a))+'"></label>' : "") +
         (f ? selo(f) : "") +
         '<span class="pc-acoes"><button type="button" class="btn sm" data-voltar="'+esc(a.codigo)+'">Voltar à agenda</button>' +
-          '<button type="button" class="btn sm ghost" data-dados="'+esc(a.codigo)+'">Dados'+(quantosDados(cadastroDe(a.codigo)) ? "" : " (vazio)")+'</button></span>' +
+          '<button type="button" class="btn sm ghost" data-dados="'+esc(a.codigo)+'">Dados'+(quantosDados(cadastroDe(a.codigo)) ? "" : " (vazio)")+'</button>' +
+          (a.conta ? '<button type="button" class="btn sm ghost" data-extrato-fora="'+esc(a.codigo)+'">Extrato</button>' : "") + '</span>' +
       '</span></div>';
   });
   h += "</div>";
@@ -3078,6 +3249,12 @@ function desenharCarteira(pedaco){
     b.addEventListener("click", function(){
       var a = (dados.arquivados || []).filter(function(x){ return x.codigo === b.dataset.dados; })[0];
       if(a) abrirDadosArquivado(a);
+    });
+  });
+  alvo.querySelectorAll("[data-extrato-fora]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var a = (dados.arquivados || []).filter(function(x){ return x.codigo === b.dataset.extratoFora; })[0];
+      if(a) abrirExtratoArquivado(a);
     });
   });
   alvo.querySelectorAll("[data-voltar]").forEach(function(b){
@@ -4751,7 +4928,9 @@ function abasParaPlanilha(){
   (dados.arquivados || []).forEach(function(a){
     pacientes.push([vazio(a.codigo), vazio(a.nome), "-", "Fora da agenda", vazio(String(a.status||"").replace(/\.$/,"")),
       "-", vazio(a.modalidade), Number(a.valor)||0, "-", "-", vazio(a.inicio), vazio(a.fim), "-", vazio(suspensoes[a.codigo]),
-      "-", Number(a.aPagar)||0, a.aPagar ? "planilha, " + vazio(dados.arquivadosEm) : "-"]);
+      (function(){ var ca = contaArquivado(a); return ca.app ? ca.sessoes : "-"; })(),
+      contaArquivado(a).exato,
+      contaArquivado(a).app ? "app, prontuário até " + a.conta.ate : (a.aPagar ? "planilha, " + vazio(dados.arquivadosEm) : "-")]);
   });
 
   var encerramentos = [["Prontuário","Nome","Encerrado em","Motivo","Voltou em","De onde veio"]];
@@ -5125,22 +5304,28 @@ function renderPainel(){
 
   /* 2c. quem já saiu da agenda e ficou devendo: o valor é o da planilha na última leitura
      (Valor a Pagar do Registro), porque o app só calcula a dívida de quem está na agenda */
-  var foraDevendo = (dados.arquivados || []).filter(function(a){ return Number(a.aPagar) > 0.5; })
-    .sort(function(a, b){ return b.aPagar - a.aPagar; });
-  var temLeituraNova = (dados.arquivados || []).some(function(a){ return a.aPagar !== undefined; });
+  var foraDevendo = (dados.arquivados || []).map(function(a){ return {a:a, c:contaArquivado(a)}; })
+    .filter(function(x){ return x.c.exato > 0.5; })
+    .sort(function(x, y){ return y.c.exato - x.c.exato; });
+  var algumPelaPlanilha = foraDevendo.some(function(x){ return !x.c.app; }), algumPeloApp = foraDevendo.some(function(x){ return x.c.app; });
+  var temLeituraNova = (dados.arquivados || []).some(function(a){ return a.aPagar !== undefined || !!a.conta; });
   var hFora = '<h3 class="pn-fora-t">Quem já saiu da agenda e ficou devendo</h3>';
   if(!temLeituraNova) hFora += '<p class="pvazio">Ninguém.</p>';
-  else if(!foraDevendo.length) hFora += '<p class="pvazio">Ninguém, pela planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + '.</p>';
+  else if(!foraDevendo.length) hFora += '<p class="pvazio">Ninguém.</p>';
   else {
-    var totalFora = foraDevendo.reduce(function(t, a){ return t + Number(a.aPagar); }, 0);
+    var totalFora = Math.round(foraDevendo.reduce(function(t, x){ return t + x.c.exato; }, 0) * 100) / 100;
     hFora += '<table class="tab"><thead><tr><th>Paciente</th><th>Situação</th><th class="num">Valor</th></tr></thead><tbody>' +
-      foraDevendo.map(function(a){
+      foraDevendo.map(function(x){
+        var a = x.a;
         return '<tr><td><div class="quem"><span class="ini">' + esc((a.nome || "?").charAt(0).toUpperCase()) + '</span><span><b>' + esc(a.nome) + '</b><br><span class="hint">' + esc(a.codigo) +
           (a.fim ? " · saiu em " + dataLonga(deISO(a.fim)) : "") + '</span></span></div></td>' +
-          '<td>' + esc(String(a.status || "").replace(/\.$/, "")) + '<button class="btn sm cobrar" data-cobrar-fora="' + esc(a.codigo) + '">Cobrar</button></td><td class="num"><b>' + moeda(a.aPagar) + '</b></td></tr>';
+          '<td>' + esc(String(a.status || "").replace(/\.$/, "")) + '<button class="btn sm cobrar" data-cobrar-fora="' + esc(a.codigo) + '">Cobrar</button></td><td class="num"><b>' + moeda(x.c.exato) + '</b>' +
+          (x.c.app ? "" : '<br><span class="hint">pela planilha</span>') + '</td></tr>';
       }).join("") +
       '<tr><td><b>Total</b></td><td>' + plural(foraDevendo.length, "pessoa", "pessoas") + '</td><td class="num"><b>' + moeda(totalFora) + '</b></td></tr></tbody></table>' +
-      '<p class="hint" style="margin-top:8px">Valor da planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + ' (última leitura; o app não lê mais a planilha).</p>';
+      '<p class="hint" style="margin-top:8px">' +
+      (algumPeloApp ? 'Conta do app: sessões do prontuário, cada uma no preço do ciclo dela, menos o que a pessoa pagou. ' : '') +
+      (algumPelaPlanilha ? '"Pela planilha" é o valor da planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + ', de quem ainda não teve as sessões carregadas no app.' : '') + '</p>';
   }
   document.getElementById("pn-devendo").insertAdjacentHTML("beforeend", hFora);
 
@@ -5268,7 +5453,9 @@ function renderPainel(){
   document.querySelectorAll("#v-painel [data-cobrar-fora]").forEach(function(b){
     b.addEventListener("click", function(){
       var a = (dados.arquivados || []).filter(function(x){ return x.codigo === b.dataset.cobrarFora; })[0];
-      if(a) abrirCobranca(a.nome, 0, Number(a.aPagar));
+      if(!a) return;
+      var c = contaArquivado(a);
+      abrirCobranca(a.nome, c.app && Math.abs(c.valor - c.exato) <= 0.5 ? c.sessoes : 0, c.exato);
     });
   });
 }
@@ -6438,6 +6625,11 @@ function aplicarLeitura(leitura){
     saindo.forEach(function(x){ mantidos[x.antigo.codigo] = true; });
     leitura.arquivados = leitura.arquivados.filter(function(a){ return !mantidos[a.codigo]; });
   }
+  /* as sessões de quem saiu, carregadas no app, continuam com o mesmo prontuário */
+  if(leitura.arquivados) (dados.arquivados || []).forEach(function(v){
+    if(!v.conta) return;
+    leitura.arquivados.forEach(function(n){ if(n.codigo === v.codigo && !n.conta) n.conta = v.conta; });
+  });
   if(leitura.arquivados){ dados.arquivados = leitura.arquivados; dados.arquivadosEm = leitura.baseData || chaveData(hoje0()); marcarSuspensoes(); }
   if(leitura.formulacoes) dados.formulacoes = leitura.formulacoes;
   if(leitura.recebimentos) importarRecebimentos(leitura.recebimentos);
@@ -6767,6 +6959,18 @@ document.getElementById("add-paciente").addEventListener("click", function(){
   salvar(); renderTudo(); abrirFicha(novo);
 });
 document.getElementById("trazer-dados").addEventListener("click", function(){ document.getElementById("arquivo-dados").click(); });
+document.getElementById("trazer-saidos").addEventListener("click", function(){ document.getElementById("arquivo-saidos").click(); });
+document.getElementById("arquivo-saidos").addEventListener("change", function(e){
+  var f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(f) sessoesDeQuemSaiuDoArquivo(f);
+});
+document.getElementById("desfazer-saidos").addEventListener("click", function(){
+  var n = carregadosDeQuemSaiu();
+  if(!n || !confirm("Voltar a dívida destes " + plural(n, "paciente", "pacientes") + " para o número da planilha?\n\nAs sessões carregadas saem do app; agenda, sessões e pagamentos não mudam.")) return;
+  desfazerSessoesDeQuemSaiu();
+  recado("Voltou para a planilha.");
+});
 document.getElementById("arquivo-dados").addEventListener("change", function(e){
   var arquivo = e.target.files[0];
   e.target.value = "";
