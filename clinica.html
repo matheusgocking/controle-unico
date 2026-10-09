@@ -455,6 +455,7 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .fi-trat.enc,.selo-trat.enc{background:var(--neutral-chip); color:var(--text); border:1px solid var(--border-strong)}
 .fi-trat.volta,.selo-trat.volta{background:var(--ok-soft); color:var(--ok)}
 .fi-tratamento h3{margin-bottom:8px}
+.fi-ant-sess{margin:8px 0 0}
 /* dados do paciente no Cadastro (09/10/2026) */
 .dp-topo{display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:6px}
 .dp-topo h3{margin:0}
@@ -1731,6 +1732,15 @@ function voltasDasLinhas(linhas){
     if(dias > DIAS_PAUSA) r.push({parou:fimAnt, voltou:l[i].inicio, dias:dias});
   }
   return r;
+}
+/* as sessões do tratamento anterior (09/10/2026): a planilha só guardava quantas foram e o
+   período, não a data de cada uma, então é isso que aparece. Só mostra. */
+function sessoesAnterioresHTML(p){
+  var ant = anteriorDe(p), a = ant && ant.a;
+  if(!a || !(Number(a.sessoes) > 0)) return "";
+  return '<p class="hint fi-ant-sess">Tratamento anterior: <b>' + plural(Number(a.sessoes), "sessão", "sessões") + '</b>, de ' +
+    (a.inicio ? dataLonga(deISO(a.inicio)) : "?") + ' a ' + (a.fim ? dataLonga(deISO(a.fim)) : "?") +
+    ' (' + esc(String(a.status || "").replace(/\.$/, "").toLowerCase() || "encerrado") + '). A planilha guardava só o total, não a data de cada sessão.</p>';
 }
 /* o passado de quem voltou, dentro da ficha: só para consulta */
 function anteriorHTML(ant){
@@ -3394,6 +3404,9 @@ function abrirFicha(p, foco, aba){
     var t = totalSessoesDe(p), el = document.getElementById("fi-total"), extra = [];
     if(t.faltas) extra.push(plural(t.faltas, "falta cobrada", "faltas cobradas"));
     if(t.aConfirmar) extra.push(t.aConfirmar + " a confirmar");
+    /* quem voltou: o total de antes à vista, separado (09/10/2026). Só mostra. */
+    var antT = anteriorDe(p);
+    if(antT && antT.a && Number(antT.a.sessoes) > 0) extra.push("mais " + antT.a.sessoes + " antes");
     el.innerHTML = '<span class="n">'+t.feitas+'</span>' +
       '<span class="rot">'+(t.feitas===1 ? "sessão feita" : "sessões feitas")+'</span>' +
       (extra.length ? '<span class="mais">'+extra.join(" · ")+'</span>' : "");
@@ -3598,7 +3611,7 @@ function abrirFicha(p, foco, aba){
         '<span>Remarcadas: <b>'+c.remarcadas+'</b></span>' +
         '<span>Cortesias: <b>'+c.cortesias+'</b></span>' +
         '<span>Não cobrado: <b>'+moeda(c.naoCobrado)+'</b></span>' +
-      '</div>';
+      '</div>' + sessoesAnterioresHTML(p);
   }
   /* prontuário (29/09/2026): as sessões deste paciente que ainda não estão no Word, cada uma
      com o texto montado pelos modelos. Ele escolhe o que aconteceu (e isso marca a grade),
@@ -3803,7 +3816,10 @@ function abrirFicha(p, foco, aba){
   function pintarPagamentos(){
     var todos = pagamentosDe(p.id), lista = todos.slice(0,5);
     var h = '<div class="topo"><h3>Últimos pagamentos</h3>' + (todos.length > 5 ? '<span class="hint">os 5 mais recentes de '+todos.length+'; todos estão na aba Pagamentos</span>' : "") + '</div>';
-    if(!lista.length) h += '<p class="hint" style="margin:0">Nenhum pagamento registrado.</p>';
+    /* quem voltou à agenda (09/10/2026, caso da Sarah): os pagamentos de antes ficam à vista aqui
+       também, fechados e só para consulta. Não entram em saldo, vencimento nem dívida. */
+    var antPag = anteriorDe(p);
+    if(!lista.length) h += '<p class="hint" style="margin:0">' + (antPag ? "Nenhum pagamento desde a volta." : "Nenhum pagamento registrado.") + '</p>';
     lista.forEach(function(g){
       h += '<div class="recibo"><span>'+dataLonga(deISO(g.data))+'</span>' +
            (g.meio ? '<span class="meio">'+esc(MEIOS[g.meio]||g.meio)+'</span>' : "") +
@@ -3811,6 +3827,7 @@ function abrirFicha(p, foco, aba){
            '<span class="v">'+moeda(g.valor)+'</span>' +
            '<button class="apagar" data-fapagar="'+esc(g.id)+'" aria-label="Apagar o pagamento de '+esc(dataLonga(deISO(g.data)))+'">apagar</button></div>';
     });
+    if(antPag && antPag.recibos.length) h += anteriorHTML(antPag);
     var caixa = document.getElementById("fi-pag");
     caixa.innerHTML = h;
     caixa.querySelectorAll("[data-fapagar]").forEach(function(b){

@@ -74,6 +74,16 @@ for (const largura of [390, 1280]) {
     assert.match(r.ficha, /Voltou em 09\/10\/2026/);
     assert.match(r.ficha, /Tratamento anterior: 2 pagamentos · R\$ 625/);
     assert.equal(r.noInativo, 0, "o cartão antigo sai de Inativos");
+    /* o histórico de antes também aparece no Pagamento, no Prontuário e no alto da ficha, só para consulta */
+    const vis = await p.evaluate(() => ({
+      pag: document.getElementById("fi-pag").innerText,
+      sess: document.getElementById("fi-sess").innerText,
+      total: document.getElementById("fi-total").innerText
+    }));
+    assert.match(vis.pag, /Nenhum pagamento desde a volta/);
+    assert.match(vis.pag, /Tratamento anterior: 2 pagamentos · R\$ 625/);
+    assert.match(vis.sess, /Tratamento anterior: 13 sessões, de 07\/05\/2026 a 14\/08\/2026 \(inativo\)/);
+    assert.match(vis.total, /mais 13 antes/);
     await p.screenshot({ path: require("path").join(process.env.FOTOS || require("os").tmpdir(), "voltar-ficha-" + largura + ".png") });
     assert.deepEqual(erros, []);
     await ctx.close();
