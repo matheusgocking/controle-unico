@@ -1674,6 +1674,9 @@ function pacienteEm(dia, hora, data){
   var achado = null, iso = chaveData(data);
   dados.pacientes.forEach(function(p){
     if(encerradoEm(p, iso)) return;
+    /* antes de começar, o horário fixo não existe (09/10/2026: a Sarah, que voltou em 09/10, aparecia
+       "a confirmar" nas sextas de setembro, de quando ela nem estava em atendimento) */
+    if(p.inicio && iso < p.inicio) return;
     var h = horarioEm(p, iso);
     if(h.dia===dia && h.hora===hora && ehSemanaDo(h, data)) achado = p;
   });
@@ -1885,17 +1888,27 @@ function abrirCiclo(p, inicio, cobranca, valor){
    saldo correndo (positivo = deve, negativo = pagou adiantado). O passado vem do prontuário
    (p.historico, carregado uma vez até a data "ate"); dali em diante, da agenda: sessão que já
    passou e cobra. Sem histórico carregado devolve null e a conta antiga, pela planilha, vale. */
+/* De onde a conta parte. Com o histórico do prontuário, dele. Sem prontuário e sem planilha (ficha
+   criada no app, por "Adicionar paciente" ou "Voltar à agenda"), a conta começa do zero no início da
+   ficha: toda sessão dali em diante cobra e todo pagamento dela entra (09/10/2026, caso da Sarah: antes
+   ficava "sem base", sem bolinha na semana, sem saldo e sem dívida, mesmo com o ciclo pago). */
+function historicoDe(p){
+  if(p.historico && p.historico.ate) return p.historico;
+  if(!p.basePlanilha && p.inicio) return {ate:chaveData(somaDias(deISO(p.inicio), -1)), sessoes:[], doApp:true};
+  return null;
+}
 function extratoDe(p){
-  if(!p.historico || !p.historico.ate) return null;
+  var hist = historicoDe(p);
+  if(!hist) return null;
   var linhas = [], cortesia = p.cortesiaPlanilha ? 1 : 0;
   var ROT = {realizada:"Sessão realizada", falta:"Não compareceu (cobrada)", avisou:"Avisou e não veio"};
-  (p.historico.sessoes || []).forEach(function(s){
+  (hist.sessoes || []).forEach(function(s){
     var c = cicloEm(p, s.data), cobra = s.situacao==="realizada" || s.situacao==="falta";
     var v = cobra ? valorSessao(c) : 0, texto = ROT[s.situacao] || s.situacao;
     if(cobra && cortesia){ v = 0; cortesia = 0; texto += " (cortesia)"; }
     linhas.push({data:s.data, ordem:0, texto:texto, tipo:rotuloCiclo(c), cobrado:v, pago:0, n:s.n});
   });
-  var de = somaDias(deISO(p.historico.ate), 1), ROTA = {sessao:"Sessão (a confirmar)", realizada:"Sessão realizada", falta:"Não compareceu (cobrada)"};
+  var de = somaDias(deISO(hist.ate), 1), ROTA = {sessao:"Sessão (a confirmar)", realizada:"Sessão realizada", falta:"Não compareceu (cobrada)"};
   sessoesDoPaciente(p, de, hoje0()).forEach(function(s){
     if(!cobraSessao(s.estado) || !jaPassou(s.data, s.hora)) return;
     var iso = chaveData(s.data), c = cicloEm(p, iso);
@@ -1907,7 +1920,7 @@ function extratoDe(p){
   linhas.sort(function(a,b){ return a.data < b.data ? -1 : (a.data > b.data ? 1 : a.ordem - b.ordem); });
   var saldo = 0, cobrado = 0, pago = 0;
   linhas.forEach(function(l){ saldo += l.cobrado - l.pago; cobrado += l.cobrado; pago += l.pago; l.saldo = Math.round(saldo*100)/100; });
-  return {linhas:linhas, cobrado:cobrado, pago:pago, saldo:Math.round(saldo*100)/100};
+  return {linhas:linhas, cobrado:cobrado, pago:pago, saldo:Math.round(saldo*100)/100, ate:hist.ate, doApp:!!hist.doApp};
 }
 /* Carga do histórico lido dos prontuários (feita pelo Claude, uma vez por paciente):
    lista de {codigo, ate, sessoes:[{data, n, situacao}]}. Devolve quantos pacientes recebeu. */
@@ -3349,6 +3362,9 @@ function abrirFicha(p, foco, aba){
         '<select id="fi-qsem"></select><span class="hint">Em qual das duas semanas ele vem.</span></div>' +
       '<div class="field"><label for="fi-meet">Link do Meet</label>' +
         '<input id="fi-meet" data-campo="meet" value="'+esc(p.meet||"")+'" placeholder="cole aqui a sala fixa dele"></div>' +
+      /* ficha nascida no app: a data em que ele começou é de onde a conta do saldo parte (09/10/2026) */
+      (!p.basePlanilha && !(p.historico && p.historico.ate) ? '<div class="field"><label for="fi-inicio">Começou em</label>' +
+        '<input type="date" id="fi-inicio" value="'+esc(p.inicio || "")+'"><span class="hint">A conta do saldo começa neste dia: as sessões dali em diante cobram, e os pagamentos dele entram.</span></div>' : "") +
       '<div class="field"><label for="fi-origem">Como chegou</label>' +
         '<select id="fi-origem">'+opcoesOrigem(p.codigo)+'</select><span class="hint">Alimenta a aba Marketing: quantos pacientes cada anúncio trouxe.</span></div>' +
       '<p class="hint">A cobrança e o valor ficam na aba Pagamento, em "Ciclo e valor".</p>' +
@@ -3562,7 +3578,8 @@ function abrirFicha(p, foco, aba){
       });
       h += '</div>';
       if(ext.linhas.length > 8) h += '<button class="btn sm ghost" id="fi-ext-mais" style="margin-top:8px">'+(extratoInteiro ? "Mostrar só os últimos" : "Ver o extrato inteiro ("+ext.linhas.length+" linhas)")+'</button>';
-      h += '<p class="hint" style="margin:8px 0 0">Sessões até '+dataLonga(deISO(p.historico.ate))+' vêm do prontuário; depois, da agenda.</p>';
+      h += '<p class="hint" style="margin:8px 0 0">'+(ext.doApp ? 'Sessões da agenda desde '+dataLonga(somaDias(deISO(ext.ate), 1))+', quando a ficha começou.' :
+        'Sessões até '+dataLonga(deISO(ext.ate))+' vêm do prontuário; depois, da agenda.')+'</p>';
     } else {
       h += '<p class="hint" style="margin:8px 0 0">O histórico do prontuário ainda não foi carregado; a dívida segue a conta da planilha.</p>';
     }
@@ -3898,6 +3915,17 @@ function abrirFicha(p, foco, aba){
   });
   pintarQuinzena();
 
+  var campoInicio = document.getElementById("fi-inicio");
+  if(campoInicio) campoInicio.addEventListener("change", function(){
+    var v = campoInicio.value, antes = p.inicio || "";
+    if(!v){ campoInicio.value = antes; return; }
+    p.inicio = v;
+    /* o primeiro ciclo nasceu junto com a ficha: anda junto com o começo */
+    var prim = ciclosDe(p)[0];
+    if(p.ciclos && p.ciclos.length && prim && (prim.inicio === antes || prim.inicio > v)) prim.inicio = v;
+    vencCache = null; devidoCache = null; atrasoCache = null;
+    salvar(); renderTudo(); resumo();
+  });
   document.getElementById("fi-origem").addEventListener("change", function(e){
     definirOrigem(p.codigo, e.target.value); salvar(); renderMarketing();
   });
@@ -4240,7 +4268,7 @@ function devidoDe(p){
     /* com o histórico do prontuário carregado, a dívida é o saldo do extrato, cada sessão no
        preço do ciclo dela; em sessões, pelo valor do ciclo atual */
     var ne = ext.saldo > 0.005 ? Math.ceil(ext.saldo / vs - 1e-6) : -Math.floor(-ext.saldo / vs + 1e-6);
-    r = {valor:ne * vs, sessoes:ne, exato:ext.saldo, depois:0, pago:ext.pago, base:p.historico.ate, extrato:true};
+    r = {valor:ne * vs, sessoes:ne, exato:ext.saldo, depois:0, pago:ext.pago, base:ext.ate, extrato:true, doApp:ext.doApp};
   } else if(p.basePlanilha && vs > 0){
     /* A planilha soma a sessão da semana no dia da semana do Início (a régua), que em vários
        pacientes não é o dia em que ele atende. Então cada sessão da agenda é ligada à batida
@@ -4274,7 +4302,8 @@ function plural(n, um, varios){ return String(n).replace(".", ",") + " " + (Math
 function textoDevido(p){
   var d = devidoDe(p);
   if(!d) return {classe:"sem", texto:"sem base", titulo:"Leia a planilha uma vez para o app saber quantas sessões já foram cobradas."};
-  var titulo = d.extrato ? "Sessões do prontuário até " + dataCurta(deISO(d.base)) + " e da agenda depois, cada uma no preço do ciclo dela; já pagou " + moeda(d.pago) + "." :
+  var titulo = d.doApp ? "Sessões da agenda desde " + dataCurta(somaDias(deISO(d.base), 1)) + ", quando a ficha começou, cada uma no preço do ciclo dela; já pagou " + moeda(d.pago) + "." :
+    d.extrato ? "Sessões do prontuário até " + dataCurta(deISO(d.base)) + " e da agenda depois, cada uma no preço do ciclo dela; já pagou " + moeda(d.pago) + "." :
     "Planilha até " + dataCurta(deISO(d.base)) + ", mais " + plural(d.depois, "sessão", "sessões") + " da agenda desde então; já pagou " + moeda(d.pago) + "." +
     (d.valor > 0.5 && Math.abs(d.valor - d.exato) > 0.5 ? " A diferença exata é " + moeda(d.exato) + "." : "");
   /* em reais exatos (06/10/2026): antes quem devia R$ 25 aparecia "deve 1 sessão · R$ 125" e quem
@@ -6543,7 +6572,10 @@ CAMPOS_CONFIG.forEach(function(par){
 });
 
 document.getElementById("add-paciente").addEventListener("click", function(){
-  var novo = {id:novoId("p"), codigo:"", nome:"Novo paciente", freq:"semanal", cobranca:"mensal", valor:dados.config.mensal, dia:1, hora:14, meet:""};
+  /* começa hoje (09/10/2026): é daí que a conta de saldo e dívida dele parte. A data muda no Cadastro. */
+  var hojeNovo = chaveData(hoje0());
+  var novo = {id:novoId("p"), codigo:"", nome:"Novo paciente", freq:"semanal", cobranca:"mensal", valor:dados.config.mensal, dia:1, hora:14, meet:"",
+    status:"Ativo.", inicio:hojeNovo, ciclos:[{inicio:hojeNovo, cobranca:"mensal", valor:dados.config.mensal}]};
   dados.pacientes.push(novo);
   salvar(); renderTudo(); abrirFicha(novo);
 });
