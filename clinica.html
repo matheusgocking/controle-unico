@@ -1016,7 +1016,6 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <button class="tab" role="tab" aria-selected="true" data-view="sessoes">Sessões</button>
       <button class="tab" role="tab" aria-selected="false" data-view="painel">Painel</button>
       <button class="tab" role="tab" aria-selected="false" data-view="meta">Meta</button>
-      <button class="tab" role="tab" aria-selected="false" data-view="pacientes">Pacientes</button>
       <button class="tab" role="tab" aria-selected="false" data-view="pagamentos">Pagamentos</button>
       <button class="tab" role="tab" aria-selected="false" data-view="marketing">Marketing</button>
     </div>
@@ -1024,10 +1023,12 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 
   <div id="aviso-planilha" class="hidden"></div>
 
-  <!-- Sessões (28/09/2026): em cima a semana ou o mês, pela chave; embaixo, uma linha por sessão -->
-  <div class="subvista" id="subvista"><div class="tabs" role="group" aria-label="Ver a semana ou o mês">
+  <!-- Sessões (28/09/2026): em cima a semana ou o mês, pela chave; embaixo, uma linha por sessão.
+       Pacientes deixou de ser aba própria e virou a terceira chave daqui (decisão dele, 09/10/2026). -->
+  <div class="subvista" id="subvista"><div class="tabs" role="group" aria-label="Ver a semana, o mês ou os pacientes">
     <button class="tab" type="button" aria-selected="true" data-sub="semana">Semana</button>
-    <button class="tab" type="button" aria-selected="false" data-sub="mes">Mês</button></div></div>
+    <button class="tab" type="button" aria-selected="false" data-sub="mes">Mês</button>
+    <button class="tab" type="button" aria-selected="false" data-sub="pacientes">Pacientes</button></div></div>
 
   <!-- ============ SEMANA ============ -->
   <section id="v-semana">
@@ -6494,16 +6495,21 @@ function avisarLeitura(txt){
 
 /* ---------------- navegação e utilidades ---------------- */
 /* Semana e Mês não são mais abas: são as duas vistas de cima da aba Sessões (28/09/2026).
-   Pedir "semana" ou "mes" abre Sessões com aquela vista. */
+   Pedir "semana" ou "mes" abre Sessões com aquela vista. Pacientes virou a terceira (09/10/2026):
+   pedir "pacientes" abre Sessões na chave Pacientes, no lugar da grade e da lista de sessões.
+   Só Semana e Mês ficam guardadas: a Clínica sempre abre na agenda. */
 var subSessoes = "semana";
 try{ if(localStorage.getItem("cu-clinica-sub")==="mes") subSessoes = "mes"; }catch(e){}
 function mostrarView(v){
   if(v==="semana" || v==="mes"){ subSessoes = v; try{ localStorage.setItem("cu-clinica-sub", v); }catch(e){} v = "sessoes"; }
-  var naSessao = v==="sessoes";
+  if(v==="pacientes"){ subSessoes = "pacientes"; v = "sessoes"; }
+  var naSessao = v==="sessoes", naAgenda = naSessao && subSessoes!=="pacientes";
   document.getElementById("subvista").classList.toggle("hidden", !naSessao);
   document.getElementById("v-semana").classList.toggle("hidden", !(naSessao && subSessoes==="semana"));
   document.getElementById("v-mes").classList.toggle("hidden", !(naSessao && subSessoes==="mes"));
-  ["sessoes","painel","meta","pacientes","pagamentos","marketing"].forEach(function(x){
+  document.getElementById("v-sessoes").classList.toggle("hidden", !naAgenda);
+  document.getElementById("v-pacientes").classList.toggle("hidden", !(naSessao && subSessoes==="pacientes"));
+  ["painel","meta","pagamentos","marketing"].forEach(function(x){
     document.getElementById("v-"+x).classList.toggle("hidden", x!==v);
   });
   document.querySelectorAll(".tabs .tab[data-view]").forEach(function(t){
@@ -6514,6 +6520,8 @@ function mostrarView(v){
   });
   dicaDeAbas(true);
 }
+/* a lista "Falta marcar" fica embaixo da semana ou do mês: quem leva até ela sai da chave Pacientes */
+function mostrarAgenda(){ mostrarView(subSessoes==="pacientes" ? "semana" : "sessoes"); }
 /* no celular as abas do alto rolam de lado: a aba aberta vem para a vista, e a borda direita
    esmaece enquanto houver aba escondida (o Marketing ficava fora da tela, sem aviso) */
 function dicaDeAbas(mostrarAberta){
@@ -6681,7 +6689,7 @@ function nomesEm(lista){
    na aba Prontuário. Só abre telas. */
 function abrirProntuarioPendente(){
   var lista = dados.pacientes.map(function(p){ return {p:p, n:pendenciasDe(p).length}; }).filter(function(x){ return x.n; });
-  if(!lista.length){ mostrarView("sessoes"); return; }
+  if(!lista.length){ mostrarAgenda(); return; }
   if(lista.length === 1){ abrirFicha(lista[0].p, null, "prontuario"); return; }
   fecharMenu();
   var fundo = document.createElement("div");
@@ -6710,7 +6718,7 @@ window.abrirDoTudo = function(o){
   if(!o) return;
   if(o.tipo==="paciente"){ var p = acharPaciente(o.id); if(p) abrirFicha(p, null, o.aba || "pagamento"); return; }
   if(o.tipo==="prontuario"){ abrirProntuarioPendente(); return; }
-  mostrarView("sessoes");
+  mostrarAgenda();
   var alvo = document.getElementById("ss-p-marcar");
   if(alvo && !alvo.classList.contains("hidden")) alvo.scrollIntoView({block:"start"}); else window.scrollTo(0, 0);
 };
