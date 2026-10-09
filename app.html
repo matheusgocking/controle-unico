@@ -259,6 +259,8 @@ th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 details.origem{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6}
 details.origem summary{cursor:pointer;color:var(--faint)}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.copias-limpas{margin:10px auto 0;max-width:640px;text-align:center;font-size:12px;color:var(--muted)}
+.copias-limpas summary{cursor:pointer} .copias-limpas ul{text-align:left;margin:6px 0 0;padding-left:18px}
 
 /* dentro da casca: o botão de entrar, a marca, o tema e as abas ficam na barra de cima */
 .na-casca #nuvem-entrar,.na-casca .marca,.na-casca #tema,.na-casca nav.abas{display:none !important}
@@ -369,6 +371,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
     <button class="b s" id="importarJson">Importar dados</button>
     <input type="file" id="arquivoJson" accept="application/json" class="hidden">
   </div>
+  <p class="copias-limpas" id="copiasLimpas"></p>
 </div>
 
 <script>
@@ -2010,6 +2013,7 @@ if (PERFIL === "ana") ["exportarJson", "importarJson"].forEach(id => { const b =
 try { if (window.top !== window.self) document.getElementById("abas").hidden = true; } catch(e){}
 desenhar();
 Nuvem.iniciar();
+Nuvem.mostrarLimpeza(document.getElementById("copiasLimpas"));
 </script>
 </body>
 </html>
