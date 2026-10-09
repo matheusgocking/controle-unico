@@ -467,6 +467,9 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 .fi-trat-form .btn{flex:0 0 auto}
 .fi-pl{margin-top:10px}
 .fi-pl .pl-volta{font-size:12px; font-weight:600; color:var(--ok); margin:6px 0 2px}
+.fi-ant{margin-top:10px}
+.fi-ant .linhas > div{display:flex; justify-content:space-between; gap:12px; font-size:13px; padding:3px 0; border-bottom:1px solid var(--border)}
+.pcard .pc-acoes{margin-top:6px}
 @media (max-width:700px){ .fi-trat-form .btn{flex:1 1 100%} }
 /* celular: o total desce para uma faixa inteira embaixo do nome, numa linha só */
 @media (max-width:540px){
@@ -1716,6 +1719,19 @@ function voltasDasLinhas(linhas){
   }
   return r;
 }
+/* o passado de quem voltou, dentro da ficha: só para consulta */
+function anteriorHTML(ant){
+  var total = 0;
+  ant.recibos.forEach(function(g){ total += Number(g.valor) || 0; });
+  var deve = ant.a && Number(ant.a.aPagar) > 0.5;
+  return '<details class="fi-det fi-ant"><summary>Tratamento anterior: ' + plural(ant.recibos.length, "pagamento", "pagamentos") +
+    (ant.recibos.length ? ' · ' + moeda(total) : "") + (deve ? ' · ficou devendo ' + moeda(ant.a.aPagar) : "") + '</summary>' +
+    (ant.recibos.length ? '<div class="linhas">' + ant.recibos.map(function(g){
+      return '<div><span>' + dataLonga(deISO(g.data)) + '</span><span>' + moeda(g.valor) + '</span></div>';
+    }).join("") + '</div>' : "") +
+    '<p class="hint">Só para consulta: estes pagamentos e sessões são do tratamento anterior e não entram na conta de agora, que começa na volta.' +
+    (deve ? ' O que ele ficou devendo continua no Painel, em "Quem já saiu da agenda e ficou devendo".' : "") + '</p></details>';
+}
 function linhasPlanilhaHTML(linhas){
   var l = (linhas || []).filter(function(x){ return x && x.inicio; });
   if(!l.length) return "";
@@ -2604,8 +2620,40 @@ function encerradosNoApp(tipo){
   return dados.pacientes.filter(function(p){ var t = tratamentoDe(p); return encerradoHoje(p) && t.tipo === tipo; })
     .sort(function(a,b){ return tratamentoDe(b).desde.localeCompare(tratamentoDe(a).desde); });
 }
+/* quem saiu e voltou ganha ficha com o mesmo prontuário: aí o cartão antigo sai das listas de
+   Inativos, Alta e Suspensos, e o passado dele aparece dentro da ficha (anteriorDe) */
 function arquivadosPorStatus(pedaco){
-  return (dados.arquivados || []).filter(function(a){ return semAcento(a.status).indexOf(pedaco) === 0; });
+  return (dados.arquivados || []).filter(function(a){ return semAcento(a.status).indexOf(pedaco) === 0 && !fichaDoCodigo(a.codigo); });
+}
+function fichaDoCodigo(cod){
+  return cod ? dados.pacientes.filter(function(p){ return p.codigo === cod; })[0] || null : null;
+}
+/* O tratamento anterior de quem voltou (09/10/2026, caso da Sarah: "o app lê ela como uma nova,
+   começando do zero"). A planilha guardou quem saiu em dados.arquivados e os recibos antigos sem
+   ficha (pacienteId vazio, só o prontuário). A ficha nova, com o mesmo prontuário, mostra esse
+   passado só para consulta: não entra na conta dela, que começa no dia da volta. */
+function anteriorDe(p){
+  if(!p || !p.codigo) return null;
+  var a = (dados.arquivados || []).filter(function(x){ return x.codigo === p.codigo; })[0] || null;
+  var recibos = (dados.pagamentos || []).filter(function(g){ return !g.pacienteId && g.codigo === p.codigo; });
+  if(!a && !recibos.length) return null;
+  return {a:a, recibos:maisRecentePrimeiro(recibos)};
+}
+/* "Voltar à agenda" no cartão de quem saiu: a ficha nasce com o prontuário, o nome, a cobrança e o
+   valor de antes, começando hoje; o horário ele escolhe no Cadastro. Igual ao "Adicionar paciente",
+   só que já ligada ao passado. */
+function voltarAgenda(a){
+  var ja = fichaDoCodigo(a.codigo);
+  if(ja) return ja;
+  var mod = semAcento(a.modalidade || ""), cobranca = "avulsa", freq = "semanal";
+  if(mod.indexOf("mensal") === 0) cobranca = "mensal";
+  else if(mod.indexOf("quinzenal") === 0){ cobranca = "quinzenal"; freq = "quinzenal"; }
+  var hoje = chaveData(hoje0()), valor = Number(a.valor) || (cobranca === "mensal" ? dados.config.mensal : dados.config.avulsa);
+  var novo = {id:novoId("p"), codigo:a.codigo, nome:String(a.nome || "").split(" ")[0] || "Paciente", nomeCompleto:a.nome || "",
+    freq:freq, cobranca:cobranca, valor:valor, dia:1, hora:14, meet:"", status:"Ativo.", inicio:hoje,
+    ciclos:[{inicio:hoje, cobranca:cobranca, valor:valor}]};
+  dados.pacientes.push(novo);
+  return novo;
 }
 /* remarcações, faltas e encaixes que o site marcou, do mais recente para o mais antigo */
 function movimentosDaSemana(){
@@ -2718,12 +2766,23 @@ function desenharCarteira(pedaco){
         (pedaco === "suspenso" ? seloSuspensao(a) +
           '<label class="susp-data">Suspenso desde <input type="date" data-cod="'+esc(a.codigo)+'" value="'+esc(suspensoDesde(a))+'"></label>' : "") +
         (f ? selo(f) : "") +
+        '<span class="pc-acoes"><button type="button" class="btn sm" data-voltar="'+esc(a.codigo)+'">Voltar à agenda</button></span>' +
       '</span></div>';
   });
   h += "</div>";
   alvo.innerHTML = h;
   alvo.querySelectorAll("[data-fenc]").forEach(function(b){
     b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.fenc); if(p) abrirFicha(p, null, "cadastro"); });
+  });
+  alvo.querySelectorAll("[data-voltar]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var a = (dados.arquivados || []).filter(function(x){ return x.codigo === b.dataset.voltar; })[0];
+      if(!a) return;
+      if(!confirm("Colocar " + a.nome + " (" + a.codigo + ") de volta na agenda a partir de hoje?\n\nA ficha nasce com o mesmo prontuário e mostra o tratamento anterior. O horário você escolhe no Cadastro, que abre em seguida.")) return;
+      var p = voltarAgenda(a);
+      vencCache = null; devidoCache = null;
+      salvar(); renderTudo(); abrirFicha(p, null, "cadastro");
+    });
   });
   alvo.querySelectorAll(".susp-data input").forEach(function(c){
     c.addEventListener("change", function(){
@@ -3105,7 +3164,11 @@ function abrirFicha(p, foco, aba){
     var t = tratamentoDe(p), l = encerramentosDe(p), hoje = chaveData(hoje0());
     var h = '<h3>Tratamento</h3><div class="fi-linha-tempo">';
     var inicio = p.inicio || (totalSessoesDe(p).primeira ? chaveData(totalSessoesDe(p).primeira) : "");
-    h += '<div class="lt"><span class="lt-p ok"></span><span>Começou em <b>' + (inicio ? dataLonga(deISO(inicio)) : "data desconhecida") + '</b></span></div>';
+    var ant = anteriorDe(p), aa = ant && ant.a;
+    if(aa) h += '<div class="lt"><span class="lt-p enc"></span><span>Antes: <b>' + (aa.inicio ? dataLonga(deISO(aa.inicio)) : "?") + ' → ' +
+      (aa.fim ? dataLonga(deISO(aa.fim)) : "sem data de fim") + '</b> · ' + esc(String(aa.status || "").replace(/\.$/, "")) +
+      (aa.sessoes ? ' · ' + plural(aa.sessoes, "sessão", "sessões") : "") + '</span></div>';
+    h += '<div class="lt"><span class="lt-p ok"></span><span>' + (aa ? "Voltou em " : "Começou em ") + '<b>' + (inicio ? dataLonga(deISO(inicio)) : "data desconhecida") + '</b></span></div>';
     l.forEach(function(e, i){
       var ultimo = i === l.length - 1;
       h += '<div class="lt"><span class="lt-p enc"></span><span>' + (e.data > hoje ? "Encerra em " : "Encerrado em ") + '<b>' + dataLonga(deISO(e.data)) + '</b> · ' +
@@ -3133,7 +3196,8 @@ function abrirFicha(p, foco, aba){
         '<button type="button" class="btn" id="ft-encerrar">Encerrar tratamento</button></div>' +
         '<p class="hint">A sessão desse dia ainda conta. Depois dele o horário sai da agenda: sem sessão prevista e sem cobrança nova. O que ele já deve continua aparecendo, e a ficha, os pagamentos e o prontuário ficam guardados.</p>';
     }
-    h += linhasPlanilhaHTML(p.linhasPlanilha);
+    h += linhasPlanilhaHTML(p.linhasPlanilha || (aa && aa.linhas));
+    if(ant) h += anteriorHTML(ant);
     var el = document.getElementById("fi-tratamento");
     el.innerHTML = h + '<p class="fi-trat-msg hint" id="ft-msg" role="status"></p>';
     function msg(x){ document.getElementById("ft-msg").textContent = x; }
