@@ -829,6 +829,16 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .cell .dv{max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:10.5px; font-weight:700; color:var(--devendo); background:var(--surface); border-radius:6px; padding:0 5px; margin-top:1px}
 @media (max-width:700px){ .cell .dv{display:none} }
 .pcard .pr{font-size:11px; color:var(--muted)}
+/* ficha: resumo da última sessão em 4 partes (09/10/2026) */
+.fi-resumo .fr-quando{font-size:13px; font-weight:600}
+.fr-partes{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px}
+@media (max-width:700px){ .fr-partes{grid-template-columns:1fr} }
+.fr-parte{background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:9px 12px}
+.fr-parte .fr-rot{display:block; font-size:11.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--accent); margin-bottom:3px}
+.fr-parte p{margin:0; font-size:13.5px; line-height:1.45}
+.fr-parte p + p{margin-top:4px}
+.fr-parte .fr-sub{color:var(--muted)}
+.fr-parte .fr-vazio{color:var(--faint); font-style:italic}
 /* ficha: bloco do prontuário, com as sessões que ainda não estão no Word (29/09/2026) */
 .fipag.pront{border-color:var(--accent-line); background:var(--accent-soft)}
 .pront .pgen{margin-left:auto; display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted)}
@@ -3336,6 +3346,24 @@ function conferirAprovados(){
 }
 
 
+/* a última sessão feita (realizada ou cortesia) do paciente, para o resumo da ficha: da agenda,
+   com o registro do prontuário dela, ou, sem nenhuma na agenda, a última do histórico do Word.
+   Só lê. */
+function ultimaSessaoFeita(p){
+  var feita = function(e){ return e==="realizada" || e==="cortesia"; };
+  var desde = deISO(PRONT_DESDE);
+  if(p.inicio && deISO(p.inicio) > desde) desde = deISO(p.inicio);
+  var lista = sessoesDoPaciente(p, desde, hoje0()).filter(function(s){ return feita(s.estado); });
+  if(lista.length){
+    var s = lista[lista.length - 1], k = chaveRegistro(s.data, s.hora, p);
+    return {data:s.data, hora:s.hora, situacao:s.estado, chave:k, registro:(dados.registros || {})[k] || null};
+  }
+  var hs = ((p.historico && p.historico.sessoes) || []).filter(function(x){ return feita(x.situacao); });
+  if(!hs.length) return null;
+  var x = hs[hs.length - 1];
+  return {data:deISO(x.data), hora:null, n:x.n, situacao:x.situacao, historico:true, registro:null};
+}
+
 /* ---------------- ficha do paciente ---------------- */
 /* a ficha aberta (04/10/2026): quando a Clínica inteira é trocada (o Drive trouxe o que mudou em outro
    aparelho), a ficha é refeita com o paciente novo, em vez de continuar presa ao antigo, onde o que
@@ -3416,6 +3444,7 @@ function abrirFicha(p, foco, aba){
         '<div class="fipag fi-dados" id="fi-dados"></div>' +
       '</div>' +
       '<div class="fi-aba" role="tabpanel" id="fi-p-prontuario" aria-labelledby="fi-aba-prontuario" hidden>' +
+        '<div class="fipag fi-resumo" id="fi-resumo"></div>' +
         '<div class="fipag pront" id="fi-pront"></div>' +
         '<div class="fipag" id="fi-sess"></div>' +
         '<div class="fipag" id="fi-form"></div>' +
@@ -3776,6 +3805,67 @@ function abrirFicha(p, foco, aba){
     if(pend.length) h += '<p class="hint" style="margin:8px 0 0">Aprovar aqui autoriza o Claude a escrever o texto direto no prontuário, quando você pedir no computador. Depois disso o texto sai daqui.</p>';
     el.innerHTML = h;
     ligarProntuario(el);
+    pintarResumo();
+  }
+  /* Resumo da última sessão em 4 partes (09/10/2026, ideia do desenho da Clínica de 28/09, aprovada
+     por ele): Tema, Feito, Tarefa de casa e Para a próxima, para ler antes de atender. Só lê o que o
+     registro do prontuário já guarda (os campos do modelo); não grava nada. "Para a próxima" não tem
+     campo próprio: o app monta com a próxima sessão da agenda e a tarefa combinada. */
+  function pintarResumo(){
+    var el = document.getElementById("fi-resumo");
+    if(!el) return;
+    var u = ultimaSessaoFeita(p);
+    var h = '<div class="topo"><h3>Última sessão</h3>';
+    if(!u){
+      el.innerHTML = h + '</div><p class="hint" style="margin:6px 0 0">Nenhuma sessão feita registrada ainda. Quando você marcar uma como realizada e escrever o prontuário dela, o resumo aparece aqui.</p>';
+      return;
+    }
+    var dias = Math.round((hoje0() - new Date(u.data.getFullYear(), u.data.getMonth(), u.data.getDate())) / 86400000);
+    h += '<span class="sit s-'+u.situacao+'">'+SITUACAO_PRONT[u.situacao]+'</span>' +
+      '<span class="fr-quando">'+DIAS_CURTO[u.data.getDay()]+', '+dataCurta(u.data)+(u.hora != null ? ' · '+String(u.hora).padStart(2,"0")+'h' : "")+
+      (u.n ? ' · sessão '+esc(u.n) : "")+' <span class="hint">('+(dias===0 ? "hoje" : dias===1 ? "ontem" : "há "+dias+" dias")+')</span></span></div>';
+    var r = u.registro, c = (r && r.campos) || {}, sem = (r && r.sem) || {};
+    function v(campo){ return String(c[campo] || "").trim(); }
+    var temTexto = r && r.estado !== "feito" && ["relatos relevantes","tema ou alvo clínico","objetivo da intervenção","técnica específica","atividade"].some(function(k){ return v(k); });
+    if(!temTexto){
+      if(u.historico) h += '<p class="hint" style="margin:6px 0 0">Esta sessão está no prontuário do Word, de antes do app registrar as sessões. O texto dela está lá.</p>';
+      else if(r && r.estado==="feito") h += '<p class="hint" style="margin:6px 0 0">O texto desta sessão já está no prontuário do Word e não fica guardado no app.</p>';
+      else h += '<p class="hint" style="margin:6px 0 0">O prontuário desta sessão ainda não foi escrito. Os campos que você preencher nele viram o resumo.</p>' +
+        '<div class="acoes" style="justify-content:flex-start; margin-top:8px"><button type="button" class="btn sm" data-escrever="'+u.chave+'">Escrever agora</button></div>';
+      el.innerHTML = h;
+      var bEsc = el.querySelector("[data-escrever]");
+      if(bEsc) bEsc.addEventListener("click", function(){
+        abertoPront = bEsc.dataset.escrever; pintarProntuario();
+        var alvo = document.querySelector('#fi-pront .pitem.aberto'); if(alvo) alvo.scrollIntoView({block:"start"});
+      });
+      return;
+    }
+    function parte(rot, linhas, vazio){
+      linhas = linhas.filter(Boolean);
+      return '<div class="fr-parte"><span class="fr-rot">'+rot+'</span>' +
+        (linhas.length ? linhas.map(function(l){ return '<p>'+l+'</p>'; }).join("") : '<p class="fr-vazio">'+vazio+'</p>') + '</div>';
+    }
+    /* os campos foram escritos para o meio da frase do modelo: no resumo, começam com maiúscula */
+    function junta(a, b, liga){ return a ? esc(a.charAt(0).toUpperCase() + a.slice(1)) + (b ? liga + esc(b) : "") : ""; }
+    var temTarefa = !sem.atividade && v("atividade");
+    var temTecnica = !sem.tecnica && v("técnica específica");
+    var tarefaAntes = !sem.tarefa && v("realizou/não realizou");
+    var prox = proximaSessaoDe(p, u.data);
+    while(prox && prox.estado!=="sessao" && prox.estado!=="realizada" && prox.estado!=="cortesia" && prox.data < somaDias(hoje0(), 70)) prox = proximaSessaoDe(p, prox.data);
+    h += '<div class="fr-partes">' +
+      parte("Tema", [junta(v("tema ou alvo clínico"), v("objetivo da intervenção"), ", com o objetivo de "),
+        v("relatos relevantes") ? '<span class="fr-sub">Trouxe:</span> '+esc(v("relatos relevantes")) : ""], "não anotado") +
+      parte("Feito", [temTecnica ? junta(v("técnica específica"), v("objetivo da técnica"), ", buscando ") : "",
+        tarefaAntes ? '<span class="fr-sub">Tarefa anterior:</span> '+esc(tarefaAntes)+', revisada na sessão' : ""],
+        sem.tecnica ? "sem técnica específica anotada" : "não anotado") +
+      parte("Tarefa de casa", [temTarefa ? junta(v("atividade"), v("objetivo da atividade"), ", buscando ") : ""],
+        sem.atividade ? "nenhuma combinada" : "não anotada") +
+      parte("Para a próxima", [
+        prox ? '<span class="fr-sub">'+(jaPassou(prox.data, prox.hora) ? "Sessão seguinte (a confirmar)" : "Próxima sessão")+':</span> '+DIAS_CURTO[prox.data.getDay()]+', '+dataCurta(prox.data)+' · '+String(prox.hora).padStart(2,"0")+'h' : "",
+        temTarefa ? "Revisar a tarefa de casa combinada" : ""], "nenhuma sessão marcada na agenda") +
+      '</div>' +
+      '<p class="hint" style="margin:8px 0 0">Montado com os campos do prontuário desta sessão'+(r.editado ? ' (o texto final foi editado à mão; o resumo usa os campos)' : "")+'. "Para a próxima" vem da agenda.</p>';
+    el.innerHTML = h;
   }
   function editorRegistro(s, k){
     var r = dados.registros[k], sit = situacaoPront(s.estado);
@@ -3885,6 +3975,7 @@ function abrirFicha(p, foco, aba){
         r.campos = r.campos || {}; r.campos[c.dataset.f] = c.value; r.estado = "rascunho";
         /* o texto embaixo acompanha a digitação, sem redesenhar a ficha e perder o cursor */
         if(!r.editado && caixaTexto) caixaTexto.value = textoDoRegistro(r, s, p).texto;
+        pintarResumo();
         salvarLogo();
       });
       if(c.tagName==="SELECT" || c.type==="date") c.addEventListener("change", function(){ salvar(); pintarProntuario(); });
