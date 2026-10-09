@@ -696,6 +696,17 @@ p.pg-inteiro{margin:-6px 0 12px}
 .fi-reg-campos input,.fi-reg-campos select{height:42px}
 .fi-previa{margin:2px 0 10px; font-size:13px; line-height:1.5; color:var(--text)}
 .fi-previa:empty{display:none}
+/* a pergunta do avulso de quem está no mensal (09/10/2026) */
+.caso-avulso:empty{display:none}
+.caso-avulso{display:grid; gap:6px; margin:2px 0 10px}
+.caso-q{margin:0; font-size:13px; font-weight:600}
+.caso-op{display:flex; gap:8px; align-items:flex-start; padding:8px 10px; border:1px solid var(--line); border-radius:10px; cursor:pointer; background:var(--surface)}
+.caso-op input{margin:3px 0 0; flex:none; width:auto; height:auto; padding:0; min-height:0}
+.caso-op > span{flex:1; min-width:0; overflow-wrap:anywhere}
+.caso-op b{display:block; font-size:13px}
+.caso-op .hint{display:block; font-size:12px; line-height:1.4}
+.caso-op:has(input:checked){border-color:var(--accent)}
+.caso-op.off{opacity:.6; cursor:default}
 .fi-reg-botoes{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px}
 .fi-reg-botoes .hint{color:var(--ok); font-weight:600}
 details.fi-det > summary{cursor:pointer; font-weight:600; font-size:14px}
@@ -1378,6 +1389,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
           <label for="pg-quem">De quem, ou o quê</label>
           <input id="pg-quem" placeholder="ex.: acerto da viagem, empréstimo devolvido">
         </div>
+        <div class="caso-avulso pg-inteiro" id="pg-caso" role="radiogroup" aria-label="Qual é o caso deste pagamento"></div>
         <p class="hint pg-inteiro" id="pg-dica">—</p>
         <div class="field">
           <label for="pg-meio">Como pagou</label>
@@ -3395,6 +3407,7 @@ function abrirFicha(p, foco, aba){
               Object.keys(MEIOS).map(function(k){ return opc(k, MEIOS[k], "pix"); }).join("") + '</select></div>' +
           '</div>' +
           '<div class="field"><label for="fr-obs">Observação (opcional)</label><input id="fr-obs" placeholder="ex.: adiantou o ciclo de novembro"></div>' +
+          '<div class="caso-avulso" id="fr-caso" role="radiogroup" aria-label="Qual é o caso deste pagamento"></div>' +
           '<p class="fi-previa" id="fr-previa" role="status"></p>' +
           '<div class="fi-reg-botoes"><button class="btn primary" id="fr-registrar">Registrar pagamento</button>' +
             '<span class="hint" id="fr-feito" role="status"></span></div>' +
@@ -3658,20 +3671,35 @@ function abrirFicha(p, foco, aba){
   }
   function pintarPrevia(){
     var v = Number(document.getElementById("fr-valor").value), d = document.getElementById("fr-data").value || chaveData(hoje0());
-    document.getElementById("fr-previa").textContent = v > 0 ? textoPrevia(p, d, v) : "Digite o valor que ele pagou.";
+    var caso = pintarCasoAvulso(p, v, "fr");
+    document.getElementById("fr-previa").textContent = v > 0 ? textoPreviaCaso(p, d, v, caso) : "Digite o valor que ele pagou.";
   }
   ["fr-valor","fr-data"].forEach(function(id){ document.getElementById(id).addEventListener("input", pintarPrevia); });
+  document.getElementById("fr-caso").addEventListener("change", pintarPrevia);
   document.getElementById("fr-registrar").addEventListener("click", function(){
     var v = Number(document.getElementById("fr-valor").value), d = document.getElementById("fr-data").value;
     var feito = document.getElementById("fr-feito");
     if(!(v > 0)){ feito.textContent = "Falta o valor."; return; }
     if(!d){ feito.textContent = "Falta a data."; return; }
-    if(!registrarPagamento(p.id, d, v, document.getElementById("fr-meio").value, document.getElementById("fr-obs").value.trim())) return;
+    var caso = pintarCasoAvulso(p, v, "fr"), troca = null;
+    if(pedeCasoAvulso(p, v) && !caso){ feito.textContent = "Escolha qual é o caso: avulsa do pacote ou troca de ciclo."; return; }
+    if(caso === "troca"){ troca = inicioDaTroca(p); if(troca.erro){ feito.textContent = troca.erro; return; } }
+    var g = registrarPagamento(p.id, d, v, document.getElementById("fr-meio").value, document.getElementById("fr-obs").value.trim());
+    if(!g) return;
+    if(troca){
+      trocarParaAvulsa(p, troca.inicio, v, g.id); salvar(); renderTudo();
+      document.getElementById("fi-cobranca").value = p.cobranca;
+      document.getElementById("fi-valor").value = p.valor;
+    }
     document.getElementById("fr-obs").value = "";
     document.getElementById("fr-valor").value = p.valor;
+    limparCasoAvulso("fr");
+    pintarPrevia();
     resumo();
     var venc = proximoVencimento(p);
-    feito.textContent = "Registrado: " + moeda(v) + " em " + dataLonga(deISO(d)) + "." + (venc ? " Próximo pagamento na sessão de " + dataLonga(venc) + "." : "");
+    feito.textContent = "Registrado: " + moeda(v) + " em " + dataLonga(deISO(d)) + "." +
+      (troca ? " Passa a pagar por sessão, " + moeda(v) + " cada, desde " + dataLonga(deISO(troca.inicio)) + "." : "") +
+      (venc ? " Próximo pagamento na sessão de " + dataLonga(venc) + "." : "");
   });
   /* extrato (01/10/2026) e ciclos: cada sessão no preço do ciclo dela, cada pagamento e o saldo.
      Fica fechado; o resumo do saldo aparece no título. */
@@ -3964,7 +3992,8 @@ function abrirFicha(p, foco, aba){
     caixa.innerHTML = h;
     caixa.querySelectorAll("[data-fapagar]").forEach(function(b){
       b.addEventListener("click", function(){
-        if(!confirm("Apagar este pagamento? Ele sai da conta e o vencimento volta ao que era antes.")) return;
+        if(!confirmarApagarPagamento(b.dataset.fapagar, "Apagar este pagamento? Ele sai da conta e o vencimento volta ao que era antes.")) return;
+        desfazerTrocaDoPagamento(b.dataset.fapagar);
         dados.pagamentos = dados.pagamentos.filter(function(g){ return g.id!==b.dataset.fapagar; });
         salvar(); renderTudo(); resumo();
       });
@@ -4237,6 +4266,25 @@ function sessoesQueCobram(p, desde, quantas, futuras){
   }
   return lista;
 }
+/* O crédito em reais paga as próximas sessões na ordem, cada uma no preço do ciclo do dia dela
+   (09/10/2026, troca do mensal para a avulsa: as sessões já pagas do pacote valem R$ 125 e as
+   seguintes, R$ 150; contar o crédito todo pelo preço de agora errava as sessões e o vencimento).
+   Com um preço só, dá o mesmo que antes: crédito dividido pelo preço da sessão. Devolve quantas
+   sessões ele cobre e a primeira que fica de fora (null se a agenda acaba antes). */
+function creditoAdiante(p, credito){
+  var precos = ciclosDe(p).map(valorSessao).filter(function(v){ return v > 0; });
+  var menor = precos.length ? Math.min.apply(null, precos) : 0, vs = valorSessao(p);
+  if(!(credito > 0.005) || !(menor > 0)) return {n:0, sobra:Math.max(0, credito), venc:credito > 0.005 ? null : (sessoesQueCobram(p, hoje0(), 1, true)[0] || null)};
+  var fut = sessoesQueCobram(p, hoje0(), Math.floor(credito / menor + 1e-6) + 1, true), n = 0;
+  for(var i = 0; i < fut.length; i++){
+    var preco = valorSessaoEm(p, chaveData(fut[i]));
+    if(credito + 1e-6 * preco < preco) return {n:n, sobra:Math.round(credito * 100) / 100, venc:fut[i]};
+    credito -= preco; n++;
+  }
+  /* a agenda acabou antes do crédito: o resto conta no preço de agora */
+  var resto = vs > 0 ? Math.floor(credito / vs + 1e-6) : 0;
+  return {n:n + resto, sobra:Math.round((credito - resto * vs) * 100) / 100, venc:null};
+}
 function proximoVencimento(p){
   if(!vencCache) vencCache = {};
   if(vencCache[p.id] !== undefined) return vencCache[p.id];
@@ -4268,6 +4316,7 @@ function calcularVencimento(p){
       return k >= 0 ? passadas[k] : deISO(dv.base);
     }
     /* em dia: o saldo cobre as próximas sessões; vence na primeira que ficar de fora */
+    if(dv.extrato) return creditoAdiante(p, -dv.exato).venc;
     var credito = -dv.sessoes, fut = sessoesQueCobram(p, hoje0(), credito + 1, true);
     return fut.length > credito ? fut[credito] : null;
   }
@@ -4348,12 +4397,129 @@ function textoPrevia(p, dataISO, valor){
   var d = pr.devidoDepois;
   if(d && d.exato > 0.005) partes.push("Continua devendo " + moeda(d.exato) + ".");
   else if(d && d.exato < -0.005){
-    var vs = valorSessao(p), resto = vs > 0 ? Math.round(((-d.exato) % vs) * 100) / 100 : 0;
+    /* o que sobra depois das sessões que o crédito paga inteiras, cada uma no preço dela */
+    var vs = valorSessao(p), resto = d.extrato ? d.sobra : (vs > 0 ? Math.round(((-d.exato) % vs) * 100) / 100 : 0);
     if(resto > 0.005 && vs - resto > 0.005) partes.push("Sobram " + moeda(resto) + " de crédito para a próxima.");
   }
   if(pr.depois) partes.push("Próximo pagamento: na sessão de " + dataLonga(pr.depois) + ".");
   else if(n) partes.push("Fica pago além do que a agenda mostra.");
   return partes.join(" ");
+}
+/* Pagamento avulso de quem está no ciclo mensal (decisão 3 da crítica, Matheus em 09/10/2026:
+   "depende, o paciente pode querer trocar de ciclo no fim do ciclo, ou pagar uma avulsa de 125").
+   Quando o valor não é o ciclo inteiro (nem um múltiplo dele), o registrar pergunta qual é o caso:
+   - "pacote": uma sessão avulsa dentro do pacote de 4. Registra só o valor, como antes.
+   - "troca": o pacote acabou e ele passa a pagar por sessão. Abre um ciclo "por sessão" com o valor
+     pago, a partir da primeira sessão que o saldo não cobre. Nada do que já está pago muda de preço.
+   O ciclo aberto guarda o pagamento que o abriu: apagar esse pagamento desfaz a troca. */
+function pedeCasoAvulso(p, valor){
+  var v = Number(valor) || 0, cheio = Number(p.valor) || 0;
+  if(p.cobranca !== "mensal" || !(v > 0) || !(cheio > 0)) return false;
+  var r = v / cheio;
+  return Math.round(r) < 1 || Math.abs(r - Math.round(r)) > 1e-6;
+}
+/* de onde a troca começaria: a primeira sessão que o saldo não cobre. Devolve {inicio} ou {erro} */
+function inicioDaTroca(p){
+  /* só com o extrato (histórico do prontuário ou ficha do app): a conta pela planilha multiplica todas as
+     sessões pelo preço de agora, e a troca mudaria o preço das sessões antigas (conferência de 09/10/2026) */
+  var dv0 = devidoDe(p);
+  if(!dv0 || !dv0.extrato) return {erro:"Este paciente ainda não tem o histórico de sessões no app, então trocar o preço agora mudaria o das sessões antigas. Para trocar, abra um ciclo novo em \"Ciclo e valor\"."};
+  var v = proximoVencimento(p);
+  if(!v) return {erro:"Não há sessão sem pagar na agenda para começar a cobrança por sessão. Para trocar, abra um ciclo novo em \"Ciclo e valor\"."};
+  var iso = chaveData(v), ultimo = ciclosDe(p).slice(-1)[0];
+  if(ultimo.inicio && ultimo.inicio >= iso)
+    return {erro:"Já existe um ciclo começando em " + dataLonga(deISO(ultimo.inicio)) + ". Para trocar, use \"Ciclo e valor\"."};
+  /* um ciclo vale para sessões até 3 dias antes do início dele (folga de cicloEm): se a sessão paga
+     anterior cai nessa folga, ela mudaria de preço. Aí a troca fica para "Ciclo e valor". */
+  var perto = sessoesQueCobram(p, somaDias(v, -3), 8, false).filter(function(d){ return d < v; });
+  if(perto.length) return {erro:"A sessão de " + dataLonga(perto[perto.length - 1]) + " fica muito perto da próxima para separar os preços. Para trocar, use \"Ciclo e valor\"."};
+  return {inicio:iso};
+}
+/* faz a troca de mentira, roda fn e desfaz: a prévia mostra a conta com a troca sem gravar nada */
+function comTrocaAvulsa(p, inicio, valor, fn){
+  var tinha = Object.prototype.hasOwnProperty.call(p, "ciclos");
+  var guarda = {ciclos:p.ciclos, cobranca:p.cobranca, valor:p.valor, freq:p.freq};
+  p.ciclos = (p.ciclos || []).map(function(c){ return Object.assign({}, c); });
+  abrirCiclo(p, inicio, "avulsa", valor);
+  vencCache = null; devidoCache = null; atrasoCache = null;
+  try { return fn(); }
+  finally {
+    if(tinha) p.ciclos = guarda.ciclos; else delete p.ciclos;
+    p.cobranca = guarda.cobranca; p.valor = guarda.valor; p.freq = guarda.freq;
+    vencCache = null; devidoCache = null; atrasoCache = null;
+  }
+}
+/* a troca de verdade, depois de o pagamento ser registrado */
+function trocarParaAvulsa(p, inicio, valor, pagamentoId){
+  abrirCiclo(p, inicio, "avulsa", valor);
+  p.ciclos.forEach(function(c){ if(c.inicio === inicio) c.pagamento = pagamentoId; });
+  vencCache = null; devidoCache = null; atrasoCache = null;
+}
+/* apagar o pagamento que abriu a troca desfaz a troca; devolve o paciente, ou null se não havia */
+function trocaDoPagamento(id){
+  return dados.pacientes.filter(function(p){
+    return (p.ciclos || []).some(function(c){ return c.pagamento === id; });
+  })[0] || null;
+}
+function desfazerTrocaDoPagamento(id){
+  var p = trocaDoPagamento(id);
+  if(!p) return;
+  p.ciclos = p.ciclos.filter(function(c){ return c.pagamento !== id; });
+  var ultimo = ciclosDe(p).slice(-1)[0];
+  p.cobranca = ultimo.cobranca; p.valor = ultimo.valor;
+  vencCache = null; devidoCache = null; atrasoCache = null;
+}
+function confirmarApagarPagamento(id, texto){
+  var p = trocaDoPagamento(id);
+  return confirm(texto + (p ? " A troca de " + p.nome + " para sessão avulsa, feita com este pagamento, também é desfeita." : ""));
+}
+/* a pergunta, igual na ficha e na aba Pagamentos. pref é o prefixo dos ids (fr ou pg) */
+function perguntaCasoHTML(p, valor, pref, escolhido){
+  var vs = valorSessao(p), ini = inicioDaTroca(p);
+  var opc = function(val, titulo, sub, desligado){
+    return '<label class="caso-op'+(desligado ? " off" : "")+'"><input type="radio" name="'+pref+'-caso" value="'+val+'"'+
+      (escolhido === val && !desligado ? " checked" : "")+(desligado ? " disabled" : "")+'>' +
+      '<span><b>'+esc(titulo)+'</b><span class="hint">'+esc(sub)+'</span></span></label>';
+  };
+  return '<p class="caso-q">'+esc(p.nome)+' está no ciclo mensal ('+moeda(p.valor)+', '+moeda(vs)+' por sessão). Esse valor é:</p>' +
+    opc("pacote", "Avulsa dentro do pacote", "Continua no mensal. O valor entra no saldo, a "+moeda(vs)+" por sessão.") +
+    opc("troca", "Troca de ciclo: passa a pagar por sessão",
+      ini.erro ? ini.erro : "O pacote acaba. A partir da sessão de "+dataLonga(deISO(ini.inicio))+" ele paga por sessão, "+moeda(valor)+" cada.", !!ini.erro);
+}
+/* desenha (ou esconde) a pergunta e devolve o caso escolhido: "", "pacote" ou "troca" */
+function pintarCasoAvulso(p, valor, pref){
+  var caixa = document.getElementById(pref + "-caso");
+  if(!caixa) return "";
+  if(!p || !pedeCasoAvulso(p, valor)){ caixa.innerHTML = ""; caixa.dataset.chave = ""; return ""; }
+  /* a resposta vale enquanto ele mexe no valor; trocar de paciente pergunta de novo */
+  var marcado = caixa.querySelector("input:checked"), escolhido = marcado && caixa.dataset.pid === p.id ? marcado.value : "";
+  var chave = p.id + "|" + valor + "|" + JSON.stringify(inicioDaTroca(p));
+  caixa.dataset.pid = p.id;
+  if(caixa.dataset.chave !== chave){
+    caixa.dataset.chave = chave;
+    caixa.innerHTML = perguntaCasoHTML(p, Number(valor), pref, escolhido);
+  }
+  marcado = caixa.querySelector("input:checked");
+  return marcado ? marcado.value : "";
+}
+function limparCasoAvulso(pref){
+  var caixa = document.getElementById(pref + "-caso");
+  if(caixa){ caixa.innerHTML = ""; caixa.dataset.chave = ""; caixa.dataset.pid = ""; }
+}
+/* a prévia de acordo com o caso: sem resposta, pede a resposta; na troca, faz a conta com a troca */
+function textoPreviaCaso(p, dataISO, valor, caso){
+  if(!pedeCasoAvulso(p, valor)) return textoPrevia(p, dataISO, valor);
+  if(!caso) return "Escolha acima qual é o caso para ver o que esse valor paga.";
+  if(caso !== "troca") return textoPrevia(p, dataISO, valor);
+  var ini = inicioDaTroca(p);
+  if(ini.erro) return ini.erro;
+  var antes = proximoVencimento(p);
+  return comTrocaAvulsa(p, ini.inicio, Number(valor), function(){
+    /* a prévia compara com o vencimento de antes da troca, que é onde a troca começa */
+    vencCache = {}; vencCache[p.id] = antes;
+    var t = textoPrevia(p, dataISO, valor);
+    return "Muda para sessão avulsa de " + moeda(valor) + " a partir de " + dataLonga(deISO(ini.inicio)) + ". " + t;
+  });
 }
 /* peso ordena a tabela: atraso na frente, em dia no fim */
 function situacaoPagamento(p){
@@ -4382,8 +4548,12 @@ function devidoDe(p){
   if(ext){
     /* com o histórico do prontuário carregado, a dívida é o saldo do extrato, cada sessão no
        preço do ciclo dela; em sessões, pelo valor do ciclo atual */
-    var ne = ext.saldo > 0.005 ? Math.ceil(ext.saldo / vs - 1e-6) : -Math.floor(-ext.saldo / vs + 1e-6);
-    r = {valor:ne * vs, sessoes:ne, exato:ext.saldo, depois:0, pago:ext.pago, base:ext.ate, extrato:true, doApp:ext.doApp};
+    var adiante = ext.saldo > 0.005 ? null : creditoAdiante(p, -ext.saldo);
+    var ne = adiante ? 0 - adiante.n : Math.ceil(ext.saldo / vs - 1e-6);
+    /* no crédito, valor é o que as sessões adiantadas valem, cada uma no preço dela (crédito menos a sobra);
+       com um preço só, dá sessões × preço, como antes */
+    r = {valor:adiante ? -Math.round((-ext.saldo - adiante.sobra) * 100) / 100 : ne * vs, sessoes:ne, exato:ext.saldo, depois:0,
+      pago:ext.pago, base:ext.ate, extrato:true, doApp:ext.doApp, sobra:adiante ? adiante.sobra : 0};
   } else if(p.basePlanilha && vs > 0){
     /* A planilha soma a sessão da semana no dia da semana do Início (a régua), que em vários
        pacientes não é o dia em que ele atende. Então cada sessão da agenda é ligada à batida
@@ -4429,7 +4599,8 @@ function textoDevido(p){
     : "deve " + moeda(d.exato)};
   if(d.exato < -0.005){
     if(inteiro) return {classe:"ok", texto:plural(-d.sessoes, "sessão adiantada", "sessões adiantadas"), titulo:titulo};
-    var resto = Math.round((-d.exato - (-d.sessoes) * vs) * 100) / 100;
+    /* com extrato, a sobra já vem com cada sessão no preço do ciclo dela (troca do mensal para a avulsa) */
+    var resto = d.extrato ? d.sobra : Math.round((-d.exato - (-d.sessoes) * vs) * 100) / 100;
     return {classe:"ok", titulo:titulo, texto:(d.sessoes < 0 ? plural(-d.sessoes, "sessão adiantada", "sessões adiantadas") + " e " : "") + moeda(resto) + " de crédito"};
   }
   return {classe:"ok", texto:"nada a pagar", titulo:titulo};
@@ -4519,7 +4690,7 @@ function mapaDeAtraso(){
 }
 
 /* devolve false quando ele desiste: "Recebi hoje" é um clique só, e clicar duas vezes
-   sem querer lançaria o mesmo dinheiro de novo */
+   sem querer lançaria o mesmo dinheiro de novo. Senão devolve o pagamento gravado. */
 /* receita é a origem do dinheiro (Prática Clínica., Pendência., Extra.), como na aba Recebimentos
    da planilha; só a de paciente conta na receita da clínica. Sem paciente (pacienteId vazio), o
    nome de quem pagou fica em nomePlanilha, o mesmo campo dos recibos que a planilha não casou. */
@@ -4534,7 +4705,7 @@ function registrarPagamento(pacienteId, dataISO, valor, meio, obs, receita, quem
                 dataLonga(deISO(dataISO)) + ", de " + moeda(repetido.valor) +
                 ". Registrar outro nessa mesma data?")) return false;
   }
-  dados.pagamentos.push({
+  var novo = {
     id: novoId("g"),
     pacienteId: pacienteId||"",
     nomePlanilha: pacienteId ? "" : (quem||""),
@@ -4543,9 +4714,10 @@ function registrarPagamento(pacienteId, dataISO, valor, meio, obs, receita, quem
     meio: meio||"pix",
     obs: obs||"",
     receita: receita
-  });
+  };
+  dados.pagamentos.push(novo);
   salvar(); renderTudo();
-  return true;
+  return novo;
 }
 /* do mais recente para o mais antigo; no mesmo dia, o último registrado vem primeiro (05/10/2026) */
 function maisRecentePrimeiro(lista){
@@ -4704,7 +4876,8 @@ function renderPagamentos(){
   });
   hist.querySelectorAll("[data-apagar]").forEach(function(b){
     b.addEventListener("click", function(){
-      if(!confirm("Apagar este pagamento? Ele sai da conta do mês e o vencimento volta ao que era antes.")) return;
+      if(!confirmarApagarPagamento(b.dataset.apagar, "Apagar este pagamento? Ele sai da conta do mês e o vencimento volta ao que era antes.")) return;
+      desfazerTrocaDoPagamento(b.dataset.apagar);
       dados.pagamentos = dados.pagamentos.filter(function(g){ return g.id!==b.dataset.apagar; });
       salvar(); renderTudo();
     });
@@ -4719,15 +4892,17 @@ function dicaPagamento(trocouPaciente){
   var p = acharPaciente(sel.value);
   /* "Outra pessoa": aparece o campo de escrever de quem veio */
   document.getElementById("pg-quem-campo").classList.toggle("hidden", !!p || sel.value !== "");
+  if(!p) pintarCasoAvulso(null, 0, "pg");
   if(!p){ dica.textContent = sel.value === "" ? "Fora da agenda: escreva de quem veio e escolha a origem." : sel.value === "?" ? "Escolha quem pagou: o valor vem do paciente." : ""; return; }
   if(trocouPaciente || !campo.value) campo.value = p.valor;
+  var caso = pintarCasoAvulso(p, Number(campo.value) || 0, "pg");
   var s = situacaoPagamento(p);
   /* a prévia é a mesma da ficha (06/10/2026): antes esta tela dizia só quantas sessões o valor
      pagava e a ficha dizia quais; agora as duas dizem o mesmo */
   var v = Number(campo.value) || 0, data = document.getElementById("pg-data").value || chaveData(hoje0());
   dica.textContent = rotuloCobranca(p) + " · " + valorDoCiclo(p) + " · " +
     (s.ultimo ? "último em " + dataLonga(deISO(s.ultimo.data)) : "sem pagamento registrado") + "." +
-    (v > 0 ? " " + textoPrevia(p, data, v) : "");
+    (v > 0 ? " " + textoPreviaCaso(p, data, v, caso) : "");
 }
 /* "R$ 700 por ciclo"; para quem paga por sessão, "R$ 200 por sessão" (antes dizia "por ciclo") */
 function valorDoCiclo(p){ return moeda(p.valor) + (p.cobranca === "avulsa" ? " por sessão" : " por ciclo"); }
@@ -6621,6 +6796,7 @@ document.getElementById("ss-desde").addEventListener("change", function(){
 document.getElementById("pg-paciente").addEventListener("change", function(){ dicaPagamento(true); });
 document.getElementById("pg-valor").addEventListener("input", function(){ dicaPagamento(false); });
 document.getElementById("pg-data").addEventListener("change", function(){ dicaPagamento(false); });
+document.getElementById("pg-caso").addEventListener("change", function(){ dicaPagamento(false); });
 /* o formulário de registrar fica fechado; o botão abre e já põe o foco em quem pagou */
 function abrirFormPagamento(abrir){
   /* a data é a de hoje toda vez que abre (o app pode ter passado a noite aberto) */
@@ -6735,15 +6911,22 @@ document.getElementById("pg-add").addEventListener("click", function(){
   if(!p && !quem){ avisarPagamento("Escolha quem pagou, ou escreva de quem veio."); return; }
   if(!data){ avisarPagamento("Falta a data do pagamento."); return; }
   if(!(valor > 0)){ avisarPagamento("Falta o valor."); return; }
-  if(!registrarPagamento(p ? p.id : "", data, valor, document.getElementById("pg-meio").value, document.getElementById("pg-obs").value.trim(), origem, quem)) return;
+  var caso = p ? pintarCasoAvulso(p, valor, "pg") : "", troca = null;
+  if(p && pedeCasoAvulso(p, valor) && !caso){ avisarPagamento("Escolha qual é o caso: avulsa do pacote ou troca de ciclo."); return; }
+  if(caso === "troca"){ troca = inicioDaTroca(p); if(troca.erro){ avisarPagamento(troca.erro); return; } }
+  var g = registrarPagamento(p ? p.id : "", data, valor, document.getElementById("pg-meio").value, document.getElementById("pg-obs").value.trim(), origem, quem);
+  if(!g) return;
+  if(troca){ trocarParaAvulsa(p, troca.inicio, valor, g.id); salvar(); renderTudo(); }
   document.getElementById("pg-obs").value = "";
   document.getElementById("pg-quem").value = "";
+  limparCasoAvulso("pg");
   mesPag = deISO(data); /* abre o mês do pagamento que ele acabou de lançar */
   abrirFormPagamento(false);
   renderPagamentos();
   var venc = p ? proximoVencimento(p) : null;
   avisarPagamento((p ? p.nome : quem) + " · " + moeda(valor) + " em " + dataLonga(deISO(data)) +
     (origem !== "Prática Clínica." ? " · " + origem.replace(/\.$/,"") + ", fora da receita da clínica" : "") +
+    (troca ? " · passa a pagar por sessão desde " + dataLonga(deISO(troca.inicio)) : "") +
     (venc ? ". Próximo vencimento: " + dataLonga(venc) + "." : "."));
 });
 
