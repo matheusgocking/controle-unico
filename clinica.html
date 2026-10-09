@@ -966,7 +966,6 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <h1>Agenda Clínica</h1>
       <p class="nuvem"><span class="nuvem-ponto" id="nuvem-ponto"></span><span id="nuvem-texto">Carregando…</span> <button class="btn sm" id="nuvem-entrar">Entrar com o Google</button><span id="nuvem-acoes"></span></p>
       <div class="acoes-topo">
-        <button class="btn sm" id="ler-planilha">Ler a planilha</button>
         <input type="file" id="arquivo-planilha" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
         <span class="hint" id="ler-status"></span>
       </div>
@@ -1280,7 +1279,6 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <div id="plist"></div>
       <div style="margin-top:14px; display:flex; gap:8px">
         <button class="btn" id="add-paciente">Adicionar paciente</button>
-        <button class="btn ghost" id="seed">Recarregar da planilha</button>
       </div>
     </div>
   </section>
@@ -2733,7 +2731,7 @@ function desenharCarteira(pedaco){
   var alvo = document.getElementById("plist");
   var lista = arquivadosPorStatus(pedaco), doApp = encerradosNoApp(pedaco);
   if(!lista.length && !doApp.length){
-    alvo.innerHTML = '<p class="pvazio">Ninguém aqui. Use "Ler a planilha" no alto da página para trazer a carteira inteira.</p>';
+    alvo.innerHTML = '<p class="pvazio">Ninguém aqui.</p>';
     return;
   }
   var h = '<div class="pgrid larga">';
@@ -3539,7 +3537,7 @@ function abrirFicha(p, foco, aba){
     if(!f){
       el.innerHTML = '<div class="topo"><h3>Formulação de caso</h3>' +
         '<span class="sit sem">sem registro na planilha</span></div>' +
-        '<div class="duas"><span>Use "Ler a planilha" para trazer a aba Formulação de Caso.</span></div>';
+        '<div class="duas"><span>Nenhuma formulação registrada para este prontuário.</span></div>';
       return;
     }
     var dias = f.atualizacao ? Math.round((hoje0() - deISO(f.atualizacao))/86400000) : null;
@@ -4637,7 +4635,7 @@ function renderPainel(){
     .sort(function(a, b){ return b.aPagar - a.aPagar; });
   var temLeituraNova = (dados.arquivados || []).some(function(a){ return a.aPagar !== undefined; });
   var hFora = '<h3 class="pn-fora-t">Quem já saiu da agenda e ficou devendo</h3>';
-  if(!temLeituraNova) hFora += '<p class="pvazio">Leia a planilha uma vez (botão "Ler a planilha", no alto) para trazer a dívida de quem já saiu.</p>';
+  if(!temLeituraNova) hFora += '<p class="pvazio">Ninguém.</p>';
   else if(!foraDevendo.length) hFora += '<p class="pvazio">Ninguém, pela planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + '.</p>';
   else {
     var totalFora = foraDevendo.reduce(function(t, a){ return t + Number(a.aPagar); }, 0);
@@ -4648,7 +4646,7 @@ function renderPainel(){
           '<td>' + esc(String(a.status || "").replace(/\.$/, "")) + '<button class="btn sm cobrar" data-cobrar-fora="' + esc(a.codigo) + '">Cobrar</button></td><td class="num"><b>' + moeda(a.aPagar) + '</b></td></tr>';
       }).join("") +
       '<tr><td><b>Total</b></td><td>' + plural(foraDevendo.length, "pessoa", "pessoas") + '</td><td class="num"><b>' + moeda(totalFora) + '</b></td></tr></tbody></table>' +
-      '<p class="hint" style="margin-top:8px">Valor da planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + ': muda quando você ler a planilha de novo.</p>';
+      '<p class="hint" style="margin-top:8px">Valor da planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + ' (última leitura; o app não lê mais a planilha).</p>';
   }
   document.getElementById("pn-devendo").insertAdjacentHTML("beforeend", hFora);
 
@@ -5114,7 +5112,7 @@ function renderMarketing(){
     return '<div class="mk-origem'+(valorOrigem(x.codigo) ? "" : " falta")+'"><span class="quem"><b>'+esc(x.nome)+'</b>' +
       '<span>'+esc(x.codigo)+(x.inicio ? " · começou em "+dataLonga(deISO(x.inicio)) : "")+" · "+esc(x.situacao)+(pago > 0 ? " · já pagou "+moeda(pago) : "")+'</span></span>' +
       '<select data-origem="'+esc(x.codigo)+'" aria-label="Como '+esc(x.nome)+' chegou">'+opcoesOrigem(x.codigo)+'</select></div>';
-  }).join("") : '<p class="pvazio">'+(todos.length ? "Ninguém nesta lista." : 'Nenhum paciente ainda. Use "Ler a planilha" no alto da página.')+'</p>') +
+  }).join("") : '<p class="pvazio">'+(todos.length ? "Ninguém nesta lista." : 'Nenhum paciente ainda. Use "Adicionar paciente".')+'</p>') +
     (visiveis.length > LIMITE ? '<button class="btn sm ghost" id="mk-mais" style="margin-top:10px">'+
       (origensInteiras ? "Mostrar só os mais recentes" : "Ver todos ("+visiveis.length+")")+'</button>' : "");
   alvo.querySelectorAll("select[data-origem]").forEach(function(s){
@@ -6086,9 +6084,9 @@ document.getElementById("pn-next").addEventListener("click", function(){ mesRef 
 document.getElementById("pn-hoje").addEventListener("click", function(){ mesRef = new Date(); renderTudo(); });
 document.getElementById("msg").addEventListener("click", abrirMensagem);
 
-document.getElementById("ler-planilha").addEventListener("click", function(){
-  document.getElementById("arquivo-planilha").click();
-});
+/* O botão "Ler a planilha" saiu em 09/10/2026 (Matheus escolheu "Tirar": o app anda sozinho e ler
+   de novo depois de recolocar alguém pelo app encerrava a pessoa ou somava sessões antigas sem os
+   pagamentos antigos). A leitura continua aqui só para os testes e para voltar, se ele pedir. */
 document.getElementById("arquivo-planilha").addEventListener("change", function(e){
   var arquivo = e.target.files[0];
   if(!arquivo) return;
@@ -6270,9 +6268,6 @@ document.getElementById("add-paciente").addEventListener("click", function(){
   var novo = {id:novoId("p"), codigo:"", nome:"Novo paciente", freq:"semanal", cobranca:"mensal", valor:dados.config.mensal, dia:1, hora:14, meet:""};
   dados.pacientes.push(novo);
   salvar(); renderTudo(); abrirFicha(novo);
-});
-document.getElementById("seed").addEventListener("click", function(){
-  document.getElementById("arquivo-planilha").click();
 });
 document.getElementById("exportar").addEventListener("click", function(){
   var blob = new Blob([JSON.stringify(dados,null,2)], {type:"application/json"});
