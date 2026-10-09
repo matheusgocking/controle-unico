@@ -22,10 +22,14 @@ function caderno(){
     { id:"pN", codigo:"T1", nome:"Nova", freq:"semanal", cobranca:"mensal", valor:500, dia:5, hora:13, meet:"", status:"Ativo.",
       inicio:"2026-10-09", ciclos:[{ inicio:"2026-10-09", cobranca:"mensal", valor:500 }] },
     { id:"pT", codigo:"T2", nome:"Atrasada", freq:"semanal", cobranca:"mensal", valor:500, dia:5, hora:11, meet:"", status:"Ativo.",
-      inicio:"2026-09-11", ciclos:[{ inicio:"2026-09-11", cobranca:"mensal", valor:500 }] });
+      inicio:"2026-09-11", ciclos:[{ inicio:"2026-09-11", cobranca:"mensal", valor:500 }] },
+    /* conta pela planilha (sem histórico do prontuário): 10 sessões até 01/10, pagou R$ 1.250, deve a de 05/10 */
+    { id:"pH", codigo:"T3", nome:"Planilha", freq:"semanal", cobranca:"mensal", valor:500, dia:1, hora:12, meet:"", status:"Ativo.",
+      basePlanilha:"2026-10-01", sessoesPlanilha:10, reguaPlanilha:1, inicio:"2026-07-27", ciclos:[{ inicio:"2026-07-27", cobranca:"mensal", valor:500 }] });
   c.pagamentos.push(
     { id:"g1", pacienteId:"pN", nomePlanilha:"", data:"2026-10-09", valor:500, meio:"pix", obs:"", receita:"Prática Clínica." },
-    { id:"g2", pacienteId:"pT", nomePlanilha:"", data:"2026-09-11", valor:500, meio:"pix", obs:"", receita:"Prática Clínica." });
+    { id:"g2", pacienteId:"pT", nomePlanilha:"", data:"2026-09-11", valor:500, meio:"pix", obs:"", receita:"Prática Clínica." },
+    { id:"g3", pacienteId:"pH", nomePlanilha:"", data:"2026-09-30", valor:1250, meio:"pix", obs:"", receita:"Prática Clínica." });
   return c;
 }
 async function abrir(largura){
@@ -91,6 +95,11 @@ for (const largura of [390, 1280]) {
     const depois = await p.evaluate(`(${conta})("pN")`);
     assert.deepEqual(depois, { venc:"2026-11-13", exato:-525, sessoes:-4, cobranca:"avulsa", valor:150,
       ciclos:[["2026-10-09","mensal",500], ["2026-11-06","avulsa",150]] });
+    // a frase do saldo conta cada sessão no preço dela: 3 × 125 + 1 × 150 = 525, sem sobra nem crédito negativo
+    assert.deepEqual(await p.evaluate(() => { const x = acharPaciente("pN"); return [textoDevido(x).texto, devidoDe(x).valor, devidoDe(x).sobra]; }),
+      ["4 sessões adiantadas", -525, 0]);
+    assert.match(await p.textContent("#fi-situ"), /4 sessões adiantadas/);
+    assert.doesNotMatch(await p.textContent("#fi-situ"), /-/);
     // o que já estava pago continua no preço do pacote
     assert.deepEqual(await p.evaluate(() => { const x = acharPaciente("pN");
       return ["2026-10-09","2026-10-30","2026-11-06","2026-11-13"].map(d => valorSessaoEm(x, d)); }), [125, 125, 150, 150]);
@@ -162,6 +171,38 @@ test("Sem sessão para começar ou com ciclo novo já marcado, a troca fica desl
   await p.evaluate(() => abrirFicha(acharPaciente("pT")));
   await p.fill("#fr-valor", "150");
   assert.equal(await p.locator('#fr-caso input[value="troca"]').isDisabled(), true);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Conta pela planilha (sem histórico): a troca fica desligada, porque mudaria o preço das sessões antigas", async () => {
+  const { ctx, p, erros } = await abrir(1280);
+  const r = await p.evaluate(() => { const x = acharPaciente("pH"), d = devidoDe(x);
+    return { extrato:!!d.extrato, exato:d.exato, erro:inicioDaTroca(x).erro }; });
+  assert.equal(r.extrato, false);
+  assert.equal(r.exato, 125);
+  assert.match(r.erro, /ainda não tem o histórico de sessões no app/);
+  await p.evaluate(() => abrirFicha(acharPaciente("pH")));
+  await p.fill("#fr-valor", "150");
+  assert.equal(await p.locator('#fr-caso input[value="troca"]').isDisabled(), true);
+  assert.equal(await p.locator('#fr-caso input[value="pacote"]').isDisabled(), false);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Dois pacotes adiantados e troca: frase sem crédito negativo (7 × R$ 125 + 1 × R$ 150)", async () => {
+  const { ctx, p, erros } = await abrir(1280);
+  const r = await p.evaluate(() => {
+    const x = acharPaciente("pN");
+    dados.pagamentos.push({ id:"g9", pacienteId:"pN", nomePlanilha:"", data:"2026-10-09", valor:500, meio:"pix", obs:"", receita:"Prática Clínica." });
+    vencCache = null; devidoCache = null;
+    const ini = inicioDaTroca(x).inicio;
+    dados.pagamentos.push({ id:"g10", pacienteId:"pN", nomePlanilha:"", data:"2026-10-09", valor:150, meio:"pix", obs:"", receita:"Prática Clínica." });
+    trocarParaAvulsa(x, ini, 150, "g10");
+    const d = devidoDe(x);
+    return { ini, texto:textoDevido(x).texto, valor:d.valor, venc:chaveData(proximoVencimento(x)) };
+  });
+  assert.deepEqual(r, { ini:"2026-12-04", texto:"8 sessões adiantadas", valor:-1025, venc:"2026-12-11" });
   assert.deepEqual(erros, []);
   await ctx.close();
 });

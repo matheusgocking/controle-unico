@@ -4420,7 +4420,10 @@ function pedeCasoAvulso(p, valor){
 }
 /* de onde a troca começaria: a primeira sessão que o saldo não cobre. Devolve {inicio} ou {erro} */
 function inicioDaTroca(p){
-  if(!devidoDe(p)) return {erro:"Este paciente não tem histórico de pagamentos no app, então não dá para saber onde o pacote termina. Para trocar, abra um ciclo novo em \"Ciclo e valor\"."};
+  /* só com o extrato (histórico do prontuário ou ficha do app): a conta pela planilha multiplica todas as
+     sessões pelo preço de agora, e a troca mudaria o preço das sessões antigas (conferência de 09/10/2026) */
+  var dv0 = devidoDe(p);
+  if(!dv0 || !dv0.extrato) return {erro:"Este paciente ainda não tem o histórico de sessões no app, então trocar o preço agora mudaria o das sessões antigas. Para trocar, abra um ciclo novo em \"Ciclo e valor\"."};
   var v = proximoVencimento(p);
   if(!v) return {erro:"Não há sessão sem pagar na agenda para começar a cobrança por sessão. Para trocar, abra um ciclo novo em \"Ciclo e valor\"."};
   var iso = chaveData(v), ultimo = ciclosDe(p).slice(-1)[0];
@@ -4547,8 +4550,10 @@ function devidoDe(p){
        preço do ciclo dela; em sessões, pelo valor do ciclo atual */
     var adiante = ext.saldo > 0.005 ? null : creditoAdiante(p, -ext.saldo);
     var ne = adiante ? 0 - adiante.n : Math.ceil(ext.saldo / vs - 1e-6);
-    r = {valor:ne * vs, sessoes:ne, exato:ext.saldo, depois:0, pago:ext.pago, base:ext.ate, extrato:true, doApp:ext.doApp,
-      sobra:adiante ? adiante.sobra : 0};
+    /* no crédito, valor é o que as sessões adiantadas valem, cada uma no preço dela (crédito menos a sobra);
+       com um preço só, dá sessões × preço, como antes */
+    r = {valor:adiante ? -Math.round((-ext.saldo - adiante.sobra) * 100) / 100 : ne * vs, sessoes:ne, exato:ext.saldo, depois:0,
+      pago:ext.pago, base:ext.ate, extrato:true, doApp:ext.doApp, sobra:adiante ? adiante.sobra : 0};
   } else if(p.basePlanilha && vs > 0){
     /* A planilha soma a sessão da semana no dia da semana do Início (a régua), que em vários
        pacientes não é o dia em que ele atende. Então cada sessão da agenda é ligada à batida
@@ -4594,7 +4599,8 @@ function textoDevido(p){
     : "deve " + moeda(d.exato)};
   if(d.exato < -0.005){
     if(inteiro) return {classe:"ok", texto:plural(-d.sessoes, "sessão adiantada", "sessões adiantadas"), titulo:titulo};
-    var resto = Math.round((-d.exato - (-d.sessoes) * vs) * 100) / 100;
+    /* com extrato, a sobra já vem com cada sessão no preço do ciclo dela (troca do mensal para a avulsa) */
+    var resto = d.extrato ? d.sobra : Math.round((-d.exato - (-d.sessoes) * vs) * 100) / 100;
     return {classe:"ok", titulo:titulo, texto:(d.sessoes < 0 ? plural(-d.sessoes, "sessão adiantada", "sessões adiantadas") + " e " : "") + moeda(resto) + " de crédito"};
   }
   return {classe:"ok", texto:"nada a pagar", titulo:titulo};
