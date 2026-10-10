@@ -139,3 +139,15 @@ for (const largura of [390, 1280]) {
     await ctx.close();
   });
 }
+
+test("Quem saiu com cortesia na planilha: a primeira sessão cobrada não cobra", async () => {
+  const { ctx, p, erros } = await abrir(1280);
+  const exato = await p.evaluate(h => {
+    importarHistoricoFora(h.map(x => Object.assign({}, x, { cortesia: 1 })));
+    const f = dados.pacientes.find(x => x.codigo === "T10");
+    return devidoDe(f).exato;
+  }, HISTORICO);
+  assert.equal(exato, 125, "R$ 750 de sessões menos R$ 125 de cortesia menos R$ 500 pagos");
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

@@ -2013,6 +2013,8 @@ function importarHistoricoFora(lista){
     var ult = ciclosDe({ciclos:h.ciclos, inicio:p.inicio, cobranca:p.cobranca, valor:p.valor}).slice(-1)[0];
     if(h.ciclos && h.ciclos.length){ p.ciclos = h.ciclos; p.cobranca = ult.cobranca; p.valor = Number(ult.valor) || p.valor; }
     p.historico = {ate:h.ate, sessoes:(h.sessoes || []).filter(function(s){ return s.data && s.data <= h.ate; })};
+    /* a primeira sessão cobrada que a planilha marca como cortesia não cobra (como em extratoDe) */
+    if(h.cortesia) p.cortesiaPlanilha = 1;
     /* os recibos da planilha de quem saiu estão soltos (sem ficha) ou ligados a uma ficha que a leitura da planilha
        apagou quando ele saiu: o id não existe mais, mas o prontuário continua nele (visto na carga de 10/10/2026) */
     dados.pagamentos.forEach(function(g){
