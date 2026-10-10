@@ -101,6 +101,9 @@ for (const largura of [390, 1280]) {
     assert.match(await cartao.textContent(), /Encerrado em 05\/10\/2026/);
     await cartao.click();
     await p.waitForTimeout(150);
+    /* o cartão de quem saiu abre na aba Pagamento, com as últimas sessões (10/10/2026); a volta fica no Cadastro */
+    assert.equal(await p.locator("#fi-p-pagamento").isVisible(), true);
+    await p.click("#fi-aba-cadastro");
     await p.fill("#ft-data", "2026-10-07");
     await p.click("#ft-voltar");
     await p.waitForTimeout(150);

@@ -1712,6 +1712,9 @@ function pacienteEm(dia, hora, data){
     /* antes de começar, o horário fixo não existe (09/10/2026: a Sarah, que voltou em 09/10, aparecia
        "a confirmar" nas sextas de setembro, de quando ela nem estava em atendimento) */
     if(p.inicio && iso < p.inicio) return;
+    /* quem saiu e só tem a ficha para consulta (10/10/2026) não tem horário fixo: sem isso o passado dele
+       virava sessões "a confirmar" nas semanas antigas, no horário que ele nunca teve aqui */
+    if(p.gradeDesde && iso < p.gradeDesde) return;
     var h = horarioEm(p, iso);
     if(h.dia===dia && h.hora===hora && ehSemanaDo(h, data)) achado = p;
   });
@@ -1830,8 +1833,11 @@ function registrarRetorno(p, data){
   if(!ult || ult.retorno) return "Ele não está encerrado.";
   if(data <= ult.data) return "A volta precisa ser depois do encerramento, em " + dataLonga(deISO(ult.data)) + ".";
   ult.retorno = data;
+  if(p.gradeDesde) p.gradeDesde = data;
   return "";
 }
+/* sem horário fixo hoje: a ficha de quem saiu da agenda, só para consulta e cobrança */
+function foraDaGrade(p){ return !!(p && p.gradeDesde && p.gradeDesde >= "9999"); }
 
 /* Histórico de horários (pedido dele, 04/10/2026): mudar o dia, a hora ou a frequência vale dali em
    diante. Antes a mudança refazia também as semanas passadas: as sessões confirmadas sumiam e
@@ -1968,6 +1974,50 @@ function importarHistorico(lista){
     p.historico = {ate:h.ate, sessoes:(h.sessoes || []).filter(function(s){ return s.data && s.data <= h.ate; })};
     n++;
   });
+  salvar(); renderTudo();
+  return n;
+}
+/* Carga do histórico de quem já saiu da agenda (10/10/2026, caso do Marcos: inativo, pagou, e o app não tinha
+   onde guardar o pagamento nem mostrar as sessões dele). Cada item é {codigo, ate, sessoes, ciclos}, como o
+   de importarHistorico. Quem estava só em dados.arquivados (a planilha guardava o total e o período, não a
+   data de cada sessão) vira uma ficha encerrada, sem horário na grade, com o histórico do prontuário, os
+   ciclos e os recibos antigos ligados a ela. Daí em diante vale tudo o que a ficha já faz: extrato, saldo,
+   registrar pagamento e volta. Quem já tinha ficha só ganha o histórico. Devolve quantos entraram. */
+function fichaDeQuemSaiu(a, h){
+  var mod = semAcento(a.modalidade || ""), cobranca = "avulsa", freq = "semanal";
+  if(mod.indexOf("mensal") === 0) cobranca = "mensal";
+  else if(mod.indexOf("quinzenal") === 0){ cobranca = "quinzenal"; freq = "quinzenal"; }
+  var st = semAcento(a.status || ""), tipo = st.indexOf("alta") === 0 ? "alta" : (st.indexOf("suspenso") === 0 ? "suspenso" : "inativo");
+  var datas = (h.sessoes || []).map(function(x){ return x.data; }).filter(Boolean).sort();
+  var fim = a.fim || datas[datas.length - 1] || h.ate, ult = datas.length ? deISO(datas[datas.length - 1]) : deISO(fim);
+  var primeiro = String(a.nome || "").trim().split(/\s+/);
+  var repetido = dados.pacientes.concat(dados.arquivados || []).some(function(x){
+    return x.codigo !== a.codigo && semAcento(String(x.nome || "").trim().split(/\s+/)[0]) === semAcento(primeiro[0] || "");
+  });
+  return {id:novoId("p"), codigo:a.codigo, nome:(repetido ? primeiro.slice(0, 2).join(" ") : primeiro[0]) || "Paciente",
+    nomeCompleto:a.nome || "", freq:freq, cobranca:cobranca, valor:Number(a.valor) || 0, dia:ult.getDay(), hora:14,
+    meet:"", status:a.status || "Inativo.", inicio:a.inicio || datas[0] || "", fim:fim,
+    ciclos:(h.ciclos && h.ciclos.length) ? h.ciclos : [{inicio:a.inicio || datas[0] || "", cobranca:cobranca, valor:Number(a.valor) || 0}],
+    encerramentos:[{data:fim, tipo:tipo, origem:"planilha"}], gradeDesde:"9999-12-31"};
+}
+function importarHistoricoFora(lista){
+  var n = 0;
+  (lista || []).forEach(function(h){
+    if(!h.codigo || !h.ate) return;
+    var p = fichaDoCodigo(h.codigo), a = (dados.arquivados || []).filter(function(x){ return x.codigo === h.codigo; })[0];
+    if(!p){
+      if(!a) return;
+      p = fichaDeQuemSaiu(a, h);
+      dados.pacientes.push(p);
+    }
+    var ult = ciclosDe({ciclos:h.ciclos, inicio:p.inicio, cobranca:p.cobranca, valor:p.valor}).slice(-1)[0];
+    if(h.ciclos && h.ciclos.length){ p.ciclos = h.ciclos; p.cobranca = ult.cobranca; p.valor = Number(ult.valor) || p.valor; }
+    p.historico = {ate:h.ate, sessoes:(h.sessoes || []).filter(function(s){ return s.data && s.data <= h.ate; })};
+    dados.pagamentos.forEach(function(g){ if(!g.pacienteId && g.codigo === h.codigo) g.pacienteId = p.id; });
+    dados.arquivados = (dados.arquivados || []).filter(function(x){ return x.codigo !== h.codigo; });
+    n++;
+  });
+  atrasoCache = null; devidoCache = null; vencCache = null; cacheMes = {}; cacheNomes = null;
   salvar(); renderTudo();
   return n;
 }
@@ -3030,6 +3080,15 @@ function seloSuspensao(a){
   if(dias > DIAS_SUSPENSAO) return '<span class="selo atraso">Suspenso há '+dias+' dias · venceu em '+ate+', encerrar</span>';
   return '<span class="selo atencao">Suspenso há '+dias+(dias===1?" dia":" dias")+' · até '+ate+' (faltam '+(DIAS_SUSPENSAO-dias)+')</span>';
 }
+/* no cartão de quem saiu e tem ficha: quantas sessões fez e o que deve ou tem de crédito, pela conta do app */
+function resumoDoCartao(p){
+  var t = totalSessoesDe(p), d = devidoDe(p), h = "";
+  var n = t.feitas + t.faltas;
+  if(n) h += '<span class="sub">' + plural(n, "sessão cobrada", "sessões cobradas") + (t.feitas !== n ? ' (' + t.feitas + ' feitas)' : "") + '</span>';
+  if(d && d.exato > 0.005) h += '<span class="selo atraso">Deve ' + moeda(d.exato) + '</span>';
+  else if(d && d.exato < -0.005) h += '<span class="selo ok">Crédito de ' + moeda(-d.exato) + '</span>';
+  return h;
+}
 /* quem não está na agenda: veio da planilha e não tem ficha aqui, só o histórico */
 function desenharCarteira(pedaco){
   var alvo = document.getElementById("plist");
@@ -3049,6 +3108,7 @@ function desenharCarteira(pedaco){
         '<span class="sub">'+(p.inicio ? dataLonga(deISO(p.inicio)) : "?")+' → '+dataLonga(deISO(t.desde))+'</span>' +
         '<span class="cod">'+esc(p.codigo)+' · ficha no app</span>' +
         '<span class="selo-trat enc">'+esc(tt.texto)+'</span>' +
+        resumoDoCartao(p) +
       '</span></button>';
   });
   lista.forEach(function(a){
@@ -3075,7 +3135,7 @@ function desenharCarteira(pedaco){
   h += "</div>";
   alvo.innerHTML = h;
   alvo.querySelectorAll("[data-fenc]").forEach(function(b){
-    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.fenc); if(p) abrirFicha(p, null, "cadastro"); });
+    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.fenc); if(p) abrirFicha(p, null, "pagamento"); });
   });
   alvo.querySelectorAll("[data-dados]").forEach(function(b){
     b.addEventListener("click", function(){
@@ -3432,6 +3492,7 @@ function abrirFicha(p, foco, aba){
         '<div class="field"><label for="fi-codigo">Prontuário</label>' +
           '<input id="fi-codigo" data-campo="codigo" value="'+esc(p.codigo)+'"><span class="hint">Liga com a planilha.</span></div>' +
       '</div>' +
+      '<div id="fi-horario-bloco"'+(foraDaGrade(p) ? ' hidden' : '')+'>' +
       '<div class="grid2">' +
         '<div class="field"><label for="fi-freq">Frequência</label><select id="fi-freq" data-campo="freq">' +
           opc("semanal","Toda semana",p.freq)+opc("quinzenal","A cada duas semanas",p.freq)+'</select></div>' +
@@ -3443,6 +3504,7 @@ function abrirFicha(p, foco, aba){
       '</div>' +
       '<div class="field" id="fi-quinzena" hidden><label for="fi-qsem">Semana da quinzena</label>' +
         '<select id="fi-qsem"></select><span class="hint">Em qual das duas semanas ele vem.</span></div>' +
+      '</div>' +
       '<div class="field"><label for="fi-meet">Link do Meet</label>' +
         '<input id="fi-meet" data-campo="meet" value="'+esc(p.meet||"")+'" placeholder="cole aqui a sala fixa dele"></div>' +
       /* ficha nascida no app: a data em que ele começou é de onde a conta do saldo parte (09/10/2026) */
@@ -3460,7 +3522,8 @@ function abrirFicha(p, foco, aba){
   function resumo(){
     document.getElementById("fi-ini").textContent = inicial1(p);
     document.getElementById("fi-titulo").textContent = p.nome;
-    document.getElementById("fi-sub").textContent = p.codigo+" · "+DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h";
+    document.getElementById("fi-sub").textContent = p.codigo+" · "+(foraDaGrade(p) ? "fora da agenda" : DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h");
+    var hb = document.getElementById("fi-horario-bloco"); if(hb) hb.hidden = foraDaGrade(p);
     pintarTotal();
     pintarTratamento();
     document.getElementById("fi-sessao").textContent = moeda(valorSessao(p))+" por sessão";
@@ -3548,7 +3611,8 @@ function abrirFicha(p, foco, aba){
     if(t && t.encerrado){
       h += '<div class="fi-trat-form"><div class="field"><label for="ft-data">Voltou em</label><input type="date" id="ft-data" value="' + (t.volta || hoje) + '"></div>' +
         '<button type="button" class="btn primary" id="ft-voltar">Registrar retorno</button></div>' +
-        '<p class="hint">Da data da volta em diante ele aparece de novo na agenda, no horário fixo desta ficha (' + DIAS[p.dia] + ', ' + String(p.hora).padStart(2,"0") + 'h). Se o horário mudou, troque embaixo depois de registrar.</p>';
+        (foraDaGrade(p) ? '<p class="hint">Da data da volta em diante ele entra na agenda. Esta ficha não guarda o horário dele de antes: depois de registrar, escolha o dia e a hora aqui embaixo, em Agenda.</p>' :
+        '<p class="hint">Da data da volta em diante ele aparece de novo na agenda, no horário fixo desta ficha (' + DIAS[p.dia] + ', ' + String(p.hora).padStart(2,"0") + 'h). Se o horário mudou, troque embaixo depois de registrar.</p>');
     } else {
       h += '<div class="fi-trat-form"><div class="field"><label for="ft-data">Último dia do tratamento</label><input type="date" id="ft-data" value="' + hoje + '"></div>' +
         '<div class="field"><label for="ft-tipo">Motivo</label><select id="ft-tipo">' +
@@ -3581,9 +3645,11 @@ function abrirFicha(p, foco, aba){
     });
     var bVol = document.getElementById("ft-voltar");
     if(bVol) bVol.addEventListener("click", function(){
+      var semHorario = !!p.gradeDesde;
       var erro = registrarRetorno(p, document.getElementById("ft-data").value);
       if(erro) return msg(erro);
-      depois("Retorno registrado. Ele volta para a agenda em " + DIAS[p.dia] + ", " + String(p.hora).padStart(2,"0") + "h.");
+      depois(semHorario ? "Retorno registrado. Falta escolher o dia e a hora dele, aqui embaixo, em Agenda." :
+        "Retorno registrado. Ele volta para a agenda em " + DIAS[p.dia] + ", " + String(p.hora).padStart(2,"0") + "h.");
     });
     el.querySelectorAll("[data-tdesfaz]").forEach(function(b){
       b.addEventListener("click", function(){
@@ -3610,6 +3676,10 @@ function abrirFicha(p, foco, aba){
       if(!dv) t += " (Paciente sem histórico: a conta conhece só os pagamentos dos últimos meses.)";
     } else if(!dv){
       classe = "sem"; t = "Paciente sem histórico de pagamentos no app: não dá para saber se ficou alguma sessão para trás. Confira no extrato do banco.";
+    } else if(dv && encerradoHoje(p)){
+      /* quem saiu: o que sobrou na conta, em palavras (10/10/2026); antes só dizia "tratamento encerrado" */
+      classe = dv.exato < -0.005 ? "ok" : "sem";
+      t = "Tratamento encerrado. " + (dv.exato < -0.005 ? "Pagou " + moeda(-dv.exato) + " a mais do que as sessões feitas." : "Nada a pagar: as sessões feitas estão pagas.");
     } else {
       classe = "sem"; t = s.texto + ".";
     }
@@ -4747,7 +4817,7 @@ function abasParaPlanilha(){
   dados.pacientes.forEach(function(p){
     var d = devidoDe(p);
     pacientes.push([vazio(p.codigo), vazio(p.nome), vazio(p.nomeCompleto), encerradoHoje(p) ? "Encerrado no app" : "Na agenda", vazio(String(p.status||"").replace(/\.$/,"")),
-      vazio(p.freq), vazio(p.cobranca), Number(p.valor)||0, DIAS[p.dia] || "-", p.hora === undefined ? "-" : p.hora + "h",
+      vazio(p.freq), vazio(p.cobranca), Number(p.valor)||0, foraDaGrade(p) ? "-" : (DIAS[p.dia] || "-"), (foraDaGrade(p) || p.hora === undefined) ? "-" : p.hora + "h",
       vazio(p.inicio), vazio(p.fim), vazio(p.genero), "-",
       d ? d.sessoes : "-", d ? d.valor : "-", d ? vazio(d.base) : "-"]);
   });
@@ -5359,7 +5429,7 @@ function opcoesOrigem(codigo){
 /* a carteira inteira, de quem começou por último para quem começou primeiro */
 function carteiraInteira(){
   var l = dados.pacientes.map(function(p){
-    return {codigo:p.codigo, nome:nomeCompletoDe(p) || p.nome, inicio:p.inicio || "", situacao:"na agenda"};
+    return {codigo:p.codigo, nome:nomeCompletoDe(p) || p.nome, inicio:p.inicio || "", situacao:encerradoHoje(p) ? rotuloTipoEnc(tratamentoDe(p).tipo).toLowerCase() : "na agenda"};
   });
   (dados.arquivados || []).forEach(function(a){
     l.push({codigo:a.codigo, nome:a.nome, inicio:a.inicio || "", situacao:String(a.status||"").replace(/\.$/,"").toLowerCase()});
