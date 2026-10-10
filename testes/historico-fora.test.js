@@ -18,7 +18,9 @@ function comInativa(c){
                     inicio:"2026-08-01", fim:"2026-09-26", sessoes:3, ciclos:1, aPagar:0 }];
   c.arquivadosEm = "2026-10-01";
   c.pagamentos = c.pagamentos.concat([
-    { id:"gf1", pacienteId:"", codigo:"T10", nomePlanilha:"Marta Teste Domingues", data:"2026-07-08", valor:500, meio:"", obs:"", origem:"planilha", chavePlanilha:"T10|2026-07-08|500" }
+    { id:"gf1", pacienteId:"", codigo:"T10", nomePlanilha:"Marta Teste Domingues", data:"2026-07-08", valor:250, meio:"", obs:"", origem:"planilha", chavePlanilha:"T10|2026-07-08|250" },
+    /* recibo ligado a uma ficha que a leitura da planilha apagou quando ela saiu: o id não existe mais */
+    { id:"gf2", pacienteId:"pApagada", codigo:"T10", nomePlanilha:"Marta Teste Domingues", data:"2026-08-10", valor:250, meio:"", obs:"", origem:"planilha", chavePlanilha:"T10|2026-08-10|250" }
   ]);
 }
 const HISTORICO = [{ codigo:"T10", ate:"2026-10-10", ciclos:[{ inicio:"2026-07-03", cobranca:"mensal", valor:500 }],
@@ -75,8 +77,8 @@ for (const largura of [390, 1280]) {
     assert.equal(r.grade, true);
     assert.deepEqual(r.arquivados, ["T11"], "a suspensa continua cartão simples");
     assert.equal(r.suspensoVirouFicha, false);
-    assert.equal(r.pagamentoLigado, 1, "o recibo antigo da planilha passa para a ficha");
-    /* 6 sessões cobradas (5 feitas e 1 falta; a que avisou não cobra) a R$ 125 = R$ 750; pagou R$ 500 */
+    assert.equal(r.pagamentoLigado, 2, "os recibos antigos da planilha, soltos ou de ficha apagada, passam para a ficha");
+    /* 6 sessões cobradas (5 feitas e 1 falta; a que avisou não cobra) a R$ 125 = R$ 750; pagou R$ 250 solto e R$ 250 de uma ficha apagada = R$ 500 */
     assert.equal(r.extrato, true);
     assert.equal(r.exato, 250);
     assert.equal(r.total.feitas, 5);
