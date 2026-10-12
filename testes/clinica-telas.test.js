@@ -73,6 +73,8 @@ test("Pagamentos: Registrar pagamento abre a ficha na aba Pagamento, sem gravar 
   await p.click('#pg-tabela [data-recebi="pA"]');
   await p.waitForTimeout(200);
   assert.equal(await p.locator("#fi-p-pagamento").isVisible(), true);
+  assert.equal(await p.inputValue("#fr-valor"), "");
+  await p.click('#fi-chips [data-fvalor="700"]');
   assert.equal(await p.inputValue("#fr-valor"), "700");
   assert.match(await p.textContent("#fr-previa"), /R\$ 700 paga 4 sessões: 05\/10, 12\/10, 19\/10 e 26\/10/);
   assert.equal(await p.evaluate(() => dados.pagamentos.length), antes, "abrir a ficha não grava pagamento");

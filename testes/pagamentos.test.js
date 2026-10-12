@@ -208,7 +208,7 @@ for (const largura of [375, 1280]) {
     assert.equal(await p.locator("#fi-p-pagamento").isVisible(), true);
     assert.equal(await p.locator("#fi-p-prontuario").isVisible(), false);
     assert.equal(await p.locator("#fi-p-cadastro").isVisible(), false);
-    assert.equal(await p.inputValue("#fr-valor"), "700", "já vem com o valor do ciclo");
+    assert.equal(await p.inputValue("#fr-valor"), "", "começa vazio: o ciclo é só atalho (12/10/2026)");
     assert.match(await p.textContent("#fi-situ"), /Deve R\$ 700, desde a sessão de 07\/09\/2026/);
     await p.click('[data-fvalor="175"]');
     assert.equal(await p.inputValue("#fr-valor"), "175");
@@ -220,7 +220,7 @@ for (const largura of [375, 1280]) {
     assert.deepEqual(g, [["2026-10-04", 150, "dinheiro"]]);
     assert.match(await p.textContent("#fr-feito"), /Registrado: R\$ 150 em 04\/10\/2026/);
     assert.match(await p.textContent("#fi-situ"), /Deve R\$ 550/);
-    assert.equal(await p.inputValue("#fr-valor"), "700", "o campo volta para o valor do ciclo");
+    assert.equal(await p.inputValue("#fr-valor"), "", "o campo volta vazio depois de registrar");
     // a aba escolhida continua aberta quando a ficha se redesenha
     await p.click("#fi-aba-cadastro");
     await p.evaluate(() => reabrirFicha());

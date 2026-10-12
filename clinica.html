@@ -161,6 +161,22 @@ button,input,select,textarea{font:inherit; color:inherit}
 .gh.today .n{font-weight:600}
 .gh.corner{background:var(--head-bg)}
 .hour{border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:0 9px; font-size:12px; font-weight:600; color:var(--hour-fg); text-align:right; line-height:52px; background:var(--hour-bg)}
+/* linha "Sem hora": sessões do prontuário de quem saiu, com data e sem hora conhecida (12/10/2026) */
+.hour.sh{line-height:1.2; padding:7px 9px; font-size:11px; display:flex; align-items:center; justify-content:flex-end}
+.cell-sh{border-right:1px solid var(--border); border-bottom:1px solid var(--border); background:var(--surface-2); padding:4px; display:flex; flex-direction:column; gap:3px; min-width:0}
+.cell-sh button{font:inherit; font-size:11.5px; line-height:1.25; text-align:left; border:0; border-left:3px solid var(--border-strong); border-radius:4px; padding:4px 6px; background:var(--surface); color:var(--text); cursor:pointer; min-height:32px; overflow:hidden}
+.cell-sh button b{display:block; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.cell-sh button span{display:block; color:var(--muted); font-size:10.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.cell-sh button.realizada{border-left-color:var(--t-sessao-bar)}
+.cell-sh button.falta{border-left-color:var(--t-falta-bar)}
+/* no celular a coluna do dia é estreita: o nome quebra em linhas, a situação fica na cor da barra */
+@media (max-width:700px){
+  .hour.sh{padding:4px 3px; font-size:10px; text-align:center; justify-content:center}
+  .cell-sh{padding:3px 2px}
+  .cell-sh button{padding:3px 3px; font-size:10.5px; border-left-width:3px}
+  .cell-sh button b{white-space:normal; word-break:break-word; font-size:10.5px}
+  .cell-sh button span{display:none}
+}
 .cell{position:relative; height:52px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); border-left:4px solid transparent; background:var(--surface); cursor:pointer; text-align:center; padding:0 7px; color:var(--faint); width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.25; overflow:hidden}
 .cell:hover{box-shadow:inset 0 0 0 9999px rgba(128,128,128,.14)}
 .cell:focus-visible{outline:2px solid var(--accent); outline-offset:-3px; z-index:2}
@@ -1833,11 +1849,64 @@ function registrarRetorno(p, data){
   if(!ult || ult.retorno) return "Ele não está encerrado.";
   if(data <= ult.data) return "A volta precisa ser depois do encerramento, em " + dataLonga(deISO(ult.data)) + ".";
   ult.retorno = data;
-  if(p.gradeDesde) p.gradeDesde = data;
+  /* só a ficha sem horário passa a ter grade na volta; a que já tem horário guarda o passado dela */
+  if(foraDaGrade(p)) p.gradeDesde = data;
   return "";
 }
 /* sem horário fixo hoje: a ficha de quem saiu da agenda, só para consulta e cobrança */
 function foraDaGrade(p){ return !!(p && p.gradeDesde && p.gradeDesde >= "9999"); }
+
+/* Quem saiu da agenda antes do app (12/10/2026, correção dele: o app cobrava R$ 80 do Caio e dizia que
+   o Marcos devia R$ 200, e a planilha diz zero e R$ 300). A dívida dessas fichas é a da planilha, coluna
+   Valor a Pagar, no dia em que ela foi salva (p.devePlanilha = {valor, data}), menos o que ele registrar
+   depois desse dia, mais sessão nova da agenda se ele voltar. O histórico do prontuário fica só para
+   consulta: mostra quando foram as sessões, não faz conta de dinheiro. Ler a planilha renova o valor. */
+function contaPelaPlanilha(p){ return !!(p && p.devePlanilha && p.devePlanilha.data); }
+/* O que o prontuário diz da sessão daquele dia, para a ficha de quem saiu (12/10/2026, pedido dele: "ele
+   só tem que sair da grade a partir do dia que foi encerrado"). Vale só até a data do histórico e só onde
+   ele não marcou nada na grade: realizada, falta ou avisou; dia sem registro no prontuário é "não haverá". */
+var SITUACAO_DO_PRONT = {realizada:"realizada", falta:"falta", avisou:"remarcada"};
+function doProntuario(p, data){
+  if(!contaPelaPlanilha(p) || !p.historico || !p.historico.ate) return null;
+  var iso = chaveData(data);
+  if(iso > p.historico.ate) return null;
+  var s = (p.historico.sessoes || []).filter(function(x){ return x.data === iso; })[0];
+  return {tipo:(s && SITUACAO_DO_PRONT[s.situacao]) || "cancelada", doProntuario:true};
+}
+/* As sessões do prontuário de quem saiu que a grade não mostra numa hora: as de antes do horário que o
+   app conhece, ou de quem não tem horário guardado. Ficam na linha "Sem hora" do dia. */
+function semHoraDoDia(data){
+  var iso = chaveData(data), l = [];
+  dados.pacientes.forEach(function(p){
+    if(!contaPelaPlanilha(p) || !p.historico) return;
+    (p.historico.sessoes || []).forEach(function(s){
+      if(s.data !== iso) return;
+      var h = horarioEm(p, iso);
+      if(!foraDaGrade(p) && h.dia === data.getDay() && pacienteEm(h.dia, h.hora, data) === p) return;
+      l.push({paciente:p, situacao:s.situacao});
+    });
+  });
+  return l;
+}
+/* Carga feita pelo Claude no app dele (12/10/2026): a dívida da planilha de cada ficha de quem saiu e,
+   de quem estava na grade do app em setembro, o horário que tinha. valores: {codigo: reais};
+   horarios: {codigo: {dia, hora, freq, desde}}. Toda ficha de quem saiu sem valor na lista fica com zero.
+   Devolve quantas fichas mudaram. */
+function acertarQuemSaiu(valores, data, horarios){
+  var n = 0;
+  valores = valores || {}; horarios = horarios || {};
+  dados.pacientes.forEach(function(p){
+    var saiu = foraDaGrade(p) || contaPelaPlanilha(p);
+    if(!saiu || !p.historico) return;
+    p.devePlanilha = {valor:Number(valores[p.codigo]) || 0, data:data};
+    var h = horarios[p.codigo];
+    if(h){ p.dia = h.dia; p.hora = h.hora; p.freq = h.freq || "semanal"; p.gradeDesde = h.desde; }
+    n++;
+  });
+  atrasoCache = null; devidoCache = null; vencCache = null; cacheMes = {};
+  salvar(); renderTudo();
+  return n;
+}
 
 /* Histórico de horários (pedido dele, 04/10/2026): mudar o dia, a hora ou a frequência vale dali em
    diante. Antes a mudança refazia também as semanas passadas: as sessões confirmadas sumiam e
@@ -1998,7 +2067,8 @@ function fichaDeQuemSaiu(a, h){
     nomeCompleto:a.nome || "", freq:freq, cobranca:cobranca, valor:Number(a.valor) || 0, dia:ult.getDay(), hora:14,
     meet:"", status:a.status || "Inativo.", inicio:a.inicio || datas[0] || "", fim:fim,
     ciclos:(h.ciclos && h.ciclos.length) ? h.ciclos : [{inicio:a.inicio || datas[0] || "", cobranca:cobranca, valor:Number(a.valor) || 0}],
-    encerramentos:[{data:fim, tipo:tipo, origem:"planilha"}], gradeDesde:"9999-12-31"};
+    encerramentos:[{data:fim, tipo:tipo, origem:"planilha"}], gradeDesde:"9999-12-31",
+    devePlanilha:{valor:Number(a.aPagar) || 0, data:dados.arquivadosEm || chaveData(hoje0())}};
 }
 function importarHistoricoFora(lista){
   var n = 0;
@@ -2051,7 +2121,8 @@ function sessoesDoDia(data, comCanceladas){
       var pe = acharPaciente(entra.pacienteId);
       if(pe) lista.push({paciente:pe, hora:h, estado:(entra.realizada ? "realizada" : "sessao"), origem:"extra"});
     } else if(p){
-      var estado = ex ? ex.tipo : "sessao";
+      var exp = ex || doProntuario(p, data);
+      var estado = exp ? exp.tipo : "sessao";
       if(estado==="cancelada" && !comCanceladas) continue;
       lista.push({paciente:p, hora:h, estado:estado, origem:"fixo"});
     }
@@ -2085,6 +2156,33 @@ function renderSemana(){
   }
 
   var sessoes=0, receita=0, divulgadosLivres=0;
+
+  /* "Sem hora" (12/10/2026, pedido dele: achar quando foram as sessões do Marcos, que saiu antes do app):
+     as sessões do prontuário de quem saiu que não estão numa hora da grade. Só aparece na semana que tem. */
+  var semHora = [], temSemHora = false;
+  for(var sh=0; sh<7; sh++){ semHora.push(semHoraDoDia(somaDias(semana, sh))); if(semHora[sh].length) temSemHora = true; }
+  if(temSemHora){
+    var labSh = document.createElement("div");
+    labSh.className = "hour sh";
+    labSh.textContent = "Sem hora";
+    labSh.title = "Sessões do prontuário de quem já saiu, sem a hora";
+    grade.appendChild(labSh);
+    var ROT_SH = {realizada:"realizada", falta:"faltou", avisou:"avisou"};
+    semHora.forEach(function(l){
+      var c = document.createElement("div");
+      c.className = "cell-sh";
+      l.forEach(function(x){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = x.situacao;
+        b.innerHTML = '<b>'+esc(nomeGrade(x.paciente))+'</b><span>'+esc(ROT_SH[x.situacao] || x.situacao)+' · prontuário</span>';
+        b.setAttribute("aria-label", nomeGrade(x.paciente)+", sessão "+(ROT_SH[x.situacao] || x.situacao)+", do prontuário, sem hora");
+        b.addEventListener("click", function(){ abrirFicha(x.paciente, null, "pagamento"); });
+        c.appendChild(b);
+      });
+      grade.appendChild(c);
+    });
+  }
 
   for(var hora=dados.config.horaInicio; hora<=dados.config.horaFim; hora++){
     var lab = document.createElement("div");
@@ -2244,6 +2342,7 @@ function estadoCelula(dia, hora, data){
       paciente:pv, origem:"extra"};
   }
   if(p){
+    if(!ex) ex = doProntuario(p, data);
     var estado = ex ? ex.tipo : "sessao";
     if(estado==="realizada") return {classe:"sessao realizada", nome:nomeGrade(p), etiqueta:"✓ Realizada", aria:nomeGrade(p)+", sessão realizada, confirmada", paciente:p, origem:"fixo"};
     if(estado==="falta")     return {classe:"falta", nome:nomeGrade(p), etiqueta:"Faltou", paciente:p, origem:"fixo"};
@@ -3299,7 +3398,10 @@ function estadoSessaoDe(p, data, hora){
   var entra = entradaDa(ex);
   if(entra && entra.pacienteId===p.id) return {estado:(entra.realizada ? "realizada" : "sessao"), origem:"extra", de:entra.de};
   var fixo = pacienteEm(data.getDay(), hora, data);
-  if(fixo && fixo.id===p.id) return {estado:(ex && ex.tipo!=="extra" ? ex.tipo : "sessao"), origem:"fixo", para:(ex && ex.para) || null};
+  if(fixo && fixo.id===p.id){
+    if(!ex){ var dpr = doProntuario(p, data); if(dpr) return {estado:dpr.tipo, origem:"fixo", para:null}; }
+    return {estado:(ex && ex.tipo!=="extra" ? ex.tipo : "sessao"), origem:"fixo", para:(ex && ex.para) || null};
+  }
   return null;
 }
 function sessoesDoPaciente(p, de, ate){
@@ -3417,9 +3519,18 @@ function reabrirFicha(texto){
   /* quem estava digitando continua no mesmo campo, com o cursor no mesmo lugar */
   var ativo = document.activeElement, idAtivo = ativo && f.fundo.contains(ativo) ? ativo.id : "", ini = null, fim = null;
   try{ if(idAtivo){ ini = ativo.selectionStart; fim = ativo.selectionEnd; } }catch(e){}
+  /* o que ele digitou e ainda não gravou (valor e data do pagamento, observação, datas de encerrar e de
+     ciclo) atravessa a troca (12/10/2026: no celular o valor do pagamento voltava sozinho para o do
+     ciclo quando o Drive trazia novidade, e ele não conseguia pôr R$ 300) */
+  var digitado = {};
+  f.fundo.querySelectorAll("input[id^='fr-'],select[id^='fr-'],input[id^='ft-'],select[id^='ft-'],input[id^='ci-'],select[id^='ci-']").forEach(function(c){ digitado[c.id] = c.value; });
   f.fechar();
   if(novo){
     abrirFicha(novo, f.foco(), f.aba && f.aba());
+    Object.keys(digitado).forEach(function(id){
+      var c = document.getElementById(id);
+      if(c && fichaAberta && fichaAberta.fundo.contains(c) && c.value !== digitado[id]){ c.value = digitado[id]; c.dispatchEvent(new Event("input")); }
+    });
     var volta = idAtivo && document.getElementById(idAtivo);
     if(volta && fichaAberta && fichaAberta.fundo.contains(volta)){
       volta.focus({preventScroll:true});
@@ -3456,7 +3567,9 @@ function abrirFicha(p, foco, aba){
           '<h3>Registrar pagamento</h3>' +
           '<div class="fi-chips" id="fi-chips"></div>' +
           '<div class="fi-reg-campos">' +
-            '<div class="field"><label for="fr-valor">Valor (R$)</label><input type="number" id="fr-valor" min="0" step="10" inputmode="decimal" value="'+p.valor+'"></div>' +
+            /* o campo começa vazio (12/10/2026: no celular ele não conseguia pôr R$ 300 no Marcos, só aparecia o
+               R$ 400 do ciclo); os botões em cima só preenchem, e qualquer valor pode ser digitado */
+            '<div class="field"><label for="fr-valor">Valor (R$)</label><input type="number" id="fr-valor" min="0" step="any" inputmode="decimal" placeholder="R$" value=""></div>' +
             '<div class="field"><label for="fr-data">Quando pagou</label><input type="date" id="fr-data" value="'+chaveData(hoje0())+'"></div>' +
             '<div class="field"><label for="fr-meio">Como pagou</label><select id="fr-meio">' +
               Object.keys(MEIOS).map(function(k){ return opc(k, MEIOS[k], "pix"); }).join("") + '</select></div>' +
@@ -3652,7 +3765,7 @@ function abrirFicha(p, foco, aba){
     });
     var bVol = document.getElementById("ft-voltar");
     if(bVol) bVol.addEventListener("click", function(){
-      var semHorario = !!p.gradeDesde;
+      var semHorario = foraDaGrade(p);
       var erro = registrarRetorno(p, document.getElementById("ft-data").value);
       if(erro) return msg(erro);
       depois(semHorario ? "Retorno registrado. Falta escolher o dia e a hora dele, aqui embaixo, em Agenda." :
@@ -3675,7 +3788,8 @@ function abrirFicha(p, foco, aba){
     var s = situacaoPagamento(p), dv = devidoDe(p), el = document.getElementById("fi-situ"), t, classe;
     if(dv && dv.exato > 0.005){
       classe = "atraso";
-      t = "Deve " + moeda(dv.exato) + (s.venc ? ", desde a sessão de " + dataLonga(s.venc) : "") + ".";
+      t = "Deve " + moeda(dv.exato) + (dv.saiu ? ", pela planilha salva em " + dataLonga(deISO(dv.base)) + (dv.pago ? " e o que ele pagou depois" : "") :
+        s.venc ? ", desde a sessão de " + dataLonga(s.venc) : "") + ".";
     } else if(s.venc){
       classe = s.classe === "atraso" ? "atraso" : (s.classe === "atencao" ? "atencao" : "ok");
       t = (dv ? (dv.exato < -0.005 ? "Em dia, com " + textoDevido(p).texto + ". " : "Em dia. ") : "") +
@@ -3686,7 +3800,8 @@ function abrirFicha(p, foco, aba){
     } else if(dv && encerradoHoje(p)){
       /* quem saiu: o que sobrou na conta, em palavras (10/10/2026); antes só dizia "tratamento encerrado" */
       classe = dv.exato < -0.005 ? "ok" : "sem";
-      t = "Tratamento encerrado. " + (dv.exato < -0.005 ? "Pagou " + moeda(-dv.exato) + " a mais do que as sessões feitas." : "Nada a pagar: as sessões feitas estão pagas.");
+      t = "Tratamento encerrado. " + (dv.saiu ? (dv.exato < -0.005 ? "Pagou " + moeda(-dv.exato) + " a mais do que a planilha cobrava." : "Nada a pagar, pela planilha.") :
+        dv.exato < -0.005 ? "Pagou " + moeda(-dv.exato) + " a mais do que as sessões feitas." : "Nada a pagar: as sessões feitas estão pagas.");
     } else {
       classe = "sem"; t = s.texto + ".";
     }
@@ -3715,7 +3830,7 @@ function abrirFicha(p, foco, aba){
       h += '<div class="fu'+(x.futura ? " fut" : "")+'"><span class="fu-d">'+esc(DIAS_CURTO[x.d.getDay()].toLowerCase())+' '+dataCurta(x.d)+
         (x.d.getFullYear() !== hoje0().getFullYear() ? "/"+x.d.getFullYear() : "")+'</span>' +
         '<span class="fu-t">'+esc(x.texto)+'</span>' +
-        (x.pag ? '<span class="sit '+CL[x.pag]+'">'+ROT[x.pag]+'</span>' : '<span class="hint">sem conta</span>') + '</div>';
+        (x.pag === "consulta" ? "" : x.pag ? '<span class="sit '+CL[x.pag]+'">'+ROT[x.pag]+'</span>' : '<span class="hint">sem conta</span>') + '</div>';
     });
     h += '</div>';
     if(l.length > 8) h += '<button type="button" class="btn sm ghost" id="fu-mais" style="margin-top:8px">'+(ultimasTodas ? "Mostrar só as últimas" : "Ver todas ("+l.length+")")+'</button>';
@@ -3725,9 +3840,13 @@ function abrirFicha(p, foco, aba){
   }
   /* atalhos de valor: o ciclo dele e uma sessão do ciclo; o campo continua livre para outro valor */
   function pintarChips(){
-    var vs = valorSessao(p), el = document.getElementById("fi-chips"), l = [];
-    if(p.cobranca !== "avulsa") l.push([p.valor, rotuloCobranca(p) + " · " + moeda(p.valor)]);
-    l.push([vs, "Uma sessão · " + moeda(vs)]);
+    var vs = valorSessao(p), el = document.getElementById("fi-chips"), l = [], dvc = devidoDe(p);
+    /* quem deve: o valor inteiro da dívida é o primeiro atalho (12/10/2026) */
+    if(dvc && dvc.exato > 0.005) l.push([dvc.exato, "Tudo o que deve · " + moeda(dvc.exato)]);
+    if(!encerradoHoje(p)){
+      if(p.cobranca !== "avulsa" && !l.some(function(x){ return Math.abs(x[0] - p.valor) < 0.005; })) l.push([p.valor, rotuloCobranca(p) + " · " + moeda(p.valor)]);
+      if(!l.some(function(x){ return Math.abs(x[0] - vs) < 0.005; })) l.push([vs, "Uma sessão · " + moeda(vs)]);
+    }
     el.innerHTML = l.map(function(x){ return '<button type="button" class="btn sm ghost" data-fvalor="'+x[0]+'">'+esc(x[1])+'</button>'; }).join("");
     el.querySelectorAll("[data-fvalor]").forEach(function(b){
       b.addEventListener("click", function(){ document.getElementById("fr-valor").value = b.dataset.fvalor; pintarPrevia(); });
@@ -3745,7 +3864,7 @@ function abrirFicha(p, foco, aba){
     if(!d){ feito.textContent = "Falta a data."; return; }
     if(!registrarPagamento(p.id, d, v, document.getElementById("fr-meio").value, document.getElementById("fr-obs").value.trim())) return;
     document.getElementById("fr-obs").value = "";
-    document.getElementById("fr-valor").value = p.valor;
+    document.getElementById("fr-valor").value = "";
     resumo();
     var venc = proximoVencimento(p);
     feito.textContent = "Registrado: " + moeda(v) + " em " + dataLonga(deISO(d)) + "." + (venc ? " Próximo pagamento na sessão de " + dataLonga(venc) + "." : "");
@@ -3755,9 +3874,26 @@ function abrirFicha(p, foco, aba){
   var extratoInteiro = false;
   function pintarExtrato(){
     var el = document.getElementById("fi-ext");
-    var ext = extratoDe(p), h = "";
-    document.getElementById("fi-ext-resumo").textContent = ext ? "· cobrado " + moeda(ext.cobrado) + " · pago " + moeda(ext.pago) : "";
-    if(ext){
+    var ext = extratoDe(p), h = "", dvx = contaPelaPlanilha(p) ? devidoDe(p) : null;
+    document.getElementById("fi-ext-resumo").textContent = dvx ? "· " + (dvx.exato > 0.005 ? "falta " + moeda(dvx.exato) : (dvx.exato < -0.005 ? "crédito " + moeda(-dvx.exato) : "zerado")) :
+      ext ? "· cobrado " + moeda(ext.cobrado) + " · pago " + moeda(ext.pago) : "";
+    if(dvx){
+      /* quem saiu antes do app: a conta é a da planilha (12/10/2026); as sessões ficam em Últimas sessões */
+      var lx = [{data:dvx.base, texto:"Valor a pagar na planilha", v:"+ " + moeda(dvx.planilha), s:dvx.planilha}], corre = dvx.planilha;
+      var movs = pagamentosDe(p.id).filter(function(g){ return g.data > dvx.base; }).map(function(g){ return {data:g.data, texto:"Pagamento", valor:-(Number(g.valor) || 0)}; });
+      if(dvx.depois > 0.005) movs.push({data:chaveData(hoje0()), texto:"Sessões da agenda depois da volta", valor:dvx.depois});
+      movs.sort(function(a,b){ return a.data < b.data ? -1 : (a.data > b.data ? 1 : 0); }).forEach(function(m){
+        corre = Math.round((corre + m.valor) * 100) / 100;
+        lx.push({data:m.data, texto:m.texto, v:(m.valor < 0 ? "− " + moeda(-m.valor) : "+ " + moeda(m.valor)), s:corre});
+      });
+      h += '<div class="extrato">';
+      lx.slice().reverse().forEach(function(l){
+        h += '<div class="recibo"><span>'+dataLonga(deISO(l.data))+'</span><span class="q">'+esc(l.texto)+'</span>' +
+          '<span class="v">'+l.v+'</span><span class="v saldo">'+(l.s > 0.005 ? "deve "+moeda(l.s) : (l.s < -0.005 ? "crédito "+moeda(-l.s) : "zerado"))+'</span></div>';
+      });
+      h += '</div><p class="hint" style="margin:8px 0 0">Ele já tinha saído da agenda quando o app começou: vale o que a planilha dizia em ' +
+        dataLonga(deISO(dvx.base)) + ' (coluna Valor a Pagar), menos o que você registrar daqui em diante. As datas das sessões, do prontuário, estão em Últimas sessões, só para consulta.</p>';
+    } else if(ext){
       var linhas = ext.linhas.slice().reverse();
       if(!extratoInteiro) linhas = linhas.slice(0, 8);
       h += '<div class="extrato">';
@@ -4406,6 +4542,13 @@ function previaPagamento(p, dataISO, valor){
 /* a frase da prévia, para o registrar da ficha */
 function textoPrevia(p, dataISO, valor){
   if(!(Number(valor) > 0)) return "";
+  /* quem saiu antes do app: a conta é em reais, contra o que a planilha dizia (12/10/2026) */
+  var dsx = contaPelaPlanilha(p) ? devidoDe(p) : null;
+  if(dsx){
+    var resta = Math.round((dsx.exato - Number(valor)) * 100) / 100;
+    return "Hoje ele deve " + moeda(Math.max(dsx.exato, 0)) + ". " + (resta > 0.005 ? "Com " + moeda(valor) + ", continua devendo " + moeda(resta) + "." :
+      resta < -0.005 ? "Com " + moeda(valor) + ", fica " + moeda(-resta) + " de crédito." : "Com " + moeda(valor) + ", fica quitado.");
+  }
   /* sem base, a conta recomeça no pagamento novo e esquece o que ficou para trás (decisão 5, com o
      Matheus): listar datas diria que o valor paga sessões que ele não paga. Só a conta em reais. */
   if(!devidoDe(p)){
@@ -4455,8 +4598,19 @@ function devidoDe(p){
   if(!devidoCache) devidoCache = {};
   if(devidoCache[p.id] !== undefined) return devidoCache[p.id];
   var vs = valorSessao(p), r = null;
-  var ext = vs > 0 ? extratoDe(p) : null;
-  if(ext){
+  var ext = vs > 0 && !contaPelaPlanilha(p) ? extratoDe(p) : null;
+  if(contaPelaPlanilha(p)){
+    /* quem saiu antes do app: a planilha no dia em que foi salva, menos o que entrou depois, mais as
+       sessões da agenda depois desse dia (só existem se ele voltou) */
+    var dp = p.devePlanilha, depoisP = 0, pagoP = 0, deP = somaDias(deISO(dp.data), 1), hojeP = hoje0();
+    if(deP <= hojeP) sessoesDoPaciente(p, deP, hojeP).forEach(function(s){
+      if(cobraSessao(s.estado) && jaPassou(s.data, s.hora)) depoisP += valorSessaoEm(p, chaveData(s.data));
+    });
+    pagamentosDe(p.id).forEach(function(g){ if(g.data > dp.data) pagoP += Number(g.valor) || 0; });
+    var exatoP = Math.round(((Number(dp.valor) || 0) + depoisP - pagoP) * 100) / 100;
+    var nP = vs > 0 ? (exatoP > 0.005 ? Math.ceil(exatoP / vs - 1e-6) : -Math.floor(-exatoP / vs + 1e-6)) : 0;
+    r = {valor:vs > 0 ? nP * vs : exatoP, sessoes:nP, exato:exatoP, depois:depoisP, pago:pagoP, base:dp.data, planilha:Number(dp.valor) || 0, saiu:true};
+  } else if(ext){
     /* com o histórico do prontuário carregado, a dívida é o saldo do extrato, cada sessão no
        preço do ciclo dela; em sessões, pelo valor do ciclo atual */
     var ne = ext.saldo > 0.005 ? Math.ceil(ext.saldo / vs - 1e-6) : -Math.floor(-ext.saldo / vs + 1e-6);
@@ -4494,7 +4648,8 @@ function plural(n, um, varios){ return String(n).replace(".", ",") + " " + (Math
 function textoDevido(p){
   var d = devidoDe(p);
   if(!d) return {classe:"sem", texto:"sem base", titulo:"Leia a planilha uma vez para o app saber quantas sessões já foram cobradas."};
-  var titulo = d.doApp ? "Sessões da agenda desde " + dataCurta(somaDias(deISO(d.base), 1)) + ", quando a ficha começou, cada uma no preço do ciclo dela; já pagou " + moeda(d.pago) + "." :
+  var titulo = d.saiu ? "Pela planilha em " + dataCurta(deISO(d.base)) + ": " + moeda(d.planilha) + (d.pago ? "; pagou " + moeda(d.pago) + " depois" : "") + "." :
+    d.doApp ? "Sessões da agenda desde " + dataCurta(somaDias(deISO(d.base), 1)) + ", quando a ficha começou, cada uma no preço do ciclo dela; já pagou " + moeda(d.pago) + "." :
     d.extrato ? "Sessões do prontuário até " + dataCurta(deISO(d.base)) + " e da agenda depois, cada uma no preço do ciclo dela; já pagou " + moeda(d.pago) + "." :
     "Planilha até " + dataCurta(deISO(d.base)) + ", mais " + plural(d.depois, "sessão", "sessões") + " da agenda desde então; já pagou " + moeda(d.pago) + "." +
     (d.valor > 0.5 && Math.abs(d.valor - d.exato) > 0.5 ? " A diferença exata é " + moeda(d.exato) + "." : "");
@@ -4575,6 +4730,8 @@ function ultimasSessoesDe(p){
       l.push({d:x.data, texto:ROT[x.estado], pag:pg});
     });
   }
+  /* de quem saiu, a conta é a da planilha: as sessões do prontuário só dizem quando foram */
+  if(contaPelaPlanilha(p)) l.forEach(function(x){ x.pag = "consulta"; });
   l.sort(function(a,b){ return b.d - a.d; });
   /* as duas próximas, no alto */
   var fut = [];
@@ -5178,7 +5335,8 @@ function renderPainel(){
      cobradas e não pagas, e o valor (pedido dele, 01/10/2026). Sem leitura, fica a lista acima. */
   if(dados.pacientes.some(function(p){ return devidoDe(p); })){
     var deve = [];
-    dados.pacientes.forEach(function(p){ var d = devidoDe(p); if(d && d.valor > 0.5) deve.push({p:p, d:d, s:situacaoPagamento(p)}); });
+    /* só quem está na agenda; quem já encerrou fica na lista de baixo (12/10/2026) */
+    dados.pacientes.forEach(function(p){ if(encerradoHoje(p)) return; var d = devidoDe(p); if(d && d.exato > 0.005) deve.push({p:p, d:d, s:situacaoPagamento(p)}); });
     deve.sort(function(a,b){ return b.d.exato - a.d.exato; });
     /* em reais exatos, como a ficha, a semana e a aba Pagamentos (06/10/2026): antes quem devia
        R$ 100 aparecia aqui como uma sessão inteira, e o Cobrar pedia o valor da sessão */
@@ -5205,9 +5363,17 @@ function renderPainel(){
 
   /* 2c. quem já saiu da agenda e ficou devendo: o valor é o da planilha na última leitura
      (Valor a Pagar do Registro), porque o app só calcula a dívida de quem está na agenda */
-  var foraDevendo = (dados.arquivados || []).filter(function(a){ return Number(a.aPagar) > 0.5; })
-    .sort(function(a, b){ return b.aPagar - a.aPagar; });
-  var temLeituraNova = (dados.arquivados || []).some(function(a){ return a.aPagar !== undefined; });
+  /* as fichas de quem encerrou (pela planilha, ou pela conta do app para quem saiu depois que o app
+     começou) e os cartões simples que só a planilha conhece, numa lista só (12/10/2026) */
+  var foraDevendo = [];
+  dados.pacientes.forEach(function(p){
+    if(!encerradoHoje(p)) return;
+    var d = devidoDe(p), t = tratamentoDe(p);
+    if(d && d.exato > 0.005) foraDevendo.push({ficha:p, nome:nomeCompletoDe(p) || p.nome, codigo:p.codigo, fim:t && t.desde, status:p.status || rotuloTipoEnc(t && t.tipo), aPagar:d.exato});
+  });
+  (dados.arquivados || []).forEach(function(a){ if(Number(a.aPagar) > 0.5) foraDevendo.push(a); });
+  foraDevendo.sort(function(a, b){ return b.aPagar - a.aPagar; });
+  var temLeituraNova = foraDevendo.length || (dados.arquivados || []).some(function(a){ return a.aPagar !== undefined; });
   var hFora = '<h3 class="pn-fora-t">Quem já saiu da agenda e ficou devendo</h3>';
   if(!temLeituraNova) hFora += '<p class="pvazio">Ninguém.</p>';
   else if(!foraDevendo.length) hFora += '<p class="pvazio">Ninguém, pela planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + '.</p>';
@@ -5215,12 +5381,15 @@ function renderPainel(){
     var totalFora = foraDevendo.reduce(function(t, a){ return t + Number(a.aPagar); }, 0);
     hFora += '<table class="tab"><thead><tr><th>Paciente</th><th>Situação</th><th class="num">Valor</th></tr></thead><tbody>' +
       foraDevendo.map(function(a){
-        return '<tr><td><div class="quem"><span class="ini">' + esc((a.nome || "?").charAt(0).toUpperCase()) + '</span><span><b>' + esc(a.nome) + '</b><br><span class="hint">' + esc(a.codigo) +
-          (a.fim ? " · saiu em " + dataLonga(deISO(a.fim)) : "") + '</span></span></div></td>' +
-          '<td>' + esc(String(a.status || "").replace(/\.$/, "")) + '<button class="btn sm cobrar" data-cobrar-fora="' + esc(a.codigo) + '">Cobrar</button></td><td class="num"><b>' + moeda(a.aPagar) + '</b></td></tr>';
+        return '<tr><td><div class="quem"><span class="ini">' + esc((a.nome || "?").charAt(0).toUpperCase()) + '</span><span>' +
+          (a.ficha ? '<button class="linknome" data-ficha="' + esc(a.ficha.id) + '">' + esc(a.nome) + '</button>' : '<b>' + esc(a.nome) + '</b>') +
+          '<br><span class="hint">' + esc(a.codigo) + (a.fim ? " · saiu em " + dataLonga(deISO(a.fim)) : "") + '</span></span></div></td>' +
+          '<td>' + esc(String(a.status || "").replace(/\.$/, "")) +
+          (a.ficha ? '<button class="btn sm cobrar" data-cobrar="' + esc(a.ficha.id) + '">Cobrar</button>' : '<button class="btn sm cobrar" data-cobrar-fora="' + esc(a.codigo) + '">Cobrar</button>') +
+          '</td><td class="num"><b>' + moeda(a.aPagar) + '</b></td></tr>';
       }).join("") +
       '<tr><td><b>Total</b></td><td>' + plural(foraDevendo.length, "pessoa", "pessoas") + '</td><td class="num"><b>' + moeda(totalFora) + '</b></td></tr></tbody></table>' +
-      '<p class="hint" style="margin-top:8px">Valor da planilha lida em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + ' (última leitura; o app não lê mais a planilha).</p>';
+      '<p class="hint" style="margin-top:8px">Quem saiu antes do app: o Valor a Pagar da planilha (última leitura em ' + (dados.arquivadosEm ? dataLonga(deISO(dados.arquivadosEm)) : "data desconhecida") + '), menos o que você registrou depois. O nome abre a ficha, onde se registra o pagamento.</p>';
   }
   document.getElementById("pn-devendo").insertAdjacentHTML("beforeend", hFora);
 
@@ -6444,14 +6613,14 @@ function saidasDaLeitura(leitura, porCodigo){
     var a = arq[cod], antigo = porCodigo[cod];
     if(vindos[cod]) return;
     /* encerrado aqui no app: fica, mesmo que a planilha ainda não diga nada */
-    if(tratamentoDe(antigo) && tratamentoDe(antigo).encerrado){ l.push({antigo:antigo, tipo:"", fim:"", status:antigo.status, linhas:a && a.linhas}); return; }
+    if(tratamentoDe(antigo) && tratamentoDe(antigo).encerrado){ l.push({antigo:antigo, tipo:"", fim:"", status:antigo.status, linhas:a && a.linhas, aPagar:a ? a.aPagar : undefined}); return; }
     if(!a || !a.fim) return;
     /* voltou pelo app depois do Fim que a planilha ainda mostra: a planilha está atrasada, e o fim
        antigo não pode encerrá-lo de novo (conferência de 06/10/2026). Fica como está no app. */
     var volta = encerramentosDe(antigo).reduce(function(m, e){ return e.retorno && e.retorno > m ? e.retorno : m; }, "");
     if(volta && a.fim <= volta){ l.push({antigo:antigo, tipo:"", fim:"", status:"", linhas:a.linhas}); return; }
     var st = semAcento(a.status || ""), tipo = st.indexOf("alta") === 0 ? "alta" : (st.indexOf("inativo") === 0 ? "inativo" : (st.indexOf("suspenso") === 0 ? "suspenso" : ""));
-    if(tipo) l.push({antigo:porCodigo[cod], tipo:tipo, fim:a.fim, status:a.status, linhas:a.linhas});
+    if(tipo) l.push({antigo:porCodigo[cod], tipo:tipo, fim:a.fim, status:a.status, linhas:a.linhas, aPagar:a.aPagar});
   });
   return l;
 }
@@ -6511,6 +6680,8 @@ function aplicarLeitura(leitura){
     }
     if(x.linhas && x.linhas.length) a.linhasPlanilha = x.linhas;
     if(x.status) a.status = x.status;
+    /* quem saiu antes do app: a dívida acompanha a planilha a cada leitura (12/10/2026) */
+    if(contaPelaPlanilha(a) && x.aPagar !== undefined) a.devePlanilha = {valor:Number(x.aPagar) || 0, data:leitura.baseData || chaveData(hoje0())};
     dados.pacientes.push(a);
   });
   if(leitura.arquivados){

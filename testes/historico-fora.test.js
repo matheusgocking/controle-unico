@@ -79,7 +79,8 @@ for (const largura of [390, 1280]) {
     assert.equal(r.suspensoVirouFicha, false);
     assert.equal(r.pagamentoLigado, 2, "os recibos antigos da planilha, soltos ou de ficha apagada, passam para a ficha");
     /* 6 sessões cobradas (5 feitas e 1 falta; a que avisou não cobra) a R$ 125 = R$ 750; pagou R$ 250 solto e R$ 250 de uma ficha apagada = R$ 500 */
-    assert.equal(r.extrato, true);
+    /* desde 12/10/2026 a dívida de quem saiu é a da planilha (aPagar R$ 250 em 01/10), não a do extrato do prontuário */
+    assert.equal(r.extrato, undefined);
     assert.equal(r.exato, 250);
     assert.equal(r.total.feitas, 5);
     assert.equal(r.total.faltas, 1);
@@ -140,14 +141,15 @@ for (const largura of [390, 1280]) {
   });
 }
 
-test("Quem saiu com cortesia na planilha: a primeira sessão cobrada não cobra", async () => {
+test("Quem saiu com cortesia na planilha: a primeira sessão cobrada não cobra no extrato, e a dívida é a da planilha", async () => {
   const { ctx, p, erros } = await abrir(1280);
-  const exato = await p.evaluate(h => {
+  const r = await p.evaluate(h => {
     importarHistoricoFora(h.map(x => Object.assign({}, x, { cortesia: 1 })));
     const f = dados.pacientes.find(x => x.codigo === "T10");
-    return devidoDe(f).exato;
+    return { saldo:extratoDe(f).saldo, exato:devidoDe(f).exato };
   }, HISTORICO);
-  assert.equal(exato, 125, "R$ 750 de sessões menos R$ 125 de cortesia menos R$ 500 pagos");
+  assert.equal(r.saldo, 125, "R$ 750 de sessões menos R$ 125 de cortesia menos R$ 500 pagos");
+  assert.equal(r.exato, 250, "a dívida é o Valor a Pagar da planilha");
   assert.deepEqual(erros, []);
   await ctx.close();
 });
