@@ -846,9 +846,8 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 /* dívida escrita na célula da grade, no computador; no celular a célula é estreita demais e a
    dívida fica nos cartões do dia, logo abaixo da grade */
 .cell .dv{max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:10.5px; font-weight:700; color:var(--devendo); background:var(--surface); border-radius:6px; padding:0 5px; margin-top:1px}
-/* saldo em sessões na célula (13/10/2026): discreto quando há saldo, âmbar na última paga, vermelho sem saldo */
-.cell .dv.ok{color:var(--muted); font-weight:600}
-.cell .dv.atencao{color:var(--warn)}
+/* saldo em sessões na célula (13/10/2026): verde quando há saldo (pedido dele), vermelho sem saldo ou devendo */
+.cell .dv.ok{color:var(--ok)}
 @media (max-width:700px){ .cell .dv{display:none} }
 /* Resumo para o paciente (13/10/2026): cartão claro mesmo no tema escuro, porque vira print para o WhatsApp */
 .rp-modal{max-width:500px; padding:14px; background:var(--surface-2)}
@@ -4805,7 +4804,7 @@ function saldoNaSessao(p, data, hora, ate){
   if(!(vs > 0)) return null;
   if(cred >= vs - 0.005){
     var n = Math.floor(cred / vs + 1e-6);
-    return {classe:n > 1 ? "ok" : "atencao", n:n, texto:"saldo " + plural(n, "sessão", "sessões"),
+    return {classe:"ok", n:n, texto:"saldo " + plural(n, "sessão", "sessões"),
       titulo:"Nesta sessão: " + plural(n, "sessão paga", "sessões pagas") + ", contando esta" + (n === 1 ? " (é a última paga)" : "") + "."};
   }
   if(cred > -0.005) return {classe:"atraso", n:0, texto:"sem saldo",
