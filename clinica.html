@@ -846,7 +846,55 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 /* dívida escrita na célula da grade, no computador; no celular a célula é estreita demais e a
    dívida fica nos cartões do dia, logo abaixo da grade */
 .cell .dv{max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:10.5px; font-weight:700; color:var(--devendo); background:var(--surface); border-radius:6px; padding:0 5px; margin-top:1px}
+/* saldo em sessões na célula (13/10/2026): discreto quando há saldo, âmbar na última paga, vermelho sem saldo */
+.cell .dv.ok{color:var(--muted); font-weight:600}
+.cell .dv.atencao{color:var(--warn)}
 @media (max-width:700px){ .cell .dv{display:none} }
+/* Resumo para o paciente (13/10/2026): cartão claro mesmo no tema escuro, porque vira print para o WhatsApp */
+.rp-modal{max-width:500px; padding:14px; background:var(--surface-2)}
+.rp-barra{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px}
+.rp-barra select{min-height:36px; padding:6px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text); font:inherit; font-size:13.5px}
+.rp-barra select{flex:1 1 190px; min-width:0}
+@media (max-width:700px){ .rp-barra select{font-size:16px; min-height:44px} .rp-modal{padding:10px} }
+.rp{--rp-tx:#1e1b24; --rp-mu:#6a6473; --rp-fa:#9a94a3; --rp-li:#ebe7f0; --rp-ac:#7030a0; --rp-ac-s:#f3ebfa;
+  --rp-ok:#1f6b4f; --rp-ok-s:#e2f2ea; --rp-no:#a3241f; --rp-no-s:#fbe4e2; --rp-ne:#f1eff4;
+  background:#fff; color:var(--rp-tx); border-radius:16px; padding:22px 20px 16px; font-family:var(--font); line-height:1.4; box-shadow:0 1px 2px rgba(30,20,40,.08)}
+.rp-rot{font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--rp-ac)}
+.rp-nome{font-size:24px; font-weight:700; margin:2px 0 0; letter-spacing:-.01em}
+.rp-atual{font-size:12.5px; color:var(--rp-mu)}
+.rp-sit{margin:16px 0 4px; border-radius:12px; padding:14px 16px; background:var(--rp-ok-s); color:var(--rp-ok)}
+.rp-sit.pend{background:var(--rp-no-s); color:var(--rp-no)}
+.rp-sit .k{font-size:12.5px; font-weight:600}
+.rp-sit .v{font-size:26px; font-weight:700; letter-spacing:-.01em; line-height:1.15}
+.rp-sit .d{font-size:13px; margin-top:2px; color:var(--rp-tx); opacity:.85}
+.rp-comb{font-size:13px; color:var(--rp-mu); margin:10px 0 2px}
+.rp-comb b{color:var(--rp-tx); font-weight:600}
+.rp-mes{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--rp-mu); margin:18px 0 4px; padding-bottom:6px; border-bottom:1px solid var(--rp-li)}
+.rp-l{display:grid; grid-template-columns:52px 1fr auto; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--rp-li)}
+.rp-l:last-child{border-bottom:0}
+.rp-dt{font-size:14px; font-weight:600; line-height:1.15}
+.rp-dt small{display:block; font-size:11px; font-weight:500; color:var(--rp-fa); text-transform:lowercase}
+.rp-tx{font-size:14px; min-width:0}
+.rp-tx small{display:block; font-size:12px; color:var(--rp-mu)}
+.rp-vl{text-align:right; font-size:14px; font-weight:600; white-space:nowrap}
+.rp-vl small{display:block; margin-top:3px}
+.rp-ch{display:inline-block; border-radius:20px; padding:1px 9px; font-size:11.5px; font-weight:600; background:var(--rp-ne); color:var(--rp-mu)}
+.rp-ch.paga{background:var(--rp-ok-s); color:var(--rp-ok)}
+.rp-ch.pend{background:var(--rp-no-s); color:var(--rp-no)}
+.rp-ch.parte{background:#fbeedd; color:#8a4b12}
+.rp-l.pag .rp-tx{font-weight:600; color:var(--rp-ok)}
+.rp-l.pag .rp-vl{color:var(--rp-ok)}
+.rp-l.nc .rp-tx,.rp-l.nc .rp-vl{color:var(--rp-mu)}
+.rp-l.fut .rp-dt,.rp-l.fut .rp-tx{color:var(--rp-mu)}
+.rp-novo{margin:10px 0 2px; border:1px dashed var(--rp-ac); background:var(--rp-ac-s); color:var(--rp-ac); border-radius:10px; padding:8px 12px; font-size:13px}
+.rp-novo b{font-weight:700}
+.rp-ant{font-size:13px; color:var(--rp-mu); margin:14px 0 0}
+.rp-tot{margin-top:16px; padding-top:12px; border-top:2px solid var(--rp-tx); display:grid; grid-template-columns:1fr auto; gap:4px 12px; font-size:13.5px}
+.rp-tot .t{color:var(--rp-mu)} .rp-tot .n{text-align:right; font-weight:600}
+.rp-tot .fim{font-size:16px; font-weight:700; color:var(--rp-tx)}
+.rp-tot .fim.pend{color:var(--rp-no)}
+.rp-pe{margin-top:14px; font-size:11.5px; color:var(--rp-fa); text-align:center}
+.rp-vazio{font-size:13.5px; color:var(--rp-mu); padding:12px 0}
 .pcard .pr{font-size:11px; color:var(--muted)}
 /* ficha: bloco do prontuário, com as sessões que ainda não estão no Word (29/09/2026) */
 .fipag.pront{border-color:var(--accent-line); background:var(--accent-soft)}
@@ -2156,6 +2204,8 @@ function renderSemana(){
   }
 
   var sessoes=0, receita=0, divulgadosLivres=0;
+  var fimSemana = somaDias(semana, 6);
+  saldoGradeCache = null;
 
   /* "Sem hora" (12/10/2026, pedido dele: achar quando foram as sessões do Marcos, que saiu antes do app):
      as sessões do prontuário de quem saiu que não estão numa hora da grade. Só aparece na semana que tem. */
@@ -2201,10 +2251,16 @@ function renderSemana(){
                     (info.saiu ? '<span class="saiu">'+esc(info.saiu)+'</span>' : "") +
                     (info.etiqueta ? '<span class="lab">'+esc(info.etiqueta)+'</span>' : "") +
                     (info.paciente && info.paciente.codigo ? '<span class="cod">'+esc(info.paciente.codigo)+'</span>' : "");
-      /* quanto o paciente deve, escrito na sessão (06/10/2026); some no celular, onde a célula é estreita */
+      /* o saldo de sessões de quando a sessão chega (13/10/2026), que muda de semana para semana;
+         sem esse saldo (quem saiu antes do app), quanto deve hoje (06/10/2026). Some no celular,
+         onde a célula é estreita: lá o saldo fica nos cartões do dia, embaixo da grade. */
       if(info.paciente && ESTADO_DA_CLASSE[info.classe]){
-        var dvc = textoDevido(info.paciente);
-        if(dvc.classe==="atraso") b.insertAdjacentHTML("beforeend", '<span class="dv" title="'+esc(dvc.texto)+'">deve '+esc(dvc.texto.split(" · ").pop().replace(/^deve /, ""))+'</span>');
+        var snc = saldoNaSessao(info.paciente, data, hora, fimSemana);
+        if(snc) b.insertAdjacentHTML("beforeend", '<span class="dv '+snc.classe+'" title="'+esc(snc.titulo)+'">'+esc(snc.texto)+'</span>');
+        else {
+          var dvc = textoDevido(info.paciente);
+          if(dvc.classe==="atraso") b.insertAdjacentHTML("beforeend", '<span class="dv" title="'+esc(dvc.texto)+'">deve '+esc(dvc.texto.split(" · ").pop().replace(/^deve /, ""))+'</span>');
+        }
       }
       /* tarja na borda direita quando o paciente daquela sessão está com pagamento vencido */
       if(info.classe==="sessao" && info.paciente && mapaDeAtraso()[info.paciente.id]) b.classList.add("devendo");
@@ -2266,7 +2322,11 @@ function renderSemana(){
    é a mesma da ficha e da aba Pagamentos (textoDevido): aqui só aparece, nenhuma conta muda. */
 var diaFaixa = null; /* chave do dia aberto na faixa; null = o padrão (hoje ou o primeiro com sessão) */
 function sessoesDaFaixa(d){ return sessoesDoDia(d).filter(function(s){ return s.estado!=="remarcada"; }); }
-function deveNaFaixa(p){ return textoDevido(p).classe==="atraso"; }
+/* com o saldo da sessão (13/10/2026), "deve" é quem chega à sessão sem saldo ou devendo; sem ele, quem deve hoje */
+function deveNaFaixa(p, s, d){
+  var sn = s && d && cobraSessao(s.estado) ? saldoNaSessao(p, d, s.hora, somaDias(semana, 6)) : null;
+  return sn ? sn.classe==="atraso" : textoDevido(p).classe==="atraso";
+}
 function renderHoje(){
   var caixa = document.getElementById("hoje-faixa");
   var hoje = hoje0();
@@ -2282,7 +2342,7 @@ function renderHoje(){
   faixa.innerHTML = "";
   dias.forEach(function(x){
     var b = document.createElement("button");
-    var devem = x.lista.filter(function(s){ return deveNaFaixa(s.paciente); }).length;
+    var devem = x.lista.filter(function(s){ return deveNaFaixa(s.paciente, s, x.data); }).length;
     b.type = "button";
     b.className = "dia-chip" + (x===aberto ? " on" : "") + (mesmoDia(x.data, hoje) ? " hoje" : "");
     b.setAttribute("aria-pressed", x===aberto ? "true" : "false");
@@ -2299,7 +2359,7 @@ function renderHoje(){
   var dia = aberto.data, lista = aberto.lista, ehHoje = mesmoDia(dia, hoje);
   var rot = {realizada:"realizada ✓", falta:"faltou", cortesia:"cortesia"};
   document.getElementById("hoje-titulo").textContent = (ehHoje ? "Hoje · " + DIAS[dia.getDay()].toLowerCase() : DIAS[dia.getDay()]) + ", " + dataCurta(dia);
-  var devedores = lista.filter(function(s){ return deveNaFaixa(s.paciente); }).length;
+  var devedores = lista.filter(function(s){ return deveNaFaixa(s.paciente, s, dia); }).length;
   document.getElementById("hoje-sub").textContent = !lista.length ? "" :
     lista.length + (lista.length>1 ? " sessões" : " sessão") +
     (devedores ? " · " + plural(devedores, "paciente deve", "pacientes devem") : "") +
@@ -2310,6 +2370,8 @@ function renderHoje(){
   lista.forEach(function(s){
     var p = s.paciente, pg = situacaoPagamento(p), pr = p.prontuario || {}, dv = textoDevido(p);
     var estado = rot[s.estado] || (jaPassou(dia, s.hora) ? "a confirmar" : "prevista");
+    /* o mesmo saldo da célula da grade, da semana aberta (13/10/2026) */
+    var snf = cobraSessao(s.estado) ? saldoNaSessao(p, dia, s.hora, somaDias(semana, 6)) : null;
     var c = document.createElement("button");
     c.className = "pcard";
     c.innerHTML =
@@ -2318,7 +2380,8 @@ function renderHoje(){
         '<span class="n">'+esc(p.nome)+'</span>' +
         '<span class="sub">'+String(s.hora).padStart(2,"0")+'h · '+estado+'</span>' +
         '<span class="pr">'+(pr.ultima ? "Prontuário até "+dataCurta(deISO(pr.ultima)) : esc(p.codigo||""))+'</span>' +
-        (dv.classe==="atraso" ? '<span class="selo atraso divida" title="'+esc(dv.titulo||"")+'">'+esc(dv.texto)+'</span>'
+        (snf ? '<span class="selo '+snf.classe+(snf.classe==="atraso" ? " divida" : "")+'" title="'+esc(snf.titulo)+'">'+esc(snf.texto)+'</span>' :
+         dv.classe==="atraso" ? '<span class="selo atraso divida" title="'+esc(dv.titulo||"")+'">'+esc(dv.texto)+'</span>'
                               : '<span class="selo '+pg.classe+'">'+esc(pg.texto)+'</span>') +
       '</span>';
     c.addEventListener("click", function(){ abrirFicha(p); });
@@ -3833,10 +3896,14 @@ function abrirFicha(p, foco, aba){
         (x.pag === "consulta" ? "" : x.pag ? '<span class="sit '+CL[x.pag]+'">'+ROT[x.pag]+'</span>' : '<span class="hint">sem conta</span>') + '</div>';
     });
     h += '</div>';
-    if(l.length > 8) h += '<button type="button" class="btn sm ghost" id="fu-mais" style="margin-top:8px">'+(ultimasTodas ? "Mostrar só as últimas" : "Ver todas ("+l.length+")")+'</button>';
+    h += '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px">';
+    if(l.length > 8) h += '<button type="button" class="btn sm ghost" id="fu-mais">'+(ultimasTodas ? "Mostrar só as últimas" : "Ver todas ("+l.length+")")+'</button>';
+    /* o resumo para print (13/10/2026) */
+    h += '<button type="button" class="btn sm ghost" id="fu-resumo">Resumo para o paciente</button></div>';
     el.innerHTML = h;
     var b = document.getElementById("fu-mais");
     if(b) b.addEventListener("click", function(){ ultimasTodas = !ultimasTodas; pintarUltimas(); });
+    document.getElementById("fu-resumo").addEventListener("click", function(){ abrirResumo(p); });
   }
   /* atalhos de valor: o ciclo dele e uma sessão do ciclo; o campo continua livre para outro valor */
   function pintarChips(){
@@ -4701,6 +4768,52 @@ function aPagarEmBreve(p, data, hora, estado){
   var v = proximoVencimento(p);
   return !!(v && data >= v);
 }
+/* Saldo em sessões na grade, semana a semana (13/10/2026, pedido dele: "se eu passo para a semana seguinte,
+   vai aparecer o saldo deles descontado, considerando que realizaram as sessões da semana anterior; se eu
+   reagendar, continua com o mesmo saldo, porque não houve cobrança"). É o saldo de quando a sessão da célula
+   chega: tudo o que ele pagou até aquele dia menos o que cobrou antes dela, em sessões do ciclo do dia dela,
+   contando a própria sessão. Para trás vale o histórico dos pagamentos (o pagamento conta a partir do dia em
+   que entrou); para a frente, a sessão marcada que cobra conta como feita, e a remarcada não. Só mostra: a
+   dívida e o previsto não mudam. Quem saiu antes do app (conta pela planilha) e quem não tem extrato ficam
+   sem esse saldo e continuam com a conta de antes. */
+var saldoGradeCache = null;
+function movimentosDoSaldo(p, ate){
+  if(!saldoGradeCache) saldoGradeCache = {};
+  var k = p.id + "|" + chaveData(ate);
+  if(saldoGradeCache[k] !== undefined) return saldoGradeCache[k];
+  var r = null, ext = !contaPelaPlanilha(p) && valorSessao(p) > 0 ? extratoDe(p) : null;
+  if(ext){
+    var cobr = [], hoje = hoje0();
+    ext.linhas.forEach(function(l){ if(l.ordem === 0 && l.cobrado > 0) cobr.push({data:l.data, hora:-1, v:l.cobrado}); });
+    /* o extrato vai até o que já passou; daqui em diante, as sessões marcadas que cobram */
+    if(ate >= hoje) sessoesDoPaciente(p, hoje, ate).forEach(function(s){
+      if(!cobraSessao(s.estado) || jaPassou(s.data, s.hora)) return;
+      var iso = chaveData(s.data);
+      cobr.push({data:iso, hora:s.hora, v:valorSessaoEm(p, iso)});
+    });
+    r = {cobr:cobr, pags:pagamentosDe(p.id).map(function(g){ return {data:g.data, v:Number(g.valor) || 0}; })};
+  }
+  return (saldoGradeCache[k] = r);
+}
+function saldoNaSessao(p, data, hora, ate){
+  var m = movimentosDoSaldo(p, ate || data);
+  if(!m) return null;
+  var iso = chaveData(data), pago = 0, cobrado = 0;
+  m.pags.forEach(function(g){ if(g.data <= iso) pago += g.v; });
+  m.cobr.forEach(function(c){ if(c.data < iso || (c.data === iso && c.hora >= 0 && c.hora < hora)) cobrado += c.v; });
+  var cred = Math.round((pago - cobrado) * 100) / 100, vs = valorSessaoEm(p, iso);
+  if(!(vs > 0)) return null;
+  if(cred >= vs - 0.005){
+    var n = Math.floor(cred / vs + 1e-6);
+    return {classe:n > 1 ? "ok" : "atencao", n:n, texto:"saldo " + plural(n, "sessão", "sessões"),
+      titulo:"Nesta sessão: " + plural(n, "sessão paga", "sessões pagas") + ", contando esta" + (n === 1 ? " (é a última paga)" : "") + "."};
+  }
+  if(cred > -0.005) return {classe:"atraso", n:0, texto:"sem saldo",
+    titulo:"Nesta sessão: nenhuma sessão paga pela frente" + (cred > 0.005 ? " (" + moeda(cred) + " de crédito)" : "") + "; esta ainda não está paga."};
+  var d = -cred, nd = Math.round(d / vs);
+  return {classe:"atraso", n:0, deve:d, texto:"deve " + (nd > 0 && Math.abs(nd * vs - d) <= 0.5 ? plural(nd, "sessão", "sessões") : moeda(d)),
+    titulo:"Nesta sessão: deve " + moeda(d) + " de sessões anteriores; esta também não está paga."};
+}
 /* As sessões do paciente, da mais nova para a mais antiga, cada uma com o pagamento dela, mais as duas
    próximas. A conta é a do extrato (o dinheiro paga da sessão mais antiga para a mais nova), a mesma
    que dá o vencimento. Sem extrato, cai na bolinha da semana (pagamentoDaSessao). Só mostra. */
@@ -5555,6 +5668,227 @@ function abrirCobranca(nome, sessoes, valor){
     var b = document.getElementById("cob-copiar");
     b.textContent = "Copiado";
     setTimeout(function(){ b.textContent = "Copiar"; }, 1600);
+  });
+}
+
+/* ---------------- resumo para o paciente (13/10/2026) ----------------
+   Pedido dele: na ficha, uma tela simples e bonita com as sessões e os pagamentos, para tirar print e
+   mandar a quem não entendeu o pagamento. Parte da mensagem de pendências do WhatsApp (Mensagens-Padrão,
+   4.5: cada data com o valor e se está paga, e o total no fim) e diz também o combinado de cada época,
+   quando ele mudou, o que foi cobrado e o que foi pago. A conta é a do extrato (o dinheiro paga da sessão
+   mais antiga para a mais nova); de quem saiu antes do app, vale o valor em aberto da planilha e as
+   sessões do prontuário aparecem só com a data. Só mostra: nada aqui grava. O cartão é claro mesmo no
+   tema escuro, porque vira imagem. Funções: resumoDoPaciente (a conta), htmlResumo, textoResumo e abrirResumo. */
+var MESES_LONGO = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+function dataPorExtenso(d){ return d.getDate() + " de " + MESES_LONGO[d.getMonth()] + " de " + d.getFullYear(); }
+function textoCombinado(c){
+  if(c.cobranca === "mensal") return {nome:"ciclo mensal de " + moeda(c.valor), det:"4 sessões de " + moeda(valorSessao(c))};
+  if(c.cobranca === "quinzenal") return {nome:"ciclo quinzenal de " + moeda(c.valor), det:"2 sessões de " + moeda(valorSessao(c))};
+  return {nome:"sessão avulsa de " + moeda(c.valor), det:"paga a cada sessão"};
+}
+function listaDatas(l){
+  var t = l.slice(0, 6).map(function(x){ return dataCurta(deISO(x)); });
+  if(l.length > 6) t.push("mais " + (l.length - 6));
+  return t.length > 1 ? t.slice(0, -1).join(", ") + " e " + t[t.length - 1] : (t[0] || "");
+}
+/* periodo: "mes" (do começo do mês passado, ou da primeira sessão em aberto, se for antes), "6m" ou "tudo" */
+function resumoDoPaciente(p, periodo){
+  var hoje = hoje0(), itens = [], r = {p:p, planilha:contaPelaPlanilha(p)};
+  var SIT = {
+    "Sessão realizada":{t:"Sessão realizada"}, "Sessão (a confirmar)":{t:"Sessão"},
+    "Não compareceu (cobrada)":{t:"Falta sem aviso", s:"cobrada, pelo combinado das 24 horas"},
+    "Avisou e não veio":{t:"Desmarcada com aviso", s:"não cobrada"}
+  };
+  if(r.planilha){
+    var dv = devidoDe(p), PR = {realizada:"Sessão realizada", falta:"Falta sem aviso", avisou:"Desmarcada com aviso"};
+    ((p.historico && p.historico.sessoes) || []).forEach(function(s){
+      itens.push({data:s.data, ordem:2, tipo:"sessao", texto:PR[s.situacao] || "Sessão", st:"so-data"});
+    });
+    itens.push({data:dv.base, ordem:3, tipo:"aberto", texto:"Em aberto no controle", valor:dv.planilha});
+    pagamentosDe(p.id).forEach(function(g){
+      if(g.data > dv.base) itens.push({data:g.data, ordem:1, tipo:"pag", valor:Number(g.valor) || 0, meio:g.meio});
+    });
+    r.pendente = dv.exato > 0.005 ? dv.exato : 0;
+    r.credito = dv.exato < -0.005 ? -dv.exato : 0;
+    r.pendentes = [];
+    r.futuras = [];
+  } else {
+    var ext = extratoDe(p);
+    if(!ext) return null;
+    var pagoT = ext.pago, cum = 0;
+    ext.linhas.forEach(function(l){
+      if(l.ordem === 1) return;
+      var base = l.texto.replace(" (cortesia)", ""), sit = SIT[base] || {t:base}, st;
+      var corte = l.texto.indexOf("(cortesia)") >= 0;
+      if(!(l.cobrado > 0)) st = "nc";
+      else { var antes = cum; cum += l.cobrado; st = cum <= pagoT + 0.005 ? "paga" : (antes < pagoT - 0.005 ? "parte" : "pend"); }
+      itens.push({data:l.data, ordem:2, tipo:"sessao", texto:corte ? "Sessão de cortesia" : sit.t, sub:corte ? "não cobrada" : sit.s,
+        valor:l.cobrado, st:st, ciclo:cicloEm(p, l.data)});
+    });
+    /* da agenda, as que não cobram (o extrato só traz as que cobram) */
+    var desdeAg = somaDias(deISO(ext.ate), 1), ROTN = {remarcada:["Remarcada", "não cobrada"], cortesia:["Sessão de cortesia", "não cobrada"]};
+    if(desdeAg <= hoje) sessoesDoPaciente(p, desdeAg, hoje).forEach(function(x){
+      if(ROTN[x.estado] && jaPassou(x.data, x.hora)) itens.push({data:chaveData(x.data), ordem:2, tipo:"sessao", texto:ROTN[x.estado][0], sub:ROTN[x.estado][1], valor:0, st:"nc"});
+    });
+    pagamentosDe(p.id).forEach(function(g){ itens.push({data:g.data, ordem:1, tipo:"pag", valor:Number(g.valor) || 0, meio:g.meio}); });
+    r.pendente = ext.saldo > 0.005 ? ext.saldo : 0;
+    r.credito = ext.saldo < -0.005 ? -ext.saldo : 0;
+    r.pendentes = itens.filter(function(x){ return x.st === "pend" || x.st === "parte"; }).map(function(x){ return x.data; });
+    /* as próximas que o crédito já paga, e a primeira que ele não cobre */
+    r.futuras = []; r.proxima = null;
+    if(!r.pendente && !encerradoHoje(p)){
+      var sobra = r.credito;
+      sessoesDoPaciente(p, hoje, somaDias(hoje, 70)).forEach(function(x){
+        if(r.proxima || r.futuras.length >= 6 || !cobraSessao(x.estado) || jaPassou(x.data, x.hora)) return;
+        var iso = chaveData(x.data), v = valorSessaoEm(p, iso);
+        if(sobra >= v - 0.005){ sobra = Math.round((sobra - v) * 100) / 100; r.futuras.push(iso); }
+        else r.proxima = iso;
+      });
+      r.sobra = sobra;
+    }
+  }
+  /* mudança de combinado: só quando a cobrança ou o valor mudou (renovar o mesmo ciclo não é mudança) */
+  var cs = ciclosDe(p);
+  for(var i = 1; i < cs.length; i++){
+    var a = cs[i - 1], b = cs[i];
+    if(b.inicio && (a.cobranca !== b.cobranca || Math.abs((Number(a.valor) || 0) - (Number(b.valor) || 0)) > 0.005))
+      itens.push({data:b.inicio, ordem:0, tipo:"ciclo", de:a, para:b});
+  }
+  itens.sort(function(x, y){ return x.data < y.data ? -1 : (x.data > y.data ? 1 : x.ordem - y.ordem); });
+  /* o período: o padrão começa no mês passado, ou antes, na primeira sessão em aberto */
+  var desde = null;
+  if(periodo !== "tudo"){
+    var ref = periodo === "6m" ? new Date(hoje.getFullYear(), hoje.getMonth() - 5, 1) : new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+    var prim = r.pendentes[0] ? deISO(r.pendentes[0]) : null;
+    if(prim && prim < ref) ref = new Date(prim.getFullYear(), prim.getMonth(), 1);
+    desde = chaveData(ref);
+    if(itens.length && itens[0].data >= desde) desde = null;
+  }
+  r.desde = desde;
+  var antes = 0, temAntes = false;
+  r.cobrado = 0; r.pago = 0;
+  r.itens = itens.filter(function(x){
+    var dentro = !desde || x.data >= desde;
+    if(!r.planilha && (x.tipo === "sessao" || x.tipo === "pag")){
+      if(dentro){ if(x.tipo === "pag") r.pago += x.valor; else r.cobrado += x.valor || 0; }
+      else { temAntes = true; antes += x.tipo === "pag" ? -x.valor : (x.valor || 0); }
+    } else if(x.tipo === "pag" && dentro) r.pago += x.valor;
+    return dentro;
+  });
+  r.antes = temAntes ? Math.round(antes * 100) / 100 : null;
+  r.atual = textoCombinado(cicloEm(p, chaveData(hoje)));
+  r.encerrado = encerradoHoje(p);
+  return r;
+}
+var MEIO_RESUMO = {pix:"Pix", transferencia:"transferência", dinheiro:"dinheiro", cartao:"cartão"};
+function htmlResumo(r){
+  var p = r.p, h = '<div class="rp" id="rp-cartao">';
+  h += '<div class="rp-rot">Sessões e pagamentos</div><h3 class="rp-nome">' + esc(p.nome) + '</h3>' +
+    '<div class="rp-atual">Atualizado em ' + dataPorExtenso(hoje0()) + '</div>';
+  if(r.pendente > 0.005){
+    h += '<div class="rp-sit pend"><div class="k">Total pendente</div><div class="v">' + moeda(r.pendente) + '</div>' +
+      (r.pendentes.length ? '<div class="d">' + (r.pendentes.length === 1 ? "Sessão de " : plural(r.pendentes.length, "sessão", "sessões") + ": ") + listaDatas(r.pendentes) + '</div>' : "") + '</div>';
+  } else {
+    var d = r.futuras.length ? (r.futuras.length === 1 ? "A sessão de " + listaDatas(r.futuras) + " já está paga." : "As " + r.futuras.length + " próximas sessões já estão pagas: " + listaDatas(r.futuras) + ".") :
+      (r.credito > 0.005 ? "Crédito de " + moeda(r.credito) + " para as próximas sessões." : "");
+    if(r.proxima) d += (d ? " " : "") + "O próximo pagamento é na sessão de " + dataCurta(deISO(r.proxima)) + ".";
+    h += '<div class="rp-sit"><div class="k">Situação</div><div class="v">Tudo pago</div>' + (d ? '<div class="d">' + esc(d) + '</div>' : "") + '</div>';
+  }
+  if(!r.encerrado) h += '<div class="rp-comb">Combinado atual: <b>' + esc(r.atual.nome) + '</b> (' + esc(r.atual.det) + ')</div>';
+  if(r.desde && r.antes !== null){
+    h += '<p class="rp-ant">Antes de ' + dataCurta(deISO(r.desde)) + ': ' + (r.antes > 0.005 ? "ficaram " + moeda(r.antes) + " em aberto, que entram no total." :
+      r.antes < -0.005 ? "sobrou um crédito de " + moeda(-r.antes) + ", que entra na conta." : "tudo acertado.") + '</p>';
+  }
+  if(!r.itens.length) h += '<p class="rp-vazio">Nenhuma sessão nem pagamento neste período.</p>';
+  var mes = "";
+  r.itens.forEach(function(x){
+    var dt = deISO(x.data), m = MESES_LONGO[dt.getMonth()] + " de " + dt.getFullYear();
+    if(m !== mes){ if(mes) h += '</div>'; mes = m; h += '<div class="rp-mes">' + m + '</div><div>'; }
+    var dia = '<div class="rp-dt">' + dataCurta(dt) + '<small>' + DIAS_CURTO[dt.getDay()] + '</small></div>';
+    if(x.tipo === "ciclo"){
+      var a = textoCombinado(x.de), b = textoCombinado(x.para);
+      h += '</div><div class="rp-novo">A partir de ' + dataCurta(dt) + ', novo combinado: <b>' + esc(b.nome) + '</b> (' + esc(b.det) + '). Antes era ' + esc(a.nome) + '.</div><div>';
+    } else if(x.tipo === "pag"){
+      h += '<div class="rp-l pag">' + dia + '<div class="rp-tx">Pagamento recebido' + (MEIO_RESUMO[x.meio] ? '<small>' + MEIO_RESUMO[x.meio] + '</small>' : "") + '</div>' +
+        '<div class="rp-vl">' + moeda(x.valor) + '</div></div>';
+    } else if(x.tipo === "aberto"){
+      h += '<div class="rp-l">' + dia + '<div class="rp-tx">Em aberto no controle<small>sessões até esta data</small></div><div class="rp-vl">' + moeda(x.valor) + '</div></div>';
+    } else {
+      var CH = {paga:["paga", "paga"], parte:["parte", "paga em parte"], pend:["pend", "pendente"], nc:["", "não cobrada"]};
+      var ch = CH[x.st];
+      var sub = x.sub || (x.ciclo && x.valor > 0 ? (x.ciclo.cobranca === "avulsa" ? "sessão avulsa" : "ciclo " + (x.ciclo.cobranca === "mensal" ? "mensal" : "quinzenal")) : "");
+      h += '<div class="rp-l' + (x.st === "nc" ? " nc" : "") + '">' + dia + '<div class="rp-tx">' + esc(x.texto) + (sub ? '<small>' + esc(sub) + '</small>' : "") + '</div>' +
+        '<div class="rp-vl">' + (x.st === "so-data" ? "" : x.st === "nc" ? '<span class="rp-ch">não cobrada</span>' :
+          moeda(x.valor) + '<small><span class="rp-ch ' + ch[0] + '">' + ch[1] + '</span></small>') + '</div></div>';
+    }
+  });
+  if(mes) h += '</div>';
+  if(r.futuras.length){
+    h += '<div class="rp-mes">Já pagas, pela frente</div><div>';
+    r.futuras.forEach(function(iso){
+      var dt = deISO(iso);
+      h += '<div class="rp-l fut"><div class="rp-dt">' + dataCurta(dt) + '<small>' + DIAS_CURTO[dt.getDay()] + '</small></div><div class="rp-tx">Próxima sessão</div>' +
+        '<div class="rp-vl"><span class="rp-ch paga">paga</span></div></div>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="rp-tot">';
+  if(!r.planilha){
+    h += '<span class="t">Cobrado ' + (r.desde ? "no período" : "ao todo") + '</span><span class="n">' + moeda(r.cobrado) + '</span>';
+    h += '<span class="t">Pago ' + (r.desde ? "no período" : "ao todo") + '</span><span class="n">' + moeda(r.pago) + '</span>';
+  } else if(r.pago > 0.005) h += '<span class="t">Pago depois</span><span class="n">' + moeda(r.pago) + '</span>';
+  h += r.pendente > 0.005 ? '<span class="t fim pend">Total pendente</span><span class="n fim pend">' + moeda(r.pendente) + '</span>' :
+    r.credito > 0.005 ? '<span class="t fim">Crédito</span><span class="n fim">' + moeda(r.credito) + '</span>' :
+    '<span class="t fim">Total pendente</span><span class="n fim">R$ 0</span>';
+  h += '</div><div class="rp-pe">Dúvidas sobre algum item, é só me chamar.</div></div>';
+  return h;
+}
+/* a mesma conta em texto, no jeito da mensagem de pendências do WhatsApp */
+function textoResumo(r){
+  var l = ["*Sessões e pagamentos, " + String(r.p.nome || "").trim().split(/\s+/)[0] + "*", "_Atualizado em " + dataLonga(hoje0()) + "_", ""];
+  if(!r.encerrado) l.push("Combinado atual: " + r.atual.nome + " (" + r.atual.det + ")", "");
+  if(r.desde && r.antes !== null) l.push("Antes de " + dataCurta(deISO(r.desde)) + ": " + (r.antes > 0.005 ? moeda(r.antes) + " em aberto" : r.antes < -0.005 ? "crédito de " + moeda(-r.antes) : "tudo acertado"), "");
+  var mes = "";
+  r.itens.forEach(function(x){
+    var dt = deISO(x.data), m = MESES_LONGO[dt.getMonth()] + " de " + dt.getFullYear();
+    if(m !== mes){ if(mes) l.push(""); mes = m; l.push("*" + m.charAt(0).toUpperCase() + m.slice(1) + "*"); }
+    if(x.tipo === "ciclo") l.push("• " + dataCurta(dt) + ": novo combinado, " + textoCombinado(x.para).nome);
+    else if(x.tipo === "pag") l.push("• " + dataCurta(dt) + ": pagamento recebido, " + moeda(x.valor));
+    else if(x.tipo === "aberto") l.push("• " + dataCurta(dt) + ": em aberto no controle, " + moeda(x.valor));
+    else l.push("• " + dataCurta(dt) + ": " + x.texto.toLowerCase() + (x.st === "so-data" ? "" : x.st === "nc" ? " (não cobrada)" :
+      ", " + moeda(x.valor) + " (" + ({paga:"paga", parte:"paga em parte", pend:"pendente"})[x.st] + ")"));
+  });
+  if(r.futuras.length) l.push("", "Já pagas, pela frente: " + listaDatas(r.futuras));
+  l.push("", r.pendente > 0.005 ? "*Total pendente: " + moeda(r.pendente) + "*" : r.credito > 0.005 ? "*Tudo pago, com crédito de " + moeda(r.credito) + "*" : "*Tudo pago*");
+  return l.join("\n");
+}
+function abrirResumo(p){
+  var fundo = document.createElement("div"), periodo = "mes";
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal rp-modal" role="dialog" aria-label="Resumo para o paciente">' +
+    '<div class="rp-barra"><select id="rp-periodo" aria-label="Período"><option value="mes">Desde o mês passado</option><option value="6m">Últimos 6 meses</option><option value="tudo">Tudo, desde o início</option></select>' +
+    '<button type="button" class="btn sm ghost" id="rp-copiar">Copiar texto</button><button type="button" class="btn sm" id="rp-fechar">Fechar</button></div>' +
+    '<div id="rp-corpo"></div></div>';
+  document.body.appendChild(fundo);
+  var r = null;
+  function pintar(){
+    r = resumoDoPaciente(p, periodo);
+    document.getElementById("rp-corpo").innerHTML = r ? htmlResumo(r) :
+      '<div class="rp"><p class="rp-vazio">Este paciente ainda não tem a conta das sessões no app: leia a planilha uma vez.</p></div>';
+    document.getElementById("rp-copiar").disabled = !r;
+  }
+  pintar();
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target === fundo) fechar(); });
+  document.getElementById("rp-fechar").addEventListener("click", fechar);
+  document.getElementById("rp-periodo").addEventListener("change", function(e){ periodo = e.target.value; pintar(); });
+  document.getElementById("rp-copiar").addEventListener("click", function(){
+    if(!r) return;
+    var t = textoResumo(r), b = document.getElementById("rp-copiar");
+    if(navigator.clipboard) navigator.clipboard.writeText(t).catch(function(){});
+    b.textContent = "Copiado";
+    setTimeout(function(){ b.textContent = "Copiar texto"; }, 1600);
   });
 }
 
