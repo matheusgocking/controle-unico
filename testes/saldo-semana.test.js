@@ -81,6 +81,7 @@ for (const largura of [390, 1280]) {
     const conta = () => p.evaluate(() => JSON.stringify([dados.pacientes, dados.pagamentos, dados.excecoes]));
     const antes = await conta();
     await p.evaluate(() => { mostrarView("pacientes"); abrirFicha(dados.pacientes[0]); });
+    await p.click("#fi-aba-pagamento");
     await p.click("#fu-resumo");
     await p.selectOption("#rp-periodo", "tudo");
     const t = await p.textContent("#rp-cartao");

@@ -90,6 +90,11 @@ for (const largura of [390, 1280]) {
     assert.equal(await p.inputValue("#dp-nomeCompleto"), "Ana Teste Souza");
     assert.equal(await p.textContent("#dp-idade"), "26 anos");
     assert.equal(await p.getAttribute('[data-whats="celular"]', "href"), "https://wa.me/5527988888888");
+    /* o cartão de leitura no alto (14/10/2026); os campos ficam em "Editar dados pessoais", fechado quando há dado */
+    assert.match(await p.textContent("#dp-cartao"), /Ana Teste Souza/);
+    assert.match(await p.textContent("#dp-cartao"), /26 anos/);
+    assert.equal(await p.locator("#dp-psiquiatra").isVisible(), false);
+    await p.click(".dp-editar summary");
     await p.fill("#dp-psiquiatra", "Dr. Inventado");
     await p.waitForTimeout(700);
     assert.equal(await p.evaluate(c => dados.cadastros[c].psiquiatra, codigo), "Dr. Inventado");
@@ -99,7 +104,7 @@ for (const largura of [390, 1280]) {
     await p.screenshot({ path: require("path").join(process.env.FOTOS || require("os").tmpdir(), "dados-ficha-" + largura + ".png") });
 
     /* trocar o prontuário leva os dados junto */
-    await p.click("#fi-aba-cadastro");
+    await p.click("#fi-aba-dados");
     await p.fill("#fi-codigo", "T99");
     await p.waitForTimeout(700);
     const mov = await p.evaluate(c => ({ velho: !!dados.cadastros[c], novo: dados.cadastros.T99 && dados.cadastros.T99.nomeCompleto }), codigo);

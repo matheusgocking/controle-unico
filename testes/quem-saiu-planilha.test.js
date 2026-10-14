@@ -107,7 +107,7 @@ for (const largura of [375, 1280]) {
     assert.match(await p.locator('#grade .cell[data-data="2026-09-17"][data-hora="18"]').textContent(), /Marta/);
 
     /* a ficha: campo vazio, atalho com a dívida, valor digitado sobrevive à ficha refeita pelo Drive */
-    await p.evaluate(() => abrirFicha(dados.pacientes.find(x => x.codigo === "T10"), null, "pagamento"));
+    await p.evaluate(() => abrirFicha(dados.pacientes.find(x => x.codigo === "T10"), null, "pagar"));
     await p.waitForTimeout(150);
     assert.equal(await p.inputValue("#fr-valor"), "");
     assert.match(await p.textContent("#fi-chips"), /Tudo o que deve · R\$ 300/);

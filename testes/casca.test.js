@@ -241,8 +241,14 @@ test("13. Recebimento de paciente abre sem paciente e sem valor, e Registrar esp
     assert.equal(await k.evaluate(() => dados.pagamentos.length), antes, "sem paciente, nada é gravado");
     assert.match(await k.textContent("#pg-feito"), /Escolha quem pagou/);
     assert.equal(await k.evaluate(() => document.getElementById("pg-form").classList.contains("hidden")), false);
+    // quem pagou se acha digitando (14/10/2026): a lista abre, filtra pelo nome e o toque escolhe
+    assert.equal(await k.inputValue("#pg-busca"), "");
+    await k.fill("#pg-busca", "avul"); await espera(100);
+    assert.equal(await k.locator("#pg-opcoes [data-pgo]").count(), 2, "o paciente que bate e a Outra pessoa");
+    await k.click('#pg-opcoes [data-pgo="pB"]'); await espera(100);
+    assert.equal(await k.inputValue("#pg-paciente"), "pB");
+    assert.equal(await k.inputValue("#pg-busca"), "Paciente Avulso");
     // escolhido o paciente, o valor vem dele, como sempre
-    await k.selectOption("#pg-paciente", "pB"); await espera(100);
     assert.equal(await k.inputValue("#pg-valor"), "200");
     assert.deepEqual(erros, []);
     await ctx.close();

@@ -202,12 +202,15 @@ test("Receita da semana: a falta sem aviso cobra e entra no preço do ciclo do d
 });
 
 for (const largura of [375, 1280]) {
-  test("Ficha em abas (" + largura + "px): Pagamento primeiro, registrar com o valor editável", async () => {
+  test("Ficha em abas (" + largura + "px): Dados primeiro, registrar fechado num botão, com o valor editável", async () => {
     const { ctx, p, erros } = await abrir({ largura });
     await p.evaluate(`(() => { ${MONTAR}(${JSON.stringify(SET4)}, []); abrirFicha(acharPaciente("pA")); })()`);
-    assert.equal(await p.locator("#fi-p-pagamento").isVisible(), true);
-    assert.equal(await p.locator("#fi-p-prontuario").isVisible(), false);
-    assert.equal(await p.locator("#fi-p-cadastro").isVisible(), false);
+    assert.equal(await p.locator("#fi-p-dados").isVisible(), true, "Dados abre primeiro (14/10/2026)");
+    assert.equal(await p.locator("#fi-p-pagamento").isVisible(), false);
+    assert.equal(await p.locator("#fi-aba-cadastro").count(), 0, "Cadastro virou parte de Dados");
+    await p.click("#fi-aba-pagamento");
+    assert.equal(await p.locator("#fi-reg").isVisible(), false, "o registrar começa fechado");
+    await p.click("#fr-abrir");
     assert.equal(await p.inputValue("#fr-valor"), "", "começa vazio: o ciclo é só atalho (12/10/2026)");
     assert.match(await p.textContent("#fi-situ"), /Deve R\$ 700, desde a sessão de 07\/09\/2026/);
     await p.click('[data-fvalor="175"]');
@@ -222,9 +225,10 @@ for (const largura of [375, 1280]) {
     assert.match(await p.textContent("#fi-situ"), /Deve R\$ 550/);
     assert.equal(await p.inputValue("#fr-valor"), "", "o campo volta vazio depois de registrar");
     // a aba escolhida continua aberta quando a ficha se redesenha
-    await p.click("#fi-aba-cadastro");
+    assert.equal(await p.locator("#fi-reg").isVisible(), false, "o registrar fecha depois de registrar");
+    await p.click("#fi-aba-prontuario");
     await p.evaluate(() => reabrirFicha());
-    assert.equal(await p.locator("#fi-p-cadastro").isVisible(), true);
+    assert.equal(await p.locator("#fi-p-prontuario").isVisible(), true);
     // o pagamento sai pela ficha também
     await p.click("#fi-aba-pagamento");
     await p.locator('#fi-pag [data-fapagar]').first().click();
@@ -238,16 +242,16 @@ for (const largura of [375, 1280]) {
   });
 }
 
-test("Ficha: quem chega pelo prontuário cai na aba Prontuário, com a Formulação junto", async () => {
+test("Ficha: quem chega pelo prontuário cai na aba Prontuário, sem a Formulação (14/10/2026)", async () => {
   const { ctx, p, erros } = await abrir();
   await p.evaluate(() => abrirFicha(acharPaciente("pA"), "2026-10-05|9|pA"));
   assert.equal(await p.locator("#fi-p-prontuario").isVisible(), true);
   assert.equal(await p.locator("#fi-p-pagamento").isVisible(), false);
-  assert.equal(await p.locator("#fi-p-prontuario #fi-form").count(), 1);
+  assert.equal(await p.locator("#fi-p-prontuario #fi-form").count(), 0);
   assert.equal(await p.getAttribute("#fi-aba-prontuario", "aria-selected"), "true");
   await p.focus("#fi-aba-prontuario");
   await p.keyboard.press("ArrowRight");
-  assert.equal(await p.locator("#fi-p-cadastro").isVisible(), true, "as setas trocam de aba");
+  assert.equal(await p.locator("#fi-p-dados").isVisible(), true, "as setas trocam de aba");
   assert.deepEqual(erros, []);
   await ctx.close();
 });

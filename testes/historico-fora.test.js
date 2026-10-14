@@ -115,6 +115,7 @@ for (const largura of [390, 1280]) {
     assert.equal(await p.evaluate(() => document.documentElement.scrollWidth), largura);
 
     /* registrar o pagamento de quem saiu: a dívida zera */
+    await p.click("#fr-abrir");
     await p.fill("#fr-valor", "250");
     await p.click("#fr-registrar");
     await p.waitForTimeout(200);

@@ -82,7 +82,7 @@ test("Adicionar paciente: a ficha nasce começando hoje, e o Começou em muda o 
   const { ctx, p, erros } = await abrir(390);
   await p.evaluate(() => mostrarView("pacientes"));
   await p.click("#add-paciente");
-  await p.click("#fi-aba-cadastro");
+  await p.click("#fi-aba-dados");
   assert.equal(await p.inputValue("#fi-inicio"), "2026-10-09");
   await p.fill("#fi-inicio", "2026-10-02");
   await p.dispatchEvent("#fi-inicio", "change");
