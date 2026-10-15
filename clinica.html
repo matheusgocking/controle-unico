@@ -3867,14 +3867,16 @@ function abrirFicha(p, foco, aba){
   /* o total de sessões no alto da ficha, à vista em qualquer aba (pedido dele, 06/10/2026).
      Só mostra: não entra em saldo, vencimento nem previsto. */
   function pintarTotal(){
-    var t = totalSessoesDe(p), el = document.getElementById("fi-total"), extra = [];
-    if(t.faltas) extra.push(plural(t.faltas, "falta cobrada", "faltas cobradas"));
+    /* falta sem aviso conta como sessão realizada, como no prontuário (regra dele, 15/10/2026):
+       entra no número grande e aparece ao lado como "com N falta(s) cobrada(s)" */
+    var t = totalSessoesDe(p), el = document.getElementById("fi-total"), extra = [], feitas = t.feitas + t.faltas;
+    if(t.faltas) extra.push("com " + plural(t.faltas, "falta cobrada", "faltas cobradas"));
     if(t.aConfirmar) extra.push(t.aConfirmar + " a confirmar");
     /* quem voltou: o total de antes à vista, separado (09/10/2026). Só mostra. */
     var antT = anteriorDe(p);
     if(antT && antT.a && Number(antT.a.sessoes) > 0) extra.push("mais " + antT.a.sessoes + " antes");
-    el.innerHTML = '<span class="n">'+t.feitas+'</span>' +
-      '<span class="rot">'+(t.feitas===1 ? "sessão feita" : "sessões feitas")+'</span>' +
+    el.innerHTML = '<span class="n">'+feitas+'</span>' +
+      '<span class="rot">'+(feitas===1 ? "sessão feita" : "sessões feitas")+'</span>' +
       (extra.length ? '<span class="mais">'+extra.join(" · ")+'</span>' : "");
     el.title = (t.primeira ? "Primeira sessão em "+dataLonga(t.primeira)+". " : "") +
       (t.historicoAte ? "Prontuário até "+dataLonga(deISO(t.historicoAte))+" e agenda depois." : "Pela agenda, desde "+dataLonga(t.desde)+".");
@@ -4138,7 +4140,7 @@ function abrirFicha(p, foco, aba){
     var t = totalSessoesDe(p), pr = p.prontuario || {}, pend = pendenciasDe(p), regs = dados.registros || {};
     var aEscrever = pend.filter(function(s){ var r = regs[chaveRegistro(s.data, s.hora, p)]; return !(r && r.estado === "aprovado"); }).length;
     var itens = [
-      ['<b>' + t.feitas + '</b>', t.feitas === 1 ? "sessão feita" : "sessões feitas"],
+      ['<b>' + (t.feitas + t.faltas) + '</b>', t.feitas + t.faltas === 1 ? "sessão feita" : "sessões feitas"],
       ['<b>' + (t.primeira ? dataCurta(t.primeira) + (t.primeira.getFullYear() !== hoje0().getFullYear() ? "/" + t.primeira.getFullYear() : "") : "—") + '</b>', "primeira sessão"],
       ['<b>' + (pr.ultima ? dataCurta(deISO(pr.ultima)) : "—") + '</b>', "último registro no Word"],
       ['<b class="' + (aEscrever ? "pr-falta" : "pr-ok") + '">' + aEscrever + '</b>', aEscrever === 1 ? "sessão a escrever" : "sessões a escrever"]

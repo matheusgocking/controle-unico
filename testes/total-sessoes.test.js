@@ -63,8 +63,9 @@ for (const largura of [390, 1280]) {
     await p.waitForTimeout(200);
     assert.equal(await p.locator("#fi-p-dados").isVisible(), true, "Dados abre primeiro (14/10/2026)");
     assert.equal(await p.locator("#fi-total").isVisible(), true);
-    assert.equal(await p.textContent("#fi-total .n"), "4");
-    assert.match(await p.textContent("#fi-total"), /sessões feitas1 falta cobrada · 1 a confirmar/);
+    /* a falta sem aviso entra no número de sessões feitas, como no prontuário (regra dele, 15/10/2026) */
+    assert.equal(await p.textContent("#fi-total .n"), "5");
+    assert.match(await p.textContent("#fi-total"), /sessões feitascom 1 falta cobrada · 1 a confirmar/);
     assert.match(await p.textContent("#fi-sub"), /desde 01\/09\/2026/);
     const caixa = await p.locator("#fi-total").boundingBox();
     assert.ok(caixa.x + caixa.width <= largura, "total dentro da tela");
