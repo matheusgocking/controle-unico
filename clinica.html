@@ -155,12 +155,12 @@ button,input,select,textarea{font:inherit; color:inherit}
 .gh{position:sticky; top:0; z-index:3; background:var(--head-bg); color:var(--head-fg); padding:9px 6px; text-align:center}
 .gh .d{font-size:11px; text-transform:uppercase; letter-spacing:.09em; opacity:.72}
 .gh .n{font-family:var(--font); font-weight:700; font-size:17px}
-.gh.fds .d,.gh.fds .n{opacity:.45}
+.gh.fds .d,.gh.fds .n{opacity:.62}
 .gh.today{background:var(--accent); color:var(--accent-ink)}
 .gh.today .d{opacity:.85}
 .gh.today .n{font-weight:600}
 .gh.corner{background:var(--head-bg)}
-.hour{border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:0 9px; font-size:12px; font-weight:600; color:var(--hour-fg); text-align:right; line-height:52px; background:var(--hour-bg)}
+.hour{border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:0 9px; font-size:12px; font-weight:600; color:var(--hour-fg); text-align:right; line-height:58px; background:var(--hour-bg)}
 /* linha "Sem hora": sessões do prontuário de quem saiu, com data e sem hora conhecida (12/10/2026) */
 .hour.sh{line-height:1.2; padding:7px 9px; font-size:11px; display:flex; align-items:center; justify-content:flex-end}
 .cell-sh{border-right:1px solid var(--border); border-bottom:1px solid var(--border); background:var(--surface-2); padding:4px; display:flex; flex-direction:column; gap:3px; min-width:0}
@@ -177,7 +177,7 @@ button,input,select,textarea{font:inherit; color:inherit}
   .cell-sh button b{white-space:normal; word-break:break-word; font-size:10.5px}
   .cell-sh button span{display:none}
 }
-.cell{position:relative; height:52px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); border-left:4px solid transparent; background:var(--surface); cursor:pointer; text-align:center; padding:0 7px; color:var(--faint); width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.25; overflow:hidden}
+.cell{position:relative; height:58px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); border-left:4px solid transparent; background:var(--surface); cursor:pointer; text-align:center; padding:0 7px; color:var(--faint); width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.25; overflow:hidden}
 .cell:hover{box-shadow:inset 0 0 0 9999px rgba(128,128,128,.14)}
 .cell:focus-visible{outline:2px solid var(--accent); outline-offset:-3px; z-index:2}
 .cell .nm,.cell .lab,.cell .saiu{max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -211,7 +211,8 @@ button,input,select,textarea{font:inherit; color:inherit}
 .cell.almoco{background:var(--t-almoco-bg); border-left-color:var(--t-almoco-bar); color:var(--t-almoco-fg)}
 /* realizada (confirmada por ele): a célula inteira fica verde (pedido dele, 28/09/2026) */
 .cell.sessao.realizada{background:var(--t-realizada-bg); border-left-color:var(--t-realizada-bar); color:var(--t-realizada-fg); cursor:pointer}
-/* código do paciente no canto de cima da célula, pequeno, para achar o prontuário */
+/* código do paciente no canto de cima da célula, pequeno, para achar o prontuário; o conteúdo desce uma linha para não bater nele */
+.cell:has(.cod){padding-top:13px; gap:0}
 .cell .cod{position:absolute; top:2px; right:8px; font-size:10px; line-height:1; font-weight:600; letter-spacing:.02em; opacity:.7; pointer-events:none}
 .cell.falta{background:var(--t-falta-bg); border-left-color:var(--t-falta-bar); color:var(--t-falta-fg)}
 .cell.falta .nm{text-decoration:line-through}
@@ -842,7 +843,7 @@ details.fi-det[open] > summary{margin-bottom:6px}
   /* o código do prontuário ficava em cima do nome: menor, e o nome desce para dar lugar a ele */
   .cell .cod{font-size:7px; top:1px; right:2px; letter-spacing:0}
   .cell .pgm{width:7px; height:7px; right:3px; bottom:3px; box-shadow:0 0 0 1.5px #fff}
-  .cell:has(.cod){justify-content:flex-end; padding-bottom:3px}
+  .cell:has(.cod){justify-content:flex-end; padding-top:0; padding-bottom:3px}
   .cell.reservado .nm, .cell.reservado .lab, .cell.divulgado .nm{display:none}
   .cell.divulgado .lab{font-size:8px}
   input,select,textarea{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */

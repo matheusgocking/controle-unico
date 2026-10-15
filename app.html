@@ -293,6 +293,9 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .stat b{font-size:17px}
   table.t thead{display:none}
   .ordem-cel{display:flex}
+  /* os dois filtros da lista alinhados: rótulo de largura igual e o campo ocupa o resto */
+  .filtro-cat,.ordem-cel{display:grid;grid-template-columns:5.6em minmax(0,1fr);gap:8px}
+  .filtro-cat select,.ordem-cel select{width:100%;flex:none}
   table.t tr{display:grid;grid-template-columns:38px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
   td.c-x .x{padding:0;min-width:34px;min-height:40px}   /* o × cabe num toque de dedo */
   /* no celular a linha toda abre o lançamento; o × some (apagar fica dentro do lançamento) e a descrição quebra a linha */
