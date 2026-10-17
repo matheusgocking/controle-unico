@@ -66,6 +66,7 @@ var FormLancamento = (function(){
     ".lanc-apagar:hover{border-color:var(--neg)}" +
     ".lanc-cancelar{border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:14px;padding:9px 14px;border-radius:var(--radius);cursor:pointer}" +
     ".lanc-erro{color:var(--neg);font-size:13px;font-weight:500}" +
+    ".lanc-erro-in{color:var(--neg);font-style:normal;font-weight:600;font-size:12.5px;margin-left:6px}" +
     ".lanc-feito{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--pos);background:var(--pos-soft);border-radius:var(--radius);padding:8px 12px}" +
     ".lanc-feito button{border:0;background:transparent;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:8px 0;min-height:40px;font-weight:600}" +
     "@media (max-width:700px){" +
@@ -161,7 +162,7 @@ var FormLancamento = (function(){
           '<button type="button" class="lanc-mini" data-dia="' + hoje() + '" aria-pressed="' + (est.data === hoje()) + '">Hoje</button>' +
           '<button type="button" class="lanc-mini" data-dia="' + ontem() + '" aria-pressed="' + (est.data === ontem()) + '">Ontem</button></div></div>';
         if (!semCategoria){
-          h += '<div><span class="lanc-rot">Categoria</span>' + lado.grupos.map(function(g){
+          h += '<div><span class="lanc-rot">Categoria' + (est.erroEm === "categoria" ? ' <em class="lanc-erro-in">falta escolher</em>' : "") + '</span>' + lado.grupos.map(function(g){
             return '<div class="lanc-grupo' + (g[0] ? "" : " solto") + '"><i>' + esc(g[0]) + '</i>' + chips("categoria", g[1].map(function(c){ return [c, comPonto(c)]; }), est.cat[o], "Categoria" + (g[0] ? ": " + g[0] : "")) + '</div>';
           }).join("") + '</div>';
         }
@@ -169,8 +170,8 @@ var FormLancamento = (function(){
         h += '<div class="lanc-duas">' +
           '<div class="lanc-campo"><label for="lanc-desc">Descrição <small>(opcional)</small></label><input id="lanc-desc" name="descricao" autocomplete="off" placeholder="' +
             (semCategoria ? (tipo === "Receita" ? "de onde veio" : "para que foi") : "se quiser lembrar o que foi") + '" value="' + esc(est.descricao) + '"></div>' +
-          '<div class="lanc-campo"><label for="lanc-valor">Valor</label><div class="lanc-valor"><i>R$</i><input type="text" id="lanc-valor" name="valor" inputmode="numeric" autocomplete="off" placeholder="0,00" value="' + esc(est.valor) + '" required></div></div></div>';
-        if (o === "pessoal") h += '<div><span class="lanc-rot">Forma de pagamento</span>' + chips("forma", cfg.pessoal.formas, est.forma, "Forma de pagamento") + '</div>';
+          '<div class="lanc-campo"><label for="lanc-valor">Valor' + (est.erroEm === "valor" ? ' <em class="lanc-erro-in">falta o valor</em>' : "") + '</label><div class="lanc-valor"><i>R$</i><input type="text" id="lanc-valor" name="valor" inputmode="numeric" autocomplete="off" placeholder="0,00" value="' + esc(est.valor) + '" required></div></div></div>';
+        if (o === "pessoal") h += '<div><span class="lanc-rot">Forma de pagamento' + (est.erroEm === "forma" ? ' <em class="lanc-erro-in">falta escolher</em>' : "") + '</span>' + chips("forma", cfg.pessoal.formas, est.forma, "Forma de pagamento") + '</div>';
         else h += '<div><span class="lanc-rot">Quem comprou</span>' + chips("quem", cfg.casa.pessoas.map(function(p){ return [p, String(p).split(" ")[0]]; }), est.quem, "Quem comprou") + '</div>';
         h += '<div class="lanc-pe"><button type="submit" class="lanc-ok">' + (alterando ? "Guardar a alteração" : (o === "pessoal" ? "Lançar em Pessoal" : "Lançar na Casa")) + '</button>' +
           (alterando ? '<button type="button" class="lanc-cancelar">Cancelar</button>' : "") +
@@ -196,16 +197,16 @@ var FormLancamento = (function(){
     if (!form) return;
 
     form.addEventListener("change", function(e){
-      var n = e.target.name, v = e.target.value;
+      var n = e.target.name, v = e.target.value; if (est.erroEm && n === est.erroEm){ est.erroEm = ""; form.querySelectorAll(".lanc-erro-in").forEach(function(x){ x.remove(); }); }
       if (n === "onde"){ est.onde = v; est.erro = ""; redesenhar(); }
       else if (n === "tipo"){ est.tipo = v; est.erro = ""; redesenhar(); }
-      else if (n === "categoria"){ est.cat[o] = v; est.erro = ""; var er = form.querySelector(".lanc-erro"); if (er) er.textContent = ""; }
+      else if (n === "categoria"){ est.cat[o] = v; est.erro = ""; est.erroEm = ""; var er = form.querySelector(".lanc-erro"); if (er) er.textContent = ""; form.querySelectorAll(".lanc-erro-in").forEach(function(x){ x.remove(); }); }
       else if (n === "forma"){ est.forma = v; lembrar("forma", v); }
       else if (n === "quem") est.quem = v;
       else if (n === "data"){ est.data = v; redesenhar(); }
     });
     form.addEventListener("input", function(e){
-      var n = e.target.name;
+      var n = e.target.name; if (est.erroEm && n === est.erroEm){ est.erroEm = ""; form.querySelectorAll(".lanc-erro-in").forEach(function(x){ x.remove(); }); }
       if (n === "valor"){ est.valor = mascara(e.target.value); if (e.target.value !== est.valor) e.target.value = est.valor; }
       else if (n === "descricao") est[n] = e.target.value;
     });
@@ -240,11 +241,18 @@ var FormLancamento = (function(){
       if (!o) return;
       var valor = centavos(est.valor);
       var erro = "";
+      var onde = "";
       if (!est.data) erro = "Falta o dia.";
-      else if (!semCategoria && !est.cat[o]) erro = "Falta a categoria.";
-      else if (!(valor > 0)) erro = "Falta o valor.";
-      else if (o === "pessoal" && !est.forma) erro = "Falta a forma de pagamento.";
-      if (erro){ est.erro = erro; redesenhar(); return; }
+      else if (!semCategoria && !est.cat[o]){ erro = "Falta a categoria."; onde = "categoria"; }
+      else if (!(valor > 0)){ erro = "Falta o valor."; onde = "valor"; }
+      else if (o === "pessoal" && !est.forma){ erro = "Falta a forma de pagamento."; onde = "forma"; }
+      if (erro){
+        est.erro = erro; est.erroEm = onde; redesenhar();
+        // o aviso fica junto do campo que falta, e a tela vai até ele (no celular o botão fica uma tela abaixo)
+        var alvo = document.querySelector(".lanc-erro-in");
+        if (alvo) alvo.scrollIntoView({block:"center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+        return;
+      }
       var dados = { data:est.data, tipo:tipo, categoria:semCategoria ? "" : est.cat[o], descricao:String(est.descricao || "").trim(), valor:valor, forma:est.forma, quem:est.quem };
       var resumo = (dados.categoria || tipo) + (dados.descricao ? " (" + dados.descricao.replace(/\.+$/, "") + ")" : "") + ", " + dinheiro(valor) + ", dia " + diaBR(dados.data) + ".";
       // limpa antes de entregar: a página se redesenha dentro do lancar e já pega o formulário vazio
@@ -258,7 +266,7 @@ var FormLancamento = (function(){
         if (typeof volta === "function") alt.desfazer = volta; else alt.desfaz = false;
       } else {
         var feito = { texto:"Lançado " + (o === "pessoal" ? "em Pessoal" : "na Casa") + ": " + resumo, desfaz:true, desfazer:null };
-        est.valor = ""; est.descricao = ""; est.cat[o] = ""; est.erro = ""; est.foco = ""; est.feito = feito;
+        est.valor = ""; est.descricao = ""; est.cat[o] = ""; est.erro = ""; est.erroEm = ""; est.foco = ""; est.feito = feito;
         feito.desfazer = cfg.lancar(o, dados) || null;
       }
       if (el.isConnected) redesenhar();

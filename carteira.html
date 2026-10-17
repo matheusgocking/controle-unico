@@ -140,7 +140,7 @@ h1,h2{ text-wrap:balance; }
 #cabAtivos .seta{ margin-left:3px; color:var(--accent); }
 .abas .cont{ font-size:12px; color:var(--faint); margin-left:6px; font-weight:400; }
 .abas .cont.alerta{ color:var(--warn); }
-[data-aba][hidden]{ display:none !important; }
+[data-aba][hidden], .abas[hidden]{ display:none !important; }
 /* variação curta ao lado do total */
 .mudou{ display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; font-size:14px; color:var(--muted); }
 .mudou b{ margin-left:4px; }
@@ -291,7 +291,15 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
   .seg button{min-width:44px}
   #btnHistorico, #btnCsv{display:none}   /* tarefas de computador: refazer histórico e ler o CSV */
   #drop{display:none}   /* não dá para arrastar arquivo no celular (06/10/2026) */
-  input,select,textarea{font-size:16px}
+  input,select,textarea,select.cat,.diario textarea{font-size:16px}
+  select.cat{min-height:36px}
+  .anotar,label.chk{min-height:40px}
+  label.chk input{width:18px; height:18px}
+  .grafo-ctrl button{min-width:40px; height:40px}
+  /* as seis abas não cabiam: Pools e Diário ficavam fora da tela sem aviso */
+  .abas{flex-wrap:wrap}
+  .abas button{padding:10px 8px; font-size:13px}
+  #periodo button{font-size:12px; white-space:nowrap}
 }
 </style>
 <script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
@@ -538,7 +546,16 @@ const dia = t => new Date(t).toISOString().slice(0,10);
 const DIA_MS = 86400000;
 const un = (v, d) => { try{ const b = BigInt(v); const s = 10n ** BigInt(d); return Number(b / s) + Number(b % s) / Number(s); }catch(e){ return Number(v) / 10**d; } };
 let ultimoGT = 0;
+// o que dizer na tela quando uma leitura falha: nada de "HTTP 429" nem mensagem do navegador em inglês
+function explicar(e){
+  const m = String((e && e.message) || e || '');
+  if(!navigator.onLine || /Failed to fetch|NetworkError|Load failed|sem internet/i.test(m)) return 'sem internet, ou o servidor não respondeu';
+  const h = m.match(/HTTP (\d{3})/);
+  if(h) return (+h[1] === 429 || +h[1] >= 500) ? 'o servidor pediu para esperar; tente de novo em alguns minutos' : 'o servidor recusou o pedido (' + h[1] + ')';
+  return 'erro inesperado';
+}
 async function pegar(url, opts = {}, tentativas = 5){
+  if(navigator.onLine === false) throw new Error('sem internet');
   let erro;
   for(let i = 0; i < tentativas; i++){
     try{
@@ -546,7 +563,7 @@ async function pegar(url, opts = {}, tentativas = 5){
       if(r.status === 429 || r.status >= 500){ erro = new Error('HTTP ' + r.status); await esperar(2500 * (i + 1) ** 2); continue; }
       if(!r.ok) throw new Error('HTTP ' + r.status + ' em ' + url.split('?')[0]);
       return await r.json();
-    }catch(e){ erro = e; if(String(e.message).startsWith('HTTP 4')) throw e; await esperar(1500 * (i + 1)); }
+    }catch(e){ erro = e; if(String(e.message).startsWith('HTTP 4')) throw e; if(e instanceof TypeError && i >= 1) break; await esperar(1500 * (i + 1)); }
   }
   throw erro;
 }
@@ -958,7 +975,7 @@ async function refazerHistorico(){
   let ev = [];
   if(csv) ev = ev.concat(eventosBinance(csv));
   // se uma rede falhar, mantém o histórico anterior em vez de gravar um incompleto
-  for(const rede of ['pulsechain','base']){ try{ ev = ev.concat(rede === 'base' ? await historicoBase(aviso) : await historicoEvm(rede, aviso)); }catch(e){ console.warn(rede, e); if(HIST) throw new Error(`o servidor da ${REDES[rede].nome} não respondeu (${e.message}); mantive o histórico anterior`); avisosMontagem.push(`Não consegui ler o histórico da ${REDES[rede].nome} (${e.message}).`); } }
+  for(const rede of ['pulsechain','base']){ try{ ev = ev.concat(rede === 'base' ? await historicoBase(aviso) : await historicoEvm(rede, aviso)); }catch(e){ console.warn(rede, e); if(HIST) throw new Error(`o servidor da ${REDES[rede].nome} não respondeu (${explicar(e)}); mantive o histórico anterior`); avisosMontagem.push(`Não consegui ler o histórico da ${REDES[rede].nome}: ${explicar(e)}.`); } }
   ev = ev.concat(historicoSolana());
   aviso('pools de liquidez');
   const { pools, recompensas, farms } = await montarPools(ev);
@@ -1889,7 +1906,7 @@ async function iniciar(){
     // registra a visita de agora para a próxima vez
     // só com tudo lido: um total com rede fora do ar ou cotação antiga levaria um número errado para a aba Tudo
     if(!(VIVO.erros && VIVO.erros.length) && !(VIVO.velhos && VIVO.velhos.length)) lsSet(LS.visita, { t:Date.now(), total:totalVivo(), precos:VIVO.precos });
-  }catch(e){ console.error(e); status('Algo falhou: ' + e.message + '. Clique em Atualizar para tentar de novo.'); }
+  }catch(e){ console.error(e); status('Não consegui atualizar: ' + explicar(e) + '. Clique em Atualizar para tentar de novo.'); }
   ocupado = false;
   window.__pronto = true;
   seguirFila();
@@ -1934,7 +1951,7 @@ document.getElementById('posicoes').addEventListener('click', async e => {
   const ligada = lsGet('cripto-v1-simulacao', 'nao') !== 'nao';
   lsSet('cripto-v1-simulacao', ligada ? 'nao' : 'uni:6094669');
   e.target.disabled = true; status('Buscando a posição…', true);
-  try{ VIVO.posicoes = await posicoesAbertas(); status(ligada ? 'Simulação retirada.' : 'Simulação carregada.'); }catch(err){ status('Não consegui carregar a posição: ' + err.message); }
+  try{ VIVO.posicoes = await posicoesAbertas(); status(ligada ? 'Simulação retirada.' : 'Simulação carregada.'); }catch(err){ status('Não consegui carregar a posição: ' + explicar(err)); }
   desenharPosicoes(); desenharAlertas();
 });
 document.getElementById('painelGolpe').addEventListener('click', e => { if(e.target.closest('.fechar')) e.currentTarget.hidden = true; });
@@ -1950,12 +1967,12 @@ seg('tema', null, v => {
 { const t = lsGet(LS.tema, 'auto'); const b = document.querySelector(`#tema [data-v="${t}"]`); if(b) b.click(); }
 document.getElementById('pequenos').addEventListener('change', e => { est.pequenos = e.target.checked; desenharAtivos(); });
 document.getElementById('btnOlho').addEventListener('click', e => { const on = document.body.classList.toggle('privado'); e.target.setAttribute('aria-pressed', on); e.target.textContent = on ? 'Mostrar valores' : 'Esconder valores'; });
-document.getElementById('btnAtualizar').addEventListener('click', async () => { if(ocupado) return; ocupado = true; try{ await atualizarVivo(); tudo(); status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui atualizar: ' + e.message); } ocupado = false; seguirFila(); });
+document.getElementById('btnAtualizar').addEventListener('click', async () => { if(ocupado) return; ocupado = true; try{ await atualizarVivo(); tudo(); status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui atualizar: ' + explicar(e)); } ocupado = false; seguirFila(); });
 // CSV importado ou "não é golpe" marcado durante uma leitura: o histórico é refeito quando ela termina
 // (antes o pedido se perdia e a tela só mudava 12 horas depois, 06/10/2026)
 let refazerDepois = false;
 function seguirFila(){ if(refazerDepois && !ocupado){ refazerDepois = false; refazerTudo(); } }
-async function refazerTudo(){ if(ocupado){ refazerDepois = true; return; } ocupado = true; try{ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); PRECOS = lsGet(LS.precos, {}); await atualizarVivo(); tudo(); status('Histórico refeito às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui refazer o histórico: ' + e.message); } ocupado = false; seguirFila(); }
+async function refazerTudo(){ if(ocupado){ refazerDepois = true; return; } ocupado = true; try{ avisosMontagem = []; HIST = await refazerHistorico(); Object.assign(infoToken, HIST.info || {}); PRECOS = lsGet(LS.precos, {}); await atualizarVivo(); tudo(); status('Histórico refeito às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui refazer o histórico: ' + explicar(e)); } ocupado = false; seguirFila(); }
 document.getElementById('btnHistorico').addEventListener('click', () => { if(!ocupado && confirm('Refazer o histórico relê todas as transações e leva uns 2 minutos. Continuar?')) refazerTudo(); });
 // abas: a aba aberta fica no endereço da página (#ativos, #pools, #diario)
 const ABAS = ['geral', 'mapa', 'ativos', 'aportes', 'pools', 'diario'];
@@ -2092,7 +2109,7 @@ document.getElementById('arqInicial').addEventListener('change', async e => {
 });
 Nuvem.iniciar();
 if (CARTEIRA_DADOS && EU_EVM) iniciar();
-else { document.getElementById('portao').hidden = false; document.getElementById('status').textContent = 'Esperando o caderno da carteira.'; }
+else { document.getElementById('portao').hidden = false; document.getElementById('conteudo').hidden = true; document.getElementById('abas').hidden = true; document.getElementById('status').textContent = 'Esperando o caderno da carteira.'; }
 </script>
 </body>
 </html>

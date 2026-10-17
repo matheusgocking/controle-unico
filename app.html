@@ -1022,7 +1022,7 @@ function painelMeusLancamentos(){
     const cls = !casa && (l.tipo === "Receita" || l.tipo === "Resgate") ? "pos" : "";
     const sinal = cls ? "+ " : casa || l.tipo === "Despesa" ? "− " : "";
     const cat = nomeCat(l.categoria) + (!casa && l.tipo !== "Despesa" ? " · " + semPonto(l.tipo) : "");
-    return `<tr class="clic" data-editar="${onde}:${escH(l.id)}" tabindex="0" title="Alterar"><td class="c-data">${dataCurta(l.data)}</td>
+    return `<tr class="clic" data-editar="${onde}:${escH(l.id)}" tabindex="0" title="Editar"><td class="c-data">${dataCurta(l.data)}</td>
       <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : nomeCat(l.categoria)))}</b><span class="so-cel">${escH(comPonto(lugar + " · " + cat))}</span></td>
       <td class="c-cat">${lugar}.</td><td class="c-forma">${escH(comPonto(cat))}</td>
       <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
@@ -1084,7 +1084,7 @@ function linhaLanc(l){
   const tipo = l.tipo !== "Despesa" ? ` · ${semPonto(l.tipo)}` : "";
   // linha composta leva um ponto só, no fim: "Reserva · Resgate." (correção dele, 02/10/2026)
   const cat = nomeCat(l.categoria), forma = semPonto(l.forma);
-  return `<tr class="clic" data-editar="matheus:${escH(l.id)}" tabindex="0" title="Alterar"><td class="c-data">${dataCurta(l.data)}</td>
+  return `<tr class="clic" data-editar="matheus:${escH(l.id)}" tabindex="0" title="Editar"><td class="c-data">${dataCurta(l.data)}</td>
     <td class="c-desc"><b>${escH(comPonto(l.descricao && l.descricao !== "-" ? l.descricao : cat))}</b><span class="so-cel">${escH(comPonto([cat, forma].filter(Boolean).join(" · ") + tipo))}</span></td>
     <td class="c-cat">${escH(comPonto(cat + tipo))}</td><td class="c-forma">${escH(comPonto(forma))}</td>
     <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
@@ -1128,7 +1128,7 @@ function painelPendencias(){
       (l.length ? l.map(linha).join("") : `<p class="vazio">Nada em aberto.</p>`) + `</section>`;
   };
   const form = `<details class="novo"><summary>+ Nova pendência</summary><form class="linha" id="fPend">
-    <div><label>É dinheiro</label><select name="tipo"><option value="receber">a receber</option><option value="pagar">a pagar</option></select></div>
+    <div><label>Tipo</label><select name="tipo"><option value="receber">a receber (me devem)</option><option value="pagar">a pagar (eu devo)</option></select></div>
     <div style="grid-column:span 2"><label>De quem, ou para quem</label><input name="nome" required autocomplete="off"></div>
     <div><label>Origem</label><input name="origem" list="pendOrigens" placeholder="opcional" autocomplete="off">
       <datalist id="pendOrigens"><option>Prática Clínica</option><option>Empréstimo</option><option>Viagem</option><option>Multa</option><option>Outro</option></datalist></div>
@@ -1182,7 +1182,7 @@ async function importarPendencias(arquivo){
 
 // O Dinheiro em quatro telas (pedido dele, 01/10/2026: fixos e pendências empilhados no fim da
 // tela ficavam mal organizados). A chave fica no alto; o mês aberto vale para todas.
-const VISTAS_DIN = [["mes","Lançamentos"],["fixos",'<span class="so-larg">Gastos fixos</span><span class="so-cel">Fixos</span>'],["pend","Pendências"],["hist","Mês a mês"],["fech",'<span class="so-larg">Fechamento</span><span class="so-cel">Fechou</span>']];
+const VISTAS_DIN = [["mes","Lançamentos"],["fixos",'<span class="so-larg">Gastos fixos</span><span class="so-cel">Fixos</span>'],["pend","Pendências"],["hist",'<span class="so-larg">Mês a mês</span><span class="so-cel">Meses</span>'],["fech",'<span class="so-larg">Fechamento</span><span class="so-cel">Fechamento</span>']];
 let vistaDin = "mes";
 // o mês que a Tudo mostrava antes de "Ver o fechamento": ao voltar para a Tudo, ela volta a ele
 let voltaDoFech = null;
@@ -1269,7 +1269,7 @@ function vistaHistorico(){
       <b class="${sobra < -0.005 ? "neg" : "pos"}"><small>${sobra < -0.005 ? "faltou" : "sobrou"}</small>${dinheiro(Math.abs(sobra))}</b></button>`;
   }).join("");
   return `<section class="painel bloco"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serie, { aberto:chaveMes(ref) })}</section>
-    ${linhas ? `<section class="painel bloco"><h2>Cada mês<span class="dir">últimos 12 meses</span></h2>${linhas}</section>` : ""}
+    ${linhas ? `<section class="painel bloco"><h2>Cada mês<span class="dir">meses com movimento</span></h2>${linhas}</section>` : ""}
     <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos que já saíram e o que você pagou na casa, o mesmo "Gastei" da Situação do mês. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela; no mês em andamento é o mesmo "Saldo agora" da Situação do mês. As barras mostram só o que entrou e saiu.</p>`;
 }
 
@@ -1656,7 +1656,7 @@ function telaCasa(){
 
   const quem = q => `<span class="quem"><i style="background:${cor(q)}"></i>${escH(primeiro(q))}</span>`;
   const lista = doMes.length ? `${filtroCategoria(doMes, "casa")}${ordemCelular("casa")}<table class="t">${cabecalho("casa")}<tbody>
-    ${filtrar(doMes, "casa").map(l => `<tr${podeMexer(l) ? ` class="clic" data-editar="casa:${escH(l.id)}" tabindex="0" title="Alterar"` : ` class="so-ver"`}><td class="c-data">${dataCurta(l.data)}</td>
+    ${filtrar(doMes, "casa").map(l => `<tr${podeMexer(l) ? ` class="clic" data-editar="casa:${escH(l.id)}" tabindex="0" title="Editar"` : ` class="so-ver"`}><td class="c-data">${dataCurta(l.data)}</td>
       <td class="c-desc"><b>${escH(comPonto(semPonto(l.categoria) + (l.descricao && l.descricao !== "-" && semPonto(l.descricao).toLowerCase() !== semPonto(l.categoria).toLowerCase() ? " · " + l.descricao : "")))}</b><span class="so-cel">${quem(l.quem)}</span></td>
       <td class="c-quem">${quem(l.quem)}</td>
       <td class="c-val dir">${dinheiro(l.valor)}</td>

@@ -92,6 +92,7 @@ details.lista > summary .q{font-weight:400;color:var(--faint);font-size:13px}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .na-casca .marca,.na-casca #tema{display:none !important}
 @media (max-width:700px){
+  .b{min-height:40px} .redondo{width:40px; height:40px} .b.s{min-height:40px}
   .topo{padding:6px 12px}
   .wrap{padding:0 12px 48px}
   .painel{padding:14px}
@@ -642,7 +643,7 @@ function tabelaTotais(totais){
     const difTxt = !tem ? "—" : igual ? "igual" : (t.inteiro ? (dif > 0 ? "+" : "") + dif : (dif > 0 ? "+" : "−") + dinheiro(Math.abs(dif)));
     return `<tr class="${cls}"><td class="c-rot">${escH(t.rot)}</td><td class="dir">${fmtVal(t.p, t.inteiro)}</td><td class="dir">${fmtVal(t.a, t.inteiro)}</td><td class="dir c-dif">${difTxt}</td><td class="c-obs">${escH(t.obs || "")}</td></tr>`;
   }).join("");
-  return `<h3>Totais de ${MESES[ref.getMonth()]}, lado a lado</h3><div class="tabwrap"><table class="t"><thead><tr><th>Item</th><th class="dir">Planilha</th><th class="dir">App</th><th class="dir">Diferença</th><th>Observação</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+  return `<h3>Totais de ${MESES[ref.getMonth()]}, lado a lado</h3><div class="tabwrap"><table class="t"><thead><tr><th>Item</th><th class="dir">Planilha</th><th class="dir">App</th><th class="dir" title="app menos planilha">Diferença (app − planilha)</th><th>Observação</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
 }
 const SELO = { planilha:"só na planilha", app:"só no app", dif:"diferente" };
 function tabelaItens(itens, titulo){
@@ -718,7 +719,7 @@ function textoDaLista(){
     if (r.falta){ s += (r.falta === "planilha" ? "sem planilha" : "sem caderno no app") + "\n"; return; }
     r.totais.forEach(t => { const tem = t.p != null && t.a != null; s += "- " + t.rot + ": planilha " + fmtVal(t.p, t.inteiro) + " | app " + fmtVal(t.a, t.inteiro) + (tem ? (t.inteiro ? (Math.round(t.a) === Math.round(t.p)) : perto(t.a, t.p)) ? " | igual" : " | DIFERENTE" : "") + (t.obs ? " (" + t.obs + ")" : "") + "\n"; });
     if (!r.itens.length) s += "- item por item: igual\n";
-    r.itens.forEach(i => { s += "- [" + (conferidos.has(i.k) ? "x" : " ") + "] " + SELO[i.lado] + ": " + (i.data ? dataCurta(i.data) + " " : "") + i.desc + (i.extra ? " (" + i.extra + ")" : "") + (i.valor != null ? " " + dinheiro(i.valor) : "") + (i.nota ? " — " + i.nota : "") + "\n"; });
+    r.itens.forEach(i => { s += "- [" + (conferidos.has(i.k) ? "x" : " ") + "] " + SELO[i.lado] + ": " + (i.data ? dataCurta(i.data) + " " : "") + i.desc + (i.extra ? " (" + i.extra + ")" : "") + (i.valor != null ? " " + dinheiro(i.valor) : "") + (i.nota ? ": " + i.nota : "") + "\n"; });
     r.notas.forEach(x => { s += "  obs: " + x + "\n"; });
   });
   return s;

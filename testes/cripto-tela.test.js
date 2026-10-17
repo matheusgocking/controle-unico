@@ -97,6 +97,7 @@ test("O topo e a rosca contam os mesmos lugares (redes abaixo de R$ 1 ficam fora
 test("A dica do gráfico de Aportes diz Aportado líquido", async () => {
   const pg = await abrir();
   await pg.evaluate(() => abrirAba('aportes'));
+  await pg.evaluate(() => { document.getElementById('conteudo').hidden = false; });   // o teste abre sem caderno, e sem ele a página mostra só o portão
   const bb = await pg.locator('#svgAp').boundingBox();
   await pg.mouse.move(bb.x + bb.width * 0.6, bb.y + bb.height / 2);
   const txt = await pg.locator('#dicaAp').textContent();

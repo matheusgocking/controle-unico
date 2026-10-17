@@ -6437,7 +6437,7 @@ function renderMarketing(){
   if(document.activeElement !== campoDesde) campoDesde.value = desde;
   var hd = "";
   if(!lanc){
-    hd = linha("O que saiu do bolso", "— abra a aba Carteira uma vez neste aparelho");
+    hd = linha("O que saiu do bolso", "sem dado: abra a aba Carteira uma vez neste aparelho");
   } else {
     var hojeISO = chaveData(hoje0()), mesISO = hojeISO.slice(0,7), anoISO = hojeISO.slice(0,4), noMes = 0, noAno = 0;
     lanc.forEach(function(l){

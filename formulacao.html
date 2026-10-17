@@ -207,7 +207,7 @@ dialog .grupo-tipos{font-size:12px;font-weight:600;color:var(--faint);text-trans
 .lista-alvo button.feito{opacity:.6;cursor:default}
 .lista-alvo button.feito:hover{background:none}
 .lista-alvo button .ok{color:var(--pos);font-weight:600}
-#dlg-ligar .pe-dlg{position:sticky;bottom:-18px;background:var(--surface);padding:10px 0 2px;margin-top:6px}
+dialog .pe-dlg{position:sticky;bottom:-18px;background:var(--surface);padding:10px 0 2px;margin-top:6px}
 #dlg-ligar details.mais-tipos summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);margin:12px 0 4px}
 .aviso-lg{margin:8px 0 0;font-size:13px;color:var(--pos);font-weight:600;min-height:1.4em}
 .ajuda{background:var(--accent-soft);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin-top:14px;font-size:14px}
@@ -218,6 +218,7 @@ body.com-explicacao .so-explica{display:block}
 
 /* rede */
 .rede-caixa{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-top:14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.it-texto,.ajuda p,.ajuda li,.dica,.sub,.crit small{max-width:70ch}
 .rede-caixa svg{display:block;width:100%;min-width:820px;height:auto;font-family:var(--font)}
 .rede-caixa .celula{fill:none;stroke:var(--line)}
 .rede-caixa .faixa{fill:var(--surface-2)}
@@ -254,7 +255,13 @@ body.com-explicacao .so-explica{display:block}
   dialog .tipos label{padding:6px 10px;align-items:center}
   dialog .tipos small{display:none}
   dialog .tipos label:has(input:checked) small{display:block}
+  .vistas{flex-wrap:wrap}
   .vistas button{padding:9px 9px}
+  .vistas .q{display:none}
+  .rede-caixa svg{min-width:1200px}
+  .b.s,.chip,.mais,.it-pe .acoes button,.sug button{min-height:40px}
+  .it-pe select,.rel select{min-height:40px}
+  .mini{min-width:40px; min-height:40px}
   .modelos,.ed-topo,.ed-cab{grid-template-columns:1fr}
   .ed-cols{display:none}
   .ed-campo{grid-template-columns:1fr 1fr}
@@ -495,7 +502,7 @@ const MODELOS_PRONTOS = [
       CN("Outros antecedentes familiares relevantes","Condições médicas ou neurodesenvolvimentais relevantes para o caso.")].map(k => Object.assign(k, {tipo:"historia"})), {area:"bio"}),
     M("saudemental","Histórico de saúde mental","desligado", [CN("Problemas e sintomas"),CN("Contexto de início"),CN("Curso e desfecho"),CN("Intercorrências relevantes"),
       CN("Tratamentos anteriores","Período, modalidade, indicação, intervenção, resposta e motivo do encerramento.")].map(k => Object.assign(k, {tipo:"historia"})), {area:"afeto"}),
-    M("alerta","Sinais de alerta (red flags)","desligado", UM("Riscos que pedem atenção imediata.")),
+    M("alerta","Sinais de alerta","desligado", UM("Riscos que pedem atenção imediata.")),
     M("funcionamento","Funcionamento","desligado", [CN("Comportamento","",{area:"comportamento"}),CN("Cognição","",{area:"cognitivo"}),CN("Afeto e humor","",{area:"afeto"}),
       CN("Biofisiológico","",{area:"bio"}),CN("Existencial","",{area:"motivacao"}),CN("Social/interpessoal","",{area:"socio"}),CN("Na sociedade","",{area:"socio"})]),
     M("diagnostico","Diagnóstico","desligado", [CN("Diagnóstico(s)"),CN("Fundamentação diagnóstica"),CN("Diagnósticos diferenciais"),CN("Síntese diagnóstica","",{hip:true}),CN("Observações diagnósticas")], {area:"afeto"}),
@@ -538,7 +545,7 @@ const MODELOS_PRONTOS = [
       C("ctx","Contexto","Em que situações isso vale e em quais não vale.")]),
     M("recursos","Recursos e processos adaptativos","ligado", UM("O que a pessoa já tem a favor: forças, relações, habilidades, processos que funcionam.", {tipo:"recurso"})),
     M("hipoteses","Hipóteses","ligado", UM("Por que o problema se mantém: que processos se reforçam entre si. Ligue a hipótese aos dados que a sustentam.", {hip:true})),
-    PLANO("Plano de intervenção", "Um procedimento (kernel) por registro, e o processo que ele mira.")
+    PLANO("Plano de intervenção", "Um procedimento por registro, e o processo que ele mira.")
   ]},
   {id:"tcc", pronto:true, nome:"TCC (conceitualização cognitiva)",
    descricao:"No formato do diagrama de conceitualização cognitiva de Judith Beck: história de vida e precipitantes, crenças centrais e intermediárias, estratégias de enfrentamento e situações típicas, com forças, valores e aspirações. Redação própria.",
@@ -728,7 +735,7 @@ let abertoId = (() => { try { return localStorage.getItem(CH_ABERTO); } catch(e)
 let vista = (() => { const h = location.hash.slice(1); return h === "relacoes" ? "rede" : ["hipoteses","rede","medidas","hashtags"].includes(h) ? h : "formulacao"; })();
 let tela = "caso", editando = null, tagAberta = null;
 /* a Revisão começa fechada: o que o terapeuta registrou vem antes; o placar continua à vista */
-const fechados = new Set(["__revisao"]), edAbertos = new Set();
+const fechados = new Set(["__revisao"]), edAbertos = new Set(), abriuVazio = new Set();   // módulo sem registro nasce fechado; abriuVazio guarda os que ele abriu
 /* a explicação vem ligada na primeira visita, como na Rede PBT, e o aparelho lembra a escolha */
 let explica = (() => { try { return localStorage.getItem(CH_EXPLICA) !== "0"; } catch(e){ return true; } })();
 
@@ -858,7 +865,7 @@ function htmlCampo(c, m, k){
 }
 function htmlModulo(c, m){
   const n = itensDe(c, m.id).filter(i => !foraDoModelo(c, i)).length;
-  return '<details class="painel" data-modulo="' + esc(m.id) + '"' + (fechados.has(m.id) ? "" : " open") + "><summary>" + esc(m.nome) +
+  return '<details class="painel" data-modulo="' + esc(m.id) + '"' + ((n ? !fechados.has(m.id) : abriuVazio.has(m.id)) ? " open" : "") + "><summary>" + esc(m.nome) +
     '<span class="q">' + (n ? plural(n, "registro", "registros") : "vazio") + '</span></summary><div class="corpo">' +
     (m.dica ? '<p class="dica">' + esc(m.dica) + "</p>" : "") + m.campos.map(k => htmlCampo(c, m, k)).join("") + "</div></details>";
 }
@@ -1447,7 +1454,7 @@ function irPara(id){
   const c = caso(), it = c.itens.find(i => i.id === id); if (!it) return;
   const achar = () => $("conteudo").querySelector('li[data-item="' + CSS.escape(id) + '"]');
   let el = achar();
-  if (!el){ vista = "formulacao"; fechados.delete(it.m); history.replaceState(null, "", location.pathname + location.search); desenhar(); el = achar(); }
+  if (!el){ vista = "formulacao"; fechados.delete(it.m); abriuVazio.add(it.m); history.replaceState(null, "", location.pathname + location.search); desenhar(); el = achar(); }
   if (!el) return;
   for (let d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
   el.scrollIntoView({block:"center", behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth"});
@@ -1813,7 +1820,7 @@ $("conteudo").addEventListener("keydown", e => {
 });
 $("conteudo").addEventListener("toggle", e => {
   const d = e.target; if (!d.dataset) return;
-  if (d.dataset.modulo) d.open ? fechados.delete(d.dataset.modulo) : fechados.add(d.dataset.modulo);
+  if (d.dataset.modulo){ if (d.open){ fechados.delete(d.dataset.modulo); abriuVazio.add(d.dataset.modulo); } else { fechados.add(d.dataset.modulo); abriuVazio.delete(d.dataset.modulo); } }
   else if (d.classList.contains("ed-mod")) d.open ? edAbertos.add(d.dataset.mod) : edAbertos.delete(d.dataset.mod);
 }, true);
 /* fechar o registro (Cancelar ou Esc) com texto novo pergunta antes, para não perder o que foi escrito */

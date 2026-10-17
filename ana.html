@@ -188,6 +188,9 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   table.t:not(.valores) thead{display:none}
   table.t:not(.valores) tr{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
   td.c-x .x{padding:0;min-width:34px;min-height:40px}
+  ul.regras .x{min-width:34px;min-height:40px}
+  .vai{min-width:40px;min-height:40px;justify-content:center}
+  .vai input{width:22px;height:22px}
   table.t:not(.valores) tr:last-child{border-bottom:0}
   table.t:not(.valores) td{border:0;padding:0 !important}
   table.plantoes tr{grid-template-columns:44px minmax(0,1fr) auto 30px auto !important}
@@ -498,9 +501,10 @@ function telaPlantoes(){
       <td class="c-cat">${escH(p.periodo)}</td><td class="c-forma"><span class="selo-b ${extra ? "extra" : ""}">${extra ? "Extra" : "Regular"}</span></td>
       <td class="c-val dir">${dinheiro(p.valor)}</td>
       <td><label class="vai" title="Vai fazer este plantão"><input type="checkbox" data-vai="${escH(p.id)}" ${p.realizar ? "checked" : ""}><span class="rot">vai fazer</span></label></td>
-      <td class="c-x"><button class="x lapis" data-editar-plantao="${escH(p.id)}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="plantoes:${escH(p.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
+      <td class="c-x"><button class="x lapis" data-editar-plantao="${escH(p.id)}" aria-label="Editar" title="Editar">✎</button><button class="x" data-apagar="plantoes:${escH(p.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
   }).join("");
   const valores = `<details class="origem" id="dValores"><summary>Valores e locais</summary>
+    <p class="nota" style="margin:0 0 6px">No celular, deslize a tabela para o lado para ver os outros dias.</p>
     <div class="rolar"><table class="t valores"><thead><tr><th>Local</th><th>Cai no mês seguinte</th>${DIAS_CURTOS.map(d => `<th class="dir">${d}</th>`).join("")}<th><span class="so-leitor">Ações</span></th></tr></thead><tbody>
     ${cad.locais.map((L, i) => `<tr><td><b>${escH(L.nome)}</b></td>
       <td><label class="vai"><input type="checkbox" data-paga="${i}" ${L.pagaMesSeguinte ? "checked" : ""}><span>sim</span></label></td>
@@ -631,7 +635,7 @@ function telaAtendimentos(){
   const linhas = lst.map(a => `<tr><td class="c-data">${dataCurta(a.data)}<small>${DIAS_CURTOS[diaSemana(a.data)]}</small></td>
     <td class="c-desc"><b>${escH(a.paciente)}</b></td>
     <td class="c-val dir">${dinheiro(a.valor)}</td>
-    <td class="c-x"><button class="x lapis" data-editar-atend="${escH(a.id)}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="atendimentos:${escH(a.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
+    <td class="c-x"><button class="x lapis" data-editar-atend="${escH(a.id)}" aria-label="Editar" title="Editar">✎</button><button class="x" data-apagar="atendimentos:${escH(a.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
   return barraMes() + `
   <div class="duas larga">
     <section class="painel"><h2>Atendimentos de ${nome}<span class="dir">${lst.length} no mês · ${dinheiro(soma(lst, a => a.valor))}</span></h2>
@@ -730,7 +734,7 @@ function telaGastos(){
     <td class="c-desc"><b>${escH(comPonto(l.descricao || l.categoria))}</b><span class="so-cel">${escH(comPonto([l.descricao ? l.categoria : "", l.forma].filter(Boolean).join(" · ")))}</span></td>
     <td class="c-cat">${escH(comPonto(l.categoria))}</td><td class="c-forma">${escH(comPonto(l.forma))}</td>
     <td class="c-val dir">${dinheiro(l.valor)}</td>
-    <td class="c-x"><button class="x lapis" data-editar="${escH(l.id)}" aria-label="Alterar" title="Alterar">✎</button><button class="x" data-apagar="lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
+    <td class="c-x"><button class="x lapis" data-editar="${escH(l.id)}" aria-label="Editar" title="Editar">✎</button><button class="x" data-apagar="lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`).join("");
   // o fixo tirado (ou que acabou antes deste mês) sai da lista; nos meses em que valia, continua aparecendo
   const fixos = cad.gastosFixos.filter(g => vale(g, k)).sort((a, b) => valorNoMes(b, k) - valorNoMes(a, k));
   const tFixos = fixos.length ? `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Valor em ${nome}</th><th><span class="so-leitor">Ações</span></th></tr></thead><tbody>
@@ -777,7 +781,7 @@ function desenhar(){
   ligar();
 }
 
-// formulário que está alterando uma linha: botão diz "Guardar alteração", aparece "Cancelar" e some o "Repetir por"
+// formulário que está alterando uma linha: botão diz "Guardar a alteração", aparece "Cancelar" e some o "Repetir por"
 function modoEdicao(f, sim, texto){
   const b = f.querySelector("[type=submit]"); if (b && texto) b.textContent = texto;
   f.querySelectorAll("[data-so-editando]").forEach(x => x.classList.toggle("hidden", !sim));
@@ -871,12 +875,12 @@ function ligar(){
     if (![...e.local.options].some(o => o.value === p.local)) e.local.insertAdjacentHTML("beforeend", `<option>${escH(p.local)}</option>`);
     e.id.value = p.id; e.data.value = p.data; e.local.value = p.local; e.periodo.value = p.periodo; e.tipo.value = p.tipo || "Regular";
     e.valor.value = emReais(p.valor);
-    modoEdicao(f, true, "Guardar alteração");
+    modoEdicao(f, true, "Guardar a alteração");
     document.getElementById("dPlantao").open = true;
     f.scrollIntoView({ block:"center", behavior:"smooth" });
   });
   const fpe = document.getElementById("fPlantao");
-  if (fpe && fpe.elements.id.value) modoEdicao(fpe, true, "Guardar alteração");
+  if (fpe && fpe.elements.id.value) modoEdicao(fpe, true, "Guardar a alteração");
   liga("fRegra", d => {
     let inicio = d.inicio || hojeISO(); while (diaSemana(inicio) !== Number(d.dia)) inicio = somaDias(inicio, 1);
     cad.regrasPlantao.push({ id:novoId(), local:d.local, periodo:d.periodo, dia:Number(d.dia), quando:d.quando, inicio, valor:deReais(d.valor) || 0 });
@@ -926,7 +930,7 @@ function ligar(){
   // valor só com números: a vírgula anda sozinha (1025 vira 10,25), como no lançamento
   document.querySelectorAll("[data-dinheiro]").forEach(i => i.oninput = () => { const v = FormLancamento.mascara(i.value); if (v !== i.value) i.value = v; });
   const fa = document.getElementById("fAtend");
-  if (fa && fa.elements.id.value) modoEdicao(fa, true, "Guardar alteração");
+  if (fa && fa.elements.id.value) modoEdicao(fa, true, "Guardar a alteração");
   // "Cancelar" larga a alteração: o formulário volta vazio, para lançar um novo
   document.querySelectorAll("[data-cancelar]").forEach(b => b.onclick = () => {
     const f = document.getElementById(b.dataset.cancelar); if (!f) return;
@@ -946,7 +950,7 @@ function ligar(){
     const a = cad.atendimentos.find(x => x.id === b.dataset.editarAtend), f = document.getElementById("fAtend"); if (!a || !f) return;
     f.elements.id.value = a.id; f.elements.paciente.value = a.paciente; f.elements.data.value = a.data;
     f.elements.valor.value = FormLancamento.mascara((Number(a.valor) || 0).toFixed(2));
-    modoEdicao(f, true, "Guardar alteração");
+    modoEdicao(f, true, "Guardar a alteração");
     f.scrollIntoView({ block:"center", behavior:"smooth" }); f.elements.valor.focus();
   });
   liga("fCategoria", d => { const n = d.nome.trim(); if (n && !cad.categorias.includes(n)) { cad.categorias.push(n); salvar(); } });

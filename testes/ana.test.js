@@ -67,7 +67,7 @@ test("Ana, Plantões: o lápis altera o plantão sem duplicar, e Cancelar volta 
   await p.click('#abas [data-a="plantoes"]');
   await p.click('[data-editar-plantao="p3"]');
   assert.equal(await p.inputValue("#fPlantao [name=valor]"), "700,00");
-  assert.equal(await p.textContent("[data-botao-plantao]"), "Guardar alteração");
+  assert.equal(await p.textContent("[data-botao-plantao]"), "Guardar a alteração");
   await p.fill("#fPlantao [name=valor]", ""); await p.type("#fPlantao [name=valor]", "75000");
   await p.click("[data-botao-plantao]"); await p.waitForTimeout(200);
   let c = await caderno();

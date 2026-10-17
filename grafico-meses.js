@@ -19,6 +19,9 @@ var GraficoMeses = (function(){
     opcoes = opcoes || {};
     var rotE = opcoes.entrou || "Entrou", rotS = opcoes.saiu || "Saiu";
     if (!serie.some(function(m){ return m.entrou > 0.005 || m.saiu > 0.005; })) return '<p class="vazio">Ainda não há meses com lançamento.</p>';
+    // no celular cabem seis meses sem rolar de lado (o eixo ficava escondido); a lista embaixo traz todos
+    var estreito = window.matchMedia && window.matchMedia("(max-width:700px)").matches, cortou = estreito && serie.length > 6;
+    if (cortou) serie = serie.slice(-6);
     var W = 44 * serie.length + 56, H = 220, esq = 50, topo = 12, base = 176;
     var max = teto(Math.max.apply(null, serie.map(function(m){ return Math.max(m.entrou, m.saiu); })));
     var y = function(v){ return base - (v / max) * (base - topo); };
@@ -43,13 +46,14 @@ var GraficoMeses = (function(){
     }).join("");
     return '<style>.gm-rolar{overflow-x:auto}.gm-rolar svg{display:block;margin:0 auto;font-family:inherit}' +
       '.gm-eixo{fill:var(--muted);font-size:11px}.gm-rot{fill:var(--muted);font-size:12px}' +
-      '.gm-mes{cursor:pointer;outline:none}.gm-fundo{fill:transparent}.gm-mes:hover .gm-fundo,.gm-mes:focus-visible .gm-fundo{fill:var(--surface-2)}' +
+      '.gm-mes{cursor:pointer}.gm-mes:focus-visible{outline:none}.gm-mes:focus-visible .gm-fundo{stroke:var(--accent);stroke-width:2}' +
+      '.gm-fundo{fill:transparent}.gm-mes:hover .gm-fundo,.gm-mes:focus-visible .gm-fundo{fill:var(--surface-2)}' +
       '.gm-mes.on .gm-fundo{fill:var(--surface-2);stroke:var(--line)}.gm-mes.on .gm-rot{fill:var(--text);font-weight:700}' +
       '.gm-leg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:0 0 8px}' +
       '.gm-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}</style>' +
       '<p class="gm-leg"><span><i style="background:var(--c3)"></i>' + rotE + '</span><span><i style="background:var(--c2)"></i>' + rotS + '</span></p>' +
       '<div class="gm-rolar"><svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + rotE + ' e ' + rotS.toLowerCase() + ' em cada mês">' +
-      grade + grupos + '</svg></div>';
+      grade + grupos + '</svg></div>' + (cortou ? '<p class="gm-leg" style="margin-top:6px">Aqui, os últimos 6 meses. A lista embaixo traz todos.</p>' : '');
   }
 
   // os n meses que terminam no mês de hoje (ou no mês aberto, se ele for depois)

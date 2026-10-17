@@ -95,7 +95,7 @@ a{color:var(--accent)}
   <section id="comeco">
     <h2>Começar</h2>
     <ul>
-      <li>Toque em <kbd>Entrar com o Google</kbd> no alto. No app instalado, quem já entrou antes entra sozinho.</li>
+      <li>Toque em <kbd>Entrar</kbd> no alto (no computador, <kbd>Entrar com o Google</kbd>). No app instalado, quem já entrou antes entra sozinho.</li>
       <li>O ponto no alto diz onde estão os dados: <span class="pt ok"></span> verde, salvo no Google Drive; <span class="pt indo"></span> amarelo, salvando ou buscando; <span class="pt erro"></span> vermelho, algo deu errado, e o motivo aparece escrito ao lado.</li>
       <li>O app grava sozinho, um instante depois de cada mudança. Não há botão de salvar.</li>
       <li>São três abas: <b>Tudo</b>, <b>Carteira</b> e <b>Clínica</b>. No celular elas ficam embaixo; no computador, em cima.</li>
@@ -112,7 +112,7 @@ a{color:var(--accent)}
       <li>Depois: o que é (despesa, receita, aporte ou resgate da reserva), o dia (<kbd>Hoje</kbd>, <kbd>Ontem</kbd> ou outro), a categoria, a descrição se quiser, o valor e a forma de pagamento (ou quem comprou, na Casa).</li>
       <li>No valor, digite só os números: a vírgula anda sozinha (1025 vira 10,25).</li>
       <li>Depois de lançar, o app mostra o que entrou e oferece <kbd>Desfazer</kbd>.</li>
-      <li>Nas listas, o lápis <kbd>✎</kbd> altera um lançamento e o <kbd>×</kbd> apaga (o app pergunta antes).</li>
+      <li>Toque na linha de um lançamento para alterar. No computador o <kbd>×</kbd> apaga; no celular, apagar fica dentro do lançamento (o app pergunta antes).</li>
     </ul>
   </section>
 
@@ -120,7 +120,8 @@ a{color:var(--accent)}
     <h2>Tudo</h2>
     <p class="serve">O seu mês num olhar só.</p>
     <ul>
-      <li>A caixa do alto dá o veredito: <b>Pode gastar</b>, <b>Segure até entrar</b> ou <b>Não pode gastar</b>.</li>
+      <li>No alto, <b>O que precisa de você</b>: atrasos, sessões sem marca, fixos que vencem e limites estourados. Toque num aviso para ir até ele.</li>
+      <li>Depois, a caixa do veredito: <b>Pode gastar</b>, <b>Segure até entrar</b> ou <b>Não pode gastar</b>.</li>
       <li>Depois vêm o Patrimônio (reserva de emergência e cripto), os Gastos por categoria, a Casa e a Clínica.</li>
       <li>Abra <b>De onde vem cada número</b> para ver como cada conta foi feita.</li>
       <li>No fim, <b>Meus lançamentos</b>: tudo o que você lançou no mês, pessoal e as suas compras da casa.</li>
@@ -147,6 +148,10 @@ a{color:var(--accent)}
     <ul>
       <li>Quem te deve e a quem você deve, com <kbd>Recebi uma parte</kbd>, <kbd>Paguei uma parte</kbd> e <kbd>Quitar</kbd>.</li>
       <li>É só acompanhamento: não entra nas contas do mês. O dinheiro que entra ou sai você lança como sempre.</li>
+    </ul>
+    <h3>Fechamento</h3>
+    <ul>
+      <li>O resumo de um mês que já fechou: o que entrou, o que saiu e o que fugiu do normal.</li>
     </ul>
     <h3>Mês a mês</h3>
     <ul>
@@ -189,14 +194,14 @@ a{color:var(--accent)}
       <li>Só conta a sessão marcada como realizada.</li>
       <li>Embaixo, três listas: <b>Falta marcar</b> (o que já passou sem marca), <b>Histórico de sessões</b> e <b>Sessões previstas</b>.</li>
     </ul>
-    <h3>Painel e Meta</h3>
+    <h3>Cobrar</h3>
     <ul>
-      <li>Recebido contra previsto, o que falta receber, a meta e <b>Quem está devendo</b>.</li>
+      <li>O Painel e a Meta estão guardados por enquanto. Quem deve aparece em Pacientes e Pagamentos, e na Tudo, em <b>O que precisa de você</b>.</li>
       <li><kbd>Cobrar</kbd> monta a mensagem de cobrança para você ajustar e copiar no WhatsApp. O app não envia nada.</li>
     </ul>
     <h3>Pacientes e Pagamentos</h3>
     <ul>
-      <li>A ficha de cada paciente tem as sessões, o extrato (sessões cobradas e pagamentos) e o prontuário.</li>
+      <li>A ficha de cada paciente tem três abas: <b>Dados</b>, <b>Pagamento</b> (com o <kbd>Resumo para o paciente</kbd>, para mandar em print) e <b>Prontuário</b>. O <kbd>×</kbd> no canto fecha.</li>
       <li>O pagamento compra sessões (mensal 4, quinzenal 2, avulsa 1) e a coluna <b>Deve</b> mostra o que falta.</li>
       <li>Quem está suspenso fica em <b>Suspensos</b>, com os dias contados.</li>
     </ul>
@@ -206,7 +211,7 @@ a{color:var(--accent)}
       <li>A recarga de saldo na Meta continua no Dinheiro, na categoria Clínica: Anúncios.</li>
     </ul>
     <p class="dica">A Clínica não depende mais da planilha da prática clínica: registre tudo aqui. Para recolocar quem saiu, use <kbd>Voltar à agenda</kbd> no cartão dele em Pacientes.</p>
-    <p class="dica">Os dados pessoais de cada paciente (nascimento, CPF, contato, emergência, psiquiatra) ficam na ficha, aba <kbd>Cadastro</kbd>; de quem já saiu, no botão <kbd>Dados</kbd> do cartão. Para trazer de uma vez os da aba Registro de Pacientes da planilha, use <kbd>Trazer dados da planilha</kbd> em Pacientes: só preenche o que está vazio.</p>
+    <p class="dica">Os dados pessoais de cada paciente (nascimento, CPF, contato, emergência, psiquiatra) ficam na ficha, aba <kbd>Dados</kbd> (em <kbd>Editar dados pessoais</kbd>); de quem já saiu, no botão <kbd>Dados</kbd> do cartão. Para trazer de uma vez os da aba Registro de Pacientes da planilha, use <kbd>Trazer dados da planilha</kbd> em Pacientes: só preenche o que está vazio.</p>
   </section>
 
   <section id="conferir">
