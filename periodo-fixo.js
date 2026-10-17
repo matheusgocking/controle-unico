@@ -86,7 +86,7 @@ var PeriodoFixo = (function(){
     var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
     pf = document.createElement("div");
     pf.className = "cu-periodo"; pf.setAttribute("role", "group"); pf.setAttribute("aria-label", "Trocar o período");
-    pf.innerHTML = '<button type="button" tabindex="-1">‹</button><span aria-live="polite"></span><button type="button" tabindex="-1">›</button>';
+    pf.innerHTML = '<button type="button" tabindex="-1" aria-label="Mês anterior">‹</button><span aria-live="polite"></span><button type="button" tabindex="-1" aria-label="Mês seguinte">›</button>';
     rot = pf.children[1];
     pf.children[0].addEventListener("click", function(){ apertar(-1); });
     pf.children[2].addEventListener("click", function(){ apertar(1); });

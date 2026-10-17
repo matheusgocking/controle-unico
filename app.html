@@ -238,7 +238,7 @@ th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 .pv-t small{color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
 .pv-t small em{font-style:normal;font-weight:600;color:var(--text)}
 .pv-seta{flex:none;width:18px;height:18px;color:var(--faint)}
-.pv-mais summary{cursor:pointer;color:var(--muted);font-size:13px;padding:6px 4px}
+.pv-mais summary{cursor:pointer;color:var(--muted);font-size:13px;padding:10px 4px;min-height:40px}
 .pv-mais .pv-l{border-top:1px solid var(--line)}
 .pv-nota{margin:6px 0 0}
 .pv-ok{padding-block:12px}
@@ -311,14 +311,18 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   td.c-data{font-size:12.5px}
   .so-cel{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   td.c-desc{min-width:0} td.c-desc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  table.fixos tr{grid-template-columns:minmax(0,1fr) 50px 108px 30px;gap:0 6px}   /* 108px: cabe "1.500,00" em 16px */
+  table.fixos td.c-desc b{white-space:normal;overflow:visible;text-overflow:clip}
+  table.fixos tr{grid-template-columns:minmax(0,1fr) 46px 100px 34px;gap:0 6px}   /* 108px: cabe "1.500,00" em 16px */
   table.fixos input{width:100%}
   form.linha{grid-template-columns:repeat(2,minmax(0,1fr))}
   form.linha > div[style]{grid-column:1 / -1 !important}
   form.linha .b{width:100%}
-  .b:not(.redondo):not(.s){min-height:40px} .b.s{min-height:36px} .redondo{width:40px;height:40px}
+  .b:not(.redondo):not(.s){min-height:40px} .b.s{min-height:40px} .redondo{width:40px;height:40px}
+  .pd-acoes .x{min-width:34px;min-height:40px;padding:0 8px}
+  .lanc-chips span{min-height:40px}
+  table.fixos input{min-height:40px}
   summary{padding-block:8px}
-  [data-limite-x]{min-height:36px;padding:6px 10px}
+  [data-limite-x]{min-height:40px;padding:6px 10px}
   .pe a{display:inline-block;padding:10px 8px}
   input,select{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
   .pd{grid-template-columns:minmax(0,1fr) auto} .pd .pd-acoes{grid-column:1 / -1}
@@ -346,6 +350,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 <script src="ler-xlsx.js"></script>
 <script src="categorias.js"></script>
 <script src="lancamento.js"></script>
+<script src="rotulos.js"></script>
 <script src="periodo-fixo.js"></script>
 <script src="grafico-meses.js"></script>
 <script src="nuvem.js"></script>
@@ -627,7 +632,7 @@ function ordenar(lista, qual){
 function cabecalho(qual){
   const o = ordem[qual];
   return `<thead><tr>${COLUNAS[qual].map(([c, n]) => `<th${c === "valor" ? ' class="dir"' : ""}><button type="button" class="ord" data-ord="${qual}:${c}" aria-pressed="${o.c === c}"
-    title="Ordenar por ${n.toLowerCase()}">${n}${o.c === c ? (o.d > 0 ? " ▲" : " ▼") : ""}</button></th>`).join("")}<th></th></tr></thead>`;
+    title="Ordenar por ${n.toLowerCase()}">${n}${o.c === c ? (o.d > 0 ? " ▲" : " ▼") : ""}</button></th>`).join("")}<th><span class="so-leitor">Ações</span></th></tr></thead>`;
 }
 // Filtro por categoria nas listas de lançamentos (pedido dele, 02/10/2026): só as categorias que
 // aparecem no mês; a escolha que não existe no mês aberto volta para "todas".
@@ -1024,7 +1029,7 @@ function painelMeusLancamentos(){
       <td class="c-x"><button class="x" data-apagar="${onde}:lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
   };
   return `<section class="painel" style="margin-top:16px"><h2>Meus lançamentos<span class="dir">${itens.length} no mês</span></h2>
-    ${itens.length ? `<table class="t"><thead><tr><th>Dia</th><th>Descrição</th><th>De onde</th><th>Categoria</th><th class="dir">Valor</th><th></th></tr></thead>
+    ${itens.length ? `<table class="t"><thead><tr><th>Dia</th><th>Descrição</th><th>De onde</th><th>Categoria</th><th class="dir">Valor</th><th><span class="so-leitor">Ações</span></th></tr></thead>
       <tbody>${itens.map(linha).join("")}</tbody></table>
       <p class="nota">Os seus lançamentos pessoais e as compras da casa que você pagou. As compras da Ana aparecem na Casa.</p>`
       : `<p class="vazio">Nenhum lançamento seu em ${MESES[ref.getMonth()]}.</p>`}</section>`;
@@ -1055,7 +1060,7 @@ function telaTudo(){
     <section class="painel"><h2>Clínica</h2>
       <div class="stats duas-col">
         <div class="stat"><span>Pacientes na agenda</span><b>${cl.ativos === null ? "—" : cl.ativos}</b></div>
-        <div class="stat"><span>Sessões confirmadas</span><b>${cl.sessoes === null ? "—" : cl.sessoes}</b>${cl.aConfirmar ? `<small>${cl.aConfirmar} a confirmar</small>` : ""}</div>
+        <div class="stat"><span>Sessões realizadas</span><b>${cl.sessoes === null ? "—" : cl.sessoes}</b>${cl.aConfirmar ? `<small>${cl.aConfirmar} a confirmar</small>` : ""}</div>
         <div class="stat"><span>Previsto</span><b>${cl.previsto === null ? "—" : dinheiro(cl.previsto)}</b>${cl.previstoTriagem ? `<small>+ ${dinheiro(cl.previstoTriagem)} em triagem</small>` : `<small>só ativos</small>`}</div>
         <div class="stat"><span>Recebido</span><b>${dinheiro(cl.recebido)}</b>${cl.previsto ? `<div class="trilho"><i style="width:${pct(cl.pacientes, cl.previsto)}%"></i></div><small>${Math.round(pct(cl.pacientes, cl.previsto))}% do previsto, só pacientes</small>` : ""}</div>
       </div></section>
@@ -1199,7 +1204,7 @@ function vistaFixos(){
   const saiu = g => mesPassado || (mesCorrente && (!diaFixo(g, km) || diaFixo(g, km) <= hojeD.getDate()));
   const jaSaiu = cobra.filter(saiu), vaiSair = cobra.filter(g => !saiu(g));
   const total = l => soma(l, g => valorFixo(g, km));
-  const tabela = lista => `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Dia</th><th class="dir">Valor em ${nome}</th><th></th></tr></thead><tbody>
+  const tabela = lista => `<table class="t fixos"><thead><tr><th>Gasto</th><th>Categoria</th><th class="dir">Dia</th><th class="dir">Valor em ${nome}</th><th><span class="so-leitor">Ações</span></th></tr></thead><tbody>
       ${lista.map(g => `<tr${valorFixo(g, km) > 0 ? "" : ' class="fx-fora"'}><td class="c-desc"><b>${escH(comPonto(g.descricao))}</b>${!Number(g.dia) && valorFixo(g, km) > 0 ? `<span class="fx-sit">sem dia marcado${mesCorrente ? ": conta como já saiu" : ""}</span>` : ""}<span class="so-cel">${escH(comPonto(g.categoria))}</span></td>
         <td class="c-cat">${escH(comPonto(g.categoria))}</td>
         <td class="dir"><input class="dia" type="number" min="1" max="31" inputmode="numeric" data-dia="${escH(g.id)}" value="${g.dia || ""}" placeholder="dia" aria-label="Dia do mês"></td>
@@ -1505,7 +1510,7 @@ function painelPrecisa(){
   const A = avisosNaTela = avisosPrecisa();
   const clinicaAbriu = !!janelaClinica();
   const semNada = !livro.matheus.lancamentos.length && !livro.matheus.gastosFixos.length && !livro.casa.lancamentos.length;
-  if (!A.length && semNada && !clinicaAbriu) return "";
+  if (!A.length && semNada && (!clinicaAbriu || !Nuvem.conectado())) return "";
   const espera = clinicaAbriu ? "" : `<p class="nota pv-nota">Os avisos da Clínica aparecem quando ela terminar de abrir.</p>`;
   if (!A.length) return `<section class="painel pv pv-ok"><p><span class="pv-ok-i" aria-hidden="true">✓</span><b>Nada precisa de você agora.</b></p>${espera}</section>`;
   const fortes = A.filter(a => a.nivel !== "info").length;

@@ -111,7 +111,7 @@ test("Computador: o + escolhe entre recebimento e lançamento e abre o formulár
   await p.click("#mais-bt"); await p.keyboard.press("Escape");
   assert.equal(await p.isVisible("#mais-lista"), false);
   // na Conferência não há +
-  await p.click("#menu summary"); await p.click("#conferir"); await espera(500);
+  await p.click("#menu summary"); await p.click("#menu-conferir"); await espera(500);
   assert.equal(await p.isVisible("#mais-bt"), false);
   assert.deepEqual(erros, []);
   await ctx.close();

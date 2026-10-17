@@ -69,14 +69,14 @@ test("Voltar sai da Conferência para a tela de antes", async () => {
   const { ctx, p } = await abrir({ largura:1280 });
   await p.click("[data-p=clinica]"); await espera(600);
   // a Conferência abre pelo menu ⋯, também no computador
-  assert.equal(await p.locator("header > .dir > #conferir").count(), 0);
-  await p.click("#menu summary"); await p.click("#conferir"); await espera(600);
+  assert.equal(await p.locator("header > .dir > #menu-conferir").count(), 0);
+  await p.click("#menu summary"); await p.click("#menu-conferir"); await espera(600);
   assert.equal(await p.evaluate(() => document.getElementById("menu").open), false);
   assert.equal((await tela(p)).casca, "conferir");
   await p.goBack(); await espera(500);
   const t = await tela(p);
   assert.equal(t.casca, "clinica");
-  assert.equal(await p.getAttribute("#conferir", "aria-pressed"), "false");
+  assert.equal(await p.getAttribute("#menu-conferir", "aria-pressed"), "false");
   await ctx.close();
 });
 

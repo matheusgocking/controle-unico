@@ -210,15 +210,15 @@ test("11 e 14. o Guia descreve o Conferir, o + e o tema como o app está hoje", 
 
 test("12. dentro da Conferência o item do menu diz Sair da conferência, e depois o Voltar não a abre de novo", async () => {
   const { ctx, p, erros } = await abrir("index.html#tudo", 1280);
-  assert.equal(await p.textContent("#conferir"), "Conferir com as planilhas");
+  assert.equal(await p.textContent("#menu-conferir"), "Conferir com as planilhas");
   await p.click("#abas button[data-p=carteira]"); await espera(800);
-  await abrirMenu(p); await p.click("#conferir"); await espera(800);
+  await abrirMenu(p); await p.click("#menu-conferir"); await espera(800);
   assert.equal((await casca(p)).atual, "conferir");
   await abrirMenu(p);
-  assert.equal(await p.textContent("#conferir"), "Sair da conferência");
-  await p.click("#conferir"); await espera(800);
+  assert.equal(await p.textContent("#menu-conferir"), "Sair da conferência");
+  await p.click("#menu-conferir"); await espera(800);
   assert.equal((await casca(p)).atual, "carteira", "volta para a tela de antes");
-  assert.equal(await p.textContent("#conferir"), "Conferir com as planilhas");
+  assert.equal(await p.textContent("#menu-conferir"), "Conferir com as planilhas");
   await p.evaluate(() => history.back()); await espera(800);
   assert.equal((await casca(p)).atual, "tudo", "o Voltar leva à tela anterior, não à Conferência");
   assert.deepEqual(erros, []);

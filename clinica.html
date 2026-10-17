@@ -78,7 +78,7 @@ button,a,summary,select,input,label{touch-action:manipulation}
   --info:#9dc4f0; --info-soft:#1b2f47;
   --neutral-chip:#28303b;
   --devendo:#f2a09b; --devendo-soft:#3d1a18; --devendo-line:#8c3b35;
-  --fds-bg:#232c39; --fds-line:#313c4c;
+  --quente-bg:#3b2d11; --quente-fg:#f3cd83; --quente-line:#66501f; --fds-bg:#232c39; --fds-line:#313c4c;
   --g-prev:#6a4f8f; --g-rec:#c8a4f2;
   --head-bg:#232b36; --head-fg:#eef2f7;
   --hour-bg:#1b222e; --hour-fg:#93a0b2;
@@ -465,8 +465,8 @@ table.tab tr.meta-ok td{background:var(--ok-soft); color:var(--ok); font-weight:
 /* o total de sessões, à direita do nome: número grande, legenda curta embaixo */
 .fi-total{flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; text-align:right; background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:12px; padding:6px 12px; line-height:1.15; cursor:default}
 .fi-total .n{font-family:var(--font); font-size:24px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums}
-.fi-total .rot{font-size:11.5px; color:var(--text); font-weight:600}
-.fi-total .mais{font-size:10.5px; color:var(--muted); margin-top:1px}
+.fi-total .rot{font-size:12px; color:var(--text); font-weight:600}
+.fi-total .mais{font-size:12px; color:var(--muted); margin-top:1px}
 .fi-total:empty{display:none}
 /* encerramento e retorno (06/10/2026): a frase no alto da ficha e nos cartões dos encerrados */
 .fi-trat,.selo-trat{display:inline-block; margin-top:5px; border-radius:20px; padding:2px 10px; font-size:12px; font-weight:600; line-height:1.4}
@@ -912,7 +912,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .rp-barra select{min-height:36px; padding:6px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text); font:inherit; font-size:13.5px}
 .rp-barra select{flex:1 1 190px; min-width:0}
 @media (max-width:700px){ .rp-barra select{font-size:16px; min-height:44px} .rp-modal{padding:10px} }
-.rp{--rp-tx:#1e1b24; --rp-mu:#6a6473; --rp-fa:#9a94a3; --rp-li:#ebe7f0; --rp-ac:#7030a0; --rp-ac-s:#f3ebfa;
+.rp{--rp-tx:#1e1b24; --rp-mu:#6a6473; --rp-fa:#6f6878; --rp-li:#ebe7f0; --rp-ac:#7030a0; --rp-ac-s:#f3ebfa;
   --rp-ok:#1f6b4f; --rp-ok-s:#e2f2ea; --rp-no:#a3241f; --rp-no-s:#fbe4e2; --rp-ne:#f1eff4;
   background:#fff; color:var(--rp-tx); border-radius:16px; padding:22px 20px 16px; font-family:var(--font); line-height:1.4; box-shadow:0 1px 2px rgba(30,20,40,.08)}
 .rp-rot{font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--rp-ac)}
@@ -949,7 +949,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .rp-tot .t{color:var(--rp-mu)} .rp-tot .n{text-align:right; font-weight:600}
 .rp-tot .fim{font-size:16px; font-weight:700; color:var(--rp-tx)}
 .rp-tot .fim.pend{color:var(--rp-no)}
-.rp-pe{margin-top:14px; font-size:11.5px; color:var(--rp-fa); text-align:center}
+.rp-pe{margin-top:14px; font-size:12.5px; color:var(--rp-fa); text-align:center}
 .rp-vazio{font-size:13.5px; color:var(--rp-mu); padding:12px 0}
 .pcard .pr{font-size:11px; color:var(--muted)}
 /* ficha: bloco do prontuário, com as sessões que ainda não estão no Word (29/09/2026) */
@@ -1115,6 +1115,26 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   .cell.cancelada .lab{font-size:8px; letter-spacing:0}
   .menu select{min-height:40px; font-size:16px}
 }
+/* ---------- revisão de 16/10/2026 ---------- */
+/* o × fica no canto e acompanha a rolagem da ficha, para fechar sem ir até o fim */
+.fi-x{position:sticky; top:0; z-index:5; float:right; margin:-8px -8px -32px 8px; border:0; background:var(--surface); color:var(--muted); font-size:26px; line-height:1; width:40px; height:40px; border-radius:10px; cursor:pointer}
+.fi-x:hover{background:var(--surface-2); color:var(--text)}
+.ficha .fcab{margin-right:34px}
+@media (max-width:700px){
+  /* campos das janelas em 16 px (o iPhone dá zoom abaixo disso) e a mensagem em letra comum, não de código */
+  .modal .pf textarea,.modal .pf input,.modal .pf select,.modal .ptexto,.modal textarea{font-size:16px}
+  .modal textarea{font-family:var(--font)}
+  .tab,.ficha .fi-abas .tab{min-height:40px}
+  details.fi-det > summary,details.dp-editar > summary{min-height:40px; display:flex; align-items:center}
+  .fi-reg-campos{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .susp-data input{font-size:16px; min-height:40px; padding:4px 8px}
+  /* grade: "a confirmar" não cabe na célula de 46 px e a bolinha caía em cima; o estado segue na cor e na lista Falta marcar */
+  .cell.sessao .lab{display:none}
+  .cell .pgm{top:1px; left:2px; right:auto; bottom:auto}
+  table.pg-cartoes td[data-rot="Deve"] .sit{white-space:normal; display:inline-block}
+  #m-prev,#m-next,#pg-prev,#pg-next{min-width:44px}
+  .hour,.gh .d{font-size:11px}
+}
 </style>
 <script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
 <script src="nuvem.js"></script>
@@ -1150,9 +1170,9 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   <div id="aviso-planilha" class="hidden"></div>
 
   <!-- Sessões (28/09/2026): em cima a semana ou o mês, pela chave; embaixo, uma linha por sessão -->
-  <div class="subvista" id="subvista"><div class="tabs" role="group" aria-label="Ver a semana ou o mês">
-    <button class="tab" type="button" aria-selected="true" data-sub="semana">Semana</button>
-    <button class="tab" type="button" aria-selected="false" data-sub="mes">Mês</button></div></div>
+  <div class="subvista" id="subvista"><div class="tabs" role="tablist" aria-label="Ver a semana ou o mês">
+    <button class="tab" type="button" role="tab" aria-selected="true" data-sub="semana">Semana</button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-sub="mes">Mês</button></div></div>
 
   <!-- ============ SEMANA ============ -->
   <section id="v-semana">
@@ -1549,7 +1569,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <div class="tabwrap">
         <table class="tab pg-cartoes" id="pg-tabela">
           <thead><tr>
-            <th>Paciente</th><th>Deve</th><th>Cobrança</th><th>Último pagamento</th><th>Próximo pagamento</th><th>Situação</th><th></th>
+            <th>Paciente</th><th>Deve</th><th>Cobrança</th><th>Último pagamento</th><th>Próximo pagamento</th><th>Situação</th><th><span class="so-leitor">Ações</span></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -3713,6 +3733,7 @@ function abrirFicha(p, foco, aba){
      enquanto (MOSTRAR_FORMULACAO). */
   fundo.innerHTML =
     '<div class="modal ficha">' +
+      '<button type="button" class="fi-x" id="fi-x" aria-label="Fechar a ficha">×</button>' +
       '<div class="fcab"><span class="ini grande" id="fi-ini"></span>' +
         '<div class="fcab-nome"><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span><span class="fi-trat" id="fi-trat" hidden></span></div>' +
         '<div class="fi-total" id="fi-total"></div></div>' +
@@ -4485,6 +4506,7 @@ function abrirFicha(p, foco, aba){
   var devolverFoco = janela(fundo, fechar);
   fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
   document.getElementById("fi-fechar").addEventListener("click", fechar);
+  document.getElementById("fi-x").addEventListener("click", fechar);
   document.getElementById("fi-remover").addEventListener("click", function(){
     /* registros de prontuário que ainda não foram para o Word ficam sem tela onde aparecer quando o
        paciente sai da agenda: o aviso diz quantos são antes de ele confirmar (04/10/2026) */

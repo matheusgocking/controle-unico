@@ -5,7 +5,7 @@
 :root{
   --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#d3dae3; --text:#131820; --muted:#4d5766;
   /* cinza das notas: #6f7a8a dava 4,0:1 no fundo, abaixo do mínimo de leitura (4,5:1); este dá 5,1:1 */
-  --faint:#5f6a7a;
+  --faint:#5a6474;
   --accent:#7030a0; --accent-soft:#f0e5fb;
   --pos:#1f6b4f; --pos-soft:#dcefe6; --neg:#a3241f; --neg-soft:#fbdedd; --warn:#8a4b12; --warn-soft:#fbe8d4;
   /* cores das roscas: a paleta validada para daltonismo, na ordem fixa; a oitava é "Outros" */
@@ -35,3 +35,6 @@
    ficam no módulo): o estado normal e o erro já estão na barra de cima (04/10/2026; 06/10/2026: o erro
    aparecia duas vezes, na casca e no módulo) */
 .na-casca .nuvem:not([data-estado="escolha"]){display:none !important}
+
+/* texto só para leitor de tela (cabeçalho de coluna sem palavra visível, como a das ações) */
+.so-leitor{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
