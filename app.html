@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f6f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141a" media="(prefers-color-scheme: dark)">
 <title>Dinheiro e Casa · Controle Único</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -160,6 +162,19 @@ tr.clic:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .pd .pd-acoes{display:flex;gap:6px;align-items:center}
 .pd.feita b{color:var(--muted);font-weight:500}
 .pd .trilho{margin-top:4px}
+.cat-minhas{list-style:none;margin:0 0 10px;padding:0}
+.cat-minhas li{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.cat-minhas li span{color:var(--muted);font-size:13px;margin-right:auto}
+.pd-parte{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:end;background:var(--surface-2);border-radius:var(--radius);padding:10px}
+.pd-parte label{display:grid;gap:4px;font-size:12.5px;color:var(--muted)} .pd-parte input{width:140px}
+/* aviso de erro dentro do formulário, junto do botão (no lugar da janelinha do navegador, 19/10/2026) */
+.form-erro{grid-column:1/-1;flex-basis:100%;margin:0;font-size:13.5px;font-weight:600;color:var(--neg)}
+.form-erro:empty{display:none}
+/* recado da tela (resultado de importar, erro de leitura): fica embaixo, some sozinho */
+.recado{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 32px));
+  display:flex;gap:12px;align-items:center;background:var(--text);color:var(--bg);border-radius:10px;padding:10px 12px 10px 16px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.recado.erro{background:var(--neg);color:#fff}
+.recado button{border:0;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer;min-width:32px;min-height:32px}
 details.pd-fechadas{margin-top:12px} details.pd-fechadas summary{cursor:pointer;font-size:13px;color:var(--muted)}
 @container (max-width:560px){ .pd{grid-template-columns:minmax(0,1fr) auto} .pd .pd-acoes{grid-column:1 / -1} }
 /* as vistas do Dinheiro (01/10/2026): Lançamentos, Gastos fixos, Pendências e Mês a mês, cada uma na sua tela */
@@ -167,6 +182,8 @@ details.pd-fechadas{margin-top:12px} details.pd-fechadas summary{cursor:pointer;
 .subabas::-webkit-scrollbar{display:none}
 .subabas button{border:0;background:transparent;color:var(--muted);padding:9px 14px;cursor:pointer;font-size:14px;white-space:nowrap}
 .subabas button:hover{color:var(--text)}
+tr.mes-cab th{text-align:left;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:16px 8px 6px;border-bottom:1px solid var(--line);background:transparent}
+tr.mes-cab th span{font-weight:500;letter-spacing:0;text-transform:none}
 .subabas button[aria-pressed="true"]{color:var(--text);font-weight:600;box-shadow:inset 0 -2px 0 var(--text)}
 .subabas button em{font-style:normal;font-size:11.5px;font-weight:600;margin-left:6px;padding:1px 7px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
 .stats.tres{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px}
@@ -305,6 +322,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   tr.clic .so-cel{white-space:normal}
   tr.clic:active{background:var(--surface-2)}
   table.t tr:last-child{border-bottom:0}
+  table.t tr.mes-cab{display:block;padding:14px 0 6px} table.t tr.mes-cab th{display:block;padding:0;border:0}
   table.t td{border:0;padding:0 !important}
   table.t tbody tr:hover td{background:transparent}
   td.c-cat,td.c-forma,td.c-quem{display:none}
@@ -419,8 +437,27 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 if (window.top === window.self) location.replace("index.html" + (location.hash || "#tudo"));
 
 // As listas e a troca dos nomes antigos (com ponto final, como nas planilhas) moram em categorias.js.
-const CATEGORIAS = Categorias.DINHEIRO;
-const CAT_CASA   = Categorias.CASA;
+// Categorias que ele mesmo cria (19/10/2026): ficam no caderno de cada lado (Pessoal no Dinheiro, Casa na Casa),
+// numa lista com id, para os dois aparelhos juntarem sem perder nenhuma. Tirar só esconde do formulário:
+// o que já foi lançado nela continua com o nome. As de fábrica não se mexem.
+const GRUPO_MINHAS = "Minhas";
+const extrasDe = cad => ((livro[cad] && livro[cad].categoriasExtras) || []).filter(x => x && x.nome && !x.oculta);
+function gruposCom(base, extras){
+  const g = base.map(([n, cs]) => [n, cs.slice()]);
+  extras.forEach(x => {
+    if (g.some(([, cs]) => cs.includes(x.nome))) return;
+    let alvo = g.find(([n]) => n === x.grupo);
+    if (!alvo) { alvo = g.find(([n]) => n === GRUPO_MINHAS) || (g.push([GRUPO_MINHAS, []]), g[g.length - 1]); }
+    alvo[1].push(x.nome);
+  });
+  return g;
+}
+const gruposDinheiro = () => gruposCom(Categorias.GRUPOS_DINHEIRO, extrasDe("matheus"));
+const gruposCasa = () => gruposCom(Categorias.GRUPOS_CASA, extrasDe("casa"));
+const catsDinheiro = () => Categorias.DINHEIRO.concat(extrasDe("matheus").map(x => x.nome).filter(n => !Categorias.DINHEIRO.includes(n)));
+const catsCasa = () => Categorias.CASA.concat(extrasDe("casa").map(x => x.nome).filter(n => !Categorias.CASA.includes(n)));
+// nomes que a leitura dos cadernos troca sozinha (categorias.js): não podem virar categoria nova
+const NOMES_ANTIGOS = ["entretenimento","pratica clinica","assinaturas","contabilidade","gastos mae","alimentacao","ifood","fumo","compras","comunicacao","transporte","restaurante","servicos domesticos","moradia","reserva","outras entradas"];
 const TIPOS      = Categorias.TIPOS;
 const FORMAS     = Categorias.FORMAS;
 // todo caderno que chega (do aparelho, do Drive ou de um arquivo) passa pela troca de nomes
@@ -702,11 +739,11 @@ function configLancamento(padrao){
       explica: "Só meu. Entra inteiro no meu mês.",
       tipos: [["Despesa","Despesa",""], ["Receita","Receita","Entrada que não é de paciente (pagamento de paciente é lançado na Clínica)."],
               ["Aporte","Aporte na reserva","Dinheiro que foi para a reserva de emergência."], ["Resgate","Resgate da reserva","Dinheiro que saiu da reserva de emergência. O gasto feito com ele é lançado à parte, como despesa."]],
-      grupos: Categorias.GRUPOS_DINHEIRO, formas: FORMAS },
+      grupos: gruposDinheiro(), formas: FORMAS },
     casa: {
       explica: `Da casa, dividido com ${primeiro(soCasa ? p1 : p2)}. Entra na balança.`,
       pessoas: livro.casa.pessoas.slice(), eu: soCasa ? euNaCasaAna() : p1,
-      grupos: Categorias.GRUPOS_CASA },
+      grupos: gruposCasa() },
     lancar(onde, d){
       const id = novoId();
       if (onde === "casa") {
@@ -835,7 +872,7 @@ async function separarAgora(){
     await Nuvem.copiaAvulsa("Controle Único - casa - antes de separar " + carimbo + ".json", JSON.stringify(livro.casa));
     await Nuvem.copiaAvulsa("Controle Único - dinheiro - antes de separar " + carimbo + ".json", JSON.stringify(antesDin));
   } catch(e) {
-    alert("Não consegui guardar a cópia no Drive, então não separei nada. Confira a internet e tente de novo.");
+    recado("Não consegui guardar a cópia no Drive, então não separei nada. Confira a internet e tente de novo.", true);
     desenhar(); return;
   }
   const antes = { casa:JSON.parse(JSON.stringify(livro.casa)), din:JSON.parse(JSON.stringify(livro.matheus)) };
@@ -959,7 +996,7 @@ function painelLimites(){
       <div class="trilho" role="img" aria-label="${Math.round(r * 100)}% do limite"><i style="width:${pct(x.foi, x.teto)}%"></i></div>
       <div class="l2"><b>${aviso}</b><button type="button" data-limite-x="${escH(x.c)}">tirar limite</button></div></li>`;
   };
-  const cats = CATEGORIAS.filter(t => t !== "Reserva" && t !== "Outras entradas");
+  const cats = catsDinheiro().filter(t => t !== "Reserva" && t !== "Outras entradas");
   const form = `<details class="novo"><summary>${itens.length ? "Mudar ou criar limite" : "+ Criar limite"}</summary><form class="linha" id="fLimite">
     <div><label>Categoria</label><select name="categoria" required><option value="" disabled selected hidden>escolha…</option>${cats.map(t => `<option value="${t}">${comPonto(t)}</option>`).join("")}</select></div>
     <div><label>Limite por mês</label><input type="text" name="valor" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="0,00" required></div>
@@ -967,6 +1004,22 @@ function painelLimites(){
   </form></details>`;
   return `<section class="painel"><h2>Limites por categoria</h2>${itens.length ? `<ul class="lim">${itens.map(linha).join("")}</ul>`
     : `<p class="nota" style="margin-top:0">Diga quanto quer gastar por mês numa categoria e o app avisa quando chegar perto.</p>`}${form}</section>`;
+}
+
+// Minhas categorias: criar uma nova (Pessoal ou Casa) e tirar as que ele criou
+function painelCategorias(){
+  const minhas = [["matheus", "Pessoal"], ["casa", "Casa"]].flatMap(([cad, onde]) => extrasDe(cad).map(x => ({ ...x, cad, onde })));
+  const opGrupo = base => base.map(([n]) => `<option>${escH(n)}</option>`).join("") + `<option>${GRUPO_MINHAS}</option>`;
+  return `<section class="painel"><h2>Minhas categorias</h2>
+    ${minhas.length ? `<ul class="cat-minhas">${minhas.map(x => `<li><b>${escH(x.nome)}</b><span>${x.onde} · ${escH(x.grupo || GRUPO_MINHAS)}</span>
+      <button type="button" class="x" data-cat-tirar="${x.cad}:${escH(x.id)}" aria-label="Tirar a categoria ${escH(x.nome)}" title="Tirar">×</button></li>`).join("")}</ul>`
+      : `<p class="nota" style="margin-top:0">As categorias de fábrica não mudam. Se faltar uma, crie aqui: ela aparece no formulário de lançamento, nos limites e no importador.</p>`}
+    <details class="novo"><summary>+ Nova categoria</summary><form class="linha" id="fCategoria">
+      <div><label>Nome</label><input type="text" name="nome" maxlength="30" autocomplete="off" required></div>
+      <div><label>De onde</label><select name="cad"><option value="matheus">Pessoal</option><option value="casa">Casa</option></select></div>
+      <div><label>Grupo</label><select name="grupo" data-grupo-pessoal="${escH(opGrupo(Categorias.GRUPOS_DINHEIRO))}" data-grupo-casa="${escH(opGrupo(Categorias.GRUPOS_CASA))}">${opGrupo(Categorias.GRUPOS_DINHEIRO)}</select></div>
+      <div><button class="b p" type="submit">Criar</button></div>
+    </form></details></section>`;
 }
 
 function roscaCasa(c){
@@ -1035,14 +1088,17 @@ function cardSituacao(d){
 `;
 }
 
-// Na aba Tudo, a lista de tudo o que ele lançou no mês (pedido dele, 02/10/2026): os lançamentos
-// pessoais e, da Casa, só as compras dele. As da Ana ficam na tela da Casa.
+// Na aba Tudo, a lista de tudo o que ele lançou (pedido dele, 02/10/2026: "histórico de todos"): os lançamentos
+// pessoais e, da Casa, só as compras dele. As da Ana ficam na tela da Casa. Abre com todos os meses, separados
+// por mês, os mais novos em cima; "Só este mês" volta ao mês aberto (19/10/2026).
+let meusEscopo = "todos", meusLimite = 60;
 function painelMeusLancamentos(){
-  const eu = livro.casa.pessoas[0];
-  const itens = livro.matheus.lancamentos.filter(noMes).map(l => ({ l, onde:"matheus" }))
-    .concat(livro.casa.lancamentos.filter(noMes).filter(l => l.quem === eu).map(l => ({ l, onde:"casa" })))
+  const eu = livro.casa.pessoas[0], filtro = meusEscopo === "mes" ? noMes : () => true;
+  const todos = livro.matheus.lancamentos.filter(filtro).map(l => ({ l, onde:"matheus" }))
+    .concat(livro.casa.lancamentos.filter(filtro).filter(l => l.quem === eu).map(l => ({ l, onde:"casa" })))
     .map((x, i) => ({ ...x, i }))
     .sort((a, b) => (b.l.data || "").localeCompare(a.l.data || "") || b.i - a.i);
+  const itens = meusEscopo === "mes" ? todos : todos.slice(0, meusLimite);
   const linha = ({ l, onde }) => {
     const casa = onde === "casa", lugar = casa ? "Casa" : "Pessoal";
     const cls = !casa && (l.tipo === "Receita" || l.tipo === "Resgate") ? "pos" : "";
@@ -1054,11 +1110,26 @@ function painelMeusLancamentos(){
       <td class="c-val dir ${cls}">${sinal}${dinheiro(l.valor)}</td>
       <td class="c-x"><button class="x" data-apagar="${onde}:lancamentos:${escH(l.id)}" aria-label="Apagar" title="Apagar">×</button></td></tr>`;
   };
-  return `<section class="painel" style="margin-top:16px"><h2>Meus lançamentos<span class="dir">${itens.length} no mês</span></h2>
+  // com todos os meses, uma faixa com o nome do mês antes do primeiro lançamento de cada um
+  const nMes = {}; todos.forEach(x => { const k = (x.l.data || "").slice(0, 7); nMes[k] = (nMes[k] || 0) + 1; });
+  let mesAtual = "";
+  const corpo = itens.map(x => {
+    const k = (x.l.data || "").slice(0, 7);
+    if (meusEscopo === "mes" || k === mesAtual) return linha(x);
+    mesAtual = k;
+    const nome = k ? MESES[Number(k.slice(5, 7)) - 1] + " de " + k.slice(0, 4) : "Sem data";
+    return `<tr class="mes-cab"><th colspan="6" scope="colgroup">${nome}<span> · ${nMes[k]} ${nMes[k] === 1 ? "lançamento" : "lançamentos"}</span></th></tr>` + linha(x);
+  }).join("");
+  const escopo = `<div class="subabas" role="group" aria-label="Quais lançamentos mostrar">
+    <button type="button" data-meus="todos" aria-pressed="${meusEscopo === "todos"}">Todos os meses</button>
+    <button type="button" data-meus="mes" aria-pressed="${meusEscopo === "mes"}">Só ${MESES[ref.getMonth()]}</button></div>`;
+  const conta = meusEscopo === "mes" ? `${todos.length} no mês` : `${todos.length} ao todo`;
+  return `<section class="painel" style="margin-top:16px"><h2>Meus lançamentos<span class="dir">${conta}</span></h2>${escopo}
     ${itens.length ? `<table class="t"><thead><tr><th>Dia</th><th>Descrição</th><th>De onde</th><th>Categoria</th><th class="dir">Valor</th><th><span class="so-leitor">Ações</span></th></tr></thead>
-      <tbody>${itens.map(linha).join("")}</tbody></table>
+      <tbody>${corpo}</tbody></table>
+      ${todos.length > itens.length ? `<p><button type="button" class="b" data-meus-mais>Mostrar mais ${Math.min(60, todos.length - itens.length)} (faltam ${todos.length - itens.length})</button></p>` : ""}
       <p class="nota">Os seus lançamentos pessoais e as compras da casa que você pagou. As compras da Ana aparecem na Casa.</p>`
-      : `<p class="vazio">Nenhum lançamento seu em ${MESES[ref.getMonth()]}.</p>`}</section>`;
+      : `<p class="vazio">${meusEscopo === "mes" ? `Nenhum lançamento seu em ${MESES[ref.getMonth()]}.` : "Nenhum lançamento seu ainda."}</p>`}</section>`;
 }
 
 function telaTudo(){
@@ -1131,6 +1202,18 @@ const pendencias = () => livro.matheus.pendencias || (livro.matheus.pendencias =
 const restantePend = p => Math.max(0, (Number(p.total) || 0) - (Number(p.pago) || 0));
 const pendQuitada = p => !!p.quitada || restantePend(p) < 0.005;
 const chavePend = p => [String(p.nome || "").trim().toLowerCase(), p.tipo, Number(p.total) || 0, p.inicio || ""].join("|");
+// recado na tela, no lugar da janelinha do navegador: resultado de importar e erro de leitura (19/10/2026)
+function recado(texto, erro){
+  document.querySelectorAll(".recado").forEach(r => r.remove());
+  const r = document.createElement("div");
+  r.className = "recado" + (erro ? " erro" : ""); r.setAttribute("role", erro ? "alert" : "status");
+  r.innerHTML = `<span></span><button type="button" aria-label="Fechar o recado">×</button>`;
+  r.firstChild.textContent = texto;
+  r.lastChild.onclick = () => r.remove();
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), erro ? 12000 : 7000);
+}
+let pendParte = null;   // a pendência com o formulário de "recebi/paguei uma parte" aberto
 function painelPendencias(){
   const todas = pendencias(), abertas = todas.filter(p => !pendQuitada(p)), fechadas = todas.filter(pendQuitada);
   const linha = p => {
@@ -1141,8 +1224,11 @@ function painelPendencias(){
       <div class="pd-val"><b>${feita ? "quitada" : dinheiro(falta)}</b><span>${feita ? dinheiro(p.total) : `de ${dinheiro(p.total)}${Number(p.pago) > 0 ? ", já " + (p.tipo === "receber" ? "recebi " : "paguei ") + dinheiro(p.pago) : ""}`}</span>
         ${feita || !(Number(p.pago) > 0) ? "" : `<div class="trilho"><i style="width:${pct(p.pago, p.total)}%"></i></div>`}</div>
       <div class="pd-acoes">${feita ? `<button class="b s" data-pend-reabrir="${escH(p.id)}">Reabrir</button>`
-        : `<button class="b s" data-pend-pago="${escH(p.id)}">${p.tipo === "receber" ? "Recebi uma parte" : "Paguei uma parte"}</button><button class="b s" data-pend-quitar="${escH(p.id)}">Quitar</button>`}
-        <button class="x" data-pend-apagar="${escH(p.id)}" aria-label="Apagar" title="Apagar">×</button></div></div>`;
+        : `<button class="b s" data-pend-pago="${escH(p.id)}" aria-expanded="${pendParte === p.id}">${p.tipo === "receber" ? "Recebi uma parte" : "Paguei uma parte"}</button><button class="b s" data-pend-quitar="${escH(p.id)}">Quitar</button>`}
+        <button class="x" data-pend-apagar="${escH(p.id)}" aria-label="Apagar" title="Apagar">×</button></div>
+      ${!feita && pendParte === p.id ? `<form class="pd-parte" data-pend-parte="${escH(p.id)}">
+        <label>Quanto ${p.tipo === "receber" ? "você recebeu" : "você pagou"} agora? Faltam ${dinheiro(falta)}.<input name="valor" inputmode="decimal" autocomplete="off" data-dinheiro placeholder="0,00"></label>
+        <button class="b p" type="submit">Registrar</button><button class="b s" type="button" data-pend-parte-nao>Cancelar</button></form>` : ""}</div>`;
   };
   // Tela própria (01/10/2026: no fim da tela do Dinheiro ele achou a lista mal organizada): os três
   // totais em cima e, lado a lado, quem deve a ele e a quem ele deve, do maior para o menor.
@@ -1247,7 +1333,7 @@ function vistaFixos(){
 
   const formFixo = `<details class="novo"><summary>+ Novo gasto fixo</summary><form class="linha" id="fFixo">
     <div style="grid-column:span 2"><label>Gasto fixo</label><input name="descricao" placeholder="assinatura, conta" required></div>
-    <div><label>Categoria</label><select name="categoria" required><option value="" disabled selected hidden>escolha…</option>${CATEGORIAS.filter(t => t !== "Reserva" && t !== "Outras entradas").map(t => `<option value="${t}">${comPonto(t)}</option>`).join("")}</select></div>
+    <div><label>Categoria</label><select name="categoria" required><option value="" disabled selected hidden>escolha…</option>${catsDinheiro().filter(t => t !== "Reserva" && t !== "Outras entradas").map(t => `<option value="${t}">${comPonto(t)}</option>`).join("")}</select></div>
     <div><label>Dia do mês</label><input type="number" name="dia" min="1" max="31" inputmode="numeric" required></div>
     <div><label>Valor por mês</label><input type="text" name="valor" inputmode="numeric" autocomplete="off" data-dinheiro placeholder="0,00" required></div>
     <div><button class="b p" type="submit">Cadastrar deste mês até dezembro</button></div>
@@ -1603,7 +1689,7 @@ async function impLer(arquivo){
 function impOpcoesCategoria(x){
   if (x.tipo === "Aporte" || x.tipo === "Resgate") return `<option>Reserva</option>`;
   if (x.tipo === "Receita") return `<option>Outras entradas</option>`;
-  const grupos = x.onde === "casa" ? Categorias.GRUPOS_CASA : Categorias.GRUPOS_DINHEIRO;
+  const grupos = x.onde === "casa" ? gruposCasa() : gruposDinheiro();
   return `<option value="">Escolha</option>` + grupos.map(([g, cs]) => `<optgroup label="${escH(g)}">${cs.map(c =>
     `<option${c === x.categoria ? " selected" : ""}>${escH(c)}</option>`).join("")}</optgroup>`).join("");
 }
@@ -1680,7 +1766,7 @@ function ligarImportar(){
     b.onclick = () => a.click();
     a.onchange = async e => {
       const f = e.target.files[0]; e.target.value = ""; if (!f) return;
-      try { await impLer(f); } catch(err){ imp = null; alert("Não consegui ler o extrato: " + err.message); }
+      try { await impLer(f); } catch(err){ imp = null; recado("Não consegui ler o extrato: " + err.message, true); }
       desenhar();
     };
   }
@@ -1695,7 +1781,7 @@ function ligarImportar(){
   document.querySelectorAll("[data-imp-cat]").forEach(c => c.onchange = () => { const l = imp.linhas[c.dataset.impCat]; l.categoria = c.value; l.falta = false; l.origem = ""; });
   document.querySelectorAll("[data-imp-onde]").forEach(c => c.onchange = () => {
     const l = imp.linhas[c.dataset.impOnde]; l.onde = c.value;
-    const lista = l.onde === "casa" ? Categorias.CASA : Categorias.DINHEIRO;
+    const lista = l.onde === "casa" ? catsCasa() : catsDinheiro();
     if (!lista.includes(l.categoria)) l.categoria = "";
     desenhar();
   });
@@ -1729,6 +1815,7 @@ function telaDinheiro(){
     <div class="coluna">
       <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias(d)}</section>
       ${painelLimites()}
+      ${painelCategorias()}
       <section class="painel"><h2>Reserva de emergência</h2>
         <div class="stats duas-col" style="margin-bottom:12px">
           <div class="stat"><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
@@ -1938,6 +2025,15 @@ function ligar(){
   });
 
   const pega = f => Object.fromEntries(new FormData(f));
+  // erro junto do campo: o texto vai no fim do formulário, o campo fica marcado e recebe o foco
+  const erroNoForm = (f, texto, campo) => {
+    delete f.dataset.limpo;
+    let e = f.querySelector(".form-erro");
+    if (!e) { e = document.createElement("p"); e.className = "form-erro"; e.setAttribute("role", "alert"); f.appendChild(e); }
+    e.textContent = texto;
+    const c = campo && f.querySelector(`[name="${campo}"]`);
+    if (c) { c.setAttribute("aria-invalid", "true"); c.focus(); c.addEventListener("input", () => { c.removeAttribute("aria-invalid"); e.textContent = ""; }, { once:true }); }
+  };
   const liga = (idForm, fn) => { const f = document.getElementById(idForm); if (f) f.onsubmit = e => { e.preventDefault(); const d = pega(f); f.dataset.limpo = "1"; fn(f, d); }; };
 
   // ordenar: cabeçalho no computador, caixa de escolha no celular
@@ -1953,6 +2049,8 @@ function ligar(){
   // clicar num mês do gráfico abre aquele mês
   // clicar num mês (no gráfico ou na lista) abre os lançamentos daquele mês
   GraficoMeses.ligar(document.getElementById("tela"), k => { ref = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1); vistaDin = "mes"; desenhar(); window.scrollTo(0, 0); });
+  document.querySelectorAll("[data-meus]").forEach(b => b.onclick = () => { meusEscopo = b.dataset.meus; meusLimite = 60; desenhar(); });
+  document.querySelectorAll("[data-meus-mais]").forEach(b => b.onclick = () => { meusLimite += 60; desenhar(); });
   document.querySelectorAll("[data-vd]").forEach(b => b.onclick = () => {
     vistaDin = b.dataset.vd;
     // o fechamento abre no mês que acabou de fechar quando o mês aberto ainda não terminou
@@ -1977,32 +2075,60 @@ function ligar(){
   document.querySelectorAll("[data-lanc]").forEach(el => FormLancamento.montar(el, configLancamento(el.dataset.lanc || null)));
   vigiarFab();
   liga("fFixo", (f, d) => {
-    const v = FormLancamento.centavos(d.valor); if (!(v > 0)) { alert("Falta o valor."); return; }
+    const v = FormLancamento.centavos(d.valor); if (!(v > 0)) { erroNoForm(f, "Falta o valor.", "valor"); return; }
     const valores = {};
     for (let m = ref.getMonth(); m < 12; m++) valores[ref.getFullYear() + "-" + String(m + 1).padStart(2, "0")] = v;
     livro.matheus.gastosFixos.push({ id:novoId(), descricao:d.descricao, categoria:d.categoria, dia:Number(d.dia), valores });
     salvar("matheus"); });
   liga("fPend", (f, d) => {
     const total = FormLancamento.centavos(d.total), pago = FormLancamento.centavos(d.pago);
-    if (!(total > 0)) { alert("Falta o valor total."); return; }
-    if (pago > total + 0.005) { alert("O que já foi pago passa do valor total."); return; }
+    if (!(total > 0)) { erroNoForm(f, "Falta o valor total.", "total"); return; }
+    if (pago > total + 0.005) { erroNoForm(f, "O que já foi pago passa do valor total.", "pago"); return; }
     pendencias().push({ id:novoId(), nome:d.nome.trim(), tipo:d.tipo === "pagar" ? "pagar" : "receber", origem:(d.origem || "").trim(),
       inicio:d.inicio || "", fim:"", total, pago, obs:(d.obs || "").trim() });
     salvar("matheus"); });
   // campo de dinheiro em que a vírgula anda sozinha (o mesmo jeito do formulário de lançamento)
   document.querySelectorAll("[data-dinheiro]").forEach(i => i.oninput = () => { const v = FormLancamento.mascara(i.value); if (i.value !== v) i.value = v; });
+  liga("fCategoria", (f, d) => {
+    const nome = String(d.nome || "").trim().replace(/\s+/g, " ").replace(/\.+$/, ""), cad = d.cad === "casa" ? "casa" : "matheus";
+    const k = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    if (!nome) { erroNoForm(f, "Falta o nome.", "nome"); return; }
+    const existentes = cad === "casa" ? catsCasa() : catsDinheiro();
+    if (existentes.some(c => k(c) === k(nome))) { erroNoForm(f, "Essa categoria já existe.", "nome"); return; }
+    if (NOMES_ANTIGOS.includes(k(nome))) { erroNoForm(f, "Esse nome é de uma categoria antiga, que o app troca sozinho. Escolha outro.", "nome"); return; }
+    const lista = livro[cad].categoriasExtras || (livro[cad].categoriasExtras = []);
+    const velha = lista.find(x => x.oculta && k(x.nome) === k(nome));
+    if (velha) { delete velha.oculta; velha.grupo = d.grupo; } else lista.push({ id:novoId(), nome, grupo:d.grupo || GRUPO_MINHAS });
+    salvar(cad);
+  });
+  { const f = document.getElementById("fCategoria");
+    if (f) f.elements.cad.onchange = () => { const g = f.elements.grupo; g.innerHTML = g.dataset[f.elements.cad.value === "casa" ? "grupoCasa" : "grupoPessoal"]; }; }
+  document.querySelectorAll("[data-cat-tirar]").forEach(b => b.onclick = () => {
+    const [cad, id] = b.dataset.catTirar.split(":"), x = (livro[cad].categoriasExtras || []).find(c => c.id === id); if (!x) return;
+    if (!confirm(`Tirar a categoria ${x.nome}? O que já foi lançado nela continua com esse nome.`)) return;
+    x.oculta = true; salvar(cad);
+  });
   liga("fLimite", (f, d) => { const v = FormLancamento.centavos(d.valor); if (!d.categoria || !(v > 0)) return; limites()[d.categoria] = v; salvar("matheus"); });
   document.querySelectorAll("[data-limite-x]").forEach(b => b.onclick = () => { delete limites()[b.dataset.limiteX]; salvar("matheus"); });
   const daPend = id => pendencias().find(p => p.id === id);
   document.querySelectorAll("[data-pend-pago]").forEach(b => b.onclick = () => {
-    const p = daPend(b.dataset.pendPago); if (!p) return;
-    const t = prompt(`Quanto ${p.tipo === "receber" ? "você recebeu" : "você pagou"} agora? Faltam ${dinheiro(restantePend(p))}.`);
-    if (t === null) return;
-    const v = lerValorBR(t);
-    if (!(v > 0)) { alert("Não entendi o valor."); return; }
-    if (v > restantePend(p) + 0.005 && !confirm(`${dinheiro(v)} passa do que falta (${dinheiro(restantePend(p))}). Registrar assim mesmo?`)) return;
+    pendParte = b.dataset.pendPago; desenhar();
+    const i = document.querySelector(`[data-pend-parte="${pendParte}"] input`); if (i) i.focus();
+  });
+  document.querySelectorAll("[data-pend-parte-nao]").forEach(b => b.onclick = () => { pendParte = null; desenhar(); });
+  document.querySelectorAll("[data-pend-parte]").forEach(f => f.onsubmit = e => {
+    e.preventDefault();
+    const p = daPend(f.dataset.pendParte); if (!p) return;
+    const v = lerValorBR(f.elements.valor.value);
+    if (!(v > 0)) { erroNoForm(f, "Falta o valor.", "valor"); return; }
+    if (v > restantePend(p) + 0.005 && f.dataset.passou !== String(v)) {
+      f.dataset.passou = String(v);
+      erroNoForm(f, `${dinheiro(v)} passa do que falta (${dinheiro(restantePend(p))}). Toque em Registrar de novo para guardar assim mesmo.`);
+      return;
+    }
     p.pago = Math.round(((Number(p.pago) || 0) + v) * 100) / 100;
     if (restantePend(p) < 0.005) { p.quitada = true; p.fim = p.fim || hojeISO(); }
+    pendParte = null;
     salvar("matheus");
   });
   document.querySelectorAll("[data-pend-quitar]").forEach(b => b.onclick = () => {
@@ -2026,8 +2152,8 @@ function ligar(){
     ap.onchange = async e => {
       const f = e.target.files[0]; e.target.value = ""; if (!f) return;
       try { const r = await importarPendencias(f); salvar("matheus");
-        alert(r.novas ? `Vieram ${r.novas} pendência${r.novas === 1 ? "" : "s"} da planilha${r.repetidas ? " (" + r.repetidas + " já estavam aqui)" : ""}.` : "Nenhuma pendência nova: as da planilha já estavam aqui."); }
-      catch(err){ alert("Não consegui ler: " + err.message); }
+        recado(r.novas ? `Vieram ${r.novas} pendência${r.novas === 1 ? "" : "s"} da planilha${r.repetidas ? " (" + r.repetidas + " já estavam aqui)" : ""}.` : "Nenhuma pendência nova: as da planilha já estavam aqui."); }
+      catch(err){ recado("Não consegui ler: " + err.message, true); }
     };
   }
   liga("fReserva", (f, d) => { livro.matheus.reserva = { saldoBase:FormLancamento.centavos(d.saldoBase),
@@ -2036,7 +2162,7 @@ function ligar(){
   liga("fPessoas", (f, d) => {
     const antigos = livro.casa.pessoas.slice(), novos = [d.p1.trim(), d.p2.trim()];
     // dois nomes iguais juntariam as compras das duas pessoas numa só, sem volta
-    if (!novos[0] || !novos[1] || novos[0].toLowerCase() === novos[1].toLowerCase()) { alert("Os dois nomes precisam ser diferentes."); return; }
+    if (!novos[0] || !novos[1] || novos[0].toLowerCase() === novos[1].toLowerCase()) { erroNoForm(f, "Os dois nomes precisam ser diferentes.", "p2"); return; }
     // quem já comprou continua sendo a mesma pessoa, com o nome novo. Nome que já existia fica com as compras
     // dele: só trocar a ordem dos dois nomes não troca mais quem comprou o quê (06/10/2026)
     const saem = antigos.filter(n => !novos.includes(n)), chegam = novos.filter(n => !antigos.includes(n));
@@ -2143,7 +2269,7 @@ document.getElementById("importarJson").onclick = () => document.getElementById(
 document.getElementById("arquivoJson").onchange = async e => {
   const f = e.target.files[0]; e.target.value = ""; if (!f) return;
   try { importarCadernos(JSON.parse(await f.text())); }
-  catch(err){ alert("Não consegui ler esse arquivo: " + err.message); }
+  catch(err){ recado("Não consegui ler esse arquivo: " + err.message, true); }
 };
 function importarCadernos(j){
   // a cópia da semana no Drive é o próprio caderno, sem o envelope do "Exportar dados"
@@ -2161,8 +2287,8 @@ function importarCadernos(j){
 // O controle da Ana (ana.html) lança na Casa por aqui, sem sair da tela dos gastos dela (01/10/2026).
 window.casaParaFora = {
   pessoas: () => livro.casa.pessoas.slice(),
-  categorias: () => CAT_CASA.slice(),
-  grupos: () => Categorias.GRUPOS_CASA,
+  categorias: () => catsCasa(),
+  grupos: () => gruposCasa(),
   // devolve o id, para o "Desfazer" do formulário
   lancar: d => { const id = novoId(); livro.casa.lancamentos.push({ id, data:d.data, quem:d.quem, descricao:(d.descricao || "").trim() || "-",
     categoria:d.categoria, valor:Number(d.valor) }); salvar("casa"); return id; },

@@ -88,8 +88,21 @@ for (const largura of [390, 1280]) {
     assert.match(t, /Tudo pago/);
     assert.match(t, /próximo pagamento é na sessão de 12\/10/);
     assert.match(t, /ciclo mensal de R\$ 700/);
-    assert.match(t, /21\/09.*Remarcada.*não cobrada/);
-    assert.match(t, /Cobrado ao todoR\$ 700/);
+    assert.match(t, /21\/09.*Remarcada.*sem cobrança/);
+    assert.doesNotMatch(t, /não cobrada/);
+    assert.match(t, /Sessões cobradas \(\d+\)R\$ 700/);
+    /* a conta fecha sozinha: saldo de antes + sessões - pagamentos = total, para todos e nos três períodos */
+    const furos = await p.evaluate(() => {
+      const f = [];
+      dados.pacientes.forEach(x => ["mes", "6m", "tudo"].forEach(per => {
+        const r = resumoDoPaciente(x, per);
+        if(!r || r.planilha) return;
+        const conta = (r.antes || 0) + r.cobrado - r.pago, total = r.pendente - r.credito;
+        if(Math.abs(conta - total) > 0.01) f.push(x.id + " " + per + " " + conta + " x " + total);
+      }));
+      return f;
+    });
+    assert.deepEqual(furos, []);
     const caixa = await p.$eval("#rp-cartao", e => { const r = e.getBoundingClientRect(); return { l:r.left, r:r.right, w:document.documentElement.clientWidth }; });
     assert.ok(caixa.l >= 0 && caixa.r <= caixa.w, "o cartão cabe na tela");
     const txt = await p.evaluate(() => textoResumo(resumoDoPaciente(dados.pacientes[0], "tudo")));

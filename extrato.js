@@ -38,10 +38,11 @@ var Extrato = (function(){
   function hash(s){ var h = 5381; s = String(s); for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return "i" + h.toString(36) + s.length.toString(36); }
 
   /* a descrição limpa para a lista: sem o prefixo do tipo, sem CPF, CNPJ, agência e conta */
+  /* compra no débito pela NuPay (extrato real de 01 a 05/10/2026): "Compra no débito via NuPay - EBW*Meta" vira "EBW*Meta" */
   function descricao(l, fonte){
     var d = String(l.memo || "");
     if (fonte === "conta"){
-      d = d.replace(/^(Transfer[eê]ncia (enviada|recebida) pelo Pix|Compra no d[eé]bito|Pagamento de boleto efetuado|Transfer[eê]ncia (enviada|recebida)|Reembolso recebido pelo Pix)\s*-?\s*/i, "");
+      d = d.replace(/^(Transfer[eê]ncia (enviada|recebida) pelo Pix|Compra no d[eé]bito(\s+via\s+NuPay)?|Pagamento de boleto efetuado|Transfer[eê]ncia (enviada|recebida)|Reembolso recebido pelo Pix)\s*-?\s*/i, "");
       d = d.split(/\s+-\s+/)[0];
     }
     d = d.replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, "").replace(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g, "").replace(/•+/g, "");

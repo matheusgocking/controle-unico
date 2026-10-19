@@ -296,6 +296,9 @@ svg.mapa .faixa-f{ stroke-opacity:.28; transition:stroke-opacity .15s; } svg.map
   .anotar,label.chk{min-height:40px}
   label.chk input{width:18px; height:18px}
   .grafo-ctrl button{min-width:40px; height:40px}
+  /* Mapa: os botões saem de cima do desenho e ficam logo abaixo dele; a lista de golpes sobe de baixo */
+  .grafo-ctrl{position:static; justify-content:flex-end; margin-bottom:6px; flex-wrap:wrap}
+  .painel-golpe{position:fixed; left:0; right:0; top:auto; bottom:0; width:auto; max-height:70vh; border-radius:14px 14px 0 0; z-index:50}
   /* as seis abas não cabiam: Pools e Diário ficavam fora da tela sem aviso */
   .abas{flex-wrap:wrap}
   .abas button{padding:10px 8px; font-size:13px}
@@ -1203,9 +1206,11 @@ function grafico(o){
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const S = o.S, n = S.length;
   const leg = o.leg ? document.getElementById(o.leg) : { innerHTML:'' };
-  if(n < 2){ svg.innerHTML = `<text x="${W/2}" y="150" text-anchor="middle" fill="var(--faint)" font-size="14">O gráfico aparece quando o histórico terminar de ser montado.</text>`; leg.innerHTML = ''; return; }
+  const vazio = (a, b) => `<text x="${W/2}" y="140" text-anchor="middle" fill="var(--muted)" font-size="${cel ? 13 : 15}">${a}</text><text x="${W/2}" y="${cel ? 160 : 162}" text-anchor="middle" fill="var(--muted)" font-size="${cel ? 13 : 15}">${b}</text>`;
+  if(n < 2){ svg.innerHTML = vazio('O gráfico aparece quando o', 'histórico terminar de ser montado.'); leg.innerHTML = ''; return; }
   const cv = (v, x) => est.moeda === 'USD' ? v / x.usd : v;
   const sr = o.series || [], valS = (k, x) => k === 'total' ? x.v : (x.r[k] || 0);
+  if(o.modo === 'series' && !sr.length){ svg.innerHTML = vazio('Nenhuma linha ligada.', 'Toque numa das linhas abaixo para ver.'); return; }
   const max = (o.modo === 'series' ? Math.max(...S.map(x => Math.max(0, ...sr.map(k => cv(valS(k, x), x))))) : Math.max(...S.map(x => Math.max(cv(x.v, x), o.aportes ? cv(x.a, x) : 0)))) * 1.1 || 1;
   const xs = i => L + (W - L - R) * i / (n - 1), ys = v => T + (H - T - B) * (1 - v / max);
   let h = '';
@@ -1452,11 +1457,17 @@ function desenharPosicoes(){
 
 /* ================= grafo do mapa, no estilo do Obsidian ================= */
 // arraste as bolhas, arraste o fundo para mover a vista, roda do mouse ou botões para o zoom; as posições ficam salvas
-const GF = { nos:[], arestas:[], pos:lsGet('cripto-v1-grafo', {}), alfa:0, rodando:false, arrasto:null, pan:null, W:1000, H:620, k:1, tx:0, ty:0 };
+// no celular (19/10/2026) o desenho de 1000 x 620 ficava com 190 px de altura e letras de 4 px: lá ele tem
+// 420 x 620, os anéis mais fechados, os valores sempre à vista, e as posições arrastadas ficam guardadas à parte
+const chaveGrafo = () => CELULAR.matches ? 'cripto-v1-grafo-cel' : 'cripto-v1-grafo';
+const GF = { nos:[], arestas:[], pos:lsGet(chaveGrafo(), {}), alfa:0, rodando:false, arrasto:null, pan:null, W:CELULAR.matches ? 420 : 1000, H:620, k:1, tx:0, ty:0 };
 function desenharGrafo(){
   const svg = document.getElementById('mapaGrafo');
+  const W0 = CELULAR.matches ? 420 : 1000;
+  if(W0 !== GF.W){ GF.W = W0; GF.pos = lsGet(chaveGrafo(), {}); GF.k = 1; GF.tx = GF.ty = 0; }
+  svg.setAttribute('viewBox', `0 0 ${GF.W} ${GF.H}`);
   const lin = linhasVivas().filter(x => x.v > 0), total = totalVivo();
-  if(!lin.length){ svg.innerHTML = `<text x="500" y="310" text-anchor="middle" fill="var(--faint)" font-size="14">Buscando saldos…</text>`; return; }
+  if(!lin.length){ svg.innerHTML = `<text x="${GF.W / 2}" y="310" text-anchor="middle" fill="var(--muted)" font-size="14">Buscando saldos…</text>`; return; }
   const nomeApp = { 'Corretora':'Corretora Binance' }, nos = [], arestas = [], add = (id, o, pai) => { nos.push({ id, ...o }); if(pai) arestas.push([pai, id]); };
   const raio = v => 5 + 26 * Math.sqrt(total > 0 ? Math.max(0, v) / total : 0);
   add('voce', { rot:'Você', val:total, tipo:'voce', r:24 });
@@ -1482,7 +1493,7 @@ function desenharGrafo(){
   const filhos = {}; arestas.forEach(([a, b]) => (filhos[a] = filhos[a] || []).push(b));
   const folhas = id => (filhos[id] || []).length ? filhos[id].reduce((s, f) => s + folhas(f), 0) : 1;
   const anel = { voce:0, app:120, rede:215, moeda:295, golpe:295 };
-  const espalhar = (id, a0, a1) => { const n = porId[id], a = (a0 + a1) / 2; n.ax = GF.W / 2 + Math.cos(a) * anel[n.tipo] * 1.45; n.ay = GF.H / 2 + Math.sin(a) * anel[n.tipo] * 0.92; let ini = a0; const tot = folhas(id); (filhos[id] || []).forEach(f => { const fim = ini + (a1 - a0) * folhas(f) / tot; espalhar(f, ini, fim); ini = fim; }); };
+  const espalhar = (id, a0, a1) => { const n = porId[id], a = (a0 + a1) / 2; n.ax = GF.W / 2 + Math.cos(a) * anel[n.tipo] * (GF.W < 1000 ? 0.62 : 1.45); n.ay = GF.H / 2 + Math.sin(a) * anel[n.tipo] * 0.92; let ini = a0; const tot = folhas(id); (filhos[id] || []).forEach(f => { const fim = ini + (a1 - a0) * folhas(f) / tot; espalhar(f, ini, fim); ini = fim; }); };
   espalhar('voce', -Math.PI / 2, Math.PI * 1.5);
   nos.forEach((n, i) => {
     const p = GF.pos[n.id];
@@ -1513,7 +1524,7 @@ function desenharGrafo(){
   const novos = nos.filter(n => !GF.pos[n.id] || GF.pos[n.id].x === null).length;
   GF.alfa = Math.max(GF.alfa, !Object.keys(GF.pos).length ? 0.5 : novos ? 0.6 : 0.15); rodarGrafo();
 }
-function aplicarVista(){ if(GF.vista) GF.vista.setAttribute('transform', `translate(${GF.tx.toFixed(1)},${GF.ty.toFixed(1)}) scale(${GF.k.toFixed(3)})`); const s = document.getElementById('mapaGrafo'); if(s) s.classList.toggle('perto', GF.k >= 1.3); }
+function aplicarVista(){ if(GF.vista) GF.vista.setAttribute('transform', `translate(${GF.tx.toFixed(1)},${GF.ty.toFixed(1)}) scale(${GF.k.toFixed(3)})`); const s = document.getElementById('mapaGrafo'); if(s) s.classList.toggle('perto', GF.k >= 1.3 || CELULAR.matches); }
 function rodarGrafo(){ if(!GF.rodando){ GF.rodando = true; requestAnimationFrame(passoGrafo); } }
 function passoGrafo(){
   const N = GF.nos, a = GF.alfa, W = GF.W, H = GF.H;
@@ -1538,7 +1549,7 @@ function passoGrafo(){
   GF.elNos.forEach((g, i) => g.setAttribute('transform', `translate(${N[i].x.toFixed(1)},${N[i].y.toFixed(1)})`));
   GF.alfa *= GF.arrasto ? 1 : 0.982;
   if(GF.alfa > 0.008 || GF.arrasto) requestAnimationFrame(passoGrafo);
-  else { GF.rodando = false; N.forEach(n => GF.pos[n.id] = { x:+n.x.toFixed(1), y:+n.y.toFixed(1) }); lsSet('cripto-v1-grafo', GF.pos); }
+  else { GF.rodando = false; N.forEach(n => GF.pos[n.id] = { x:+n.x.toFixed(1), y:+n.y.toFixed(1) }); lsSet(chaveGrafo(), GF.pos); }
 }
 const EXPLORADOR = { pulsechain:a => `https://scan.pulsechain.com/token/${a}`, base:a => `https://basescan.org/token/${a}`, solana:a => `https://solscan.io/token/${a}`, bsc:a => `https://bscscan.com/token/${a}` };
 const CHAIN_ID = { pulsechain:369, base:8453, bsc:56 };
@@ -1599,7 +1610,7 @@ function ligarGrafo(svg){
   document.getElementById('grafoCtrl').addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;
     if(b.dataset.z === 'mais') zoomGrafo(1.25); else if(b.dataset.z === 'menos') zoomGrafo(0.8); else if(b.dataset.z === 'centro') centralizarGrafo();
-    else if(b.dataset.z === 'reorganizar'){ GF.pos = {}; lsSet('cripto-v1-grafo', {}); GF.k = 1; GF.tx = GF.ty = 0; desenharGrafo(); }
+    else if(b.dataset.z === 'reorganizar'){ GF.pos = {}; lsSet(chaveGrafo(), {}); GF.k = 1; GF.tx = GF.ty = 0; desenharGrafo(); }
   });
 }
 
@@ -1671,7 +1682,7 @@ function desenharAtivos(){
   const linha = x => {
     const baixa = liquidezBaixa(x.g, x.v);
     return `<tr><td><b>${esc(x.sim)}</b>${baixa ? '<span class="selo">baixa liquidez</span>' : ''}<small>${est.agrupar === 'ativo' ? [...x.redes].map(tag).join('') : esc(nomeDe(x.g))}</small></td>
-      <td class="num v ocm">${qtd(x.q)}</td><td class="num ocm">${x.avg != null ? din(x.avg) : '—'}</td><td class="num ocm">${din(x.p)}</td><td class="num ocm ${x.d1 != null ? sinalPct(x.d1) : ''}">${x.d1 != null ? pct(x.d1) : '—'}</td><td class="num v">${din(x.v)}</td>
+      <td class="num v ocm">${qtd(x.q)}</td><td class="num v ocm">${x.avg != null ? din(x.avg) : '—'}</td><td class="num ocm">${din(x.p)}</td><td class="num ocm ${x.d1 != null ? sinalPct(x.d1) : ''}">${x.d1 != null ? pct(x.d1) : '—'}</td><td class="num v">${din(x.v)}</td>
       <td class="num v ${sinal(x.res)}">${x.res != null ? din(x.res) + `<small>${pct(x.res / (x.avg * x.q))}${Math.abs(x.real) >= 1 ? ', vendido: ' + din(x.real) : ''}</small>` : '—'}</td>
       <td class="num ${x.roi != null ? sinalPct(x.roi) : ''}">${x.roi != null ? pct(x.roi) : '—'}</td>
       <td class="num ocm">${(total ? x.v / total * 100 : 0).toLocaleString('pt-BR', { maximumFractionDigits:1 })}%<span class="peso"><i style="width:${total ? x.v / total * 100 : 0}%"></i></span></td></tr>`;
@@ -1966,7 +1977,13 @@ seg('tema', null, v => {
 });
 { const t = lsGet(LS.tema, 'auto'); const b = document.querySelector(`#tema [data-v="${t}"]`); if(b) b.click(); }
 document.getElementById('pequenos').addEventListener('change', e => { est.pequenos = e.target.checked; desenharAtivos(); });
-document.getElementById('btnOlho').addEventListener('click', e => { const on = document.body.classList.toggle('privado'); e.target.setAttribute('aria-pressed', on); e.target.textContent = on ? 'Mostrar valores' : 'Esconder valores'; });
+// "Esconder valores" fica lembrado neste aparelho (19/10/2026): antes voltava a mostrar tudo a cada vez que a página abria.
+// Fica só no aparelho, de propósito: no outro aparelho a escolha pode ser outra.
+const PRIVADO = 'cu-privado';
+function aplicarPrivado(on){ document.body.classList.toggle('privado', on); const b = document.getElementById('btnOlho'); b.setAttribute('aria-pressed', on); b.textContent = on ? 'Mostrar valores' : 'Esconder valores'; }
+try { aplicarPrivado(localStorage.getItem(PRIVADO) === '1'); } catch(e){}
+document.getElementById('btnOlho').addEventListener('click', () => { const on = !document.body.classList.contains('privado'); try { localStorage.setItem(PRIVADO, on ? '1' : '0'); } catch(e){} aplicarPrivado(on); });
+addEventListener('storage', e => { if(e.key === PRIVADO) aplicarPrivado(e.newValue === '1'); });
 document.getElementById('btnAtualizar').addEventListener('click', async () => { if(ocupado) return; ocupado = true; try{ await atualizarVivo(); tudo(); status('Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })); }catch(e){ status('Não consegui atualizar: ' + explicar(e)); } ocupado = false; seguirFila(); });
 // CSV importado ou "não é golpe" marcado durante uma leitura: o histórico é refeito quando ela termina
 // (antes o pedido se perdia e a tela só mudava 12 horas depois, 06/10/2026)

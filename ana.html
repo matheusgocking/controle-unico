@@ -6,7 +6,8 @@
 <title>Controle da Ana</title>
 <meta name="description" content="Gastos, plantões e casa da Ana, guardados no Google Drive de quem usa.">
 <link rel="manifest" href="ana.webmanifest">
-<meta name="theme-color" content="#5b2a82">
+<meta name="theme-color" content="#5b2a82" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#2c1840" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Controle">
@@ -80,6 +81,13 @@ nav button[aria-pressed="true"]{background:var(--bg);color:var(--text);font-weig
 .duas.larga{grid-template-columns:1.6fr 1fr;align-items:start}
 .coluna{display:grid;gap:18px;align-content:start;min-width:0}
 .aviso{background:var(--warn-soft);color:var(--text);border-radius:var(--radius);padding:10px 14px;font-size:14px;margin:0 0 14px}
+/* erro junto do botão e "Salvo." depois de gravar, no lugar da janelinha do navegador (19/10/2026) */
+.form-erro{grid-column:1/-1;flex-basis:100%;margin:0;font-size:13.5px;font-weight:600;color:var(--neg)}
+.form-erro:empty{display:none}
+.salvo{margin:8px 0 0;font-size:13.5px;font-weight:600;color:var(--pos)}
+.recado{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 32px));
+  display:flex;gap:12px;align-items:center;background:var(--neg);color:#fff;border-radius:10px;padding:10px 12px 10px 16px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.recado button{border:0;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer;min-width:32px;min-height:32px}
 
 /* situação do mês */
 .situ{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;align-items:stretch}
@@ -833,13 +841,32 @@ function ligar(){
   });
   document.querySelectorAll("[data-apagar-local]").forEach(b => b.onclick = () => {
     const L = cad.locais[Number(b.dataset.apagarLocal)]; if (!L) return;
-    if (cad.plantoes.some(p => p.local === L.nome)) { alert("Esse local tem plantões lançados: apague os plantões antes."); return; }
+    if (cad.plantoes.some(p => p.local === L.nome)) { recado("Esse local tem plantões lançados: apague os plantões antes."); return; }
     if (!confirm("Apagar o local " + L.nome + "?")) return;
     cad.locais.splice(Number(b.dataset.apagarLocal), 1); delete cad.tabelaPlantao[L.nome]; salvar();
   });
 
   const pega = f => Object.fromEntries(new FormData(f));
-  const liga = (id, fn) => { const f = document.getElementById(id); if (f) f.onsubmit = e => { e.preventDefault(); const d = pega(f); f.dataset.limpo = "1"; fn(d, f); }; };
+  // erro junto do campo: o texto fica no fim do formulário, o campo marcado e com o foco
+  const erroNoForm = (f, texto, campo) => {
+    delete f.dataset.limpo;
+    let e = f.querySelector(".form-erro");
+    if (!e) { e = document.createElement("p"); e.className = "form-erro"; e.setAttribute("role", "alert"); f.appendChild(e); }
+    e.textContent = texto;
+    const c = campo && f.querySelector(`[name="${campo}"]`);
+    if (c) { c.setAttribute("aria-invalid", "true"); c.focus(); c.addEventListener("input", () => { c.removeAttribute("aria-invalid"); e.textContent = ""; }, { once:true }); }
+  };
+  // depois de gravar, o formulário volta limpo e embaixo dele aparece "Salvo." por alguns segundos
+  const SALVO = { fPlantao:"Plantão salvo.", fRegra:"Regra salva.", fLocal:"Local salvo.", fFixo:"Salvo.", fReceita:"Entrada salva.", fAtend:"Atendimento salvo.", fCategoria:"Categoria criada." };
+  const liga = (id, fn) => { const f = document.getElementById(id); if (f) f.onsubmit = e => {
+    e.preventDefault(); const d = pega(f); f.dataset.limpo = "1"; fn(d, f);
+    if (f.dataset.limpo !== "1" || document.body.contains(f) || !SALVO[id]) return;
+    const novo = document.getElementById(id); if (!novo) return;
+    const m = document.createElement("p"); m.className = "salvo"; m.setAttribute("role", "status");
+    m.textContent = d.id ? "Alteração guardada." : SALVO[id];
+    novo.insertAdjacentElement("afterend", m);
+    setTimeout(() => m.remove(), 4000);
+  }; };
   const ateDezembro = v => { const o = {}; for (let m = ref.getMonth(); m < 12; m++) o[ref.getFullYear() + "-" + pad(m + 1)] = v; return o; };
 
   // o valor do plantão novo vem da tabela do local pelo dia da semana
@@ -855,7 +882,7 @@ function ligar(){
   }
   liga("fPlantao", (d, f) => {
     const valor = deReais(d.valor);
-    if (!(valor > 0)) { delete f.dataset.limpo; alert("Falta o valor."); return; }
+    if (!(valor > 0)) { erroNoForm(f, "Falta o valor.", "valor"); return; }
     const p = d.id && cad.plantoes.find(x => x.id === d.id);
     if (p) {
       if (p.data !== d.data || p.local !== d.local || p.periodo !== d.periodo) pularNasRegras(p);
@@ -886,10 +913,10 @@ function ligar(){
     cad.regrasPlantao.push({ id:novoId(), local:d.local, periodo:d.periodo, dia:Number(d.dia), quando:d.quando, inicio, valor:deReais(d.valor) || 0 });
     ultimosLancados = null; salvar();
   });
-  liga("fLancarRegras", d => {
+  liga("fLancarRegras", (d, f) => {
     ateEscolhido = d.ate;
     const novos = plantoesDasRegras(d.ate);
-    if (!novos.length) { alert("Nenhum plantão novo: os dessas regras até " + nomeMes(d.ate) + " de " + d.ate.slice(0, 4) + " já estão lançados."); return; }
+    if (!novos.length) { erroNoForm(f, "Nenhum plantão novo: os dessas regras até " + nomeMes(d.ate) + " de " + d.ate.slice(0, 4) + " já estão lançados."); return; }
     const semValor = novos.filter(p => !p.valor).length;
     if (!confirm(`Lançar ${novos.length} ${novos.length === 1 ? "plantão" : "plantões"}, de ${dataCurta(novos[0].data)} até ${dataCurta(novos[novos.length - 1].data)}/${novos[novos.length - 1].data.slice(0, 4)}?`
       + (semValor ? `\n\n${semValor} ficam sem valor: falta o valor desse dia na tabela do local.` : ""))) return;
@@ -940,7 +967,7 @@ function ligar(){
   document.querySelectorAll("input.val").forEach(i => i.onfocus = () => { try { i.select(); } catch(e){} });
   liga("fAtend", (d, f) => {
     const valor = FormLancamento.centavos(d.valor), paciente = d.paciente.trim().replace(/\s+/g, " ");
-    if (!paciente || !(valor > 0) || !d.data){ delete f.dataset.limpo; alert(!paciente ? "Falta o paciente." : !d.data ? "Falta o dia do pagamento." : "Falta o valor."); return; }
+    if (!paciente || !(valor > 0) || !d.data){ erroNoForm(f, !paciente ? "Falta o paciente." : !d.data ? "Falta o dia do pagamento." : "Falta o valor.", !paciente ? "paciente" : !d.data ? "data" : "valor"); return; }
     const a = d.id && cad.atendimentos.find(x => x.id === d.id);
     if (a) Object.assign(a, { paciente, valor, data:d.data });
     else cad.atendimentos.push({ id:novoId(), paciente, valor, data:d.data });
@@ -954,6 +981,18 @@ function ligar(){
     f.scrollIntoView({ block:"center", behavior:"smooth" }); f.elements.valor.focus();
   });
   liga("fCategoria", d => { const n = d.nome.trim(); if (n && !cad.categorias.includes(n)) { cad.categorias.push(n); salvar(); } });
+}
+
+// recado na tela, no lugar da janelinha do navegador (19/10/2026)
+function recado(texto){
+  document.querySelectorAll(".recado").forEach(r => r.remove());
+  const r = document.createElement("div");
+  r.className = "recado"; r.setAttribute("role", "alert");
+  r.innerHTML = `<span></span><button type="button" aria-label="Fechar o recado">×</button>`;
+  r.firstChild.textContent = texto;
+  r.lastChild.onclick = () => r.remove();
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 10000);
 }
 
 // ---------- abas ----------
@@ -983,8 +1022,11 @@ window.addEventListener("storage", e => {
 });
 
 // ---------- tema ----------
+/* a barra do navegador (Android) acompanha o tema escolhido no app, não só o do aparelho (19/10/2026) */
+function barraDoTema(v){ document.querySelectorAll('meta[name="theme-color"]').forEach(function(m, i){ m.content = v === "light" ? "#5b2a82" : v === "dark" ? "#2c1840" : (i ? "#2c1840" : "#5b2a82"); }); }
 function aplicarTema(v){
   document.documentElement.dataset.theme = v;
+  barraDoTema(v);
   try { quadroCasa.contentDocument.documentElement.setAttribute("data-theme", v); } catch(e){}
 }
 document.getElementById("tema").onclick = () => {
@@ -994,7 +1036,7 @@ document.getElementById("tema").onclick = () => {
   aplicarTema(v);
   try { localStorage.setItem("cu-painel-tema", v); localStorage.setItem("cu-tema", v); } catch(e){}
 };
-try { const t = localStorage.getItem("cu-painel-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+try { const t = localStorage.getItem("cu-painel-tema"); if (t) { document.documentElement.dataset.theme = t; barraDoTema(t); } } catch(e){}
 
 // ---------- planilha de volta ----------
 document.getElementById("exportar").onclick = () => {

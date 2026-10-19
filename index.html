@@ -17,7 +17,8 @@ if (window.top !== window.self && /(^#|&)(access_token|error)=/.test(location.ha
 <meta name="description" content="Controle Único: carteira, casa e clínica num lugar só, guardados no Google Drive de quem usa.">
 <!-- instalar como app: Android pelo manifesto, iPhone por "Adicionar à Tela de Início" -->
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#5b2a82">
+<meta name="theme-color" content="#5b2a82" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#2c1840" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Controle">
@@ -446,8 +447,11 @@ function escuroAgora(){
 }
 // o item diz o que o toque faz, não o tema de agora (06/10/2026)
 function rotuloTema(){ document.getElementById("tema-rot").textContent = escuroAgora() ? "Mudar para tema claro" : "Mudar para tema escuro"; }
+/* a barra do navegador (Android) acompanha o tema escolhido no app, não só o do aparelho (19/10/2026) */
+function barraDoTema(v){ document.querySelectorAll('meta[name="theme-color"]').forEach(function(m, i){ m.content = v === "light" ? "#5b2a82" : v === "dark" ? "#2c1840" : (i ? "#2c1840" : "#5b2a82"); }); }
 function aplicarTema(v){
   document.documentElement.dataset.theme = v;
+  barraDoTema(v);
   rotuloTema();
   for (var q in quadros) { try { quadros[q].contentDocument.documentElement.setAttribute("data-theme", v); } catch(e){} }
 }
@@ -458,7 +462,7 @@ document.getElementById("tema").addEventListener("click", function(){
   aplicarTema(v);
   try { localStorage.setItem("cu-painel-tema", v); localStorage.setItem("cu-tema", v); } catch(e){}
 });
-try { var t = localStorage.getItem("cu-painel-tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+try { var t = localStorage.getItem("cu-painel-tema"); if (t) { document.documentElement.dataset.theme = t; barraDoTema(t); } } catch(e){}
 rotuloTema();
 palco.addEventListener("load", function(e){
   var t = document.documentElement.dataset.theme;

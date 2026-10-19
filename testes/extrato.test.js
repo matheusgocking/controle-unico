@@ -68,6 +68,12 @@ test("Conta: resgate que paga a fatura vai para 30/09, Pix de paciente fica na C
   assert.doesNotMatch(r.ignorados.find(x => x.linha.fitid === "c4").descricao, /111/);
 });
 
+test("Conta: compra no débito pela NuPay fica com o nome da loja (extrato real de outubro)", () => {
+  const l = { memo:"Compra no débito via NuPay - EBW*Meta", valor:-1000 };
+  assert.equal(Extrato.descricao(l, "conta"), "EBW*Meta");
+  assert.equal(Extrato.sugestaoPorPalavra(Extrato.descricao(l, "conta")), "Clínica: Anúncios");
+});
+
 test("Arquivo que não é OFX avisa", () => {
   assert.throws(() => Extrato.ler("data,title,amount"), /não parece um extrato/);
 });

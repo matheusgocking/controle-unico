@@ -887,14 +887,19 @@ var Nuvem = (function(){
     };
     pinta();
   }
+  // erro de extensão do navegador (MetaMask: "Cannot redefine property: ethereum", 19/10/2026) não é do app
+  var deExtensao = function(texto){ return /(chrome|moz|safari(-web)?)-extension:\/\/|Cannot redefine property: ethereum/.test(texto || ""); };
   window.addEventListener("error", function(e){
-    // erro de imagem ou script de fora (Google) não é da tela
+    // erro de imagem ou script de fora (Google, extensão do navegador) não é da tela
     if(!e || !e.message || /^Script error/.test(e.message)) return;
+    if(e.filename && e.filename.indexOf(location.origin) !== 0) return;
+    if(deExtensao(e.message + " " + (e.filename || "") + " " + (e.error && e.error.stack || ""))) return;
     faixa("erro", "Algo deu errado nesta tela. O que já foi guardado está a salvo; recarregue a página. Se repetir, avise com um print desta mensagem: " + e.message);
   });
   window.addEventListener("unhandledrejection", function(e){
     var m = e && e.reason && (e.reason.message || String(e.reason));
     if(!m || /Failed to fetch|NetworkError|Load failed|abort/i.test(m)) return;   // sem internet: a nuvem já avisa
+    if(deExtensao(m + " " + (e.reason && e.reason.stack || ""))) return;
     faixa("erro", "Algo deu errado nesta tela. O que já foi guardado está a salvo; recarregue a página. Detalhe: " + m);
   });
   try{
