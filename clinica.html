@@ -951,6 +951,46 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 .rp-tot .fim.pend{color:var(--rp-no)}
 .rp-pe{margin-top:14px; font-size:12.5px; color:var(--rp-fa); text-align:center}
 .rp-vazio{font-size:13.5px; color:var(--rp-mu); padding:12px 0}
+/* Documentos (19/10/2026): declaração para reembolso, relatório do ano e nota fiscal. Folha clara,
+   como o Resumo, para imprimir ou salvar em PDF; o que falta aparece em vermelho no lugar do dado */
+.dc-modal{max-width:660px}
+.dc-dados{margin:0 0 12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px}
+.dc-dados summary{cursor:pointer; font-weight:600; font-size:13.5px; min-height:28px}
+.dc-grade{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px 12px; margin-top:10px}
+.dc-grade label,.dc-per label{display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:var(--muted)}
+.dc-grade .larga{grid-column:1/-1}
+.dc-grade input,.dc-per input,.dc-per select,.dc-campo textarea,.dc-campo input{min-height:36px; padding:6px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text); font:inherit; font-size:14px}
+@media (max-width:700px){ .dc-grade input,.dc-per input,.dc-per select,.dc-campo textarea,.dc-campo input{font-size:16px; min-height:44px} }
+.dc-per{display:flex; flex-wrap:wrap; gap:8px; align-items:end; margin-bottom:12px}
+.dc-aviso{font-size:12.5px; color:var(--devendo); margin:0 0 10px}
+.dc h3{font-size:19px; margin:0 0 12px; text-align:center; letter-spacing:.02em}
+.dc p{font-size:14px; margin:8px 0; line-height:1.5}
+.dc table{width:100%; border-collapse:collapse; font-size:13.5px; margin:6px 0 10px}
+.dc th,.dc td{border-bottom:1px solid var(--rp-li); padding:6px 4px; text-align:left; vertical-align:top}
+.dc th{font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--rp-mu)}
+.dc .n{text-align:right; white-space:nowrap}
+.dc tfoot td{font-weight:700; border-bottom:0; border-top:2px solid var(--rp-tx)}
+.dc .falta{color:var(--rp-no); font-weight:600}
+.dc .local{margin-top:18px}
+.dc .ass{margin-top:40px; text-align:center; font-size:13.5px; line-height:1.4}
+.dc .ass .linha{border-top:1px solid var(--rp-tx); width:280px; max-width:85%; margin:0 auto 6px}
+.dc .ass small{display:block; color:var(--rp-mu); font-size:12px}
+.dc-campo{display:flex; flex-direction:column; gap:4px; margin:0 0 10px}
+.dc-campo .rot{font-size:12.5px; color:var(--muted)}
+.dc-campo .val{display:flex; gap:8px; align-items:flex-start}
+.dc-campo .val > :first-child{flex:1; min-width:0}
+.dc-campo .txt{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:14px; overflow-wrap:anywhere}
+.dc-campo textarea{width:100%; min-height:84px; resize:vertical}
+.dc-rel td.q{min-width:0; overflow-wrap:anywhere}
+@media (max-width:700px){ .dc{padding:16px 12px 12px} .dc table{font-size:12.5px} .dc th,.dc td{padding:6px 3px} }
+.recibo .nf{font-size:11.5px; font-weight:600; color:var(--ok); white-space:nowrap}
+@media print{
+  body > *:not(.dc-imprimir){display:none !important}
+  .dc-imprimir{position:static !important; inset:auto !important; background:#fff !important; padding:0 !important; display:block !important}
+  .dc-imprimir .modal{box-shadow:none !important; max-width:none !important; padding:0 !important; background:#fff !important; max-height:none !important; overflow:visible !important}
+  .dc-imprimir .rp-barra,.dc-imprimir .dc-dados,.dc-imprimir .dc-per,.dc-imprimir .dc-aviso{display:none !important}
+  .dc-imprimir .dc{box-shadow:none; padding:0}
+}
 .pcard .pr{font-size:11px; color:var(--muted)}
 /* ficha: bloco do prontuário, com as sessões que ainda não estão no Word (29/09/2026) */
 .fipag.pront{border-color:var(--accent-line); background:var(--accent-soft)}
@@ -1498,6 +1538,7 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
     <div id="pg-cobrar"></div>
     <div class="pg-acoes">
       <button class="btn primary" id="pg-abrir" aria-expanded="false" aria-controls="pg-form">+ Registrar pagamento</button>
+      <button class="btn" id="pg-relatorio" type="button">Relatório do ano (IR e DMED)</button>
       <span id="pg-feito" class="hint" role="status"></span>
     </div>
 
@@ -2604,7 +2645,11 @@ var CAMPOS_DADOS = [
   {k:"psiquiatra", rot:"Psiquiatra", larga:true},
   {grupo:"Atendimento"},
   {k:"psicoterapia", rot:"Tipo de psicoterapia"},
-  {k:"tipoPagamento", rot:"Tipo de pagamento", dica:"Regular ou valor social."}
+  {k:"tipoPagamento", rot:"Tipo de pagamento", dica:"Regular ou valor social."},
+  /* 19/10/2026: o recibo para reembolso e a nota fiscal vão no nome de quem paga (pais, cônjuge) */
+  {grupo:"Quem paga (recibo e nota)"},
+  {k:"pagadorNome", rot:"Nome de quem paga", larga:true, dica:"Só se não for o próprio paciente."},
+  {k:"pagadorCpf", rot:"CPF de quem paga", modo:"numeric"}
 ];
 function cadastroDe(codigo){
   codigo = String(codigo || "").trim();
@@ -2649,6 +2694,7 @@ function cartaoDados(c, nomeAgenda){
     (c.emergCelular ? (c.emergNome ? " · " : "") + esc(c.emergCelular) + (we ? ' · <a href="' + esc(we) + '" target="_blank" rel="noopener">WhatsApp</a>' : "") : ""));
   par("Psiquiatra", esc(c.psiquiatra || ""));
   par("CPF", esc(c.cpf || ""));
+  par("Quem paga", esc([c.pagadorNome, c.pagadorCpf ? "CPF " + c.pagadorCpf : ""].filter(Boolean).join(" · ")));
   par("Psicoterapia", esc([c.psicoterapia, c.tipoPagamento ? "pagamento " + String(c.tipoPagamento).toLowerCase() : ""].filter(Boolean).join(" · ")));
   return '<p class="dp-nome">' + esc(c.nomeCompleto || nomeAgenda || "") + '</p>' +
     (lin.length ? '<dl class="dp-lista">' + lin.join("") + '</dl>' : "");
@@ -4042,11 +4088,14 @@ function abrirFicha(p, foco, aba){
     h += '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px">';
     if(l.length > 8) h += '<button type="button" class="btn sm ghost" id="fu-mais">'+(ultimasTodas ? "Mostrar só as últimas" : "Ver todas ("+l.length+")")+'</button>';
     /* o resumo para print (13/10/2026) */
-    h += '<button type="button" class="btn sm ghost" id="fu-resumo">Resumo para o paciente</button></div>';
+    h += '<button type="button" class="btn sm ghost" id="fu-resumo">Resumo para o paciente</button>';
+    /* 19/10/2026: o papel que o paciente leva ao plano de saúde */
+    h += '<button type="button" class="btn sm ghost" id="fu-declaracao">Declaração para reembolso</button></div>';
     el.innerHTML = h;
     var b = document.getElementById("fu-mais");
     if(b) b.addEventListener("click", function(){ ultimasTodas = !ultimasTodas; pintarUltimas(); });
     document.getElementById("fu-resumo").addEventListener("click", function(){ abrirResumo(p); });
+    document.getElementById("fu-declaracao").addEventListener("click", function(){ abrirDeclaracao(p); });
   }
   /* atalhos de valor: o ciclo dele e uma sessão do ciclo; o campo continua livre para outro valor */
   function pintarChips(){
@@ -4407,11 +4456,19 @@ function abrirFicha(p, foco, aba){
            (g.meio ? '<span class="meio">'+esc(MEIOS[g.meio]||g.meio)+'</span>' : "") +
            (g.obs ? '<span class="hint">'+esc(g.obs)+'</span>' : "") +
            '<span class="v">'+moeda(g.valor)+'</span>' +
+           (g.nota && g.nota.numero ? '<span class="nf">NF '+esc(g.nota.numero)+'</span>' : "") +
+           '<button class="apagar" data-fnota="'+esc(g.id)+'" aria-label="Nota fiscal do pagamento de '+esc(dataLonga(deISO(g.data)))+'">'+(g.nota && g.nota.numero ? "nota" : "preparar nota")+'</button>' +
            '<button class="apagar" data-fapagar="'+esc(g.id)+'" aria-label="Apagar o pagamento de '+esc(dataLonga(deISO(g.data)))+'">apagar</button></div>';
     });
     if(antPag && antPag.recibos.length) h += anteriorHTML(antPag);
     var caixa = document.getElementById("fi-pag");
     caixa.innerHTML = h;
+    caixa.querySelectorAll("[data-fnota]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var g = dados.pagamentos.filter(function(x){ return x.id === b.dataset.fnota; })[0];
+        if(g) abrirNota(g, function(){ pintarPagamentos(); });
+      });
+    });
     caixa.querySelectorAll("[data-fapagar]").forEach(function(b){
       b.addEventListener("click", function(){
         if(!confirm("Apagar este pagamento? Ele sai da conta e o vencimento volta ao que era antes.")) return;
@@ -6181,6 +6238,376 @@ function abrirResumo(p){
     if(navigator.clipboard) navigator.clipboard.writeText(t).catch(function(){});
     b.textContent = "Copiado";
     setTimeout(function(){ b.textContent = "Copiar texto"; }, 1600);
+  });
+}
+
+/* ---------------- documentos (19/10/2026) ----------------
+   Ele abriu CNPJ: a nota fiscal sai no emissor da prefeitura ou no Emissor Nacional, e o paciente
+   pede reembolso ao plano de saúde. O app não emite nada (o certificado ou a chave de uma empresa
+   de notas ficariam num site público): monta os documentos com o que já sabe. Os dados dele de
+   profissional ficam só no caderno (dados.profissional), nunca no código. Nada aqui muda conta,
+   saldo, vencimento ou dívida; a nota guarda só o número no pagamento (g.nota).
+   Fontes conferidas: Resolução CFP 06/2019, art. 9º (a declaração registra comparecimento, dias,
+   horários e tempo, e é vedado registrar sintomas ou estados psicológicos; a CID só cabe no
+   atestado); planilha de municípios da NFS-e do gov.br de 28/09/2026 (quem usa o Emissor Nacional). */
+var CAMPOS_PROF = [
+  {k:"nome", rot:"Seu nome completo", larga:true},
+  {k:"crp", rot:"CRP", dica:"16/00000"},
+  {k:"cpf", rot:"Seu CPF", modo:"numeric"},
+  {k:"cnpj", rot:"CNPJ", modo:"numeric"},
+  {k:"cnpjDesde", rot:"CNPJ aberto em", tipo:"date"},
+  {k:"razao", rot:"Razão social", larga:true},
+  {k:"endereco", rot:"Endereço (vai no recibo)", larga:true},
+  {k:"telefone", rot:"Telefone", tipo:"tel"},
+  {k:"email", rot:"E-mail", tipo:"email"},
+  {k:"municipio", rot:"Município do CNPJ", dica:"Vitória"},
+  {k:"duracao", rot:"Duração da sessão (min)", modo:"numeric", dica:"50"},
+  {k:"modalidade", rot:"Como atende", dica:"on-line, por vídeo"}
+];
+function profissional(){ if(!dados.profissional) dados.profissional = {}; return dados.profissional; }
+/* quem usa o Emissor Nacional, pela planilha do gov.br de 28/09/2026; Vila Velha, Cariacica e Viana
+   estão no Ambiente Nacional, mas emitem no site da prefeitura */
+var EMISSOR_NACIONAL = ["vitoria", "serra", "guarapari"];
+function municipioChave(){ return semAcento(String(profissional().municipio || "")).toLowerCase().trim(); }
+function usaEmissorNacional(){ return EMISSOR_NACIONAL.indexOf(municipioChave()) >= 0; }
+/* o pagamento é de antes do CNPJ: vai no Receita Saúde, como pessoa física, e não em nota */
+function antesDoCnpj(iso){ var d = profissional().cnpjDesde; return !!(d && iso < d); }
+
+/* o dado ou, no lugar dele, o aviso em vermelho do que falta */
+function ouFalta(v, rot, faltas){
+  v = String(v || "").trim();
+  if(v) return esc(v);
+  if(faltas && faltas.indexOf(rot) < 0) faltas.push(rot);
+  return '<span class="falta">[falta ' + esc(rot) + ']</span>';
+}
+function ouFaltaTx(v, rot){ v = String(v || "").trim(); return v || "[falta " + rot + "]"; }
+
+/* o bloco "Seus dados", dobrável; cada campo grava no caderno e redesenha o documento */
+function blocoProf(aberto){
+  var pf = profissional();
+  var h = '<details class="dc-dados"' + (aberto ? " open" : "") + '><summary>Seus dados de profissional (ficam só no seu Drive)</summary><div class="dc-grade">';
+  CAMPOS_PROF.forEach(function(f){
+    h += '<label' + (f.larga ? ' class="larga"' : "") + '>' + esc(f.rot) +
+      '<input data-prof="' + f.k + '" type="' + (f.tipo || "text") + '"' + (f.modo ? ' inputmode="' + f.modo + '"' : "") +
+      (f.dica ? ' placeholder="' + esc(f.dica) + '"' : "") + ' value="' + esc(pf[f.k] || "") + '"></label>';
+  });
+  return h + '</div></details>';
+}
+function ligarProf(raiz, depois){
+  raiz.querySelectorAll("[data-prof]").forEach(function(el){
+    el.addEventListener("change", function(){
+      var v = el.value.trim(), pf = profissional();
+      if(v) pf[el.dataset.prof] = v; else delete pf[el.dataset.prof];
+      salvar();
+      if(depois) depois();
+    });
+  });
+}
+function profFaltando(){
+  var pf = profissional();
+  return ["nome", "crp"].filter(function(k){ return !String(pf[k] || "").trim(); }).length > 0;
+}
+
+/* sessões em que ele esteve, num período: as do prontuário (antes do app) e as da agenda marcadas
+   como realizadas; as da agenda que passaram sem marca voltam à parte, para ele marcar antes */
+function sessoesFeitasDe(p, de, ate){
+  var a = chaveData(de), b = chaveData(ate), vistos = {}, feitas = [], semMarca = [];
+  ((p.historico && p.historico.sessoes) || []).forEach(function(s){
+    if(s.situacao === "realizada" && s.data >= a && s.data <= b && !vistos[s.data]){ vistos[s.data] = true; feitas.push({data:s.data, hora:null}); }
+  });
+  var fim = ate > hoje0() ? hoje0() : ate;
+  if(de <= fim && dados.pacientes.indexOf(p) >= 0){
+    sessoesDoPaciente(p, de, fim).forEach(function(x){
+      var k = chaveData(x.data);
+      if(vistos[k]) return;
+      if(x.estado === "realizada"){ vistos[k] = true; feitas.push({data:k, hora:x.hora}); }
+      else if(x.estado === "sessao" && jaPassou(x.data, x.hora)) semMarca.push(k);
+    });
+  }
+  feitas.sort(function(x, y){ return x.data < y.data ? -1 : (x.data > y.data ? 1 : 0); });
+  return {feitas:feitas, semMarca:semMarca};
+}
+function pagosNoPeriodo(p, de, ate){
+  var a = chaveData(de), b = chaveData(ate);
+  return pagamentosDe(p.id).filter(function(g){ return g.data >= a && g.data <= b; }).reverse();
+}
+/* quem paga: o do cadastro, ou o próprio paciente */
+function pagadorDe(p){
+  var c = cadastroDe(p.codigo) || {};
+  var proprio = !String(c.pagadorNome || "").trim();
+  return {nome: proprio ? (c.nomeCompleto || p.nome) : c.pagadorNome, cpf: proprio ? c.cpf : c.pagadorCpf, proprio:proprio, cad:c};
+}
+/* o valor da sessão no combinado daquele dia; sem conta (quem saiu antes do app), fica em branco */
+function valorDaSessaoDoc(p, iso){ try{ var v = Number(valorSessaoEm(p, iso)); return v > 0 ? v : 0; }catch(e){ return 0; } }
+function horaTx(h){ return h === null || h === undefined ? "" : String(h).padStart(2, "0") + "h"; }
+function duracaoTx(){ var d = parseInt(profissional().duracao, 10); return d > 0 ? d : 50; }
+
+/* o período escolhido: mês passado, este mês, três meses ou datas à mão */
+function periodoDoc(tipo, de, ate){
+  var h = hoje0(), a, b;
+  if(tipo === "este"){ a = new Date(h.getFullYear(), h.getMonth(), 1); b = new Date(h.getFullYear(), h.getMonth() + 1, 0); }
+  else if(tipo === "tres"){ a = new Date(h.getFullYear(), h.getMonth() - 3, 1); b = new Date(h.getFullYear(), h.getMonth(), 0); }
+  else if(tipo === "datas" && de && ate){ a = deISO(de); b = deISO(ate); }
+  else { a = new Date(h.getFullYear(), h.getMonth() - 1, 1); b = new Date(h.getFullYear(), h.getMonth(), 0); }
+  return {de:a, ate:b};
+}
+
+function montarDeclaracao(p, per){
+  var pf = profissional(), pg = pagadorDe(p), c = pg.cad, faltas = [];
+  var ss = sessoesFeitasDe(p, per.de, per.ate), pags = pagosNoPeriodo(p, per.de, per.ate);
+  var total = 0; pags.forEach(function(g){ total += Number(g.valor) || 0; });
+  var d = {p:p, pf:pf, pg:pg, c:c, ss:ss, pags:pags, total:Math.round(total * 100) / 100, per:per, faltas:faltas};
+  var nomePac = c.nomeCompleto || p.nome, mod = String(pf.modalidade || "").trim() || "on-line, por vídeo";
+  var h = '<div class="rp dc" id="dc-doc"><h3>Declaração e recibo</h3>';
+  h += '<p>Declaro, para fins de reembolso junto ao plano de saúde, que <b>' + esc(nomePac) + '</b>, CPF ' + ouFalta(c.cpf, "CPF do paciente", faltas) +
+    ', esteve em acompanhamento psicológico (psicoterapia) comigo, em atendimento ' + esc(mod) + ', de ' + dataLonga(per.de) + ' a ' + dataLonga(per.ate) +
+    (ss.feitas.length ? ', e compareceu ' + (ss.feitas.length === 1 ? "à sessão abaixo" : "às " + ss.feitas.length + " sessões abaixo") + ', de ' + duracaoTx() + ' minutos cada.' : ".") + '</p>';
+  if(ss.feitas.length){
+    /* uma linha por sessão, com o valor dela (as operadoras pedem data, quantidade e valor de cada uma) */
+    var somaS = 0;
+    h += '<table><thead><tr><th>Data</th><th>Horário</th><th>Serviço</th><th class="n">Valor</th></tr></thead><tbody>';
+    ss.feitas.forEach(function(s){
+      var dt = deISO(s.data), v = valorDaSessaoDoc(p, s.data); somaS += v || 0;
+      h += '<tr><td>' + dataLonga(dt) + ' <small>' + DIAS_CURTO[dt.getDay()].toLowerCase() + '</small></td><td>' + (horaTx(s.hora) || "—") + '</td><td>Sessão de psicoterapia individual</td><td class="n">' + (v ? moeda2(v) : "—") + '</td></tr>';
+    });
+    h += '</tbody><tfoot><tr><td colspan="3">' + plural(ss.feitas.length, "sessão", "sessões") + '</td><td class="n">' + (somaS ? moeda2(somaS) : "") + '</td></tr></tfoot></table>';
+  } else h += '<p class="falta">Nenhuma sessão realizada neste período.</p>';
+  if(pags.length){
+    h += '<p>Recebi de <b>' + ouFalta(pg.nome, "nome de quem paga", faltas) + '</b>, CPF ' + ouFalta(pg.cpf, pg.proprio ? "CPF do paciente" : "CPF de quem paga", faltas) +
+      ', a quantia de <b>' + moeda2(d.total) + '</b>, referente aos atendimentos psicológicos ' + (pg.proprio ? "acima" : "de " + esc(nomePac) + " acima") + ', paga como segue:</p>';
+    h += '<table><thead><tr><th>Data do pagamento</th><th>Forma</th><th class="n">Valor</th></tr></thead><tbody>';
+    pags.forEach(function(g){ h += '<tr><td>' + dataLonga(deISO(g.data)) + '</td><td>' + esc(MEIOS[g.meio] || g.meio || "") + (g.nota && g.nota.numero ? ' · NF ' + esc(g.nota.numero) : "") + '</td><td class="n">' + moeda2(g.valor) + '</td></tr>'; });
+    h += '</tbody><tfoot><tr><td colspan="2">Total pago</td><td class="n">' + moeda2(d.total) + '</td></tr></tfoot></table>';
+  } else h += '<p>Nenhum pagamento registrado neste período: o documento vale só como declaração de comparecimento.</p>';
+  h += '<p class="local">' + ouFalta(pf.municipio, "município", faltas) + ', ' + dataPorExtenso(hoje0()) + '.</p>';
+  h += '<div class="ass"><div class="linha"></div><b>' + ouFalta(pf.nome, "seu nome", faltas) + '</b><br>Psicólogo clínico, CRP ' + ouFalta(pf.crp, "CRP", faltas) +
+    (pf.cnpj ? '<small>' + esc(pf.razao ? pf.razao + ", " : "") + 'CNPJ ' + esc(pf.cnpj) + '</small>' : (pf.cpf ? '<small>CPF ' + esc(pf.cpf) + '</small>' : "")) +
+    (pf.endereco ? '<small>' + esc(pf.endereco) + '</small>' : "") +
+    (pf.telefone || pf.email ? '<small>' + esc([pf.telefone, pf.email].filter(Boolean).join(" · ")) + '</small>' : "") + '</div></div>';
+  d.html = h;
+  return d;
+}
+function textoDeclaracao(d){
+  var pf = d.pf, c = d.c, pg = d.pg, nomePac = c.nomeCompleto || d.p.nome, mod = String(pf.modalidade || "").trim() || "on-line, por vídeo";
+  var l = ["DECLARAÇÃO E RECIBO", "",
+    "Declaro, para fins de reembolso junto ao plano de saúde, que " + nomePac + ", CPF " + ouFaltaTx(c.cpf, "CPF do paciente") +
+    ", esteve em acompanhamento psicológico (psicoterapia) comigo, em atendimento " + mod + ", de " + dataLonga(d.per.de) + " a " + dataLonga(d.per.ate) +
+    ", e compareceu às sessões abaixo, de " + duracaoTx() + " minutos cada:"];
+  d.ss.feitas.forEach(function(s){ var dt = deISO(s.data), v = valorDaSessaoDoc(d.p, s.data); l.push("• " + dataLonga(dt) + " (" + DIAS_CURTO[dt.getDay()].toLowerCase() + ")" + (s.hora !== null ? ", " + horaTx(s.hora) : "") + ", sessão de psicoterapia individual" + (v ? ", " + moeda2(v) : "")); });
+  if(d.pags.length){
+    l.push("", "Recebi de " + ouFaltaTx(pg.nome, "nome de quem paga") + ", CPF " + ouFaltaTx(pg.cpf, "CPF") + ", a quantia de " + moeda2(d.total) + ", referente a esses atendimentos:");
+    d.pags.forEach(function(g){ l.push("• " + dataLonga(deISO(g.data)) + ", " + (MEIOS[g.meio] || g.meio || "") + ", " + moeda2(g.valor)); });
+  }
+  l.push("", ouFaltaTx(pf.municipio, "município") + ", " + dataPorExtenso(hoje0()) + ".", "", ouFaltaTx(pf.nome, "seu nome"), "Psicólogo clínico, CRP " + ouFaltaTx(pf.crp, "CRP"));
+  if(pf.cnpj) l.push((pf.razao ? pf.razao + ", " : "") + "CNPJ " + pf.cnpj);
+  return l.join("\n");
+}
+/* imprimir só a folha: a janela ganha a classe e o resto da página some no papel */
+function imprimirFolha(fundo){
+  fundo.classList.add("dc-imprimir");
+  var tirar = function(){ fundo.classList.remove("dc-imprimir"); window.removeEventListener("afterprint", tirar); };
+  window.addEventListener("afterprint", tirar);
+  window.print();
+  setTimeout(tirar, 1500);
+}
+function botaoCopiar(b, texto, rotulo){
+  if(navigator.clipboard) navigator.clipboard.writeText(texto).catch(function(){});
+  b.textContent = "Copiado";
+  setTimeout(function(){ b.textContent = rotulo; }, 1600);
+}
+
+function abrirDeclaracao(p){
+  var fundo = document.createElement("div"), tipo = "passado", de = "", ate = "";
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal rp-modal dc-modal" role="dialog" aria-label="Declaração para reembolso">' +
+    '<div class="rp-barra"><button type="button" class="btn sm ghost" id="dc-copiar">Copiar texto</button>' +
+    '<button type="button" class="btn sm ghost" id="dc-imprimir">Imprimir ou salvar PDF</button><button type="button" class="btn sm" id="dc-fechar">Fechar</button></div>' +
+    '<div id="dc-prof"></div>' +
+    '<div class="dc-per"><label>Período<select id="dc-tipo"><option value="passado">Mês passado</option><option value="este">Este mês</option><option value="tres">Últimos 3 meses</option><option value="datas">Escolher as datas</option></select></label>' +
+    '<label class="dc-datas" hidden>De<input type="date" id="dc-de"></label><label class="dc-datas" hidden>Até<input type="date" id="dc-ate"></label></div>' +
+    '<p class="dc-aviso" id="dc-aviso" role="status"></p><div id="dc-corpo"></div></div>';
+  document.body.appendChild(fundo);
+  var d = null;
+  function pintarProf(){
+    var el = document.getElementById("dc-prof");
+    el.innerHTML = blocoProf(profFaltando());
+    ligarProf(el, pintar);
+  }
+  function pintar(){
+    var per = periodoDoc(tipo, de, ate);
+    d = montarDeclaracao(p, per);
+    document.getElementById("dc-corpo").innerHTML = d.html;
+    var av = [];
+    if(d.ss.semMarca.length) av.push(plural(d.ss.semMarca.length, "sessão", "sessões") + " deste período ainda sem marca na grade (" + listaDatas(d.ss.semMarca) + "): marque como realizada para entrar.");
+    if(d.faltas.length) av.push("Falta: " + d.faltas.join(", ") + ". " + (d.faltas.some(function(f){ return f.indexOf("paciente") >= 0 || f.indexOf("paga") >= 0; }) ? "Os do paciente ficam na aba Dados da ficha." : ""));
+    if(d.pags.some(function(g){ return antesDoCnpj(g.data); })) av.push("Há pagamento de antes do CNPJ: esse vai no Receita Saúde, como pessoa física.");
+    document.getElementById("dc-aviso").textContent = av.join(" ");
+  }
+  pintarProf();
+  pintar();
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target === fundo) fechar(); });
+  document.getElementById("dc-fechar").addEventListener("click", fechar);
+  document.getElementById("dc-tipo").addEventListener("change", function(e){
+    tipo = e.target.value;
+    fundo.querySelectorAll(".dc-datas").forEach(function(x){ x.hidden = tipo !== "datas"; });
+    if(tipo === "datas" && !de){ var pp = periodoDoc("passado"); de = chaveData(pp.de); ate = chaveData(pp.ate); document.getElementById("dc-de").value = de; document.getElementById("dc-ate").value = ate; }
+    pintar();
+  });
+  ["dc-de", "dc-ate"].forEach(function(id){
+    document.getElementById(id).addEventListener("change", function(){ de = document.getElementById("dc-de").value; ate = document.getElementById("dc-ate").value; if(de && ate && de <= ate) pintar(); });
+  });
+  document.getElementById("dc-copiar").addEventListener("click", function(e){ if(d) botaoCopiar(e.target, textoDeclaracao(d), "Copiar texto"); });
+  document.getElementById("dc-imprimir").addEventListener("click", function(){ imprimirFolha(fundo); });
+}
+
+/* ---- relatório do ano: quanto cada pessoa pagou, com os CPFs, para a DMED e o IR do paciente ---- */
+function relatorioDoAno(ano){
+  var a = ano + "-01-01", b = ano + "-12-31", grupos = {}, ordem = [], cnpjDesde = profissional().cnpjDesde || "";
+  dados.pagamentos.forEach(function(g){
+    if(!(g.data >= a && g.data <= b)) return;
+    if(g.receita && g.receita !== "Prática Clínica.") return;
+    var p = g.pacienteId ? acharPaciente(g.pacienteId) : null;
+    var k = p ? "p:" + p.id : "n:" + String(g.nomePlanilha || "sem nome").trim();
+    if(!grupos[k]){
+      var pg = p ? pagadorDe(p) : {nome:g.nomePlanilha || "", cpf:"", proprio:true, cad:{}};
+      grupos[k] = {p:p, nome:p ? (pg.cad.nomeCompleto || p.nome) : (g.nomePlanilha || "Sem nome"), cpf:p ? pg.cad.cpf || "" : "",
+        pagador:pg.proprio ? "" : pg.nome, pagadorCpf:pg.proprio ? "" : (pg.cpf || ""), pf:0, pj:0, n:0, notas:0};
+      ordem.push(k);
+    }
+    var x = grupos[k], v = Number(g.valor) || 0;
+    if(cnpjDesde && g.data >= cnpjDesde) x.pj += v; else x.pf += v;
+    x.n++; if(g.nota && g.nota.numero) x.notas++;
+  });
+  var l = ordem.map(function(k){ return grupos[k]; });
+  l.sort(function(x, y){ return (y.pf + y.pj) - (x.pf + x.pj); });
+  return {ano:ano, linhas:l, cnpjDesde:cnpjDesde};
+}
+function abrirRelatorioAno(){
+  var fundo = document.createElement("div"), ano = hoje0().getFullYear(), r = null;
+  var anos = {}; dados.pagamentos.forEach(function(g){ if(g.data) anos[String(g.data).slice(0, 4)] = true; }); anos[ano] = true;
+  fundo.className = "overlay";
+  fundo.innerHTML = '<div class="modal rp-modal dc-modal" role="dialog" aria-label="Relatório do ano">' +
+    '<div class="rp-barra"><select id="rl-ano" aria-label="Ano">' + Object.keys(anos).sort().reverse().map(function(x){ return '<option' + (x == ano ? " selected" : "") + '>' + x + '</option>'; }).join("") + '</select>' +
+    '<button type="button" class="btn sm ghost" id="rl-copiar">Copiar para a planilha</button><button type="button" class="btn sm ghost" id="rl-imprimir">Imprimir</button><button type="button" class="btn sm" id="rl-fechar">Fechar</button></div>' +
+    '<div id="rl-prof"></div><p class="dc-aviso" id="rl-aviso" role="status"></p><div id="rl-corpo"></div></div>';
+  document.body.appendChild(fundo);
+  function pintar(){
+    r = relatorioDoAno(ano);
+    var temPJ = !!r.cnpjDesde, tPF = 0, tPJ = 0, semCpf = 0;
+    var h = '<div class="rp dc dc-rel"><h3>Recebido em ' + ano + ', por paciente</h3>';
+    h += '<p style="font-size:12.5px; color:var(--rp-mu)">Só pagamentos de paciente (Prática Clínica). ' + (temPJ ? "Até " + dataLonga(somaDias(deISO(r.cnpjDesde), -1)) + " como pessoa física (Receita Saúde e carnê-leão); a partir de " + dataLonga(deISO(r.cnpjDesde)) + " pelo CNPJ (nota fiscal e DMED)." : "Preencha a data de abertura do CNPJ em Seus dados para separar o que foi como pessoa física do que foi pela empresa.") + '</p>';
+    h += '<table><thead><tr><th>Paciente</th><th>Quem paga</th>' + (temPJ ? '<th class="n">Pessoa física</th><th class="n">CNPJ</th>' : '<th class="n">Total</th>') + '<th class="n">Pag.</th></tr></thead><tbody>';
+    r.linhas.forEach(function(x){
+      tPF += x.pf; tPJ += x.pj;
+      if(!x.cpf || (x.pagador && !x.pagadorCpf)) semCpf++;
+      h += '<tr><td class="q">' + esc(x.nome) + '<br><small>CPF ' + (x.cpf ? esc(x.cpf) : '<span class="falta">falta</span>') + '</small></td>' +
+        '<td class="q">' + (x.pagador ? esc(x.pagador) + '<br><small>CPF ' + (x.pagadorCpf ? esc(x.pagadorCpf) : '<span class="falta">falta</span>') + '</small>' : '<small>o próprio</small>') + '</td>' +
+        (temPJ ? '<td class="n">' + moeda2(x.pf) + '</td><td class="n">' + moeda2(x.pj) + '</td>' : '<td class="n">' + moeda2(x.pf + x.pj) + '</td>') +
+        '<td class="n">' + x.n + (x.pj > 0 ? '<br><small>' + x.notas + ' NF</small>' : "") + '</td></tr>';
+    });
+    h += '</tbody><tfoot><tr><td colspan="2">Total (' + plural(r.linhas.length, "pessoa", "pessoas") + ')</td>' +
+      (temPJ ? '<td class="n">' + moeda2(tPF) + '</td><td class="n">' + moeda2(tPJ) + '</td>' : '<td class="n">' + moeda2(tPF + tPJ) + '</td>') + '<td></td></tr></tfoot></table></div>';
+    document.getElementById("rl-corpo").innerHTML = r.linhas.length ? h : '<div class="rp"><p class="rp-vazio">Nenhum pagamento de paciente em ' + ano + '.</p></div>';
+    document.getElementById("rl-aviso").textContent = semCpf ? plural(semCpf, "linha está", "linhas estão") + " sem CPF: preencha na aba Dados da ficha de cada um (a DMED pede o CPF de quem paga e de quem foi atendido)." : "";
+  }
+  var elProf = document.getElementById("rl-prof");
+  elProf.innerHTML = blocoProf(false);
+  ligarProf(elProf, pintar);
+  pintar();
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target === fundo) fechar(); });
+  document.getElementById("rl-fechar").addEventListener("click", fechar);
+  document.getElementById("rl-ano").addEventListener("change", function(e){ ano = Number(e.target.value); pintar(); });
+  document.getElementById("rl-imprimir").addEventListener("click", function(){ imprimirFolha(fundo); });
+  document.getElementById("rl-copiar").addEventListener("click", function(e){
+    /* separado por tabulação: colado no Excel, cada dado cai numa coluna */
+    var linhas = [["Paciente", "CPF do paciente", "Quem paga", "CPF de quem paga", "Pessoa física", "CNPJ", "Pagamentos"].join("\t")];
+    r.linhas.forEach(function(x){ linhas.push([x.nome, x.cpf, x.pagador, x.pagadorCpf, x.pf.toFixed(2).replace(".", ","), x.pj.toFixed(2).replace(".", ","), x.n].join("\t")); });
+    botaoCopiar(e.target, linhas.join("\n"), "Copiar para a planilha");
+  });
+}
+(function(){ var b = document.getElementById("pg-relatorio"); if(b) b.addEventListener("click", abrirRelatorioAno); })();
+
+/* ---- preparar a nota de um pagamento: os dados para colar no emissor e o número que ele devolve ---- */
+function descricaoNota(g, p){
+  var pg = p ? pagadorDe(p) : null, c = pg ? pg.cad : {}, nomePac = p ? (c.nomeCompleto || p.nome) : "";
+  var datas = [], regra = "";
+  if(p){
+    /* as sessões que o pagamento quita. Ciclo mensal ou quinzenal é pago adiantado: as 4 ou 2 sessões a
+       partir do dia do pagamento (feitas ou marcadas). Avulsa: as realizadas desde o pagamento anterior. */
+    var ci = null; try{ ci = cicloEm(p, g.data); }catch(e){}
+    var cob = ci && ci.cobranca ? ci.cobranca : p.cobranca, n = cob === "mensal" ? 4 : (cob === "quinzenal" ? 2 : 0);
+    if(n){
+      var ini = deISO(g.data), fim = somaDias(ini, 45), feitas = sessoesFeitasDe(p, ini, fim).feitas.map(function(s){ return s.data; });
+      if(dados.pacientes.indexOf(p) >= 0) sessoesDoPaciente(p, ini, fim).forEach(function(x){
+        var k = chaveData(x.data);
+        if((x.estado === "sessao" || x.estado === "falta") && feitas.indexOf(k) < 0) feitas.push(k);
+      });
+      datas = feitas.sort().slice(0, n);
+      regra = "Ciclo " + cob + " pago adiantado: as " + n + " sessões a partir do pagamento, feitas ou marcadas.";
+    } else {
+      var ant = pagamentosDe(p.id).filter(function(x){ return x.data < g.data; })[0];
+      var de = ant ? somaDias(deISO(ant.data), 1) : somaDias(deISO(g.data), -31);
+      datas = sessoesFeitasDe(p, de, deISO(g.data)).feitas.map(function(s){ return s.data; });
+      regra = "Sessão avulsa: as realizadas desde o pagamento anterior.";
+    }
+  }
+  /* "serviço prestado" não serve ao reembolso: o tipo de sessão e a data de cada uma, sem diagnóstico */
+  var t = (datas.length === 1 ? "Sessão" : "Sessões") + " de psicoterapia individual" + (String(profissional().modalidade || "").trim() ? ", " + profissional().modalidade.trim() : "") +
+    (datas.length ? (datas.length === 1 ? ", em " : ", em ") + listaDatas(datas) + "/" + String(g.data).slice(0, 4) : "") + ".";
+  if(profissional().crp) t += " Psicólogo CRP " + profissional().crp + ".";
+  if(p && !pg.proprio) t += " Paciente: " + nomePac + (c.cpf ? ", CPF " + c.cpf : "") + ".";
+  return {texto:t, regra:regra};
+}
+function abrirNota(g, depois){
+  var p = g.pacienteId ? acharPaciente(g.pacienteId) : null, pg = p ? pagadorDe(p) : {nome:g.nomePlanilha || "", cpf:""};
+  var desc = descricaoNota(g, p), nota = g.nota || {};
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  function campo(rot, valor, id){
+    return '<div class="dc-campo"><span class="rot">' + esc(rot) + '</span><div class="val"><div class="txt" id="' + id + '">' + (valor ? esc(valor) : '<span style="color:var(--devendo)">falta</span>') + '</div>' +
+      (valor ? '<button type="button" class="btn sm ghost" data-copiar="' + id + '">Copiar</button>' : "") + '</div></div>';
+  }
+  var emissor = usaEmissorNacional() ? '<a class="btn sm" href="https://www.nfse.gov.br/EmissorNacional" target="_blank" rel="noopener">Abrir o Emissor Nacional</a>' :
+    (profissional().municipio ? '<span class="hint">' + esc(profissional().municipio) + ' emite no site da prefeitura (não no Emissor Nacional).</span>' : '<span class="hint">Diga o município do CNPJ em Seus dados para saber onde emitir.</span>');
+  fundo.innerHTML = '<div class="modal rp-modal dc-modal" role="dialog" aria-label="Nota fiscal do pagamento">' +
+    '<div class="rp-barra"><b style="flex:1">Nota fiscal · ' + esc(dataLonga(deISO(g.data))) + ' · ' + moeda2(g.valor) + '</b><button type="button" class="btn sm" id="nf-fechar">Fechar</button></div>' +
+    '<div id="nf-prof"></div>' +
+    (antesDoCnpj(g.data) ? '<p class="dc-aviso">Este pagamento é de antes do CNPJ: ele vai no Receita Saúde, como pessoa física, e não em nota.</p>' : "") +
+    campo("Tomador (quem paga)", pg.nome, "nf-tom") + campo("CPF do tomador", pg.cpf, "nf-cpf") +
+    campo("Serviço", "04.16.01 · Psicologia (item 4.16 da LC 116)", "nf-serv") + campo("Valor", moeda2(g.valor).replace("R$ ", ""), "nf-val") +
+    '<div class="dc-campo"><label class="rot" for="nf-desc">Descrição (pode mudar antes de copiar)</label><div class="val"><textarea id="nf-desc">' + esc(desc.texto) + '</textarea>' +
+    '<button type="button" class="btn sm ghost" data-copiar="nf-desc">Copiar</button></div>' + (desc.regra ? '<span class="hint">' + esc(desc.regra) + ' Sem sintoma nem CID, pelo sigilo.</span>' : "") + '</div>' +
+    '<div style="margin:6px 0 14px">' + emissor + '</div>' +
+    '<div class="dc-per"><label>Número da nota emitida<input id="nf-num" inputmode="numeric" value="' + esc(nota.numero || "") + '"></label>' +
+    '<label>Emitida em<input type="date" id="nf-data" value="' + esc(nota.data || chaveData(hoje0())) + '"></label>' +
+    '<button type="button" class="btn primary" id="nf-guardar">Guardar o número</button></div><p class="hint" id="nf-feito" role="status"></p></div>';
+  document.body.appendChild(fundo);
+  var elProf = document.getElementById("nf-prof");
+  elProf.innerHTML = blocoProf(!profissional().municipio);
+  ligarProf(elProf, null);
+  function fechar(){ fundo.remove(); devolverFoco(); }
+  var devolverFoco = janela(fundo, fechar);
+  fundo.addEventListener("click", function(e){ if(e.target === fundo) fechar(); });
+  document.getElementById("nf-fechar").addEventListener("click", fechar);
+  fundo.querySelectorAll("[data-copiar]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var el = document.getElementById(b.dataset.copiar);
+      botaoCopiar(b, el.tagName === "TEXTAREA" ? el.value : el.textContent, "Copiar");
+    });
+  });
+  document.getElementById("nf-guardar").addEventListener("click", function(){
+    var n = document.getElementById("nf-num").value.trim(), feito = document.getElementById("nf-feito");
+    var alvo = dados.pagamentos.filter(function(x){ return x.id === g.id; })[0];
+    if(!alvo){ feito.textContent = "Este pagamento não existe mais."; return; }
+    if(n) alvo.nota = {numero:n, data:document.getElementById("nf-data").value || chaveData(hoje0())};
+    else delete alvo.nota;
+    salvar();
+    feito.textContent = n ? "Guardado: NF " + n + "." : "Número apagado.";
+    if(depois) depois();
   });
 }
 

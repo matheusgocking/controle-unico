@@ -344,11 +344,37 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .wrap:has(.lanc-form) .fab,.fab.fora{display:none}   /* com o formulário aberto, ou com o botão de cima à vista, ele só atrapalharia */
 }
 @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+/* importar o extrato (19/10/2026) */
+.imp-barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:4px 0 14px}
+.imp-ok{background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.imp{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:4px 0 16px;background:var(--surface-2)}
+.imp h3{margin:0 0 4px;font-size:15px}
+.imp details{margin:10px 0}
+.imp summary{cursor:pointer;font-weight:600;font-size:13.5px;min-height:32px;display:flex;align-items:center}
+.imp-t input[type=text],.imp-t select{width:100%;min-width:0;font:inherit;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--text)}
+.imp-t input[type=checkbox]{width:20px;height:20px}
+.imp-t small.nota{display:block;margin-top:2px}
+.imp-t tr.imp-off td{opacity:.6}
+.imp-t tr.imp-falta select[data-imp-cat]{border-color:#d0453a;box-shadow:0 0 0 1px #d0453a}
+.imp-lista{margin:6px 0 0;padding-left:18px;font-size:13.5px}
+.imp .erro{color:#d0453a;font-weight:600;font-size:13.5px}
+@media (max-width:700px){
+  table.imp-t thead{display:none}
+  table.imp-t tr{grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) !important;gap:6px 8px !important}
+  table.imp-t td:nth-child(1){grid-row:1 / span 3}
+  table.imp-t td:nth-child(2){grid-column:2;grid-row:1;font-size:12.5px}
+  table.imp-t td:nth-child(6){grid-column:3;grid-row:1;text-align:right;font-weight:600}
+  table.imp-t td:nth-child(3){grid-column:2 / 4;grid-row:2}
+  table.imp-t td:nth-child(4){grid-column:2;grid-row:3}
+  table.imp-t td:nth-child(5){grid-column:3;grid-row:3}
+  .imp-t input[type=text],.imp-t select{font-size:16px;min-height:40px}
+}
 </style>
 <script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
 <script src="exportar-xlsx.js"></script>
 <script src="ler-xlsx.js"></script>
 <script src="categorias.js"></script>
+<script src="extrato.js"></script>
 <script src="lancamento.js"></script>
 <script src="rotulos.js"></script>
 <script src="periodo-fixo.js"></script>
@@ -1542,6 +1568,139 @@ function irPrecisa(a){
   }
 }
 
+// ---------- importar o extrato do Nubank (19/10/2026) ----------
+// Aprovado em 01/10/2026, desenho de 15/10/2026: ele escolhe o OFX (fatura ou conta), o app compara
+// com o que já foi lançado à mão e mostra três grupos: novos (para conferir e lançar), já lançados e
+// ignorados (pagamento de fatura, gasto fixo, Pix de paciente, Arthur). Nada entra sem ele apertar
+// "Lançar". As escolhas dele viram regra para a próxima vez (livro.matheus.regras) e cada linha
+// lançada fica marcada (livro.matheus.importados), para o mesmo arquivo não entrar duas vezes.
+// Regras de leitura e classificação: extrato.js. Só no app dele (a Ana tem três bancos).
+let imp = null;
+const impRegras = () => (livro.matheus.regras = livro.matheus.regras || {});
+const impFeitos = () => (livro.matheus.importados = livro.matheus.importados || {});
+function impFixosDoMes(km){
+  return livro.matheus.gastosFixos.map(g => ({ descricao:g.descricao, categoria:g.categoria, dia:diaFixo(g, km), valor:valorFixo(g, km) })).filter(g => g.valor > 0);
+}
+function impClinica(){
+  const w = janelaClinica();
+  const pags = w ? w.dados.pagamentos : ((lerLocal("controle-unico-clinica-cache") || {}).pagamentos || []);
+  return pags.map(g => ({ data:g.data, valor:Number(g.valor) || 0 }));
+}
+async function impLer(arquivo){
+  const buf = await arquivo.arrayBuffer();
+  let texto = new TextDecoder("utf-8").decode(buf);
+  // OFX antigo declara CHARSET:1252: aí os acentos vêm em Windows-1252
+  if (/CHARSET:\s*1252/i.test(texto.slice(0, 400)) || texto.includes("�")) texto = new TextDecoder("windows-1252").decode(buf);
+  const ex = Extrato.ler(texto);
+  const eu = livro.casa.pessoas[0];
+  const r = Extrato.classificar(ex, {
+    din: livro.matheus.lancamentos, casa: livro.casa.lancamentos.filter(l => !eu || l.quem === eu),
+    fixosDoMes: impFixosDoMes, clinica: impClinica(), importados: impFeitos(), regras: impRegras() });
+  const linhas = r.novos.map(x => Object.assign(x, { grupo:"novo", marcado:true }))
+    .concat(r.ignorados.map(x => Object.assign(x, { grupo:"ignorado", marcado:false })));
+  imp = { nome:arquivo.name, r, linhas, erro:"" };
+}
+function impOpcoesCategoria(x){
+  if (x.tipo === "Aporte" || x.tipo === "Resgate") return `<option>Reserva</option>`;
+  if (x.tipo === "Receita") return `<option>Outras entradas</option>`;
+  const grupos = x.onde === "casa" ? Categorias.GRUPOS_CASA : Categorias.GRUPOS_DINHEIRO;
+  return `<option value="">Escolha</option>` + grupos.map(([g, cs]) => `<optgroup label="${escH(g)}">${cs.map(c =>
+    `<option${c === x.categoria ? " selected" : ""}>${escH(c)}</option>`).join("")}</optgroup>`).join("");
+}
+function impLinha(x, i){
+  const despesa = x.tipo === "Despesa";
+  return `<tr class="${x.marcado ? "" : "imp-off"}${x.falta ? " imp-falta" : ""}">
+    <td><input type="checkbox" data-imp-marca="${i}" ${x.marcado ? "checked" : ""} aria-label="Lançar ${escH(x.descricao)}"></td>
+    <td data-rot="Dia">${dia(x.data)}</td>
+    <td data-rot="Descrição"><input type="text" class="imp-desc" data-imp-desc="${i}" value="${escH(x.descricao)}" aria-label="Descrição">${x.nota ? `<small class="nota">${escH(x.nota)}</small>` : ""}${x.motivo ? `<small class="nota">${escH(x.motivo)}</small>` : ""}</td>
+    <td data-rot="Onde">${despesa ? `<select data-imp-onde="${i}" aria-label="Pessoal ou Casa"><option value="pessoal"${x.onde !== "casa" ? " selected" : ""}>Pessoal</option><option value="casa"${x.onde === "casa" ? " selected" : ""}>Casa</option></select>` : escH(x.tipo)}</td>
+    <td data-rot="Categoria"><select data-imp-cat="${i}" aria-label="Categoria">${impOpcoesCategoria(x)}</select>${x.origem ? `<small class="nota">${x.origem === "regra" ? "pela sua regra" : x.origem === "histórico" ? "como da última vez" : "sugestão"}</small>` : ""}</td>
+    <td class="num" data-rot="Valor">${dinheiro(x.valor)}</td></tr>`;
+}
+function painelImportar(){
+  if (PERFIL === "ana") return "";
+  if (!imp) return `<div class="imp-barra"><button type="button" class="b" id="impAbrir">Importar extrato do Nubank</button>
+    <input type="file" id="impArquivo" accept=".ofx,.OFX" hidden><span class="nota">Fatura ou conta, no arquivo OFX que chega por e-mail.</span></div>`;
+  if (imp.feito) return `<div class="imp-barra imp-ok" role="status">${escH(imp.feito.texto)}
+    <button type="button" class="b" id="impDesfazer">Desfazer</button><button type="button" class="b" id="impFechar">Fechar</button></div>`;
+  const r = imp.r, novos = imp.linhas.filter(x => x.grupo === "novo"), ign = imp.linhas.filter(x => x.grupo === "ignorado");
+  const marcados = imp.linhas.filter(x => x.marcado).length;
+  const tabela = l => `<table class="t imp-t"><thead><tr><th></th><th>Dia</th><th>Descrição</th><th>Onde</th><th>Categoria</th><th class="num">Valor</th></tr></thead>
+    <tbody>${l.map(x => impLinha(x, imp.linhas.indexOf(x))).join("")}</tbody></table>`;
+  return `<div class="imp" role="region" aria-label="Importar extrato">
+    <h3>${r.fonte === "fatura" ? "Fatura do cartão" : "Conta"}${r.inicio ? `, de ${dia(r.inicio)} a ${dia(r.fim)}` : ""}</h3>
+    <p class="nota">${novos.length} para conferir · ${r.jaLancados.length} já lançados por você · ${ign.length} ignorados${r.repetidos ? ` · ${r.repetidos} já importados antes` : ""}. Confira a categoria de cada linha: nada entra antes de você apertar Lançar.</p>
+    ${novos.length ? tabela(novos) : `<p class="vazio">Nada novo neste arquivo.</p>`}
+    ${r.jaLancados.length ? `<details><summary>Já lançados por você (${r.jaLancados.length})</summary><ul class="imp-lista">${r.jaLancados.map(x =>
+      `<li>${dia(x.data)} · ${escH(x.descricao)} · ${dinheiro(x.valor)} <span class="nota">= "${escH(x.par.descricao || "-")}", ${dia(x.par.data)}${x.par.onde === "casa" ? ", na Casa" : ""}</span></li>`).join("")}</ul></details>` : ""}
+    ${ign.length ? `<details><summary>Ignorados (${ign.length}): marque o que quiser lançar mesmo assim</summary>${tabela(ign)}</details>` : ""}
+    ${imp.erro ? `<p class="erro" role="alert">${escH(imp.erro)}</p>` : ""}
+    <div class="imp-barra"><button type="button" class="b p" id="impLancar"${marcados ? "" : " disabled"}>Lançar ${marcados} ${marcados === 1 ? "linha" : "linhas"}</button>
+      <button type="button" class="b" id="impCancelar">Cancelar</button></div></div>`;
+}
+function impLancar(){
+  const marcadas = imp.linhas.filter(x => x.marcado);
+  const falta = marcadas.filter(x => x.tipo === "Despesa" && !x.categoria);
+  imp.linhas.forEach(x => { x.falta = falta.includes(x); });
+  if (falta.length){ imp.erro = `Falta a categoria em ${falta.length} ${falta.length === 1 ? "linha" : "linhas"} (em vermelho).`; desenhar(); return; }
+  const eu = livro.casa.pessoas[0], feitos = impFeitos(), regras = impRegras(), hoje = hojeISO(), ids = [], hashes = [];
+  let casa = 0, pessoal = 0;
+  marcadas.forEach(x => {
+    const id = novoId(), desc = String(x.descricao || "").trim() || "-";
+    if (x.tipo === "Despesa" && x.onde === "casa"){
+      livro.casa.lancamentos.push({ id, data:x.data, quem:eu, descricao:desc, categoria:x.categoria, valor:x.valor });
+      ids.push(["casa", id]); casa++;
+    } else {
+      const reserva = x.tipo === "Aporte" || x.tipo === "Resgate";
+      livro.matheus.lancamentos.push({ id, data:x.data, tipo:x.tipo, descricao:desc,
+        categoria: reserva ? "Reserva" : x.tipo === "Receita" ? "Outras entradas" : x.categoria, forma:x.forma, valor:x.valor });
+      ids.push(["matheus", id]); pessoal++;
+    }
+    if (x.tipo === "Despesa" && x.palavra && x.categoria) regras[x.palavra] = { onde:x.onde === "casa" ? "casa" : "pessoal", categoria:x.categoria };
+    feitos[x.hash] = hoje; hashes.push(x.hash);
+  });
+  // o que já estava lançado à mão também fica marcado: o mesmo arquivo não volta a perguntar
+  imp.r.jaLancados.forEach(x => { if (!feitos[x.hash]){ feitos[x.hash] = hoje; hashes.push(x.hash); } });
+  imp = { feito:{ ids, hashes, texto:`Lançadas ${marcadas.length} ${marcadas.length === 1 ? "linha" : "linhas"}: ${pessoal} no Pessoal e ${casa} na Casa.` } };
+  salvar("matheus"); if (casa) salvar("casa");
+}
+function impDesfazer(){
+  const f = imp && imp.feito; if (!f) return;
+  const tirar = { matheus:new Set(), casa:new Set() };
+  f.ids.forEach(([c, id]) => tirar[c].add(id));
+  livro.matheus.lancamentos = livro.matheus.lancamentos.filter(l => !tirar.matheus.has(l.id));
+  livro.casa.lancamentos = livro.casa.lancamentos.filter(l => !tirar.casa.has(l.id));
+  const feitos = impFeitos(); f.hashes.forEach(h => { delete feitos[h]; });
+  imp = null;
+  salvar("matheus"); if (tirar.casa.size) salvar("casa");
+}
+function ligarImportar(){
+  const b = document.getElementById("impAbrir"), a = document.getElementById("impArquivo");
+  if (b && a){
+    b.onclick = () => a.click();
+    a.onchange = async e => {
+      const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+      try { await impLer(f); } catch(err){ imp = null; alert("Não consegui ler o extrato: " + err.message); }
+      desenhar();
+    };
+  }
+  const x = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  x("impCancelar", () => { imp = null; desenhar(); });
+  x("impFechar", () => { imp = null; desenhar(); });
+  x("impLancar", impLancar);
+  x("impDesfazer", impDesfazer);
+  if (!imp || !imp.linhas) return;
+  document.querySelectorAll("[data-imp-marca]").forEach(c => c.onchange = () => { imp.linhas[c.dataset.impMarca].marcado = c.checked; desenhar(); });
+  document.querySelectorAll("[data-imp-desc]").forEach(c => c.oninput = () => { imp.linhas[c.dataset.impDesc].descricao = c.value; });
+  document.querySelectorAll("[data-imp-cat]").forEach(c => c.onchange = () => { const l = imp.linhas[c.dataset.impCat]; l.categoria = c.value; l.falta = false; l.origem = ""; });
+  document.querySelectorAll("[data-imp-onde]").forEach(c => c.onchange = () => {
+    const l = imp.linhas[c.dataset.impOnde]; l.onde = c.value;
+    const lista = l.onde === "casa" ? Categorias.CASA : Categorias.DINHEIRO;
+    if (!lista.includes(l.categoria)) l.categoria = "";
+    desenhar();
+  });
+}
+
 function telaDinheiro(){
   if (vistaDin === "fixos") return subabasDinheiro() + barraMes() + vistaFixos();
   if (vistaDin === "pend") return subabasDinheiro() + painelPendencias();
@@ -1566,7 +1725,7 @@ function telaDinheiro(){
 
   return subabasDinheiro() + barraMes() + painelSeparar() + cardSituacao(d) + `
   <div class="duas larga">
-    <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
+    <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${painelImportar()}${lista}</section>
     <div class="coluna">
       <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias(d)}</section>
       ${painelLimites()}
@@ -1728,6 +1887,7 @@ function ligar(){
     li.onmouseleave = () => { r.classList.remove("foco"); if (f) f.classList.remove("on"); };
   });
   { const b = document.getElementById("separarAgora"); if (b) b.onclick = () => { separarAgora(); }; }
+  ligarImportar();
   { const b = document.getElementById("desfazerSeparar"); if (b) b.onclick = desfazerSeparar; }
   document.querySelectorAll("[data-apagar]").forEach(b => b.onclick = e => {
     e.stopPropagation();
