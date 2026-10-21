@@ -93,6 +93,16 @@ var Extrato = (function(){
     var manuais = (ctx.din || []).map(function(l){ return { l:l, onde:"pessoal" }; })
       .concat((ctx.casa || []).map(function(l){ return { l:l, onde:"casa" }; }));
     var pagFatura = ex.linhas.filter(function(l){ return /pagamento de fatura/i.test(l.memo); });
+    /* o dinheiro do Arthur passa pela caixinha: a aplicação com o valor de um Pix que ele mandou, e o resgate
+       com o valor de um Pix que voltou para ele, também ficam fora (extrato real de 01 a 18/10/2026) */
+    var doArthur = ex.linhas.filter(function(l){ return /arthur/.test(norm(l.memo)); }), arthurUsado = {};
+    function caixinhaDoArthur(l, aplicacao){
+      var par = doArthur.filter(function(a, i){
+        return !arthurUsado[i] && (aplicacao ? a.valor > 0 : a.valor < 0) && Math.abs(Math.abs(a.valor) - Math.abs(l.valor)) < 0.005 && Math.abs(diasEntre(a.data, l.data)) <= 31;
+      })[0];
+      if (par) arthurUsado[doArthur.indexOf(par)] = true;
+      return !!par;
+    }
     var r = { fonte:fonte, inicio:ex.inicio, fim:ex.fim, novos:[], jaLancados:[], ignorados:[], repetidos:0 };
     /* histórico: a última categoria que ele deu a uma descrição com a mesma palavra-chave */
     var hist = {};
@@ -105,6 +115,10 @@ var Extrato = (function(){
       if (/arthur/.test(memo)){ item.motivo = "Fora do controle (dinheiro do Arthur)."; r.ignorados.push(item); return; }
       if (fonte === "fatura" && l.valor > 0){ item.motivo = /pagamento/.test(memo) ? "Pagamento da fatura (as compras já entram uma a uma)." : "Estorno ou crédito na fatura."; r.ignorados.push(item); return; }
       if (fonte === "conta" && /pagamento de fatura/.test(memo)){ item.motivo = "Pagamento da fatura (as compras vêm da fatura)."; r.ignorados.push(item); return; }
+      if (fonte === "conta" && /^(aplicacao|resgate) rdb/.test(memo) && caixinhaDoArthur(l, /^aplicacao/.test(memo))){
+        item.tipo = /^aplicacao/.test(memo) ? "Aporte" : "Resgate"; item.categoria = "Reserva"; item.onde = "pessoal"; item.forma = "PIX";
+        item.descricao = item.tipo === "Aporte" ? "Aplicação na caixinha" : "Resgate da caixinha";
+        item.motivo = "Caixinha com o dinheiro do Arthur (mesmo valor do Pix dele), fora do controle."; r.ignorados.push(item); return; }
 
       /* tipo e categoria */
       if (fonte === "conta" && /aplicacao rdb/.test(memo)){ item.tipo = "Aporte"; item.categoria = "Reserva"; item.onde = "pessoal"; item.descricao = "Aplicação na caixinha"; }

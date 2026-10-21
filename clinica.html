@@ -2199,7 +2199,7 @@ function extratoDe(p){
   });
   var de = somaDias(deISO(hist.ate), 1), ROTA = {sessao:"Sessão (a confirmar)", realizada:"Sessão realizada", falta:"Não compareceu (cobrada)"};
   sessoesDoPaciente(p, de, hoje0()).forEach(function(s){
-    if(!cobraSessao(s.estado) || !jaPassou(s.data, s.hora)) return;
+    if(!cobraSessao(s.estado) || !jaCobrou(s.data, s.hora, s.estado)) return;
     var iso = chaveData(s.data), c = cicloEm(p, iso);
     linhas.push({data:iso, ordem:0, texto:ROTA[s.estado], tipo:rotuloCiclo(c), cobrado:valorSessao(c), pago:0});
   });
@@ -2386,7 +2386,7 @@ function renderSemana(){
          sem esse saldo (quem saiu antes do app), quanto deve hoje (06/10/2026). Some no celular,
          onde a célula é estreita: lá o saldo fica nos cartões do dia, embaixo da grade. */
       if(info.paciente && ESTADO_DA_CLASSE[info.classe]){
-        var snc = saldoNaSessao(info.paciente, data, hora, fimSemana);
+        var snc = saldoNaSessao(info.paciente, data, hora, fimSemana, ESTADO_DA_CLASSE[info.classe]);
         if(snc) b.insertAdjacentHTML("beforeend", '<span class="dv '+snc.classe+'" title="'+esc(snc.titulo)+'">'+esc(snc.texto)+'</span>');
         else {
           var dvc = textoDevido(info.paciente);
@@ -2503,7 +2503,7 @@ function renderHoje(){
     var p = s.paciente, pg = situacaoPagamento(p), pr = p.prontuario || {}, dv = textoDevido(p);
     var estado = rot[s.estado] || (jaPassou(dia, s.hora) ? "a confirmar" : "prevista");
     /* o mesmo saldo da célula da grade, da semana aberta (13/10/2026) */
-    var snf = cobraSessao(s.estado) ? saldoNaSessao(p, dia, s.hora, somaDias(semana, 6)) : null;
+    var snf = cobraSessao(s.estado) ? saldoNaSessao(p, dia, s.hora, somaDias(semana, 6), s.estado) : null;
     var c = document.createElement("button");
     c.className = "pcard";
     c.innerHTML =
@@ -4692,6 +4692,9 @@ function hoje0(){ var d = new Date(); return new Date(d.getFullYear(), d.getMont
 /* a sessão já aconteceu quando a hora dela terminou (dia + hora + 1): antes disso é prevista, não "a confirmar" */
 /* a sessão começou: dali em diante ele já pode confirmar que ela aconteceu */
 function jaPassou(data, hora){ var t = new Date(data.getFullYear(), data.getMonth(), data.getDate(), (Number(hora)||0) + 1); return t <= new Date(); }
+/* a sessão já entra na conta (21/10/2026, "quando eu coloco realizado não está baixando os saldos"):
+   a realizada e a falta cobram assim que ele marca; a não marcada, quando o horário passa */
+function jaCobrou(data, hora, estado){ return estado==="realizada" || estado==="falta" || jaPassou(data, hora); }
 function deISO(s){ return new Date(s+"T00:00:00"); }
 function dataCurta(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
 function dataLonga(d){ return dataCurta(d)+"/"+d.getFullYear(); }
@@ -4761,7 +4764,7 @@ function sessoesQueCobram(p, desde, quantas, futuras){
     var d = somaDias(desde, i);
     for(var h = dados.config.horaInicio; h <= dados.config.horaFim; h++){
       var st = estadoSessaoDe(p, d, h);
-      if(st && cobraSessao(st.estado) && !(futuras && jaPassou(d, h))) lista.push(d);
+      if(st && cobraSessao(st.estado) && !(futuras && jaCobrou(d, h, st.estado))) lista.push(d);
     }
   }
   return lista;
@@ -4792,7 +4795,7 @@ function calcularVencimento(p){
       for(var d = somaDias(hoje, -365); d <= hoje; d = somaDias(d, 1)){
         for(var h = dados.config.horaInicio; h <= dados.config.horaFim; h++){
           var st = estadoSessaoDe(p, d, h);
-          if(st && cobraSessao(st.estado) && jaPassou(d, h)) passadas.push(d);
+          if(st && cobraSessao(st.estado) && jaCobrou(d, h, st.estado)) passadas.push(d);
         }
       }
       var k = passadas.length - dv.sessoes;
@@ -4922,7 +4925,7 @@ function devidoDe(p){
        sessões da agenda depois desse dia (só existem se ele voltou) */
     var dp = p.devePlanilha, depoisP = 0, pagoP = 0, deP = somaDias(deISO(dp.data), 1), hojeP = hoje0();
     if(deP <= hojeP) sessoesDoPaciente(p, deP, hojeP).forEach(function(s){
-      if(cobraSessao(s.estado) && jaPassou(s.data, s.hora)) depoisP += valorSessaoEm(p, chaveData(s.data));
+      if(cobraSessao(s.estado) && jaCobrou(s.data, s.hora, s.estado)) depoisP += valorSessaoEm(p, chaveData(s.data));
     });
     pagamentosDe(p.id).forEach(function(g){ if(g.data > dp.data) pagoP += Number(g.valor) || 0; });
     var exatoP = Math.round(((Number(dp.valor) || 0) + depoisP - pagoP) * 100) / 100;
@@ -4945,7 +4948,7 @@ function devidoDe(p){
       var batida = regua === null ? d : somaDias(d, ((regua - d.getDay() + 10) % 7) - 3);
       if(batida <= base) continue;
       sessoesDoDia(d).forEach(function(s){
-        if(s.paciente.id === p.id && cobraSessao(s.estado) && jaPassou(d, s.hora)) depois++;
+        if(s.paciente.id === p.id && cobraSessao(s.estado) && jaCobrou(d, s.hora, s.estado)) depois++;
       });
     }
     var pago = 0;
@@ -5038,7 +5041,7 @@ function movimentosDoSaldo(p, ate){
     ext.linhas.forEach(function(l){ if(l.ordem === 0 && l.cobrado > 0) cobr.push({data:l.data, hora:-1, v:l.cobrado}); });
     /* o extrato vai até o que já passou; daqui em diante, as sessões marcadas que cobram */
     if(ate >= hoje) sessoesDoPaciente(p, hoje, ate).forEach(function(s){
-      if(!cobraSessao(s.estado) || jaPassou(s.data, s.hora)) return;
+      if(!cobraSessao(s.estado) || jaCobrou(s.data, s.hora, s.estado)) return;
       var iso = chaveData(s.data);
       cobr.push({data:iso, hora:s.hora, v:valorSessaoEm(p, iso)});
     });
@@ -5046,14 +5049,29 @@ function movimentosDoSaldo(p, ate){
   }
   return (saldoGradeCache[k] = r);
 }
-function saldoNaSessao(p, data, hora, ate){
+/* "estado" realizada ou falta (21/10/2026): a sessão já foi descontada, e o selo mostra o que sobrou
+   depois dela, o mesmo número da ficha; a que ainda não foi marcada continua contando a si mesma */
+function saldoNaSessao(p, data, hora, ate, estado){
   var m = movimentosDoSaldo(p, ate || data);
   if(!m) return null;
-  var iso = chaveData(data), pago = 0, cobrado = 0;
+  var iso = chaveData(data), pago = 0, cobrado = 0, feita = estado==="realizada" || estado==="falta";
   m.pags.forEach(function(g){ if(g.data <= iso) pago += g.v; });
   m.cobr.forEach(function(c){ if(c.data < iso || (c.data === iso && c.hora >= 0 && c.hora < hora)) cobrado += c.v; });
-  var cred = Math.round((pago - cobrado) * 100) / 100, vs = valorSessaoEm(p, iso);
+  var vs = valorSessaoEm(p, iso);
   if(!(vs > 0)) return null;
+  if(feita){
+    var restoF = Math.round((pago - cobrado - vs) * 100) / 100;
+    if(restoF >= vs - 0.005){
+      var nf = Math.floor(restoF / vs + 1e-6);
+      return {classe:"ok", n:nf, texto:"saldo " + plural(nf, "sessão", "sessões"), titulo:"Depois desta: " + plural(nf, "sessão paga", "sessões pagas") + " pela frente."};
+    }
+    if(restoF > -0.005) return {classe:"atraso", n:0, texto:"sem saldo",
+      titulo:"Esta estava paga; depois dela, nenhuma sessão paga pela frente" + (restoF > 0.005 ? " (" + moeda(restoF) + " de crédito)" : "") + "."};
+    var df = -restoF, ndf = Math.round(df / vs);
+    return {classe:"atraso", n:0, deve:df, texto:"deve " + (ndf > 0 && Math.abs(ndf * vs - df) <= 0.5 ? plural(ndf, "sessão", "sessões") : moeda(df)),
+      titulo:"Contando esta, deve " + moeda(df) + "."};
+  }
+  var cred = Math.round((pago - cobrado) * 100) / 100;
   if(cred >= vs - 0.005){
     var n = Math.floor(cred / vs + 1e-6);
     return {classe:"ok", n:n, texto:"saldo " + plural(n, "sessão", "sessões"),

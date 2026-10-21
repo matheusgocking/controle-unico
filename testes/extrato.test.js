@@ -77,3 +77,22 @@ test("Conta: compra no débito pela NuPay fica com o nome da loja (extrato real 
 test("Arquivo que não é OFX avisa", () => {
   assert.throws(() => Extrato.ler("data,title,amount"), /não parece um extrato/);
 });
+
+test("Conta: a caixinha que acompanha o dinheiro do Arthur fica fora (extrato real de 01 a 18/10/2026)", () => {
+  const ex = Extrato.ler(`<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST><DTSTART>20261001<DTEND>20261018
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20261003<TRNAMT>132.00<FITID>d1<MEMO>Transferência recebida pelo Pix - ARTHUR TESTE</STMTTRN>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20261014<TRNAMT>100.00<FITID>d2<MEMO>Transferência recebida pelo Pix - ARTHUR TESTE</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261015<TRNAMT>-132.00<FITID>d3<MEMO>Aplicação RDB</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261015<TRNAMT>-100.00<FITID>d4<MEMO>Aplicação RDB</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261016<TRNAMT>-100.00<FITID>d5<MEMO>Aplicação RDB</STMTTRN>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20261017<TRNAMT>80.00<FITID>d6<MEMO>Resgate RDB</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261017<TRNAMT>-80.00<FITID>d7<MEMO>Transferência enviada pelo Pix - ARTHUR TESTE</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`);
+  const r = Extrato.classificar(ex, {});
+  assert.deepEqual(r.ignorados.map(x => x.linha.fitid).sort(), ["d1", "d2", "d3", "d4", "d6", "d7"]);
+  /* cada Pix do Arthur cobre uma aplicação só: a segunda de R$ 100 é dele */
+  assert.deepEqual(r.novos.map(x => x.linha.fitid), ["d5"]);
+  assert.equal(r.novos[0].tipo, "Aporte");
+  const ap = r.ignorados.find(x => x.linha.fitid === "d3");
+  assert.equal(ap.tipo, "Aporte"); assert.equal(ap.categoria, "Reserva"); assert.match(ap.motivo, /Arthur/);
+});
