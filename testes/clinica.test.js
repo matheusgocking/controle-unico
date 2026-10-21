@@ -366,3 +366,35 @@ test("Clínica: quem volta atrás do \"não haverá\" volta ao horário normal, 
     await ctx.close();
   }
 });
+
+test("Clínica: a sessão remarcada pode ser marcada como falta, e a falta cobra como a do horário fixo", async () => {
+  for (const largura of [1280, 390]) {
+    const { ctx, p, erros } = await abrir("clinica.html", { largura });
+    // a de segunda 05/10 9h (Paciente Mensal) foi para terça 06/10 às 7h, hora sem ninguém
+    const k = "2026-10-06|7";
+    const r0 = await p.evaluate(k => {
+      dados.excecoes["2026-10-05|9"] = { tipo:"remarcada", para:{ data:"2026-10-06", hora:7 } };
+      dados.excecoes[k] = { tipo:"extra", pacienteId:"pA", remarcada:true, de:{ data:"2026-10-05", hora:9 } };
+      devidoCache = null; vencCache = null; renderTudo();
+      return { livre: !pacienteEm(2, 7, new Date(2026, 9, 6)), cobrado: extratoDe(acharPaciente("pA")) ? extratoDe(acharPaciente("pA")).cobrado : null };
+    }, k);
+    assert.equal(r0.livre, true, "a hora do teste está livre");
+    const cel = p.locator('.cell[data-data="2026-10-06"][data-hora="7"]');
+    await cel.click();
+    await p.locator('.menu .op', { hasText:"Faltou" }).click();
+    assert.deepEqual(await p.evaluate(k => ({ falta: dados.excecoes[k].falta, realizada: dados.excecoes[k].realizada }), k), { falta:true, realizada:undefined });
+    assert.equal(await cel.getAttribute("class").then(c => c.includes("falta")), true);
+    assert.equal(await cel.locator(".lab").textContent(), "Faltou");
+    const s = await p.evaluate(() => sessoesDoPaciente(acharPaciente("pA"), new Date(2026, 9, 6), new Date(2026, 9, 6)).map(x => x.estado));
+    assert.deepEqual(s, ["falta"]);
+    // a falta cobra: o mesmo que a sessão a confirmar cobrava
+    assert.equal(await p.evaluate(() => { devidoCache = null; return extratoDe(acharPaciente("pA")) ? extratoDe(acharPaciente("pA")).cobrado : null; }), r0.cobrado);
+    // trocar para realizada tira a falta; tocar de novo volta a prevista
+    await cel.click(); await p.locator('.menu .op', { hasText:"Realizada" }).click();
+    assert.deepEqual(await p.evaluate(k => ({ falta: dados.excecoes[k].falta, realizada: dados.excecoes[k].realizada }), k), { falta:undefined, realizada:true });
+    await cel.click(); await p.locator('.menu .op', { hasText:"Realizada" }).click();
+    assert.deepEqual(await p.evaluate(k => ({ falta: dados.excecoes[k].falta, realizada: dados.excecoes[k].realizada }), k), { falta:undefined, realizada:undefined });
+    assert.deepEqual(erros, []);
+    await ctx.close();
+  }
+});

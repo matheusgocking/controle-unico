@@ -2117,8 +2117,18 @@ function saiuDaHora(ex){
 }
 function entradaDa(ex){
   if(!ex) return null;
-  if(ex.tipo==="extra") return {pacienteId:ex.pacienteId, de:ex.de, remarcada:ex.remarcada, realizada:ex.realizada};
+  if(ex.tipo==="extra") return {pacienteId:ex.pacienteId, de:ex.de, remarcada:ex.remarcada, realizada:ex.realizada, falta:ex.falta};
   return ex.entra || null;
+}
+/* A sessão que entrou na hora (encaixe ou remarcação) pode ser realizada ou falta (21/10/2026, pedido dele:
+   o paciente remarcado que falta na remarcação). A falta cobra como a do horário fixo. */
+function estadoDaEntrada(en){ return en.realizada ? "realizada" : (en.falta ? "falta" : "sessao"); }
+function marcarEntrada(k, sit){
+  var en = dados.excecoes[k], alvo = en && en.tipo==="extra" ? en : (en && en.entra);
+  if(!alvo) return;
+  delete alvo.realizada; delete alvo.falta;
+  if(sit==="realizada") alvo.realizada = true;
+  else if(sit==="falta") alvo.falta = true;
 }
 /* marca que o paciente fixo saiu da hora sem derrubar a sessão que entrou nela */
 function marcarSaida(k, tipo, para){
@@ -2298,7 +2308,7 @@ function sessoesDoDia(data, comCanceladas){
          antes a falta cobrada sumia da receita e da dívida quando alguém era encaixado na hora) */
       if(p && saiuDaHora(ex) && (ex.tipo!=="cancelada" || comCanceladas)) lista.push({paciente:p, hora:h, estado:ex.tipo, origem:"fixo"});
       var pe = acharPaciente(entra.pacienteId);
-      if(pe) lista.push({paciente:pe, hora:h, estado:(entra.realizada ? "realizada" : "sessao"), origem:"extra"});
+      if(pe) lista.push({paciente:pe, hora:h, estado:estadoDaEntrada(entra), origem:"extra"});
     } else if(p){
       var exp = ex || doProntuario(p, data);
       var estado = exp ? exp.tipo : "sessao";
@@ -2529,8 +2539,8 @@ function estadoCelula(dia, hora, data){
      mesmo quando a hora é o horário fixo de alguém que não vem */
   if(entra){
     var pv = acharPaciente(entra.pacienteId);
-    if(pv) return {classe:"sessao"+(entra.realizada ? " realizada" : ""), extra:true, nome:nomeGrade(pv),
-      etiqueta:(entra.realizada ? "✓ Realizada" : entra.de ? "← Veio de "+quando(entra.de) : "Encaixe nesta data"),
+    if(pv) return {classe:(entra.falta ? "falta" : "sessao"+(entra.realizada ? " realizada" : "")), extra:true, nome:nomeGrade(pv),
+      etiqueta:(entra.realizada ? "✓ Realizada" : entra.falta ? "Faltou" : entra.de ? "← Veio de "+quando(entra.de) : "Encaixe nesta data"),
       /* quem perdeu a hora continua escrito, riscado: a célula conta a troca inteira */
       saiu: (p && saiuDaHora(ex)) ? nomeGrade(p) : "",
       saiuPara: (p && ex && ex.para) ? quando(ex.para) : "",
@@ -2976,15 +2986,16 @@ function abrirMenu(e){
   if(info.paciente){
     if(info.origem==="extra"){
       /* aqui o que está marcado é a sessão que veio de outro horário */
-      var entrou = entradaDa(ex), feita = !!(entrou && entrou.realizada);
+      var entrou = entradaDa(ex), feita = !!(entrou && entrou.realizada), faltou = !!(entrou && entrou.falta);
       /* o próprio paciente fixo "encaixado" no horário dele depois de um "não haverá" (06/10/2026):
          é a sessão de sempre, então o menu oferece voltar o horário ao normal num toque */
       if(voltaAoProprio(ex, fixoDaHora))
         corpo += '<div class="volta-normal"><p>'+esc(nomeCurto(fixoDaHora))+' está como encaixe no próprio horário fixo.</p>' +
           botao("voltar-proprio", "Voltar ao horário normal", "var(--accent)") + '</div>';
       corpo += '<div class="ops" role="group" aria-label="Situação da sessão">' +
-        opcao(feita ? "desconfirmar-extra" : "fechar", "Prevista", "entrou aqui", "encaixe", !feita) +
-        opcao(feita ? "desconfirmar-extra" : "realizada-extra", "Realizada", "aconteceu", "realizada", feita) + '</div>';
+        opcao(feita || faltou ? "desconfirmar-extra" : "fechar", "Prevista", "entrou aqui", "encaixe", !feita && !faltou) +
+        opcao(feita ? "desconfirmar-extra" : "realizada-extra", "Realizada", "aconteceu", "realizada", feita) +
+        opcao(faltou ? "desconfirmar-extra" : "falta-extra", "Faltou", "sem aviso, cobra", "falta", faltou) + '</div>';
       if(!voltaAoProprio(ex, fixoDaHora)) corpo += '<div class="acoes">' + botao("tirar-entrada", (ex && ex.entra ? "Tirar daqui (volta a marca de "+esc(nomeCurto(fixoDaHora))+")" : "Tirar esta sessão daqui"), "var(--faint)") + '</div>';
     } else {
       /* o check fica sempre no menu, a qualquer hora (pedido dele, 28/09/2026) */
@@ -3036,7 +3047,7 @@ function abrirMenu(e){
       var kData = chaveData(data)+"|"+hora, kBloco = dia+"-"+hora;
       if(a==="fechar"){ fecharMenu(); return; }
       if(a==="falta"||a==="remarcada"||a==="cancelada"||a==="cortesia"||a==="realizada") marcarSaida(kData, a);
-      else if(a==="realizada-extra"||a==="desconfirmar-extra"){ var en = dados.excecoes[kData]; var alvo = en && en.tipo==="extra" ? en : (en && en.entra); if(alvo){ if(a==="realizada-extra") alvo.realizada = true; else delete alvo.realizada; } }
+      else if(a==="realizada-extra"||a==="falta-extra"||a==="desconfirmar-extra") marcarEntrada(kData, a==="realizada-extra" ? "realizada" : (a==="falta-extra" ? "falta" : ""));
       else if(a==="limpar-excecao") delete dados.excecoes[kData];
       else if(a==="tirar-entrada") tirarEntrada(kData);
       else if(a==="voltar-proprio") voltarAoProprio(kData);
@@ -3059,7 +3070,7 @@ function voltaAoProprio(ex, fixo){
 function voltarAoProprio(k){
   var ex = dados.excecoes[k];
   if(!ex) return;
-  if(ex.entra && ex.entra.realizada) dados.excecoes[k] = {tipo:"realizada"};
+  if(ex.entra && (ex.entra.realizada || ex.entra.falta)) dados.excecoes[k] = {tipo:(ex.entra.realizada ? "realizada" : "falta")};
   else delete dados.excecoes[k];
 }
 function botao(acao, texto, cor){
@@ -3638,7 +3649,7 @@ var SITUACAO_PRONT = {realizada:"Realizada", cortesia:"Cortesia", falta:"Não co
 function estadoSessaoDe(p, data, hora){
   var ex = excecao(data, hora);
   var entra = entradaDa(ex);
-  if(entra && entra.pacienteId===p.id) return {estado:(entra.realizada ? "realizada" : "sessao"), origem:"extra", de:entra.de};
+  if(entra && entra.pacienteId===p.id) return {estado:estadoDaEntrada(entra), origem:"extra", de:entra.de};
   var fixo = pacienteEm(data.getDay(), hora, data);
   if(fixo && fixo.id===p.id){
     if(!ex){ var dpr = doProntuario(p, data); if(dpr) return {estado:dpr.tipo, origem:"fixo", para:null}; }
@@ -4304,10 +4315,10 @@ function abrirFicha(p, foco, aba){
     var h = '<div class="peditor">';
     if(r && r.aviso) h += '<p class="aviso">'+esc(r.aviso)+'</p>';
     /* o que aconteceu: muda a grade também, para os dois nunca discordarem */
-    var opcoes = s.origem==="extra" ? ["realizada"] : ["realizada","cortesia","falta","remarcada","cancelada"];
+    var opcoes = s.origem==="extra" ? ["realizada","falta"] : ["realizada","cortesia","falta","remarcada","cancelada"];
     h += '<div class="pcampo"><span class="rot">O que aconteceu</span><div class="pchips">' +
       opcoes.map(function(o){ return '<button type="button" class="chip-sit s-'+o+'" data-sit="'+o+'" aria-pressed="'+(sit===o)+'">'+SITUACAO_PRONT[o]+'</button>'; }).join("") + '</div>' +
-      (s.origem==="extra" ? '<span class="hint">Sessão que veio de outro horário: para falta ou remarcação, mude na grade.</span>' : "") + '</div>';
+      (s.origem==="extra" ? '<span class="hint">Sessão que veio de outro horário: para remarcar de novo, mude na grade.</span>' : "") + '</div>';
     if(!sit) return h + '<p class="hint">Escolha o que aconteceu para montar o texto.</p></div>';
     if(!r){ r = dados.registros[k] = novoRegistro(s, sit); }
     if(r.situacao !== sit){ r.situacao = sit; r.editado = false; delete r.textoManual; delete r.aviso; }
@@ -4388,10 +4399,8 @@ function abrirFicha(p, foco, aba){
         var o = b.dataset.sit;
         if(r && r.estado==="aprovado") { recado("Reabra o registro antes de mudar a situação."); return; }
         if(o===situacaoPront(s.estado)) return;
-        if(s.origem==="extra"){
-          var en = dados.excecoes[kGrade]; var alvo = en && en.tipo==="extra" ? en : (en && en.entra);
-          if(alvo) alvo.realizada = true;
-        } else marcarSaida(kGrade, o);
+        if(s.origem==="extra") marcarEntrada(kGrade, o);
+        else marcarSaida(kGrade, o);
         salvar(); renderTudo(); pintarProntuario();
       });
     });
@@ -5734,6 +5743,7 @@ function renderSessoes(){
     if(s.estado==="falta") tr.className = "linha-atraso";
     var situacao;
     if(s.origem==="extra") situacao = s.estado==="realizada" ? '<span class="sit ok">Encaixe · realizada ✓</span>'
+      : s.estado==="falta" ? '<span class="sit">Encaixe · faltou</span>'
       : (futuro ? '<span class="sit ok">Encaixe · prevista</span>' : '<span class="sit">Encaixe · a confirmar</span>') +
         ' <button class="linknome" data-confirmar-extra="'+k+'">confirmar</button>';
     else {
