@@ -265,7 +265,7 @@ var Nuvem = (function(){
      Uma vez por semana, cada caderno ganha uma cópia datada numa pasta própria do Drive,
      "Controle Único - cópias". Serve para voltar atrás se algo der errado: o arquivo da cópia
      é igual ao do caderno e pode ser trazido de volta pelo "Importar dados" de cada tela.
-     A cópia só acrescenta arquivos; nunca apaga nem muda o caderno. Se falhar, tenta na
+     A cópia nunca apaga nem muda o caderno (as cópias antigas, sim: ver "só as últimas 12 semanas"). Se falhar, tenta na
      próxima vez que o caderno for salvo, sem incomodar. */
   var PASTA_COPIAS = "Controle Único - cópias";
   function segundaDaSemana(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7);
@@ -293,9 +293,99 @@ var Nuvem = (function(){
       var q = encodeURIComponent("name='" + nome.replace(/'/g, "\\'") + "' and '" + pasta + "' in parents and trashed=false");
       return api("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=drive&fields=files(id)").then(function(r){ return r.json(); }).then(function(j){
         if(j.files && j.files.length) return semana;   // outro aparelho já fez a desta semana
-        return criar(nome, conteudo, pasta).then(function(){ return semana; });
+        return criar(nome, conteudo, pasta).then(function(f){
+          /* só depois de a cópia nova estar gravada; se a limpeza falhar, a cópia continua valendo */
+          return limparCopiasAntigas(nomeCaderno, semana, pasta, f && f.id).catch(function(e){
+            try{ console.info("Limpeza das cópias antigas fica para depois:", e.message); }catch(x){}
+          }).then(function(){ return semana; });
+        });
       });
     });
+  }
+
+  /* ---------------- só as últimas 12 semanas (09/10/2026) ----------------
+     Matheus escolheu guardar só as cópias da semana das últimas 12 semanas. Logo depois de gravar a
+     cópia nova de um caderno, o app manda para a lixeira do Drive as cópias DESSE caderno mais antigas.
+     Cuidados: só mexe em arquivo da pasta das cópias com o nome exato que o próprio app dá
+     ("<caderno> - semana de AAAA-MM-DD.json", numa segunda-feira); nunca no caderno, nas cópias
+     "antes de separar" ou em qualquer outro arquivo; as 12 cópias mais novas ficam sempre, mesmo se
+     o aparelho passou meses sem abrir; se algo não bater (a cópia nova não aparece na lista, uma data
+     depois desta semana, lista incompleta), não apaga nada. Vai para a lixeira, não some de vez:
+     o Drive guarda a lixeira por 30 dias. O que foi limpo fica anotado e aparece no pé da página. */
+  var SEMANAS_GUARDADAS = 12, CH_LIMPEZA = "controle-unico-copias-limpas";
+  function ehSegunda(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); if(!m) return false;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return d.getFullYear() === +m[1] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] && d.getDay() === 1;
+  }
+  function semanasAntes(iso, n){
+    var p = iso.split("-").map(Number), d = new Date(p[0], p[1] - 1, p[2] - 7 * n);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  /* a escolha em si, sem Drive: devolve os arquivos que podem ir para a lixeira (ou [] na dúvida) */
+  function copiasParaLimpar(nomeCaderno, semana, pasta, idNovo, arquivos){
+    var base = nomeCaderno.replace(/\.json$/i, "");
+    var molde = new RegExp("^" + base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " - semana de (\\d{4}-\\d{2}-\\d{2})\\.json$");
+    if(!ehSegunda(semana) || !idNovo || !Array.isArray(arquivos)) return [];
+    var copias = [];
+    for(var i = 0; i < arquivos.length; i++){
+      var a = arquivos[i], m = a && typeof a.name === "string" && molde.exec(a.name);
+      if(!m) continue;   // não é cópia da semana deste caderno: nem olha
+      if(a.trashed || !Array.isArray(a.parents) || a.parents.indexOf(pasta) < 0) continue;
+      if(a.mimeType && a.mimeType !== "application/json") return [];
+      if(!ehSegunda(m[1]) || m[1] > semana) return [];   // data estranha: na dúvida, nada
+      copias.push({id:a.id, name:a.name, semana:m[1]});
+    }
+    var nova = copias.filter(function(c){ return c.id === idNovo; })[0];
+    if(!nova || nova.semana !== semana) return [];       // a cópia nova tem de estar lá
+    var limite = semanasAntes(semana, SEMANAS_GUARDADAS - 1);   // esta semana e as 11 anteriores
+    var semanas = copias.map(function(c){ return c.semana; }).filter(function(s, k, l){ return l.indexOf(s) === k; }).sort().reverse();
+    var guardadas = semanas.slice(0, SEMANAS_GUARDADAS);
+    return copias.filter(function(c){ return c.id !== idNovo && c.semana < limite && guardadas.indexOf(c.semana) < 0; });
+  }
+  function limparCopiasAntigas(nomeCaderno, semana, pasta, idNovo){
+    if(!idNovo) return Promise.resolve([]);
+    var q = encodeURIComponent("'" + pasta + "' in parents and trashed=false");
+    return api("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=drive&pageSize=1000&fields=nextPageToken,files(id,name,mimeType,parents,trashed)")
+      .then(function(r){ return r.json(); }).then(function(j){
+        if(!j || j.nextPageToken || !Array.isArray(j.files)) return [];
+        var lixo = copiasParaLimpar(nomeCaderno, semana, pasta, idNovo, j.files), feitas = [];
+        /* uma por vez; a que falhar fica para a próxima semana */
+        return lixo.reduce(function(p, c){
+          return p.then(function(){
+            return api("https://www.googleapis.com/drive/v3/files/" + c.id + "?fields=id,trashed", {method:"PATCH",
+              headers:{"Content-Type":"application/json"}, body:JSON.stringify({trashed:true})})
+              .then(function(){ feitas.push(c.name); }, function(){});
+          });
+        }, Promise.resolve()).then(function(){ anotarLimpeza(feitas); return feitas; });
+      });
+  }
+  function anotarLimpeza(nomes){
+    if(!nomes.length) return;
+    var lista; try{ lista = JSON.parse(le(CH_LIMPEZA)) || []; }catch(e){ lista = []; }
+    lista.unshift({quando:new Date().toISOString(), nomes:nomes});
+    guarda(CH_LIMPEZA, JSON.stringify(lista.slice(0, 30)));
+    try{ window.dispatchEvent(new Event("copias-limpas")); }catch(e){}
+  }
+  function copiasLimpas(){ try{ return JSON.parse(le(CH_LIMPEZA)) || []; }catch(e){ return []; } }
+  /* o pé da página: a regra e a última limpeza, com os nomes das cópias */
+  function mostrarLimpeza(el){
+    if(!el) return;
+    var pinta = function(){
+      var l = copiasLimpas(), u = l[0];
+      var txt = "Cópias da semana no Drive: o app guarda as últimas " + SEMANAS_GUARDADAS + " semanas de cada caderno.";
+      el.textContent = "";
+      if(!u){ el.textContent = txt; return; }
+      var d = new Date(u.quando), n = u.nomes.length;
+      var det = document.createElement("details"), sm = document.createElement("summary"), ul = document.createElement("ul");
+      sm.textContent = txt + " Última limpeza em " + String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") +
+        ": " + n + (n === 1 ? " cópia antiga foi" : " cópias antigas foram") + " para a lixeira do Drive.";
+      u.nomes.forEach(function(nm){ var li = document.createElement("li"); li.textContent = nm; ul.appendChild(li); });
+      det.appendChild(sm); det.appendChild(ul); el.appendChild(det);
+    };
+    pinta();
+    window.addEventListener("copias-limpas", pinta);
+    window.addEventListener("storage", function(e){ if(e.key === CH_LIMPEZA) pinta(); });
   }
 
   /* uma cópia avulsa na pasta das cópias, com o nome dado (usada antes de uma correção nos dados) */
@@ -861,6 +951,9 @@ var Nuvem = (function(){
     pior: pior, algumPendente: algumPendente, sair: sair,
     pararDeGravar: function(){ saindo = true; cadernos.forEach(function(c){ c.parar(); }); },
     copiaAvulsa: copiaAvulsa,
+    copiasLimpas: copiasLimpas, mostrarLimpeza: mostrarLimpeza,
+    /* a escolha das cópias antigas, exposta para os testes automáticos (testes/) */
+    copiasParaLimpar: copiasParaLimpar,
     /* a junção das duas cópias, exposta para os testes automáticos (testes/) */
     juntar: juntar
   };

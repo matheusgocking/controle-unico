@@ -9,7 +9,7 @@ function criarDrive(){
     arquivos[id] = { id, name:meta.name, mimeType:meta.mimeType || "application/json", parents:meta.parents || [], conteudo:conteudo || "", modifiedTime:agora(), trashed:false };
     return arquivos[id];
   };
-  const meta = a => ({ id:a.id, modifiedTime:a.modifiedTime, trashed:a.trashed, name:a.name });
+  const meta = a => ({ id:a.id, modifiedTime:a.modifiedTime, trashed:a.trashed, name:a.name, mimeType:a.mimeType, parents:a.parents });
   const json = (route, corpo, status = 200) => route.fulfill({ status, contentType:"application/json", body:JSON.stringify(corpo) });
 
   /* a busca "name='X' and mimeType='Y' and 'P' in parents and trashed=false" */
@@ -45,6 +45,13 @@ function criarDrive(){
     if ((r = u.pathname.match(/^\/upload\/drive\/v3\/files\/([^/]+)$/)) && m === "PATCH") {
       const a = arquivos[r[1]]; if (!a) return json(route, { error:"não achei" }, 404);
       a.conteudo = req.postData(); a.modifiedTime = agora();
+      return json(route, meta(a));
+    }
+    if ((r = u.pathname.match(/^\/drive\/v3\/files\/([^/]+)$/)) && m === "PATCH") {   // metadados: só a lixeira
+      const a = arquivos[r[1]]; if (!a) return json(route, { error:"não achei" }, 404);
+      const corpo = JSON.parse(req.postData() || "{}");
+      if (Object.keys(corpo).some(k => k !== "trashed")) return json(route, { error:"só a lixeira é prevista" }, 500);
+      a.trashed = !!corpo.trashed; a.modifiedTime = agora();
       return json(route, meta(a));
     }
     if ((r = u.pathname.match(/^\/drive\/v3\/files\/([^/]+)\/permissions$/))) return json(route, { id:"perm" });
