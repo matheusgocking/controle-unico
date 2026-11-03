@@ -793,6 +793,9 @@ details.fi-det[open] > summary{margin-bottom:6px}
 .modal h2{font-size:18px; margin-bottom:6px}
 .modal textarea{width:100%; min-height:260px; padding:12px; border:1px solid var(--border-strong); border-radius:9px; background:var(--surface-2); font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; resize:vertical}
 .modal .acoes{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
+.msg-valores{display:flex; flex-wrap:wrap; gap:10px; margin:10px 0}
+.msg-valores label{flex:1 1 120px; min-width:0; display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:600; color:var(--muted)}
+.msg-valores input{width:100%; min-height:40px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); padding:7px 9px; color:var(--text); font:15px var(--font)}
 .foot{margin-top:26px; color:var(--faint); font-size:12px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between}
 .hidden{display:none !important}
 /* ---------- celular ---------- */
@@ -4654,10 +4657,27 @@ function abrirMensagem(){
   fundo.className = "overlay";
   fundo.innerHTML = '<div class="modal"><h2>Mensagem de divulgação</h2>'+
     '<p class="sub">Monta a partir dos horários divulgados que continuam livres na semana aberta.</p>'+
+    '<div class="msg-valores">'+
+      '<label for="msg-avulsa">Sessão avulsa (R$)<input type="number" id="msg-avulsa" min="0" step="10" inputmode="decimal"></label>'+
+      '<label for="msg-mensal">Ciclo mensal (R$)<input type="number" id="msg-mensal" min="0" step="50" inputmode="decimal"></label>'+
+    '</div>'+
     '<textarea id="msg-txt" spellcheck="false"></textarea>'+
     '<div class="acoes"><button class="btn" id="msg-fechar">Fechar</button><button class="btn" id="msg-salvar">Salvar .txt</button><button class="btn primary" id="msg-copiar">Copiar</button></div></div>';
   document.body.appendChild(fundo);
   document.getElementById("msg-txt").value = textoDivulgacao();
+  /* os dois valores da mensagem são os mesmos da Meta (dados.config): trocar aqui troca lá.
+     Só a linha do preço muda no texto, para não perder o que ele já editou à mão na caixa. */
+  [["msg-avulsa","avulsa",/(\*Sessão avulsa:\* R\$)\d[\d.]*(?:,\d+)?/],["msg-mensal","mensal",/(\*Ciclo mensal:\* R\$)\d[\d.]*(?:,\d+)?/]].forEach(function(par){
+    var el = document.getElementById(par[0]);
+    el.value = dados.config[par[1]];
+    el.addEventListener("input", function(){
+      var v = Number(el.value)||0;
+      dados.config[par[1]] = v;
+      salvar(); sincronizarCampos(); renderMeta();
+      var ta = document.getElementById("msg-txt");
+      ta.value = ta.value.replace(par[2], "$1"+v.toFixed(2).replace(".",","));
+    });
+  });
   function fechar(){ fundo.remove(); devolverFoco(); }
   var devolverFoco = janela(fundo, fechar);
   fundo.addEventListener("click", function(e){ if(e.target===fundo) fechar(); });
