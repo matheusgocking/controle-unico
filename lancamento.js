@@ -26,8 +26,8 @@ var FormLancamento = (function(){
     "@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .lanc{--lanc-casa:#6fc7d6}} :root[data-theme=dark] .lanc{--lanc-casa:#6fc7d6}" +
     ".lanc-abrir{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);font:inherit;font-size:14px;font-weight:600;padding:8px 14px;border-radius:var(--radius);cursor:pointer}" +
     ".lanc-abrir[aria-expanded=true]{background:var(--surface);color:var(--text);border-color:var(--line);font-weight:500}" +
-    ".lanc-form{margin-top:10px;background:var(--surface-2);border-radius:var(--radius);padding:14px;display:grid;gap:14px;border-left:4px solid var(--line)}" +
-    ".lanc-form.pessoal{border-left-color:var(--lanc-pessoal)} .lanc-form.casa{border-left-color:var(--lanc-casa)}" +
+    /* sem a borda lateral colorida (reforma de 04/11/2026): de quem é o lançamento já aparece no cartão escolhido e no botão de enviar */
+    ".lanc-form{margin-top:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:14px}" +
     ".lanc-campo>label,.lanc-rot{display:block;font-size:12px;color:var(--muted);margin:0 0 6px;font-weight:500}" +
     ".lanc-campo>label small{font-weight:400;color:var(--faint)}" +
     ".lanc-titulo{margin:0;font-size:14px;font-weight:600}" +
@@ -67,8 +67,9 @@ var FormLancamento = (function(){
     ".lanc-cancelar{border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:14px;padding:9px 14px;border-radius:var(--radius);cursor:pointer}" +
     ".lanc-erro{color:var(--neg);font-size:13px;font-weight:500}" +
     ".lanc-erro-in{color:var(--neg);font-style:normal;font-weight:600;font-size:12.5px;margin-left:6px}" +
-    ".lanc-feito{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--pos);background:var(--pos-soft);border-radius:var(--radius);padding:8px 12px}" +
-    ".lanc-feito button{border:0;background:transparent;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:8px 0;min-height:40px;font-weight:600}" +
+    ".lanc-feito{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:4px 12px}" +
+    ".lanc-feito::before{content:\"\";width:8px;height:8px;border-radius:50%;background:var(--pos);flex:none}" +
+    ".lanc-feito button{border:0;background:transparent;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer;padding:8px 0;min-height:40px;font-weight:600}" +
     "@media (max-width:700px){" +
       ".lanc-abrir{width:100%;justify-content:center;padding:11px 14px;font-size:15px}" +
       ".lanc-form{padding:12px}" +

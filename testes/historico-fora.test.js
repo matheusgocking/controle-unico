@@ -103,7 +103,8 @@ for (const largura of [390, 1280]) {
 
     /* o cartão em Inativos abre a ficha na aba Pagamento, com o que ele deve */
     await p.evaluate(() => { mostrarView("pacientes"); filtroPacientes = "inativo"; renderPacientes(); });
-    const cartao = p.locator("#plist [data-fenc]", { hasText:"Marta Teste Domingues" });
+    /* o nome de tela: primeiro e último (04/11/2026; antes o cartão mostrava o nome inteiro) */
+    const cartao = p.locator("#plist [data-fenc]", { hasText:"Marta Domingues" });
     assert.equal(await cartao.count(), 1);
     assert.match(await cartao.textContent(), /6 sessões cobradas \(5 feitas\)/);
     assert.match(await cartao.textContent(), /Deve R\$ 250/);

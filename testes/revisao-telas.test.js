@@ -30,7 +30,8 @@ test("Ainda vai sair: o fixo sem dia marcado é dito como já contado em Gastei"
   const { ctx, app, erros } = await abrir("index.html#tudo", semente());
   const t = await k(app, "Ainda vai sair");
   assert.match(t, /R\$ 50,00/);
-  assert.match(t, /o fixo sem dia marcado já conta em Gastei/);
+  // desde 04/11/2026 a explicação longa de cada número fica em "Ver a conta"
+  assert.match(await app.textContent(".situ details.conta"), /Ainda vai sair: fixos que vencem depois de hoje; o fixo sem dia marcado já conta em Gastei/);
   assert.deepEqual(erros, []);
   await ctx.close();
 });

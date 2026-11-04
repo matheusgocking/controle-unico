@@ -215,8 +215,11 @@ test("Ana, Plantões fixos: o plantão apagado ou mudado de dia não volta ao la
 
 test("Ana, Mês: o texto do Entra conta as entradas fixas também", async () => {
   const { ctx, p, erros } = await abrir();
+  // reforma de desenho (04/11/2026): embaixo do número fica só de onde ele vem; os valores de cada parte ficam em "Ver a conta"
   const t = await p.textContent(".k:has(> span:text-is('Entra')) small");
-  assert.equal(t.replace(/\s/g, " "), "R$ 2.500,00 de entradas fixas, R$ 2.000,00 de plantões e R$ 200,00 de atendimentos");
+  assert.equal(t.replace(/\s/g, " "), "entradas fixas, plantões e atendimentos");
+  const conta = await p.textContent("details.conta li:has(> b:text-is('Entra:'))");
+  assert.equal(conta.replace(/\s/g, " "), "Entra: R$ 2.500,00 de entradas fixas, R$ 2.000,00 de plantões e R$ 200,00 de atendimentos.");
   assert.deepEqual(erros, []);
   await ctx.close();
 });

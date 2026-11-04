@@ -41,20 +41,24 @@ button,input,select{font:inherit;color:inherit}
 
 /* escolha das planilhas */
 .arquivos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
-.arq{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;display:flex;gap:10px;align-items:center;min-width:0}
+/* reforma de desenho (04/11/2026): as três planilhas eram três caixas tracejadas; agora ficam lado a lado, separadas por um fio */
+.arq{border-left:1px solid var(--line);padding:2px 14px;display:flex;gap:10px;align-items:center;min-width:0}
+.arq:first-child{border-left:0;padding-left:0}
 .arq i{width:10px;height:10px;border-radius:50%;background:var(--faint);flex:none}
 .arq.ok i{background:#2f9e5b}
 .arq b{display:block;font-size:14px;font-weight:600}
 .arq span{display:block;font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.arq.solta{border-style:dashed}
+.arq.solta b{color:var(--muted);font-weight:500}
 .acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #status{font-size:13px;color:var(--muted)}
-.zona{border:2px dashed var(--line);border-radius:var(--radius);padding:14px;text-align:center;color:var(--muted);font-size:13.5px;margin-top:10px}
+.zona{border:1px dashed var(--line);border-radius:var(--radius);padding:14px;text-align:center;color:var(--muted);font-size:13.5px;margin-top:10px}
 .zona.sobre{border-color:var(--accent);background:var(--accent-soft)}
 
-/* resumo */
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
-.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-size:13.5px;background:var(--surface)}
+/* resumo: o estado de cada caderno era uma pílula com borda; agora é texto com um ponto (04/11/2026) */
+.chips{display:flex;gap:6px 20px;flex-wrap:wrap;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.chip{display:inline-flex;align-items:center;gap:0;font-size:13.5px;color:var(--muted);white-space:pre-wrap}
+.chip i{margin-right:8px}
+.chip b{color:var(--text)}
 .chip i{width:9px;height:9px;border-radius:50%;background:var(--faint)}
 .chip.ok i{background:#2f9e5b} .chip.dif i{background:#d0453a} .chip.falta i{background:#d49a1c}
 .chip b{font-weight:600}
@@ -68,7 +72,6 @@ table.t th:first-child,table.t td:first-child{padding-left:0}
 table.t th:last-child,table.t td:last-child{padding-right:0}
 table.t .dir{text-align:right;white-space:nowrap}
 table.t tr:last-child td{border-bottom:0}
-table.t tr.dif td{background:color-mix(in srgb, var(--neg-soft) 55%, transparent)}
 table.t tr.dif td.c-dif{font-weight:600;color:var(--neg)}
 table.t tr.igual td.c-dif{color:var(--pos)}
 table.t td.c-obs{color:var(--faint);font-size:12.5px}
@@ -77,10 +80,11 @@ table.t.itens td.c-chk{width:1%;padding-right:4px}
 table.t.itens tr.feito td{opacity:.55}
 table.t.itens tr.feito td.c-desc{text-decoration:line-through}
 table.t.itens td.c-lado{white-space:nowrap}
-.selo{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
-.selo.planilha{background:var(--warn-soft);color:var(--warn)}
-.selo.app{background:var(--accent-soft);color:var(--accent)}
-.selo.dif{background:var(--neg-soft);color:var(--neg)}
+/* onde está a diferença: texto na cor do lado, sem etiqueta com fundo (04/11/2026) */
+.selo{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.selo.planilha{color:var(--warn)}
+.selo.app{color:var(--accent)}
+.selo.dif{color:var(--neg)}
 input[type=checkbox]{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer}
 /* a caixa inteira (36 px) é clicável: é a área de toque, não só o quadradinho */
 .chk{display:inline-grid;place-items:center;width:36px;height:36px;margin:-8px 0;cursor:pointer;border-radius:8px}
@@ -98,7 +102,9 @@ details.lista > summary .q{font-weight:400;color:var(--faint);font-size:13px}
   .topo{padding:6px 12px}
   .wrap{padding:0 12px 48px}
   .painel{padding:14px}
-  .arquivos{grid-template-columns:1fr}
+  .arquivos{grid-template-columns:1fr;gap:0}
+  .arq,.arq:first-child{border-left:0;padding:8px 0;border-top:1px solid var(--line)}
+  .arq:first-child{border-top:0;padding-top:0}
   .mes{justify-content:space-between;margin:8px 0 12px}
   .mes h1{font-size:19px;min-width:0}
   table.t{font-size:13.5px}
@@ -121,7 +127,9 @@ details.lista > summary .q{font-weight:400;color:var(--faint);font-size:13px}
 <div class="wrap">
   <section class="painel" style="margin-top:8px">
     <h2>Conferir o app com as planilhas</h2>
-    <p class="sub">Escolha as três planilhas do OneDrive (Controle Financeiro, Gastos da Casa e Prática Clínica). Elas são lidas aqui, no seu navegador, e não saem do computador: nada é enviado nem alterado nelas. A lista abaixo mostra, um item por linha, o que está diferente entre o app e a planilha no mês aberto.</p>
+    <p class="sub">Escolha as planilhas do OneDrive. Nada sai do computador.</p>
+    <details class="ajuda"><summary>Como funciona</summary><p>Escolha as três planilhas do OneDrive (Controle Financeiro, Gastos da Casa e Prática Clínica). Elas são lidas aqui, no seu navegador, e não saem do computador: nada é enviado nem alterado nelas. A lista abaixo mostra, um item por linha, o que está diferente entre o app e a planilha no mês aberto.</p>
+      <p>O app lê os cadernos guardados neste aparelho (Dinheiro, Casa e Clínica). Se algum ainda não foi aberto aqui, abra a aba dele uma vez e volte. A planilha continua sendo a fonte de verdade até você dizer o contrário: esta tela só mostra onde os dois discordam, e você decide qual está certo.</p></details>
     <div class="arquivos" id="arquivos"></div>
     <div class="acoes">
       <button class="b p" id="escolher" type="button">Escolher as planilhas</button>
@@ -136,7 +144,6 @@ details.lista > summary .q{font-weight:400;color:var(--faint);font-size:13px}
 
   <div id="mesbar"></div>
   <div id="telas"></div>
-  <p class="nota" style="margin-top:22px">O app lê os cadernos guardados neste aparelho (Dinheiro, Casa e Clínica). Se algum ainda não foi aberto aqui, abra a aba dele uma vez e volte. A planilha continua sendo a fonte de verdade até você dizer o contrário: esta tela só mostra onde os dois discordam, e você decide qual está certo.</p>
 </div>
 
 <script>

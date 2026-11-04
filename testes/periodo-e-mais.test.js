@@ -60,6 +60,9 @@ test("Clínica: a semana acompanha a rolagem, e embaixo vale o mês da lista de 
   assert.deepEqual(await copia(p), { on:true, nome:"4 de outubro a 10 de outubro" });
   await p.click(".cu-periodo button[aria-label='Próxima semana']"); await espera(300);
   assert.equal(await p.textContent("#range-txt"), "11 de outubro a 17 de outubro");
+  /* 04/11/2026: com a legenda fechada e as previstas em 6, a página ficou curta e a barra do mês
+     aparecia inteira no fim da rolagem; numa janela mais baixa ela sai da vista e a cópia vale */
+  await p.setViewportSize({ width:1280, height:500 });
   await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await espera(300);
   assert.deepEqual(await copia(p), { on:true, nome:"Outubro de 2026" });
   // em Pagamentos vale a barra de Pagamentos

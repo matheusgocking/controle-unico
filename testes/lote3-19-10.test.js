@@ -116,7 +116,8 @@ test("Tudo: Meus lançamentos abre com todos os meses, separados por mês, e vol
 test("Dinheiro: categoria própria entra no formulário; recebi uma parte sem janelinha, com erro junto do campo", async () => {
   const { ctx, f, erros } = await casca();
   await f.evaluate(() => { aba = "carteira"; vistaDin = "mes"; desenhar(); });
-  await f.evaluate(() => document.querySelector("#fCategoria").closest("details").open = true);
+  // "Minhas categorias" fica recolhida no fim do painel Lançamentos (04/11/2026): abre as duas
+  await f.evaluate(() => { const fc = document.querySelector("#fCategoria"); fc.closest("details").open = true; fc.closest("details.cats-d").open = true; });
   await f.fill('#fCategoria [name="nome"]', "Pets");
   await f.selectOption('#fCategoria [name="grupo"]', "Para mim");
   await f.click('#fCategoria button[type="submit"]');
@@ -124,7 +125,8 @@ test("Dinheiro: categoria própria entra no formulário; recebi uma parte sem ja
   assert.ok(await f.evaluate(() => catsDinheiro().includes("Pets")));
   assert.match(await f.locator(".cat-minhas").textContent(), /Pets/);
   /* nome repetido: erro junto do campo, nada gravado */
-  await f.evaluate(() => document.querySelector("#fCategoria").closest("details").open = true);
+  // "Minhas categorias" fica recolhida no fim do painel Lançamentos (04/11/2026): abre as duas
+  await f.evaluate(() => { const fc = document.querySelector("#fCategoria"); fc.closest("details").open = true; fc.closest("details.cats-d").open = true; });
   await f.fill('#fCategoria [name="nome"]', "mercado");
   await f.click('#fCategoria button[type="submit"]');
   assert.equal(await f.locator("#fCategoria .form-erro").textContent(), "Essa categoria já existe.");

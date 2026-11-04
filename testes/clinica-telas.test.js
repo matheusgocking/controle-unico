@@ -57,9 +57,9 @@ test("Celular: Mês, Sessões, Painel e Pagamentos cabem na tela, sem deslizar p
   await ctx.close();
 });
 
-test("Computador: a legenda da semana continua aberta e o Mês continua escrevendo \"sessão\"", async () => {
+test("Computador: a legenda da semana fica fechada (04/11/2026) e o Mês continua escrevendo \"sessão\"", async () => {
   const { ctx, p, erros } = await abrir(1280);
-  assert.equal(await p.evaluate(() => document.getElementById("leg-semana").open), true);
+  assert.equal(await p.evaluate(() => document.getElementById("leg-semana").open), false);
   await p.evaluate(() => mostrarView("mes"));
   assert.equal(await p.locator("#mes .pill .pw").first().isVisible(), true);
   assert.deepEqual(erros, []);

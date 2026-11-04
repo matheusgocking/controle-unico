@@ -57,11 +57,13 @@ for (const largura of [390, 1280]) {
     const { ctx, p, erros } = await abrir(largura);
     const antes = await p.evaluate(() => { const c = JSON.parse(JSON.stringify(dados)); delete c.registros; return JSON.stringify(c); });
     await p.evaluate(() => mostrarView("pacientes"));
-    assert.equal(await p.locator("#pcobrar .cobrar-it").count(), 2);
-    assert.match(await p.textContent("#pcobrar .cobrar-it.atraso"), /deve R\$ 175/);
+    /* 04/11/2026: em Pacientes o Cobrar é uma linha com o total; a lista fica na tabela de Pagamentos */
+    assert.match(await p.textContent("#pcobrar .cobrar-linha"), /1 paciente a cobrar, R\$ 175 · 1 com só a próxima paga/);
     assert.equal(await p.locator(".pcard .selo.saldo.atraso").count(), 1);
-    await p.evaluate(() => mostrarView("pagamentos"));
-    assert.equal(await p.locator("#pg-cobrar .cobrar-it").count(), 2);
+    await p.click("#pcobrar [data-ir-pagamentos]");
+    assert.equal(await p.locator("#v-pagamentos").isVisible(), true);
+    assert.match(await p.textContent("#pg-cobrar-n"), /1 paciente a cobrar, R\$ 175 · 1 com só a próxima paga/);
+    assert.equal(await p.locator("#pg-tabela [data-cobrar-msg]").count(), 1);
     /* semana que vem: a sessão de 12/10 do Mensal não está paga (anel); a de 13/10 do Avulso, sim */
     await p.evaluate(() => { mostrarView("semana"); semana = somaDias(semana, 7); renderSemana(); });
     assert.equal(await p.locator('.cell[data-data="2026-10-12"][data-hora="9"] .pgm-apagar').count(), 1);
@@ -79,6 +81,9 @@ for (const largura of [390, 1280]) {
     assert.ok(await p.locator("#fi-aba-dados.vazio").count());
     await p.click("#fi-aba-dados");
     assert.ok(await p.isVisible("#dp-nomeCompleto"));
+    /* o trazer da planilha antiga fica guardado num "Planilha antiga" fechado (04/11/2026) */
+    assert.equal(await p.isVisible("[data-trazer-dados]"), false);
+    await p.click("#fi-dados details.planilha-antiga > summary");
     assert.ok(await p.isVisible("[data-trazer-dados]"));
     await p.click("#fi-fechar");
     const depois = await p.evaluate(() => { const c = JSON.parse(JSON.stringify(dados)); delete c.registros; return JSON.stringify(c); });

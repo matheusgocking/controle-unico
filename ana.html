@@ -55,7 +55,8 @@ header{flex:none;background:var(--surface);border-bottom:1px solid var(--line);p
 nav{flex:none;display:flex;gap:2px;overflow-x:auto;padding:6px 12px;background:var(--surface);border-bottom:1px solid var(--line)}
 nav button{border:0;background:transparent;color:var(--muted);font-size:14px;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:7px}
 nav button svg{width:18px;height:18px;flex:none}
-nav button[aria-pressed="true"]{background:var(--bg);color:var(--text);font-weight:600;box-shadow:inset 0 0 0 1px var(--line)}
+nav button[aria-pressed="true"]{background:var(--bg);color:var(--text);font-weight:600}
+@media (min-width:701px){ header{border-bottom:0;padding-bottom:4px} nav{padding-top:2px} }
 .palco{flex:1 1 auto;position:relative;min-height:0}
 #conteudo{position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch}
 #q-casa{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
@@ -80,7 +81,10 @@ nav button[aria-pressed="true"]{background:var(--bg);color:var(--text);font-weig
 .duas{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
 .duas.larga{grid-template-columns:1.6fr 1fr;align-items:start}
 .coluna{display:grid;gap:18px;align-content:start;min-width:0}
-.aviso{background:var(--warn-soft);color:var(--text);border-radius:var(--radius);padding:10px 14px;font-size:14px;margin:0 0 14px}
+/* reforma de desenho (04/11/2026): o aviso era uma faixa laranja (ou verde); agora é uma linha com fio fino e um ponto na cor */
+.aviso{position:relative;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px 10px 32px;font-size:14px;margin:0 0 14px}
+.aviso::before{content:"";position:absolute;left:14px;top:18px;width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.aviso.pos::before{background:var(--pos)}
 /* erro junto do botão e "Salvo." depois de gravar, no lugar da janelinha do navegador (19/10/2026) */
 .form-erro{grid-column:1/-1;flex-basis:100%;margin:0;font-size:13.5px;font-weight:600;color:var(--neg)}
 .form-erro:empty{display:none}
@@ -89,19 +93,26 @@ nav button[aria-pressed="true"]{background:var(--bg);color:var(--text);font-weig
   display:flex;gap:12px;align-items:center;background:var(--neg);color:#fff;border-radius:10px;padding:10px 12px 10px 16px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 .recado button{border:0;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer;min-width:32px;min-height:32px}
 
-/* situação do mês */
-.situ{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;align-items:stretch}
-.situ > .veredito{order:2}   /* no celular vem primeiro; no computador, à direita */
+/* situação do mês (reforma de 04/11/2026, igual à do app dele): o veredito é a manchete do painel, numa
+   linha sem fundo; embaixo de cada número, uma linha curta; a conta inteira fica em "Ver a conta" */
+.situ{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
 .linha-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.linha-k > .k + .k{border-left:1px solid var(--line);padding-left:18px}
+.k{min-width:0}
 .k span{display:block;color:var(--muted);font-size:13px}
-.k b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-top:2px;white-space:nowrap}
-.k small{display:block;color:var(--faint);font-size:12px;margin-top:3px}
-.k.destaque b{font-size:32px}
-.veredito{border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;justify-content:center;gap:10px;background:var(--surface-2)}
-.veredito.pos{background:var(--pos-soft)} .veredito.neg{background:var(--neg-soft)}
-.veredito b{font-size:19px;line-height:1.2}
-.veredito p{margin:0;font-size:13.5px}
-.veredito.pos b{color:var(--pos)} .veredito.neg b{color:var(--neg)}
+.k b{display:block;font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-top:2px;white-space:nowrap}
+.k small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+.k.destaque b{font-size:28px}
+.veredito{padding:0 0 14px;margin:0 0 14px;border-bottom:1px solid var(--line);font-size:15px;line-height:1.5}
+.veredito .topo-v{display:inline}
+.seta{display:inline-grid;place-items:center;width:20px;height:20px;vertical-align:-4px;margin-right:6px;color:var(--muted)}
+.seta svg{width:18px;height:18px}
+.veredito b{font-weight:600;margin-right:4px}
+.veredito p{display:inline;margin:0;color:var(--text)}
+.veredito.pos b,.veredito.pos .seta{color:var(--pos)} .veredito.neg b,.veredito.neg .seta{color:var(--neg)}
+details.conta{margin:14px 0 0}
+.conta-l{list-style:none;padding:0;display:grid;gap:4px}
+.conta-l b{color:var(--text);font-weight:600}
 
 /* rosca */
 .rosca{display:grid;grid-template-columns:170px minmax(0,1fr);gap:20px;align-items:center}
@@ -117,12 +128,8 @@ nav button[aria-pressed="true"]{background:var(--bg);color:var(--text);font-weig
 .leg .pc{color:var(--faint);font-size:12px;min-width:44px;text-align:right}
 @container (max-width:460px){ .rosca{grid-template-columns:minmax(0,1fr);justify-items:center} .leg{width:100%} }
 
-/* números soltos */
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
-.stat{background:var(--surface-2);border-radius:var(--radius);padding:10px 14px;min-width:0}
-.stat span{display:block;color:var(--muted);font-size:12px}
-.stat b{display:block;font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stat small{display:block;color:var(--faint);font-size:11.5px}
+/* números soltos (04/11/2026): eram caixinhas cinza, uma por número; agora é a faixa do tema (lado a lado, com um fio entre eles) */
+.stats{margin-bottom:16px;row-gap:12px}
 
 /* tabelas */
 table.t{width:100%;border-collapse:collapse;font-size:14px}
@@ -145,8 +152,9 @@ table.t input.val{width:104px;padding:5px 8px;text-align:right}
 .x:hover{color:var(--neg)}
 .x.lapis{font-size:14px} .x.lapis:hover{color:var(--accent)}
 td.c-x{white-space:nowrap}
-.selo-b{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
-.selo-b.extra{background:var(--accent-soft);color:var(--accent)}
+/* Regular ou Extra: texto, sem etiqueta com fundo (04/11/2026); o extra fica na cor do app */
+.selo-b{font-size:13.5px;color:var(--muted)}
+.selo-b.extra{color:var(--accent);font-weight:600}
 .vai{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
 .vai input{width:18px;height:18px;accent-color:var(--accent)}
 table.valores input.val{width:84px}
@@ -166,7 +174,7 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
 .pe a{color:var(--faint);font-size:13px}
 
-@media (max-width:960px){ .duas,.duas.larga{grid-template-columns:1fr} .situ{grid-template-columns:1fr;gap:16px} .situ > .veredito{order:0} }
+@media (max-width:960px){ .duas,.duas.larga{grid-template-columns:1fr} }
 /* ---------- celular: barra roxa em cima, abas embaixo, como o app dele ---------- */
 @media (max-width:700px){
   header{background:var(--barra);color:var(--barra-ink);border-bottom:0;padding:6px 12px;padding-top:calc(6px + env(safe-area-inset-top,0px))}
@@ -189,10 +197,11 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .painel{padding:14px}
   .duas{gap:12px;margin-top:12px} .coluna{gap:12px}
   .linha-k{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .linha-k .k.destaque{grid-column:1 / -1}
+  .linha-k .k.destaque{grid-column:1 / -1;border-top:1px solid var(--line);padding-top:12px}
+  .linha-k > .k + .k{border-left:0;padding-left:0}
+  .linha-k > .k:nth-child(2){border-left:1px solid var(--line);padding-left:12px}
+  .veredito{font-size:14.5px;padding-bottom:12px;margin-bottom:12px}
   .k b{font-size:21px} .k.destaque b{font-size:28px}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .stat b{font-size:17px}
   table.t:not(.valores) thead{display:none}
   table.t:not(.valores) tr{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
   td.c-x .x{padding:0;min-width:34px;min-height:40px}
@@ -437,11 +446,21 @@ function telaMes(){
   const passado = k < chaveMes(new Date());
   const nome = MESES[ref.getMonth()];
   // mês sem nada lançado: diz isso, em vez de "sobra R$ 0,00"
+  // a manchete do mês, numa linha com uma seta, sem caixa colorida (04/11/2026, igual à do app dele)
+  const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
   const ver = e.total < 0.005 && s.total < 0.005
-    ? `<div class="veredito"><b>Nada lançado ainda</b><p>Quando entrar um plantão, uma entrada ou um gasto de ${nome}, a conta do mês aparece aqui.</p></div>`
+    ? `<div class="veredito"><div class="topo-v"><b>Nada lançado ainda.</b></div><p>Quando entrar um plantão, uma entrada ou um gasto de ${nome}, a conta do mês aparece aqui.</p></div>`
     : sobra >= -0.005
-    ? `<div class="veredito pos"><b>${passado ? "Fechou positivo" : "Sobra no mês"}</b><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} com ${dinheiro(sobra)} a mais do que saiu, se tudo cair como está aqui.</p></div>`
-    : `<div class="veredito neg"><b>${passado ? "Fechou negativo" : "Falta no mês"}</b><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} em ${sinalDin(sobra)}: sai mais do que entra.</p></div>`;
+    ? `<div class="veredito pos"><div class="topo-v">${seta(true)}<b>${passado ? "Fechou positivo." : "Sobra no mês."}</b></div><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} com ${dinheiro(sobra)} a mais do que saiu, se tudo cair como está aqui.</p></div>`
+    : `<div class="veredito neg"><div class="topo-v">${seta(false)}<b>${passado ? "Fechou negativo." : "Falta no mês."}</b></div><p>${maiuscula(nome)} ${passado ? "terminou" : "fecha"} em ${sinalDin(sobra)}: sai mais do que entra.</p></div>`;
+  // embaixo de cada número, só de onde ele vem; os valores de cada parte ficam em "Ver a conta"
+  const partesE = [[soma(e.fixas, x => x.valor), "entradas fixas"], [soma(e.plantoes, x => x.valor), "plantões"], [e.atend.valor, "atendimentos"]].filter(([v]) => v > 0.005).map(([, t]) => t);
+  const partesS = [[s.lancado, "lançados"], [s.fixosMes, "fixos"], [s.casa ? s.casa.valor : 0, "casa"]].filter(([v]) => v > 0.005).map(([, t]) => t);
+  const eJunto = l => l.length > 1 ? l.slice(0, -1).join(", ") + " e " + l[l.length - 1] : (l[0] || "");
+  const conta = [
+    ["Entra", partesEntra(e)],
+    ["Sai", `${dinheiro(s.lancado)} lançados, ${dinheiro(s.fixosMes)} de fixos${s.casa ? " e " + dinheiro(s.casa.valor) + " pagos na casa" : ""}`],
+    ["Sobra", "entra menos sai"]];
   const semCasa = !s.casa ? `<p class="aviso">O que você pagou na casa ainda não aparece: abra a aba <b>Casa</b> uma vez e toque em "Escolher o que foi compartilhado comigo".</p>` : "";
 
   const linhasEnt = e.fixas.filter(x => vale(cad.receitasFixas.find(r => r.id === x.id), k)).map(x => `<tr><td class="c-desc"><b>${escH(comPonto(x.rot))}</b></td>
@@ -461,10 +480,11 @@ function telaMes(){
   return barraMes() + `
   <section class="painel"><h2>Situação do mês</h2>
     <div class="situ">${ver}<div class="linha-k">
-      <div class="k"><span>Entra</span><b class="pos">${dinheiro(e.total)}</b><small>${partesEntra(e)}</small></div>
-      <div class="k"><span>Sai</span><b>${dinheiro(s.total)}</b><small>${dinheiro(s.lancado)} lançados, ${dinheiro(s.fixosMes)} de fixos${s.casa ? " e " + dinheiro(s.casa.valor) + " pagos na casa" : ""}</small></div>
+      <div class="k"><span>Entra</span><b class="pos">${dinheiro(e.total)}</b><small>${partesE.length ? eJunto(partesE) : "nada ainda"}</small></div>
+      <div class="k"><span>Sai</span><b>${dinheiro(s.total)}</b><small>${partesS.length ? eJunto(partesS) : "nada ainda"}</small></div>
       <div class="k destaque"><span>Sobra</span><b class="${sobra < -0.005 ? "neg" : "pos"}">${sinalDin(sobra)}</b><small>entra menos sai</small></div>
-    </div></div>
+    </div>
+    <details class="ajuda conta"><summary>Ver a conta</summary><ul class="conta-l">${conta.map(([n, t]) => `<li><b>${n}:</b> ${t}.</li>`).join("")}</ul></details></div>
   </section>
   <div class="duas">
     <section class="painel"><h2>Entradas de ${nome}</h2>${formEnt}
@@ -473,9 +493,9 @@ function telaMes(){
     <section class="painel"><h2>Para onde vai</h2>${semCasa}${roscaSaidas(s)}</section>
   </div>
   <section class="painel" style="margin-top:18px"><h2>Entra e sai, mês a mês<span class="dir">toque num mês para abrir</span></h2>
-    ${GraficoMeses.desenhar(GraficoMeses.meses(12, k).map(m => ({ k:m, entrou:entradas(m).total, saiu:saidas(m).total })), { aberto:k, entrou:"Entra", saiu:"Sai" })}</section>
+    ${GraficoMeses.desenhar(GraficoMeses.meses(12, k).map(m => ({ k:m, entrou:entradas(m).total, saiu:saidas(m).total })), { aberto:k, entrou:"Entra", saiu:"Sai", lista:false })}</section>
   <section class="painel" style="margin-top:18px"><h2>Plantões de ${nome}<span class="dir"><button class="b s" data-ir="plantoes">Ver plantões</button></span></h2>
-    <div class="stats" style="margin:0">
+    <div class="faixa stats" style="margin:0">
       <div class="stat"><span>Plantões</span><b>${cp.n}</b><small>de ${cp.nTotal} marcados</small></div>
       <div class="stat"><span>Valor dos plantões</span><b>${dinheiro(cp.total)}</b><small>feitos e a fazer, sem os desmarcados</small></div>
       <div class="stat"><span>Não vai fazer</span><b>${dinheiro(cp.naoVai)}</b><small>regulares desmarcados</small></div>
@@ -526,7 +546,7 @@ function telaPlantoes(){
     <p>O valor de cada dia entra sozinho no plantão novo e pode ser trocado na hora. Mudar a tabela não muda os plantões já lançados.</p></details>`;
   return barraMes() + `
   <section class="painel"><h2>Plantões de ${nome}<span class="dir">${cp.n} de ${cp.nTotal} vão ser feitos</span></h2>
-    <div class="stats">
+    <div class="faixa stats">
       <div class="stat"><span>Regulares</span><b>${dinheiro(cp.potencial)}</b><small>se fizer todos</small></div>
       <div class="stat"><span>Não vai fazer</span><b>${dinheiro(cp.naoVai)}</b><small>regulares desmarcados</small></div>
       <div class="stat"><span>Extras</span><b>${dinheiro(cp.extras)}</b><small>que vai fazer</small></div>
@@ -603,7 +623,7 @@ function regras(){
   const lista = cad.regrasPlantao.length
     ? `<ul class="regras">${cad.regrasPlantao.map(g => `<li><span>${fraseRegra(g)}${Number(g.valor) > 0 ? ` · ${dinheiro(g.valor)}` : ""}</span><button class="x" data-apagar="regrasPlantao:${escH(g.id)}" aria-label="Apagar regra" title="Apagar regra">×</button></li>`).join("")}</ul>`
     : `<p class="vazio">Nenhuma regra ainda. Exemplo: Hospital, noturno, toda sexta.</p>`;
-  const desfazer = ultimosLancados ? `<p class="aviso" style="background:var(--pos-soft)">${ultimosLancados.length} ${ultimosLancados.length === 1 ? "plantão lançado" : "plantões lançados"}. <button class="b s" type="button" id="desfazerRegras">Desfazer</button></p>` : "";
+  const desfazer = ultimosLancados ? `<p class="aviso pos">${ultimosLancados.length} ${ultimosLancados.length === 1 ? "plantão lançado" : "plantões lançados"}. <button class="b s" type="button" id="desfazerRegras">Desfazer</button></p>` : "";
   return `<details class="novo" id="dRegras"${ultimosLancados ? " open" : ""}><summary>↻ Plantões que se repetem</summary>
     <p>Diga como os plantões se repetem e o app lança os que faltam, até o mês escolhido. Os que já estão lançados não mudam, e o que você apagar ou mudar de dia não volta.</p>
     ${lista}
@@ -650,10 +670,10 @@ function telaAtendimentos(){
       ${form}
       ${lst.length ? `<table class="t atend" style="margin-top:12px"><thead><tr><th>Dia</th><th>Paciente</th><th class="dir">Valor</th><th><span class="so-leitor">Ações</span></th></tr></thead><tbody>${linhas}</tbody></table>`
         : `<p class="vazio">Nenhum atendimento pago em ${nome}.</p>`}
-      <p class="nota">Cada pagamento entra nas entradas do mês em que foi pago. O nome que você já usou aparece sozinho ao começar a digitar.</p></section>
+      <details class="ajuda" style="margin:12px 0 0"><summary>Como funciona</summary><p>Cada pagamento entra nas entradas do mês em que foi pago. O nome que você já usou aparece sozinho ao começar a digitar.</p></details></section>
     <section class="painel"><h2>Por paciente em ${nome}</h2>
       ${linhasPac ? `<table class="t porpac"><tbody>${linhasPac}</tbody></table>` : `<p class="vazio">Nada neste mês.</p>`}
-      <div class="stats" style="margin:14px 0 0;grid-template-columns:repeat(2,minmax(0,1fr))">
+      <div class="faixa stats" style="margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line)">
         <div class="stat"><span>No ano de ${ano}</span><b>${dinheiro(soma(doAno, a => a.valor))}</b><small>${doAno.length} ${doAno.length === 1 ? "pagamento" : "pagamentos"}</small></div>
         <div class="stat"><span>Pacientes no ano</span><b>${new Set(doAno.map(a => a.paciente)).size}</b><small>nomes diferentes</small></div>
       </div></section>
@@ -1073,7 +1093,7 @@ function tentarCompartilhar(){
   if (!email || !Nuvem.conectado() || !nuvem.arquivoId() || nuvem.pendente()) return;
   nuvem.compartilharCom(email).then(() => {
     try { localStorage.removeItem(CH_COMPARTILHAR); } catch(e){}
-    document.getElementById("chegou").innerHTML = `<p class="aviso" style="background:var(--pos-soft)">Pronto: o controle está no seu Google e compartilhado com ${escH(email)}.</p>`;
+    document.getElementById("chegou").innerHTML = `<p class="aviso pos">Pronto: o controle está no seu Google e compartilhado com ${escH(email)}.</p>`;
   }).catch(() => {});
 }
 setInterval(tentarCompartilhar, 5000);

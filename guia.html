@@ -52,13 +52,16 @@ section ul{margin:0; padding-left:20px}
 section li{margin:4px 0}
 section li::marker{color:var(--accent)}
 h3{font-size:15px; margin:14px 0 2px}
-.dica{margin:12px 0 0; padding:10px 12px; border-radius:8px; background:var(--accent-soft); font-size:14px}
-.aviso{margin:12px 0 0; padding:10px 12px; border-radius:8px; background:var(--warn-soft); font-size:14px}
+/* reforma de desenho (04/11/2026): dica e aviso eram faixas tingidas (roxa e laranja); agora são uma linha com fio fino e um ponto na cor */
+.dica,.aviso{position:relative; margin:12px 0 0; padding:10px 12px 10px 30px; border-radius:8px; border:1px solid var(--line); font-size:14px}
+.dica::before,.aviso::before{content:""; position:absolute; left:12px; top:19px; width:8px; height:8px; border-radius:50%; background:var(--accent)}
+.aviso::before{background:var(--warn)}
 kbd{font:inherit; font-weight:600; padding:0 6px; border-radius:6px; border:1px solid var(--line); background:var(--bg); white-space:nowrap}
 .pt{display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin:0 2px}
 .pt.ok{background:#2f9e5b} .pt.indo{background:#d49a1c} .pt.erro{background:#d0453a}
 a{color:var(--accent)}
-.grupo{font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:26px 0 10px}
+/* o nome do grupo (Carteira, Clínica) em caixa normal, não em versalete (04/11/2026) */
+.grupo{font-size:13px; font-weight:600; color:var(--muted); margin:26px 0 10px}
 /* quem é cada parte: a do Matheus some no guia da Ana, e o contrário */
 :root[data-para="ana"] [data-para="matheus"], :root:not([data-para="ana"]) [data-para="ana"]{display:none !important}
 @media (max-width:520px){
@@ -102,6 +105,7 @@ a{color:var(--accent)}
       <li>O app grava sozinho, um instante depois de cada mudança. Não há botão de salvar.</li>
       <li>São três abas: <b>Tudo</b>, <b>Carteira</b> e <b>Clínica</b>. No celular elas ficam embaixo; no computador, em cima.</li>
       <li>Número que o app não tem aparece como um traço, com o motivo, em vez de um zero que enganaria.</li>
+      <li>A explicação longa de cada tela fica guardada no <kbd>? Como funciona</kbd>, embaixo do título; toque para abrir. A conta de cada número fica em <kbd>Ver a conta</kbd>.</li>
     </ul>
   </section>
 
@@ -123,7 +127,7 @@ a{color:var(--accent)}
     <p class="serve">O seu mês num olhar só.</p>
     <ul>
       <li>No alto, <b>O que precisa de você</b>: atrasos, sessões sem marca, fixos que vencem e limites estourados. Toque num aviso para ir até ele.</li>
-      <li>Depois, a caixa do veredito: <b>Pode gastar</b>, <b>Segure até entrar</b> ou <b>Não pode gastar</b>.</li>
+      <li>Depois, a Situação do mês, que abre com uma linha de veredito: <b>Pode gastar</b>, <b>Segure até entrar</b> ou <b>Não pode gastar</b>. Os seis números vêm embaixo; de onde sai cada um fica em <kbd>Ver a conta</kbd>.</li>
       <li>Depois vêm o Patrimônio (reserva de emergência e cripto), os Gastos por categoria, a Casa e a Clínica.</li>
       <li>Abra <b>De onde vem cada número</b> para ver como cada conta foi feita.</li>
       <li>No fim, <b>Meus lançamentos</b>: tudo o que você lançou no mês, pessoal e as suas compras da casa.</li>
@@ -198,8 +202,8 @@ a{color:var(--accent)}
     </ul>
     <h3>Cobrar</h3>
     <ul>
-      <li>O Painel e a Meta estão guardados por enquanto. Quem deve aparece em Pacientes e Pagamentos, e na Tudo, em <b>O que precisa de você</b>.</li>
-      <li><kbd>Cobrar</kbd> monta a mensagem de cobrança para você ajustar e copiar no WhatsApp. O app não envia nada.</li>
+      <li>O Painel e a Meta estão guardados por enquanto. Quem deve aparece na tabela <b>Situação de cada paciente</b>, em Pagamentos; em Pacientes, uma linha diz quantos são e leva até lá; e na Tudo, em <b>O que precisa de você</b>.</li>
+      <li><kbd>Cobrar</kbd> (na linha do paciente, em Pagamentos) monta a mensagem de cobrança para você ajustar e copiar no WhatsApp. O app não envia nada.</li>
     </ul>
     <h3>Pacientes e Pagamentos</h3>
     <ul>
@@ -213,7 +217,7 @@ a{color:var(--accent)}
       <li>A recarga de saldo na Meta continua no Dinheiro, na categoria Clínica: Anúncios.</li>
     </ul>
     <p class="dica">A Clínica não depende mais da planilha da prática clínica: registre tudo aqui. Para recolocar quem saiu, use <kbd>Voltar à agenda</kbd> no cartão dele em Pacientes.</p>
-    <p class="dica">Os dados pessoais de cada paciente (nascimento, CPF, contato, emergência, psiquiatra) ficam na ficha, aba <kbd>Dados</kbd> (em <kbd>Editar dados pessoais</kbd>); de quem já saiu, no botão <kbd>Dados</kbd> do cartão. Para trazer de uma vez os da aba Registro de Pacientes da planilha, use <kbd>Trazer dados da planilha</kbd> em Pacientes: só preenche o que está vazio.</p>
+    <p class="dica">Os dados pessoais de cada paciente (nascimento, CPF, contato, emergência, psiquiatra) ficam na ficha, aba <kbd>Dados</kbd> (em <kbd>Editar dados pessoais</kbd>); de quem já saiu, no botão <kbd>Dados</kbd> do cartão. Para trazer de uma vez os da aba Registro de Pacientes da planilha, abra <kbd>Planilha antiga</kbd> no fim de Pacientes e use <kbd>Trazer dados da planilha</kbd>: só preenche o que está vazio. A planilha parou de ser atualizada em 19/10/2026.</p>
   </section>
 
   <section id="conferir">

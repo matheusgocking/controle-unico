@@ -115,7 +115,8 @@ test("Recebi mostra embaixo o resgate e o aporte do mês na reserva", async () =
   const r = await f.evaluate(() => {
     ref = new Date(2026, 9, 1); aba = "carteira"; vistaDin = "mes"; desenhar();
     const d = contasDinheiro();
-    return { d, txt: document.querySelector(".situ .k").innerText };
+    // desde 04/11/2026 a conta de cada número fica em "Ver a conta", embaixo dos seis números
+    return { d, txt: document.querySelector(".situ details.conta").textContent };
   });
   if (r.d.aportesMes > 0.005) assert.match(r.txt, /guardados na reserva, não gastos/);
   if (r.d.resgatesMes > 0.005) assert.match(r.txt, /resgatados da reserva/);

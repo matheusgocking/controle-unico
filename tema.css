@@ -38,3 +38,35 @@
 
 /* texto só para leitor de tela (cabeçalho de coluna sem palavra visível, como a das ações) */
 .so-leitor{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
+
+/* Peças comuns da reforma de desenho (04/11/2026): menos caixa colorida, menos etiqueta, a explicação
+   longa guardada num "Como funciona" fechado. Usadas pela Clínica, pelo Dinheiro, pela Casa e pela Ana. */
+/* faixa de números: valores lado a lado, separados por um fio, sem uma caixa para cada um */
+.faixa{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:0;padding:0;list-style:none}
+.faixa > *{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:2px 18px;border-left:1px solid var(--line)}
+.faixa > *:first-child{padding-left:0;border-left:0}
+.faixa b{font-size:20px;font-weight:700;line-height:1.2;letter-spacing:-.01em;white-space:nowrap}
+.faixa span,.faixa small{font-size:12.5px;color:var(--muted);line-height:1.35}
+@media (max-width:640px){
+  .faixa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));row-gap:12px}
+  .faixa > *{padding:0 0 0 12px}
+  .faixa > *:nth-child(odd){padding-left:0;border-left:0}
+  .faixa b{font-size:18px}
+}
+/* sinal de estado: texto na cor do estado, com um ponto opcional; nunca fundo colorido */
+.sinal{font-weight:600;white-space:nowrap}
+.sinal.neg{color:var(--neg)} .sinal.pos{color:var(--pos)} .sinal.warn{color:var(--warn)} .sinal.mudo{color:var(--muted);font-weight:500}
+.sinal.ponto::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:.1em}
+/* "Como funciona": a explicação longa fica guardada, fechada, embaixo do título */
+details.ajuda{margin:2px 0 10px;font-size:13px;color:var(--muted)}
+details.ajuda > summary{cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px;list-style:none;min-height:28px}
+details.ajuda > summary::-webkit-details-marker{display:none}
+details.ajuda > summary::before{content:"?";display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--line);font-size:10.5px;font-weight:700}
+details.ajuda[open] > summary{color:var(--text)}
+@media (max-width:700px){ details.ajuda > summary{min-height:40px} }   /* alvo de toque no celular (04/11/2026, Frente C) */
+details.ajuda > :not(summary){margin:6px 0 0;max-width:72ch;line-height:1.5}
+/* aviso discreto: uma linha com fio fino e um ponto na cor do estado, no lugar da faixa tingida */
+.aviso-linha{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);font-size:14px}
+.aviso-linha::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--warn);flex:none}
+.aviso-linha.neg::before{background:var(--neg)} .aviso-linha.pos::before{background:var(--pos)}
+.aviso-linha > :last-child:not(:first-child){margin-left:auto}

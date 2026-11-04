@@ -59,26 +59,30 @@ nav.abas button[aria-pressed="true"]{background:var(--surface);color:var(--text)
 .duas.inv{grid-template-columns:1fr 1.35fr}
 .coluna{display:grid;gap:18px;align-content:start;min-width:0}
 
-/* situação do mês */
-.situ{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;align-items:stretch}
-.situ > .veredito{order:2}   /* no HTML vem primeiro (é o que se lê primeiro no celular); no computador fica à direita */
+/* situação do mês (reforma de 04/11/2026): o veredito é a manchete do painel, numa linha sem fundo,
+   e os seis números ganham a largura toda, cada um com no máximo uma linha curta embaixo; a conta
+   inteira de cada número fica em "Ver a conta". O mesmo desenho serve à Casa e ao Fechamento. */
+.situ{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
 .situ > .nums{min-width:0}
 .linha-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.linha-k + .linha-k{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+.linha-k > .k + .k{border-left:1px solid var(--line);padding-left:18px}
+.linha-k + .linha-k{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.k{min-width:0}
 .k span{display:block;color:var(--muted);font-size:13px}
-.k b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-top:2px;white-space:nowrap}
-.k small{display:block;color:var(--faint);font-size:12px;margin-top:3px}
-.k.destaque b{font-size:32px}
-.k .pct-k{display:inline-block;font-style:normal;font-size:11.5px;font-weight:600;margin:4px 0 2px;padding:1px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
-.k .pct-k.neg{background:var(--neg-soft);color:var(--neg)}
-.veredito{border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;justify-content:center;gap:10px;background:var(--surface-2)}
-.veredito.pos{background:var(--pos-soft)} .veredito.neg{background:var(--neg-soft)} .veredito.warn{background:var(--warn-soft)}
-.veredito .topo-v{display:flex;align-items:center;gap:12px}
-.seta{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface)}
-.seta svg{width:26px;height:26px}
-.veredito b{font-size:19px;line-height:1.2}
-.veredito p{margin:0;font-size:13.5px;color:var(--text)}
+.k b{display:block;font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-top:2px;white-space:nowrap}
+.k small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+.k.destaque b{font-size:28px}
+.veredito{padding:0 0 14px;margin:0 0 14px;border-bottom:1px solid var(--line);font-size:15px;line-height:1.5}
+.veredito .topo-v{display:inline}
+.seta{display:inline-grid;place-items:center;width:20px;height:20px;vertical-align:-4px;margin-right:6px;color:var(--muted)}
+.seta svg{width:18px;height:18px}
+.veredito b{font-weight:600;margin-right:4px}
+.veredito p{display:inline;margin:0;color:var(--text)}
 .veredito.pos b,.veredito.pos .seta{color:var(--pos)} .veredito.neg b,.veredito.neg .seta{color:var(--neg)} .veredito.warn b,.veredito.warn .seta{color:var(--warn)}
+details.conta{margin:14px 0 0}
+.conta-l{list-style:none;padding:0;display:grid;gap:4px}
+.conta-l b{color:var(--text);font-weight:600}
+.situ-aviso{margin-top:14px;border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0 0}
 
 /* rosca */
 .rosca{display:grid;grid-template-columns:170px minmax(0,1fr);gap:20px;align-items:center}
@@ -102,24 +106,32 @@ nav.abas button[aria-pressed="true"]{background:var(--surface);color:var(--text)
 .leg .n{overflow-wrap:anywhere}
 .partes .pt-total span{display:block;color:var(--muted);font-size:13px}
 .partes .pt-total b{display:block;font-size:26px;font-weight:700;letter-spacing:-.01em}
-.pilha{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;margin:10px 0 8px;background:var(--surface-2)}
+.pilha{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:10px 0 8px;background:var(--surface-2)}
 .pilha i{display:block;height:100%;min-width:3px}
 .meta-r{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .meta-r .l1{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
 .meta-r .l1 b{color:var(--text);font-size:14px}
 .meta-r small{display:block;color:var(--faint);font-size:12px;margin-top:4px}
-.selo-b{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--surface-2);color:var(--text)}
+.selo-b{font-size:13px;font-weight:600;color:var(--text)}
+/* faixa de números (tema.css) dentro de painel: o rótulo fica no alto em todos, e em painel estreito vira 2 por linha */
+.painel .faixa > *{justify-content:flex-start}
+.faixa .trilho{margin-top:6px}
+.faixa.grade2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));row-gap:14px}
+.faixa.grade2 > :nth-child(odd){padding-left:0;border-left:0}
+.faixa.grade2 > :nth-child(n+3){padding-top:14px;border-top:1px solid var(--line)}
+/* o que é configuração ou lista guardada fica recolhido no fim do painel */
+details.dobra{margin-top:14px;border-top:1px solid var(--line);padding-top:6px}
+details.dobra > summary{cursor:pointer;font-size:13.5px;color:var(--muted);min-height:36px;display:flex;align-items:center;gap:8px;list-style:none}
+details.dobra > summary::-webkit-details-marker{display:none}
+details.dobra > summary::before{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .12s}
+details.dobra[open] > summary::before{transform:rotate(45deg)}
+details.dobra[open] > summary{color:var(--text)}
+.linha-acoes{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.linha-acoes > details.novo{margin:0}
+.linha-acoes > details.novo[open]{flex-basis:100%}
 
-/* números soltos (como na Clínica) */
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;min-width:0}
-.painel .stat{background:var(--surface-2);border-color:transparent}
-.stat span{display:block;color:var(--muted);font-size:12px}
-.stat b{display:block;font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stat small{display:block;color:var(--faint);font-size:11.5px}
-.stats.duas-col{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* barrinha de progresso */
 .trilho{height:5px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:6px}
-.painel .stat .trilho{background:var(--line)}
 .trilho i{display:block;height:100%;background:var(--c3);border-radius:3px}
 
 /* tabelas */
@@ -153,8 +165,6 @@ tr.clic{cursor:pointer}
 tr.clic:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 
 /* pendências: uma linha por dívida, com quem, quanto falta e os botões */
-.pd-grupo{margin:14px 0 4px;font-size:12.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:flex;gap:10px;align-items:baseline}
-.pd-grupo span{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600;color:var(--text);font-size:14px}
 .pd{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
 .pd b{font-weight:600} .pd span{display:block;font-size:12px;color:var(--muted)}
 .pd .pd-quem b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -182,11 +192,10 @@ details.pd-fechadas{margin-top:12px} details.pd-fechadas summary{cursor:pointer;
 .subabas::-webkit-scrollbar{display:none}
 .subabas button{border:0;background:transparent;color:var(--muted);padding:9px 14px;cursor:pointer;font-size:14px;white-space:nowrap}
 .subabas button:hover{color:var(--text)}
-tr.mes-cab th{text-align:left;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:16px 8px 6px;border-bottom:1px solid var(--line);background:transparent}
-tr.mes-cab th span{font-weight:500;letter-spacing:0;text-transform:none}
+tr.mes-cab th{text-align:left;font-size:13px;font-weight:600;color:var(--text);padding:18px 8px 6px;border-bottom:1px solid var(--line);background:transparent}
+tr.mes-cab th span{font-weight:400;color:var(--muted)}
 .subabas button[aria-pressed="true"]{color:var(--text);font-weight:600;box-shadow:inset 0 -2px 0 var(--text)}
 .subabas button em{font-style:normal;font-size:11.5px;font-weight:600;margin-left:6px;padding:1px 7px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
-.stats.tres{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px}
 .bloco{margin-top:18px}
 .fx-grupos > .bloco:first-child{margin-top:0}
 /* as tabelas dos grupos de fixos com as mesmas colunas, para um grupo alinhar com o outro */
@@ -240,10 +249,13 @@ th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 .fe-cat li.warn > small{color:var(--warn);font-weight:600} .fe-cat li.pos > small{color:var(--pos);font-weight:600}
 .fe-cat li:not(:has(> small)){grid-template-columns:minmax(0,1fr) auto}
 .fe-aviso{margin-bottom:16px}
+.aviso-linha.info::before{background:var(--accent)}
+/* o texto do aviso fica ao lado do ponto também no celular, e o botão desce quando não cabe */
+.aviso-linha > span{flex:1 1 220px;min-width:0}
 /* O que precisa de você (aba Tudo) */
 .pv{margin-bottom:16px}
 .pv h2{margin-bottom:8px}
-.pv-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--neg-soft);color:var(--neg);font-weight:700;font-size:12px}
+.pv-n{color:var(--neg);font-weight:700}
 .pv-l{list-style:none;margin:0;padding:0}
 .pv-l li{border-top:1px solid var(--line)} .pv-l li:first-child{border-top:0}
 .pv-i{display:flex;align-items:center;gap:12px;width:100%;padding:10px 4px;border:0;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer;border-radius:8px}
@@ -263,16 +275,21 @@ th .ord[aria-pressed="true"]{color:var(--text);font-weight:700}
 .pv-ok b{font-weight:600}
 .pv-ok-i{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:99px;background:var(--pos-soft);color:var(--pos);font-size:13px;font-weight:700}
 .k small.pos{color:var(--pos);font-weight:600} .k small.warn{color:var(--warn);font-weight:600}
-.lim{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:12px}
-.lim li{display:grid;gap:4px}
-.lim .l1{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:14px}
-.lim .l1 b{font-weight:600} .lim .l1 span{white-space:nowrap;color:var(--muted);font-size:13px}
-.lim .trilho{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+/* limites: nome, quanto foi e o × na mesma linha; embaixo a barra e o estado, só colorido quando pede atenção */
+.lim{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:10px}
+.lim li{display:grid;gap:3px}
+.lim .l1{display:flex;gap:8px;align-items:baseline;font-size:14px}
+.lim .l1 b{font-weight:600;margin-right:auto;min-width:0;overflow-wrap:anywhere} .lim .l1 span{white-space:nowrap;color:var(--muted);font-size:13px}
+.lim .l1 .x{align-self:center;font-size:16px}
+.lim .trilho{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:0}
 .lim .trilho i{display:block;height:100%;border-radius:99px;background:var(--pos)}
 .lim .perto .trilho i{background:var(--warn)} .lim .passou .trilho i{background:var(--neg)}
-.lim .l2{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--muted)}
-.lim .perto .l2 b{color:var(--warn)} .lim .passou .l2 b{color:var(--neg)}
-.lim .l2 button{border:0;background:transparent;color:var(--faint);font:inherit;cursor:pointer;padding:0;text-decoration:underline}
+.lim .l2{font-size:12.5px;color:var(--muted)}
+.lim .perto .l2{color:var(--warn);font-weight:600} .lim .passou .l2{color:var(--neg);font-weight:600}
+/* pendências: as ações da linha como texto, sem uma caixa para cada botão */
+.pd .lk{border:0;background:transparent;color:var(--accent);font:inherit;font-size:13.5px;font-weight:600;padding:4px 2px;cursor:pointer}
+.pd .lk:hover{text-decoration:underline}
+.pd .pd-acoes{gap:14px}
 details.origem{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6}
 details.origem summary{cursor:pointer;color:var(--faint)}
 .pe{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -282,8 +299,6 @@ details.origem summary{cursor:pointer;color:var(--faint)}
 
 @media (max-width:960px){
   .duas,.duas.igual,.duas.larga,.duas.inv{grid-template-columns:1fr}
-  .situ{grid-template-columns:1fr;gap:16px}
-  .situ > .veredito{order:0}
 }
 /* ---------- celular: aqui sim, jeito de app ---------- */
 @media (max-width:700px){
@@ -296,6 +311,8 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .coluna{gap:12px}
   .linha-k{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .linha-k .k.destaque{grid-column:1 / -1}
+  .linha-k > .k + .k{border-left:0;padding-left:0}
+  .veredito{font-size:14.5px;padding-bottom:12px;margin-bottom:12px}
   /* Situação do mês no celular: Recebi | Gastei, Vou receber | Vai sair, e embaixo Saldo | Fecha em */
   .seis .nums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}
   .seis .linha-k{display:contents}
@@ -306,8 +323,6 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   .k b{font-size:21px} .k.destaque b{font-size:28px}
   .rosca{grid-template-columns:minmax(0,1fr);justify-items:center}
   .leg{width:100%}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .stat b{font-size:17px}
   table.t thead{display:none}
   .ordem-cel{display:flex}
   /* os dois filtros da lista alinhados: rótulo de largura igual e o campo ocupa o resto */
@@ -341,15 +356,17 @@ details.origem summary{cursor:pointer;color:var(--faint)}
   table.fixos input{min-height:40px}
   summary{padding-block:8px}
   [data-limite-x]{min-height:40px;padding:6px 10px}
+  .pd .lk{min-height:40px} details.dobra > summary{min-height:40px}
   .pe a{display:inline-block;padding:10px 8px}
   input,select{font-size:16px}   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
   .pd{grid-template-columns:minmax(0,1fr) auto} .pd .pd-acoes{grid-column:1 / -1}
   .pd .pd-quem b{white-space:normal} .pd .pd-val{white-space:normal;max-width:190px}
+  /* no celular o nome não se espreme ao lado do valor (04/11/2026): nome, depois o valor, depois as ações */
+  .pd{grid-template-columns:minmax(0,1fr)} .pd .pd-val{text-align:left;max-width:none}
   .subabas{margin:8px 0 2px} .subabas button{padding:10px 6px;font-size:13px;flex:1 1 auto}
   .subabas button{padding:10px 4px;font-size:12.5px;letter-spacing:-.01em}   /* cinco telas no Dinheiro: cabem todas sem rolar */
   .subabas .so-larg{display:none} .subabas .so-cel{display:inline;font-size:inherit;color:inherit;overflow:visible}
   .subabas button em{margin-left:4px;padding:1px 6px}
-  .stats.tres{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px} .stats.tres .stat:last-child{grid-column:1 / -1}
   .bloco{margin-top:12px}
   .hm{grid-template-columns:minmax(0,1fr) auto} .hm .hm-d{grid-column:1 / -1;grid-row:2}
 }
@@ -972,7 +989,8 @@ function roscaCategorias(d){
   const cats = porCategoria();
   if (!cats.length) return `<p class="vazio">Nada saiu em ${MESES[ref.getMonth()]}.</p>`;
   const cabem = cats.length > 8 ? 7 : 8;
-  const itens = cats.slice(0, cabem).map(([k, v], i) => [comPonto(k), v, `var(--c${i + 1})`]);
+  // "Moradia (casa)" é de propósito: a parte da casa que ele pagou, ao lado da Moradia dos fixos (aluguel)
+  const itens = cats.slice(0, cabem).map(([k, v], i) => [comPonto(k), v, `var(--c${i + 1})`, k === "Moradia (casa)" ? "o que você pagou nas compras da casa" : ""]);
   const resto = cats.slice(cabem);
   if (resto.length) itens.push(["Outros.", soma(resto, e => e[1]), "var(--c8)", resto.map(e => semPonto(e[0])).join(", ") + "."]);
   // a rosca conta todos os fixos do mês; "Gastei" só conta os que já venceram. A nota explica a diferença.
@@ -992,9 +1010,10 @@ function painelLimites(){
   const linha = x => {
     const r = x.foi / x.teto, cls = r > 1.0005 ? "passou" : r >= PERTO_DO_LIMITE ? "perto" : "";
     const aviso = cls === "passou" ? `passou ${dinheiro(x.foi - x.teto)}` : cls === "perto" ? `perto do limite: sobram ${dinheiro(x.teto - x.foi)}` : `sobram ${dinheiro(x.teto - x.foi)}`;
-    return `<li class="${cls}"><div class="l1"><b>${escH(comPonto(x.c))}</b><span>${dinheiro(x.foi)} de ${dinheiro(x.teto)}</span></div>
+    return `<li class="${cls}"><div class="l1"><b>${escH(comPonto(x.c))}</b><span>${dinheiro(x.foi)} de ${dinheiro(x.teto)}</span>
+        <button type="button" class="x" data-limite-x="${escH(x.c)}" aria-label="Tirar o limite de ${escH(semPonto(nomeCat(x.c)))}" title="Tirar o limite">×</button></div>
       <div class="trilho" role="img" aria-label="${Math.round(r * 100)}% do limite"><i style="width:${pct(x.foi, x.teto)}%"></i></div>
-      <div class="l2"><b>${aviso}</b><button type="button" data-limite-x="${escH(x.c)}">tirar limite</button></div></li>`;
+      <div class="l2">${aviso}</div></li>`;
   };
   const cats = catsDinheiro().filter(t => t !== "Reserva" && t !== "Outras entradas");
   const form = `<details class="novo"><summary>${itens.length ? "Mudar ou criar limite" : "+ Criar limite"}</summary><form class="linha" id="fLimite">
@@ -1007,19 +1026,20 @@ function painelLimites(){
 }
 
 // Minhas categorias: criar uma nova (Pessoal ou Casa) e tirar as que ele criou
+// Fica recolhida no fim do painel Lançamentos (04/11/2026): é configuração, não precisa ocupar um painel à vista.
 function painelCategorias(){
   const minhas = [["matheus", "Pessoal"], ["casa", "Casa"]].flatMap(([cad, onde]) => extrasDe(cad).map(x => ({ ...x, cad, onde })));
   const opGrupo = base => base.map(([n]) => `<option>${escH(n)}</option>`).join("") + `<option>${GRUPO_MINHAS}</option>`;
-  return `<section class="painel"><h2>Minhas categorias</h2>
+  return `<details class="dobra cats-d"><summary>Minhas categorias${minhas.length ? ` (${minhas.length})` : ""}</summary>
     ${minhas.length ? `<ul class="cat-minhas">${minhas.map(x => `<li><b>${escH(x.nome)}</b><span>${x.onde} · ${escH(x.grupo || GRUPO_MINHAS)}</span>
       <button type="button" class="x" data-cat-tirar="${x.cad}:${escH(x.id)}" aria-label="Tirar a categoria ${escH(x.nome)}" title="Tirar">×</button></li>`).join("")}</ul>`
-      : `<p class="nota" style="margin-top:0">As categorias de fábrica não mudam. Se faltar uma, crie aqui: ela aparece no formulário de lançamento, nos limites e no importador.</p>`}
+      : `<p class="nota" style="margin-top:4px">As categorias de fábrica não mudam. Se faltar uma, crie aqui: ela aparece no formulário de lançamento, nos limites e no importador.</p>`}
     <details class="novo"><summary>+ Nova categoria</summary><form class="linha" id="fCategoria">
       <div><label>Nome</label><input type="text" name="nome" maxlength="30" autocomplete="off" required></div>
       <div><label>De onde</label><select name="cad"><option value="matheus">Pessoal</option><option value="casa">Casa</option></select></div>
       <div><label>Grupo</label><select name="grupo" data-grupo-pessoal="${escH(opGrupo(Categorias.GRUPOS_DINHEIRO))}" data-grupo-casa="${escH(opGrupo(Categorias.GRUPOS_CASA))}">${opGrupo(Categorias.GRUPOS_DINHEIRO)}</select></div>
       <div><button class="b p" type="submit">Criar</button></div>
-    </form></details></section>`;
+    </form></details></details>`;
 }
 
 function roscaCasa(c){
@@ -1033,18 +1053,18 @@ function veredito(d){
   const agora = new Date(), km = chaveMes(ref), hoje = chaveMes(agora);
   const nome = MESES[ref.getMonth()];
   const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
-  const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}</b></div><p>${texto}</p></div>`;
+  const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}.</b></div><p>${texto}</p></div>`;
   // Aparelho novo, ou depois de "Sair deste aparelho": sem entrar e sem nada guardado aqui, os R$ 0,00
   // não são o mês dele, e a caixa pedia para "segurar até entrar" (05/10/2026). Agora pede para entrar.
   const semNada = !livro.matheus.lancamentos.length && !livro.matheus.gastosFixos.length && !livro.casa.lancamentos.length;
-  if (semNada && !Nuvem.conectado()) return `<div class="veredito"><div class="topo-v"><b>Entre para ver o seu mês</b></div><p>Os números aparecem depois que você entrar com o Google, no botão Entrar lá em cima.</p></div>`;
+  if (semNada && !Nuvem.conectado()) return `<div class="veredito"><div class="topo-v"><b>Entre para ver o seu mês.</b></div><p>Os números aparecem depois que você entrar com o Google, no botão Entrar lá em cima.</p></div>`;
   if (km < hoje) return d.sobra >= 0
     ? caixa("pos", true, "Fechou positivo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${dinheiro(d.sobra)} de sobra.`)
     : caixa("neg", false, "Fechou negativo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com falta de ${dinheiro(-d.sobra)}.`);
   const fim = d.fimDoMes;
   // Sem o previsto da Clínica não dá para dizer "mesmo que entre tudo o que falta": não se sabe quanto falta
   // (antes a caixa podia dizer "Não pode gastar" só porque a Clínica ainda não tinha aberto).
-  if (d.falta === null) return `<div class="veredito"><div class="topo-v"><b>Ainda sem previsão</b></div><p>Hoje está em ${sinalDin(d.sobra)}. Para dizer se dá para gastar falta o previsto da Clínica, que ainda não abriu neste aparelho.</p></div>`;
+  if (d.falta === null) return `<div class="veredito"><div class="topo-v"><b>Ainda sem previsão.</b></div><p>Hoje está em ${sinalDin(d.sobra)}. Para dizer se dá para gastar falta o previsto da Clínica, que ainda não abriu neste aparelho.</p></div>`;
   const semPrevisto = "";
   // mês que ainda não começou: é previsão, não "hoje"
   if (km > hoje) return fim < -0.005
@@ -1069,21 +1089,37 @@ function cardSituacao(d){
   const outros = d.entrou - d.dePacientes;
   const lancado = d.saiu - d.fixosMes - d.minhaCasa;
   const corrente = chaveMes(ref) === chaveMes(new Date());
+  // embaixo de cada número, uma linha curta; a conta inteira de cada um fica em "Ver a conta" (04/11/2026)
+  const ajusteRes = d.aportesMes > 0.005 || d.resgatesMes > 0.005;
+  const semDiaTxt = d.semDia ? (d.semDia === 1 ? "; o fixo sem dia marcado já conta em Gastei" : `; os ${d.semDia} fixos sem dia marcado já contam em Gastei`) : "";
+  const reservaTxt = [d.resgatesMes > 0.005 ? `fora isso, ${dinheiro(d.resgatesMes)} resgatados da reserva` : "",
+                      d.aportesMes > 0.005 ? `${dinheiro(d.aportesMes)} guardados na reserva, não gastos` : ""].filter(Boolean).join("; ");
+  const conta = [
+    ["Recebi", frase([`${dinheiro(d.dePacientes)} de pacientes`, outros > 0.005 ? `${dinheiro(outros)} de outras entradas` : ""]) + (reservaTxt ? "; " + reservaTxt : "")],
+    ["Gastei", frase([`${dinheiro(lancado)} lançados`, `${dinheiro(d.fixosMes)} de fixos`, `${dinheiro(d.minhaCasa)} da casa`])],
+    [d.passado ? "Saldo do mês" : "Saldo agora", "recebi menos gastei" + (ajusteRes ? ", ajustado pela reserva" : "")],
+    d.falta === null ? null : [d.passado ? "Ficou para receber" : "Ainda vou receber", d.passado ? "sessões do mês que os pacientes ainda não pagaram" : "previsto da agenda menos o que os pacientes já pagaram"],
+    d.faltaSair === null ? null : ["Ainda vai sair", corrente ? "fixos que vencem depois de hoje" + semDiaTxt : "fixos do mês"],
+    [d.passado ? "Fechou o mês em" : "Fecha o mês em", d.passado ? "o que entrou menos o que saiu no mês" : "saldo mais o que vou receber, menos o que vai sair"]
+  ].filter(Boolean);
+  const pctGasto = d.entrou > 0.005 ? Math.round(d.saiu / d.entrou * 100) : null;
+  const semFixos = !d.passado && fixosParaCopiar(chaveMes(ref)).length;
   return `
   <section class="painel"><h2>Situação do mês<span class="dir">${corrente ? "até hoje, " + dataCurta(hojeISO()) : ""}</span></h2>
     <div class="situ seis">${veredito(d)}<div class="nums">
       <div class="linha-k">
-        <div class="k"><span>Recebi</span><b class="pos">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small>${outros > 0.005 ? `<small>${dinheiro(outros)} de outras entradas</small>` : ""}${d.resgatesMes > 0.005 ? `<small class="k-res">fora isso, ${dinheiro(d.resgatesMes)} resgatados da reserva</small>` : ""}${d.aportesMes > 0.005 ? `<small class="k-res">${dinheiro(d.aportesMes)} guardados na reserva, não gastos</small>` : ""}</div>
-        <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b>${d.entrou > 0.005 ? `<em class="pct-k${d.saiu > d.entrou + 0.005 ? " neg" : ""}">${Math.round(d.saiu / d.entrou * 100)}% do que recebi</em>` : ""}<small>${dinheiro(lancado)} lançados</small><small>${dinheiro(d.fixosMes)} de fixos</small><small>${dinheiro(d.minhaCasa)} da casa</small></div>
-        <div class="k destaque"><span>${d.passado ? "Saldo do mês" : "Saldo agora"}</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei${d.aportesMes || d.resgatesMes ? ", ajustado pela reserva" : ""}</small></div>
+        <div class="k"><span>Recebi</span><b class="${d.entrou > 0.005 ? "pos" : ""}">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small></div>
+        <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b>${pctGasto === null ? "" : `<small${d.saiu > d.entrou + 0.005 ? ' class="sinal neg"' : ""}>${pctGasto}% do que recebi</small>`}</div>
+        <div class="k destaque"><span>${d.passado ? "Saldo do mês" : "Saldo agora"}</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei</small></div>
       </div>
       <div class="linha-k">
-        <div class="k"><span>${d.passado ? "Ficou para receber" : "Ainda vou receber"}</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>${d.passado ? "sessões do mês que os pacientes ainda não pagaram" : "previsto da agenda menos o que os pacientes já pagaram"}</small>`}</div>
-        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("mês fechado") : `<b>${dinheiro(d.faltaSair)}</b><small>${corrente ? `fixos que vencem depois de hoje${d.semDia ? (d.semDia === 1 ? "; o fixo sem dia marcado já conta em Gastei" : `; os ${d.semDia} fixos sem dia marcado já contam em Gastei`) : ""}` : "fixos do mês"}</small>`}</div>
-        <div class="k destaque"><span>${d.passado ? "Fechou o mês em" : "Fecha o mês em"}</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>${d.passado ? "o que entrou menos o que saiu no mês" : "saldo mais o que vou receber, menos o que vai sair"}</small></div>
+        <div class="k"><span>${d.passado ? "Ficou para receber" : "Ainda vou receber"}</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>${d.passado ? "sessões sem pagar" : "previsto menos o já pago"}</small>`}</div>
+        <div class="k"><span>Ainda vai sair</span>${d.faltaSair === null ? nd("mês fechado") : `<b>${dinheiro(d.faltaSair)}</b><small>${corrente ? "fixos depois de hoje" : "fixos do mês"}</small>`}</div>
+        <div class="k destaque"><span>${d.passado ? "Fechou o mês em" : "Fecha o mês em"}</span><b class="${d.fimDoMes < -0.005 ? "neg" : "pos"}">${sinalDin(d.fimDoMes)}</b><small>${d.passado ? "entrou menos saiu" : "se tudo entrar e sair"}</small></div>
       </div>
-    </div></div>
-    ${!d.passado && fixosParaCopiar(chaveMes(ref)).length ? `<p class="nota" style="margin:10px 0 0">Os gastos fixos de ${MESES[ref.getMonth()]} ainda não foram copiados do mês anterior, então "Ainda vai sair" e "Fecha o mês em" estão sem eles. Copie em Gastos fixos.</p>` : ""}
+    </div>
+    <details class="ajuda conta"><summary>Ver a conta</summary><ul class="conta-l">${conta.map(([n, t]) => `<li><b>${n}:</b> ${t}.</li>`).join("")}</ul></details></div>
+    ${semFixos ? `<div class="aviso-linha situ-aviso"><span>Os gastos fixos de ${MESES[ref.getMonth()]} ainda não foram copiados do mês anterior, então "Ainda vai sair" e "Fecha o mês em" estão sem eles.</span><button type="button" class="b s" data-copiar-fixos>Copiar agora</button></div>` : ""}
   </section>
 `;
 }
@@ -1117,7 +1153,7 @@ function painelMeusLancamentos(){
     const k = (x.l.data || "").slice(0, 7);
     if (meusEscopo === "mes" || k === mesAtual) return linha(x);
     mesAtual = k;
-    const nome = k ? MESES[Number(k.slice(5, 7)) - 1] + " de " + k.slice(0, 4) : "Sem data";
+    const nome = k ? maiusc(MESES[Number(k.slice(5, 7)) - 1]) + " de " + k.slice(0, 4) : "Sem data";
     return `<tr class="mes-cab"><th colspan="6" scope="colgroup">${nome}<span> · ${nMes[k]} ${nMes[k] === 1 ? "lançamento" : "lançamentos"}</span></th></tr>` + linha(x);
   }).join("");
   const escopo = `<div class="subabas" role="group" aria-label="Quais lançamentos mostrar">
@@ -1152,14 +1188,14 @@ function telaTudo(){
   </div>
 
   <div class="duas igual">
-    <section class="painel"><h2>Casa${c.total > 0.005 ? `<span class="dir"><span class="selo-b">${escH(balanca(c, p1, p2))}</span></span>` : ""}</h2>${roscaCasa(c)}
+    <section class="painel"><h2>Casa${c.total > 0.005 ? `<span class="dir"><span class="selo-b">${escH(balanca(c, p1, p2))}.</span></span>` : ""}</h2>${roscaCasa(c)}
       <p class="nota">A balança mostra quem pagou mais no mês, não uma conta a acertar.</p></section>
     <section class="painel"><h2>Clínica</h2>
-      <div class="stats duas-col">
-        <div class="stat"><span>Pacientes na agenda</span><b>${cl.ativos === null ? "—" : cl.ativos}</b></div>
-        <div class="stat"><span>Sessões realizadas</span><b>${cl.sessoes === null ? "—" : cl.sessoes}</b>${cl.aConfirmar ? `<small>${cl.aConfirmar} a confirmar</small>` : ""}</div>
-        <div class="stat"><span>Previsto</span><b>${cl.previsto === null ? "—" : dinheiro(cl.previsto)}</b>${cl.previstoTriagem ? `<small>+ ${dinheiro(cl.previstoTriagem)} em triagem</small>` : `<small>só ativos</small>`}</div>
-        <div class="stat"><span>Recebido</span><b>${dinheiro(cl.recebido)}</b>${cl.previsto ? `<div class="trilho"><i style="width:${pct(cl.pacientes, cl.previsto)}%"></i></div><small>${Math.round(pct(cl.pacientes, cl.previsto))}% do previsto, só pacientes</small>` : ""}</div>
+      <div class="faixa grade2">
+        <div><span>Pacientes na agenda</span><b>${cl.ativos === null ? "—" : cl.ativos}</b>${cl.ativos === null ? `<small>abra a Clínica</small>` : ""}</div>
+        <div><span>Sessões realizadas</span><b>${cl.sessoes === null ? "—" : cl.sessoes}</b>${cl.aConfirmar ? `<small>${cl.aConfirmar} a confirmar</small>` : ""}</div>
+        <div><span>Previsto</span><b>${cl.previsto === null ? "—" : dinheiro(cl.previsto)}</b>${cl.previstoTriagem ? `<small>+ ${dinheiro(cl.previstoTriagem)} em triagem</small>` : `<small>só ativos</small>`}</div>
+        <div><span>Recebido</span><b>${dinheiro(cl.recebido)}</b>${cl.previsto ? `<div class="trilho"><i style="width:${pct(cl.pacientes, cl.previsto)}%"></i></div><small>${Math.round(pct(cl.pacientes, cl.previsto))}% do previsto, só pacientes</small>` : ""}</div>
       </div></section>
   </div>
 
@@ -1223,8 +1259,8 @@ function painelPendencias(){
       <div class="pd-quem"><b>${escH(p.nome)}</b><span>${sub || "&nbsp;"}</span></div>
       <div class="pd-val"><b>${feita ? "quitada" : dinheiro(falta)}</b><span>${feita ? dinheiro(p.total) : `de ${dinheiro(p.total)}${Number(p.pago) > 0 ? ", já " + (p.tipo === "receber" ? "recebi " : "paguei ") + dinheiro(p.pago) : ""}`}</span>
         ${feita || !(Number(p.pago) > 0) ? "" : `<div class="trilho"><i style="width:${pct(p.pago, p.total)}%"></i></div>`}</div>
-      <div class="pd-acoes">${feita ? `<button class="b s" data-pend-reabrir="${escH(p.id)}">Reabrir</button>`
-        : `<button class="b s" data-pend-pago="${escH(p.id)}" aria-expanded="${pendParte === p.id}">${p.tipo === "receber" ? "Recebi uma parte" : "Paguei uma parte"}</button><button class="b s" data-pend-quitar="${escH(p.id)}">Quitar</button>`}
+      <div class="pd-acoes">${feita ? `<button type="button" class="lk" data-pend-reabrir="${escH(p.id)}">Reabrir</button>`
+        : `<button type="button" class="lk" data-pend-pago="${escH(p.id)}" aria-expanded="${pendParte === p.id}">${p.tipo === "receber" ? "Recebi uma parte" : "Paguei uma parte"}</button><button type="button" class="lk" data-pend-quitar="${escH(p.id)}">Quitar</button>`}
         <button class="x" data-pend-apagar="${escH(p.id)}" aria-label="Apagar" title="Apagar">×</button></div>
       ${!feita && pendParte === p.id ? `<form class="pd-parte" data-pend-parte="${escH(p.id)}">
         <label>Quanto ${p.tipo === "receber" ? "você recebeu" : "você pagou"} agora? Faltam ${dinheiro(falta)}.<input name="valor" inputmode="decimal" autocomplete="off" data-dinheiro placeholder="0,00"></label>
@@ -1249,17 +1285,16 @@ function painelPendencias(){
     <div><label>Desde</label><input type="date" name="inicio" value="${hojeISO()}"></div>
     <div style="grid-column:span 2"><label>Observação</label><input name="obs" placeholder="opcional" autocomplete="off"></div>
     <div><button class="b p" type="submit">Guardar</button></div></form></details>`;
-  return `<div class="stats tres">
-      <div class="stat"><span>A receber</span><b class="pos">${dinheiro(aReceber)}</b><small>${doTipo("receber").length} em aberto</small></div>
-      <div class="stat"><span>A pagar</span><b>${dinheiro(aPagar)}</b><small>${doTipo("pagar").length} em aberto</small></div>
-      <div class="stat"><span>Diferença</span><b class="${aReceber - aPagar < -0.005 ? "neg" : ""}">${sinalDin(aReceber - aPagar)}</b><small>a receber menos a pagar</small></div>
+  return `<section class="painel"><div class="faixa">
+      <div><span>A receber</span><b class="${aReceber > 0.005 ? "pos" : ""}">${dinheiro(aReceber)}</b><small>${doTipo("receber").length} em aberto</small></div>
+      <div><span>A pagar</span><b>${dinheiro(aPagar)}</b><small>${doTipo("pagar").length} em aberto</small></div>
+      <div><span>Diferença</span><b class="${aReceber - aPagar < -0.005 ? "neg" : ""}">${sinalDin(aReceber - aPagar)}</b><small>a receber menos a pagar</small></div>
     </div>
-    <div class="bloco">${form}</div>
-    ${todas.length ? `<div class="duas igual" style="margin-top:0">${grupo("receber", "A receber")}${grupo("pagar", "A pagar")}</div>`
+    <details class="ajuda" style="margin:12px 0 0"><summary>Como funciona</summary><p>Esta lista só acompanha quem deve e quanto falta: ela não entra nas contas do mês. O dinheiro que entrar ou sair continua sendo lançado no lugar de sempre (recebimento de paciente na Clínica, o resto em "+ Novo lançamento").</p></details></section>
+    <div class="bloco linha-acoes">${form}<button class="b" id="pendPlanilha" type="button">Trazer da planilha</button><input type="file" id="pendArquivo" accept=".xlsx" class="hidden"></div>
+    ${todas.length ? `<div class="duas igual" style="margin-top:12px">${grupo("receber", "A receber")}${grupo("pagar", "A pagar")}</div>`
       : `<section class="painel"><p class="vazio">Nenhuma pendência. Use "+ Nova pendência", ou traga as da planilha.</p></section>`}
-    ${fechadas.length ? `<section class="painel bloco"><details class="pd-fechadas" style="margin-top:0"><summary>Quitadas (${fechadas.length})</summary>${fechadas.map(linha).join("")}</details></section>` : ""}
-    <p class="nota" style="margin-top:14px">Esta lista só acompanha quem deve e quanto falta: ela não entra nas contas do mês. O dinheiro que entrar ou sair continua sendo lançado no lugar de sempre (recebimento de paciente na Clínica, o resto em "+ Novo lançamento").
-      <button class="b s" id="pendPlanilha" type="button" style="margin-left:6px">Trazer da planilha</button><input type="file" id="pendArquivo" accept=".xlsx" class="hidden"></p>`;
+    ${fechadas.length ? `<section class="painel bloco"><details class="pd-fechadas" style="margin-top:0"><summary>Quitadas (${fechadas.length})</summary>${fechadas.map(linha).join("")}</details></section>` : ""}`;
 }
 // Lê a aba Pendências da Controle Financeiro.xlsx no navegador e acrescenta o que ainda não está aqui
 // (mesmo nome, tipo, valor total e data de início contam como a mesma pendência).
@@ -1328,7 +1363,7 @@ function vistaFixos(){
   const contasDaCasa = (Categorias.GRUPOS_CASA.find(x => x[0] === "Contas da casa") || [, []])[1];
   const naCasa = new Set(livro.casa.lancamentos.filter(noMes).filter(l => l.quem === livro.casa.pessoas[0]).map(l => txt(l.categoria)));
   const dobra = cobra.map(g => [g, contasDaCasa.find(c => naCasa.has(txt(c)) && new RegExp("\\b" + txt(c) + "\\b").test(txt(g.descricao) + " " + txt(g.categoria)))]).filter(x => x[1]);
-  const avisoDobra = dobra.length ? `<section class="painel bloco aviso-fx"><p>Confira se não está contando duas vezes: ${dobra.map(([g, c]) => `${escH(semPonto(g.descricao))} está nos fixos e você também lançou ${escH(c)} na Casa em ${nome}`).join("; ")}. Os dois entram no seu mês.</p></section>` : "";
+  const avisoDobra = dobra.length ? `<div class="aviso-linha bloco"><span>Confira se não está contando duas vezes: ${dobra.map(([g, c]) => `${escH(semPonto(g.descricao))} está nos fixos e você também lançou ${escH(c)} na Casa em ${nome}`).join("; ")}. Os dois entram no seu mês.</span></div>` : "";
   const grupo = (titulo, lista) => lista.length ? `<section class="painel bloco"><h2>${titulo}<span class="dir">${lista.length} · ${dinheiro(total(lista))}</span></h2>${tabela(lista)}</section>` : "";
 
   const formFixo = `<details class="novo"><summary>+ Novo gasto fixo</summary><form class="linha" id="fFixo">
@@ -1339,17 +1374,17 @@ function vistaFixos(){
     <div><button class="b p" type="submit">Cadastrar deste mês até dezembro</button></div>
   </form></details>`;
 
-  return `<div class="stats tres" style="margin-top:0">
-      <div class="stat"><span>Fixos de ${nome}</span><b>${dinheiro(total(cobra))}</b><small>${cobra.length} ${cobra.length === 1 ? "conta" : "contas"}</small></div>
-      <div class="stat"><span>Já saiu</span><b>${dinheiro(total(jaSaiu))}</b><small>${jaSaiu.length} de ${cobra.length}</small></div>
-      <div class="stat"><span>Ainda vai sair</span><b class="${vaiSair.length ? "warn" : ""}">${dinheiro(total(vaiSair))}</b><small>${vaiSair.length ? (mesCorrente && diaFixo(vaiSair[0], km) ? "próximo: dia " + diaFixo(vaiSair[0], km) : vaiSair.length + " de " + cobra.length) : "nada a vencer"}</small></div>
+  return `<section class="painel"><div class="faixa">
+      <div><span>Fixos de ${nome}</span><b>${dinheiro(total(cobra))}</b><small>${cobra.length} ${cobra.length === 1 ? "conta" : "contas"}</small></div>
+      <div><span>Já saiu</span><b>${dinheiro(total(jaSaiu))}</b><small>${jaSaiu.length} de ${cobra.length}</small></div>
+      <div><span>Ainda vai sair</span><b class="${vaiSair.length ? "warn" : ""}">${dinheiro(total(vaiSair))}</b><small>${vaiSair.length ? (mesCorrente && diaFixo(vaiSair[0], km) ? "próximo: dia " + diaFixo(vaiSair[0], km) : vaiSair.length + " de " + cobra.length) : "nada a vencer"}</small></div>
     </div>
+    <details class="ajuda" style="margin:12px 0 0"><summary>Como funciona</summary><p>O dia é o da cobrança (no cartão, o dia da compra). Com o dia marcado, o fixo só entra em "Gastei" quando ele chega; antes disso fica em "Ainda vai sair". Para um fixo deixar de cobrar em ${nome}, apague o valor dele.</p></details></section>
     ${copiaFixos(km, cobra.length)}${avisoDobra}
     <div class="bloco">${formFixo}</div>
     ${livro.matheus.gastosFixos.length ? "" : `<section class="painel"><p class="vazio">Nenhum gasto fixo cadastrado.</p></section>`}
     <div class="fx-grupos">${grupo(mesCorrente ? "Ainda vai sair" : "Vai sair em " + nome, vaiSair)}${grupo(mesCorrente ? "Já saiu" : "Saiu em " + nome, jaSaiu)}</div>
-    ${fora.length ? `<section class="painel bloco"><details class="fx-fora-d"><summary>Não cobram em ${nome} (${fora.length})</summary>${tabela(fora)}</details></section>` : ""}
-    <p class="nota" style="margin-top:14px">O dia é o da cobrança (no cartão, o dia da compra). Com o dia marcado, o fixo só entra em "Gastei" quando ele chega; antes disso fica em "Ainda vai sair". Para um fixo deixar de cobrar em ${nome}, apague o valor dele.</p>`;
+    ${fora.length ? `<section class="painel bloco"><details class="fx-fora-d"><summary>Não cobram em ${nome} (${fora.length})</summary>${tabela(fora)}</details></section>` : ""}`;
 }
 
 // Os fixos novos vão só até dezembro. Quando um mês não tem nenhum fixo e o anterior tinha,
@@ -1363,8 +1398,8 @@ function copiaFixos(km, jaTem){
   if (jaTem) return "";
   const n = fixosParaCopiar(km).length; if (!n) return "";
   const ant = MESES[Number(mesAnterior(km).slice(5, 7)) - 1];
-  return `<section class="painel bloco aviso-fx"><p>${MESES[ref.getMonth()][0].toUpperCase() + MESES[ref.getMonth()].slice(1)} ainda não tem gastos fixos. ${n} ${n === 1 ? "cobrou" : "cobraram"} em ${ant}.</p>
-    <button type="button" class="b p" id="copiarFixos">Copiar os fixos de ${ant}</button></section>`;
+  return `<div class="aviso-linha bloco"><span>${MESES[ref.getMonth()][0].toUpperCase() + MESES[ref.getMonth()].slice(1)} ainda não tem gastos fixos. ${n} ${n === 1 ? "cobrou" : "cobraram"} em ${ant}.</span>
+    <button type="button" class="b p" id="copiarFixos">Copiar os fixos de ${ant}</button></div>`;
 }
 
 // Mês a mês: o gráfico e, embaixo, a mesma conta em lista, com o que sobrou em cada mês.
@@ -1382,7 +1417,7 @@ function vistaHistorico(){
   }).join("");
   return `<section class="painel bloco"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serie, { aberto:chaveMes(ref) })}</section>
     ${linhas ? `<section class="painel bloco"><h2>Cada mês<span class="dir">meses com movimento</span></h2>${linhas}</section>` : ""}
-    <p class="nota" style="margin-top:14px">Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos que já saíram e o que você pagou na casa, o mesmo "Gastei" da Situação do mês. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela; no mês em andamento é o mesmo "Saldo agora" da Situação do mês. As barras mostram só o que entrou e saiu.</p>`;
+    <details class="ajuda bloco"><summary>Como se conta</summary><p>Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos que já saíram e o que você pagou na casa, o mesmo "Gastei" da Situação do mês. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela; no mês em andamento é o mesmo "Saldo agora" da Situação do mês. As barras mostram só o que entrou e saiu.</p></details>`;
 }
 
 // ---------- Fechamento do mês (05/10/2026) ----------
@@ -1498,7 +1533,7 @@ function vistaFechamento(){
   const pos = din.sobra >= 0;
   const compNormal = normal.sobra === null ? "" : Math.abs(din.sobra - normal.sobra) < 0.005 ? " Igual ao normal."
     : ` ${din.sobra > normal.sobra ? "Melhor" : "Pior"} que o normal, que é ${normal.sobra < 0 ? "faltar " + dinheiro(-normal.sobra) : "sobrar " + dinheiro(normal.sobra)} por mês.`;
-  const ver = `<div class="veredito ${pos ? "pos" : "neg"}"><div class="topo-v">${seta(pos)}<b>${pos ? "Fechou positivo" : "Fechou negativo"}</b></div>
+  const ver = `<div class="veredito ${pos ? "pos" : "neg"}"><div class="topo-v">${seta(pos)}<b>${pos ? "Fechou positivo." : "Fechou negativo."}</b></div>
     <p>${Nome} terminou com ${pos ? dinheiro(din.sobra) + " de sobra" : "falta de " + dinheiro(-din.sobra)}.${compNormal}</p></div>`;
 
   const contra = (v, m, maisBom) => {
@@ -1507,13 +1542,20 @@ function vistaFechamento(){
     const bom = maisBom ? d > 0 : d < 0;
     return `<small class="${fugiu(v, m) ? (bom ? "pos" : "warn") : ""}">${dinheiro(Math.abs(d))} ${d > 0 ? "acima" : "abaixo"} do normal (${sinalDin(m)})</small>`;
   };
-  const vsAnt = (v, a) => a > 0.005 ? `<small>${nomeMes(F.ant.k)}: ${dinheiro(a)}</small>` : "";
   const outros = din.entrou - din.pacientes;
   const nums = `<div class="nums"><div class="linha-k">
-      <div class="k"><span>Recebi</span><b class="pos">${dinheiro(din.entrou)}</b>${contra(din.entrou, normal.entrou, true)}${vsAnt(din.entrou, F.ant.entrou)}${din.pacientes > 0.005 ? `<small>${dinheiro(din.pacientes)} de pacientes${outros > 0.005 ? `, ${dinheiro(outros)} de outras entradas` : ""}</small>` : ""}</div>
-      <div class="k"><span>Gastei</span><b>${dinheiro(din.saiu)}</b>${contra(din.saiu, normal.saiu, false)}${vsAnt(din.saiu, F.ant.saiu)}${din.entrou > 0.005 ? `<small>${Math.round(din.saiu / din.entrou * 100)}% do que recebi</small>` : ""}</div>
-      <div class="k destaque"><span>${din.sobra < -0.005 ? "Faltou" : "Sobrou"}</span><b class="${din.sobra < -0.005 ? "neg" : "pos"}">${dinheiro(Math.abs(din.sobra))}</b>${contra(din.sobra, normal.sobra, true)}${din.aportes > 0.005 || din.resgates > 0.005 ? `<small>ajustado pela reserva</small>` : ""}</div>
+      <div class="k"><span>Recebi</span><b class="${din.entrou > 0.005 ? "pos" : ""}">${dinheiro(din.entrou)}</b>${contra(din.entrou, normal.entrou, true)}</div>
+      <div class="k"><span>Gastei</span><b>${dinheiro(din.saiu)}</b>${contra(din.saiu, normal.saiu, false)}</div>
+      <div class="k destaque"><span>${din.sobra < -0.005 ? "Faltou" : "Sobrou"}</span><b class="${din.sobra < -0.005 ? "neg" : "pos"}">${dinheiro(Math.abs(din.sobra))}</b>${contra(din.sobra, normal.sobra, true)}</div>
     </div></div>`;
+  // o que saiu de baixo dos números (o mês anterior, a origem do que entrou, a porcentagem) fica em "Ver a conta"
+  const noAnt = v => v > 0.005 ? `em ${nomeMes(F.ant.k)}, ${dinheiro(v)}` : "";
+  const contaFech = [
+    ["Recebi", [frase([din.pacientes > 0.005 ? `${dinheiro(din.pacientes)} de pacientes` : "", outros > 0.005 ? `${dinheiro(outros)} de outras entradas` : ""]), noAnt(F.ant.entrou)].filter(Boolean).join("; ")],
+    ["Gastei", [din.entrou > 0.005 ? `${Math.round(din.saiu / din.entrou * 100)}% do que recebi` : "", noAnt(F.ant.saiu)].filter(Boolean).join("; ")],
+    [din.sobra < -0.005 ? "Faltou" : "Sobrou", "recebi menos gastei" + (din.aportes > 0.005 || din.resgates > 0.005 ? ", ajustado pela reserva" : "")]
+  ].filter(x => x[1]);
+  const verConta = `<details class="ajuda conta"><summary>Ver a conta</summary><ul class="conta-l">${contaFech.map(([n, t]) => `<li><b>${n}:</b> ${t}.</li>`).join("")}</ul></details>`;
 
   const alertas = alertasFechamento(F);
   const listaAlertas = alertas.length
@@ -1525,11 +1567,11 @@ function vistaFechamento(){
   const tabelaCats = (cats, vazio) => cats.length ? `<ul class="fe-cat">${cats.map(linhaCat).join("")}</ul>` : `<p class="vazio">${vazio}</p>`;
 
   const [p1, p2] = livro.casa.pessoas;
-  const casa = F.compras ? `<div class="stats duas-col" style="margin-bottom:12px">
-      <div class="stat"><span>Total da casa</span><b>${dinheiro(F.casa.total)}</b><small>${F.compras} compra${F.compras === 1 ? "" : "s"}</small></div>
-      <div class="stat"><span>Média</span><b>${F.mc.media === null ? "—" : dinheiro(F.mc.media)}</b><small>${F.mc.media === null ? "sem mês fechado antes" : F.mc.meses.length === 1 ? "1 mês fechado" : `últimos ${F.mc.meses.length} meses fechados`}</small></div>
-      <div class="stat"><span>${escH(primeiro(p1))} pagou</span><b>${dinheiro(F.casa.pagou[p1])}</b></div>
-      <div class="stat"><span>${escH(primeiro(p2))} pagou</span><b>${dinheiro(F.casa.pagou[p2])}</b></div>
+  const casa = F.compras ? `<div class="faixa grade2" style="margin-bottom:12px">
+      <div><span>Total da casa</span><b>${dinheiro(F.casa.total)}</b><small>${F.compras} compra${F.compras === 1 ? "" : "s"}</small></div>
+      <div><span>Média</span><b>${F.mc.media === null ? "—" : dinheiro(F.mc.media)}</b><small>${F.mc.media === null ? "sem mês fechado antes" : F.mc.meses.length === 1 ? "1 mês fechado" : `últimos ${F.mc.meses.length} meses fechados`}</small></div>
+      <div><span>${escH(primeiro(p1))} pagou</span><b>${dinheiro(F.casa.pagou[p1])}</b></div>
+      <div><span>${escH(primeiro(p2))} pagou</span><b>${dinheiro(F.casa.pagou[p2])}</b></div>
     </div><p class="nota" style="margin:0 0 10px">Balança: ${escH(balanca(F.casa, p1, p2))}.</p>
     ${tabelaCats(F.casaCats, "")}` : `<p class="vazio">Nenhuma compra da casa em ${nomeMes(k)}.</p>`;
 
@@ -1545,7 +1587,7 @@ function vistaFechamento(){
         din.resgates > 0.005 ? `tirou ${dinheiro(din.resgates)}` : "", F.reservaFim !== null ? `terminou o mês com ${dinheiro(F.reservaFim)}` : ""])}.</p>` : "";
 
   return `<section class="painel"><h2>Como ${nomeMes(k)} fechou<span class="dir">${normal.n ? `normal: média de ${normal.n === 1 ? "1 mês" : normal.n + " meses"} antes` : ""}</span></h2>
-    <div class="situ">${ver}${nums}</div>${reserva}</section>
+    <div class="situ">${ver}${nums}${verConta}</div>${reserva}</section>
   <section class="painel bloco"><h2>O que fugiu do normal<span class="dir">${alertas.filter(x => x[0] === "warn").length || "nada"} para olhar</span></h2>${listaAlertas}</section>
   <div class="duas igual">
     <section class="painel"><h2>Gastos por categoria<span class="dir">contra o normal</span></h2>${tabelaCats(F.cats, "Nada saiu neste mês.")}</section>
@@ -1555,7 +1597,7 @@ function vistaFechamento(){
     <section class="painel"><h2>Maiores gastos<span class="dir">seus, com a casa</span></h2>${maiores}</section>
     ${fixos || `<section class="painel"><h2>Gastos fixos</h2><p class="vazio">Nenhum fixo mudou de valor contra ${nomeMes(F.ant.k)}.</p></section>`}
   </div>
-  <p class="nota" style="margin-top:14px">O normal é a média dos meses anteriores com movimento, até ${NORMAL_MESES}. Fugiu do normal quando a diferença passa de ${Math.round(FORA_PCT * 100)}% e de ${dinheiro(FORA_MIN)}. Na casa, a média é a mesma do card da Casa, só com meses completos. As contas são as mesmas da Situação do mês e do Mês a mês. Esta tela só lê os dados, não muda nada.</p>`;
+  <details class="ajuda bloco"><summary>Como funciona</summary><p>O normal é a média dos meses anteriores com movimento, até ${NORMAL_MESES}. Fugiu do normal quando a diferença passa de ${Math.round(FORA_PCT * 100)}% e de ${dinheiro(FORA_MIN)}. Na casa, a média é a mesma do card da Casa, só com meses completos. As contas são as mesmas da Situação do mês e do Mês a mês. Esta tela só lê os dados, não muda nada.</p></details>`;
 }
 
 // Nos primeiros dias do mês, a aba Tudo lembra que o mês anterior fechou.
@@ -1564,8 +1606,8 @@ function avisoFechamento(){
   if (PERFIL === "ana" || chaveMes(ref) !== kHoje || agora.getDate() > 10) return "";
   const k = somaMes(kHoje, -1);
   if (!temMovimento(mesDinheiro(k))) return "";
-  return `<section class="painel bloco aviso-fx fe-aviso"><p><b>${maiusc(nomeMes(k))} fechou.</b> Veja o resumo do mês e o que fugiu do normal.</p>
-    <button type="button" class="b s" data-fech="${k}">Ver o fechamento</button></section>`;
+  return `<div class="aviso-linha info fe-aviso"><span><b>${maiusc(nomeMes(k))} fechou.</b> Veja o resumo do mês e o que fugiu do normal.</span>
+    <button type="button" class="b s" data-fech="${k}">Ver o fechamento</button></div>`;
 }
 
 // "O que precisa de você" (06/10/2026, ideia do primeiro desenho do app): no alto da aba Tudo, o
@@ -1706,7 +1748,7 @@ function impLinha(x, i){
 function painelImportar(){
   if (PERFIL === "ana") return "";
   if (!imp) return `<div class="imp-barra"><button type="button" class="b" id="impAbrir">Importar extrato do Nubank</button>
-    <input type="file" id="impArquivo" accept=".ofx,.OFX" hidden><span class="nota">Fatura ou conta, no arquivo OFX que chega por e-mail.</span></div>`;
+    <input type="file" id="impArquivo" accept=".ofx,.OFX" hidden><span class="nota">OFX da fatura ou da conta, que chega por e-mail.</span></div>`;
   if (imp.feito) return `<div class="imp-barra imp-ok" role="status">${escH(imp.feito.texto)}
     <button type="button" class="b" id="impDesfazer">Desfazer</button><button type="button" class="b" id="impFechar">Fechar</button></div>`;
   const r = imp.r, novos = imp.linhas.filter(x => x.grupo === "novo"), ign = imp.linhas.filter(x => x.grupo === "ignorado");
@@ -1811,17 +1853,16 @@ function telaDinheiro(){
 
   return subabasDinheiro() + barraMes() + painelSeparar() + cardSituacao(d) + `
   <div class="duas larga">
-    <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${painelImportar()}${lista}</section>
+    <section class="painel"><h2>Lançamentos<span class="dir">${doMes.length} no mês</span></h2>${form}${painelImportar()}${lista}${painelCategorias()}</section>
     <div class="coluna">
       <section class="painel"><h2>Gastos por categoria</h2>${roscaCategorias(d)}</section>
       ${painelLimites()}
-      ${painelCategorias()}
       <section class="painel"><h2>Reserva de emergência</h2>
-        <div class="stats duas-col" style="margin-bottom:12px">
-          <div class="stat"><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
-          <div class="stat"><span>Meta</span><b>${r.meta ? dinheiro(r.meta) : "—"}</b></div>
+        <div class="faixa" style="margin-bottom:12px">
+          <div><span>Saldo</span><b>${dinheiro(d.reserva)}</b></div>
+          <div><span>Meta</span><b>${r.meta ? dinheiro(r.meta) : "—"}</b>${r.meta ? `<small>${Math.round(pct(d.reserva, r.meta))}% da meta</small>` : `<small>sem meta marcada</small>`}</div>
         </div>${formReserva}
-        <p class="nota">${r.dataBase ? `Contam os aportes e resgates lançados a partir de ${dataCurta(r.dataBase)}/${r.dataBase.slice(0, 4)}, inclusive esse dia. Por isso, confira o saldo antes de lançar os movimentos do dia.` : "Todo aporte e todo resgate lançado mexe no saldo. Marque a data em que conferiu o saldo no banco."}</p></section>
+        <details class="ajuda" style="margin:0"><summary>Como funciona</summary><p>${r.dataBase ? `Contam os aportes e resgates lançados a partir de ${dataCurta(r.dataBase)}/${r.dataBase.slice(0, 4)}, inclusive esse dia. Por isso, confira o saldo antes de lançar os movimentos do dia.` : "Todo aporte e todo resgate lançado mexe no saldo. Marque a data em que conferiu o saldo no banco."}</p></details></section>
     </div>
   </div>`;
 }
@@ -1854,9 +1895,9 @@ function cardCasa(c){
   const { meses, media } = mediaCasa(chaveMes(ref));
   const dif = c.total - antes;
   const seta = cima => `<span class="seta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cima ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}</svg></span>`;
-  const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}</b></div><p>${texto}</p></div>`;
+  const caixa = (cls, cima, titulo, texto) => `<div class="veredito ${cls}"><div class="topo-v">${seta(cima)}<b>${titulo}.</b></div><p>${texto}</p></div>`;
   let v;
-  if (media === null) v = `<div class="veredito"><div class="topo-v"><b>Sem média ainda</b></div><p>A média aparece quando houver um mês fechado com compras, a partir de agosto de 2026.</p></div>`;
+  if (media === null) v = `<div class="veredito"><div class="topo-v"><b>Sem média ainda.</b></div><p>A média aparece quando houver um mês fechado com compras, a partir de agosto de 2026.</p></div>`;
   else if (c.total > media + 0.005) v = caixa("warn", true, corrente ? "Já passou da média" : "Acima da média",
     `${corrente ? "Até hoje" : Nome} ${corrente ? "a casa gastou" : "gastou"} ${dinheiro(c.total - media)} a mais que a média de ${dinheiro(media)}.`);
   // gastou exatamente a média: antes dizia "Faltam R$ 0,00 para chegar à média" (06/10/2026)
@@ -1913,7 +1954,7 @@ function telaCasa(){
   // porque trocar a ordem dos nomes ou a parte de cada um mexe nas contas dos dois.
   const ajustes = PERFIL === "ana"
     ? `<p class="nota" style="margin:0">${escH(primeiro(p1))} responde por ${Math.round(parte * 100)}% da casa e ${escH(primeiro(p2))} por ${100 - Math.round(parte * 100)}%. A divisão e os nomes só se mudam no app de ${escH(primeiro(p1))}.</p>`
-    : `<details class="novo"><summary>Divisão e nomes</summary>
+    : `<details class="dobra"><summary>Divisão e nomes</summary>
     <form class="linha" id="fDivisao">
       <div><label>Parte de ${escH(primeiro(p1))} (em %)</label>
         <input type="number" name="divisao" min="0" max="100" step="1" value="${Math.round(parte * 100)}"></div>
@@ -1929,9 +1970,8 @@ function telaCasa(){
   <div class="duas larga">
     <section class="painel"><h2>Compras<span class="dir">${doMes.length} no mês</span></h2>${form}${lista}</section>
     <div class="coluna">
-      <section class="painel"><h2>Quem pagou</h2>${roscaCasa(c)}</section>
+      <section class="painel"><h2>Quem pagou</h2>${roscaCasa(c)}${PERFIL === "ana" ? `<div style="margin-top:12px">${ajustes}</div>` : ajustes}</section>
       <section class="painel"><h2>Por categoria</h2>${rosca(itensCat, "casa no mês", "Compras da casa por categoria")}</section>
-      <section class="painel"><h2>${PERFIL === "ana" ? "Divisão" : "Ajustes"}</h2>${ajustes}</section>
     </div>
   </div>`;
 }
@@ -2013,12 +2053,12 @@ function ligar(){
     if (n > 0) g.valores[k] = n; else delete g.valores[k];
     salvar("matheus");
   });
-  const cf = document.getElementById("copiarFixos");
-  if (cf) cf.onclick = () => {
+  // copiar os fixos do mês anterior: o botão de Gastos fixos e o "Copiar agora" da Situação do mês fazem a mesma coisa
+  document.querySelectorAll("#copiarFixos,[data-copiar-fixos]").forEach(cf => cf.onclick = () => {
     const km = chaveMes(ref), ant = mesAnterior(km), lista = fixosParaCopiar(km);
     lista.forEach(g => { g.valores[km] = Number(g.valores[ant]); });
     salvar("matheus");
-  };
+  });
   document.querySelectorAll("[data-dia]").forEach(i => i.onchange = () => {
     const g = livro.matheus.gastosFixos.find(x => x.id === i.dataset.dia);
     if (g) { const n = Number(i.value); g.dia = n >= 1 && n <= 31 ? n : null; salvar("matheus"); }

@@ -266,14 +266,12 @@ select.situacao{padding:6px 8px; min-height:34px; border:1px solid var(--border-
 .legend span{display:inline-flex; align-items:center}
 .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; border:1px solid rgba(128,128,128,.35)}
 .legend .dica{color:var(--faint); flex-basis:100%}
-details.leg-dobra > summary{display:none}
-@media (max-width:700px){
-  details.leg-dobra{margin-top:12px; border:1px solid var(--border); border-radius:var(--radius); padding:0 12px; background:var(--surface)}
-  details.leg-dobra > summary{display:list-item; cursor:pointer; padding:11px 0; font-size:13px; font-weight:600; color:var(--muted)}
-  details.leg-dobra[open]{padding-bottom:12px}
-  details.leg-dobra .legend{margin-top:0}
-  details.leg-dobra .leg-semana{margin-top:0; border:0; padding:0; background:none}
-}
+/* a legenda fica fechada num toque também no computador (04/11/2026): aberta, ela empurrava a lista para baixo */
+details.leg-dobra{margin-top:12px; border:1px solid var(--border); border-radius:var(--radius); padding:0 12px; background:var(--surface)}
+details.leg-dobra > summary{display:list-item; cursor:pointer; padding:10px 0; font-size:13px; font-weight:600; color:var(--muted); min-height:40px; box-sizing:border-box}
+details.leg-dobra[open]{padding-bottom:12px}
+details.leg-dobra .legend{margin-top:0}
+details.leg-dobra .leg-semana{margin-top:0; border:0; padding:0; background:none}
 /* legenda da semana (05/10/2026): cada amostra é uma célula da grade em miniatura, com nomes curtos,
    em dois grupos: o que acontece com o paciente e o que é o horário sem paciente */
 .leg-semana{margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; display:flex; flex-direction:column; gap:10px}
@@ -822,6 +820,8 @@ details.fi-det[open] > summary{margin-bottom:6px}
   /* enquanto houver aba escondida à direita, a borda esmaece para avisar que a fila continua */
   .tabs.tem-mais{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent); mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent)}
   .tab{white-space:nowrap; padding:7px 12px}
+  /* 04/11/2026: as quatro abas dividem a largura e cabem inteiras a 375 px */
+  .top .tabs .tab:not([hidden]){flex:1 1 auto; padding:7px 6px; font-size:14px}
   .stats{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%}
   .stat{min-width:0}
   /* a semana inteira cabe na tela, de domingo a sábado, sem deslizar (27/09/2026):
@@ -1182,6 +1182,135 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   #m-prev,#m-next,#pg-prev,#pg-next{min-width:44px}
   .hour,.gh .d{font-size:11px}
 }
+/* ---------- reforma de desenho (04/11/2026, pedido dele: "muita informação na tela" e "cara de IA") ----------
+   Menos caixa: números lado a lado (.faixa do tema), estado em texto colorido (.sinal), explicação longa
+   num "Como funciona" fechado (details.ajuda), lista com fio fino em vez de cartão cinza dentro de cartão.
+   Nada some: o que saiu da vista mudou de lugar. */
+.bar .faixa{flex:0 1 auto}
+.faixa .stat-extra{display:block; font-size:11.5px; color:var(--muted)}
+.faixa .stat-extra:empty{display:none}
+.faixa > [title]{cursor:help}
+@media (max-width:700px){ .bar .faixa{width:100%} }
+.panel h2 + details.ajuda{margin-top:-2px}
+.panel .sub + details.ajuda{margin-top:-10px; margin-bottom:12px}
+details.ajuda .leg-sit{margin-top:8px}
+details.ajuda p + p{margin-top:6px}
+.txt-neg{color:var(--neg)}
+/* "font:400 12.5px/1 inherit" não valia (inherit não entra no atalho font) e a contagem saía em negrito */
+.panel h2 .ss-n{font-family:inherit; font-size:12.5px; font-weight:400; line-height:1.3; color:var(--muted); margin-left:6px}
+.panel h2 .ss-n.neg{color:var(--neg); font-weight:600}
+/* Sessões: a lista Falta marcar sem a borda âmbar; a situação "a confirmar" sem o fundo amarelo */
+#ss-p-marcar{border-color:var(--border)}
+select.situacao.s-confirmar{background:var(--surface); color:var(--text); border-color:var(--border-strong); font-weight:500}
+select.situacao.s-prevista{background:var(--surface)}
+tr.ss-mais td{border-bottom:0; padding-top:10px}
+@media (max-width:700px){
+  /* cada sessão: dia, hora, paciente e valor numa linha; a situação embaixo, sem sobra */
+  table.tab.ss-cartoes{margin-top:4px}
+  table.ss-cartoes tr{gap:0 8px; padding:4px 0 10px}
+  table.ss-cartoes td.sc-quem .linknome{min-height:40px; padding:0}
+  table.ss-cartoes tr.ss-mais{display:block; padding:8px 0 0; border-bottom:0}
+  table.ss-cartoes tr.ss-mais .btn{width:100%}
+}
+/* Hoje e Pacientes: uma linha por paciente, com fio fino, dentro do painel (antes, cartão cinza dentro de cartão) */
+.pgrid,.pgrid.larga{display:flex; flex-direction:column; gap:0}
+.pcard{background:transparent; border:0; border-bottom:1px solid var(--border); border-radius:0; padding:10px 6px; gap:12px; min-height:56px; align-items:center}
+.pcard:last-child{border-bottom:0}
+.pcard:hover{background:var(--surface-2); border-color:var(--border)}
+.pcard:focus-visible{outline:2px solid var(--accent); outline-offset:-2px; border-radius:6px}
+.pcard.estatico:hover{background:transparent; border-color:var(--border)}
+.pcard .ini{width:32px; height:32px; font-size:14px}
+.pcard .corpo{flex:1 1 auto}
+.pcard .sub{font-size:12.5px; margin:0}
+.pcard > .selo{margin:0 0 0 auto; flex:none; text-align:right; align-self:center}
+.pcard .selo,.pcard .selo.divida,.pcard .selo.saldo{background:none; box-shadow:none; padding:0; border-radius:0; font-size:13px; font-weight:600; white-space:nowrap}
+.pcard .corpo .selo{margin-top:3px; font-size:12.5px}
+.pcard .selo.atraso{color:var(--neg)} .pcard .selo.atencao{color:var(--warn)} .pcard .selo.ok{color:var(--pos)} .pcard .selo.sem{color:var(--muted); font-weight:500}
+.pcard .selo-trat{background:none; border:0; padding:0; border-radius:0; color:var(--muted); font-weight:500; font-size:12.5px; margin-top:2px}
+.pcard .selo-trat.volta{color:var(--pos)}
+.pdia-cab{padding:6px 6px; margin-bottom:0; border-bottom-color:var(--border-strong)}
+.pdia.hoje .pdia-cab{background:none; border-bottom-color:var(--accent-line)}
+.pdia-hoje{background:none; color:var(--accent); padding:0; font-size:12.5px; text-transform:none; letter-spacing:0}
+#hoje-faixa .pgrid{border-top:1px solid var(--border)}
+.dia-chip{background:var(--surface)}
+.dia-chip .ponto{box-shadow:0 0 0 2px var(--surface)}
+@media (max-width:540px){ .pcard{padding:10px 2px} .pcard > .selo{font-size:12.5px} .pcard .sub{white-space:normal} }
+/* Pacientes: o "Cobrar" virou uma linha de aviso com o caminho para Pagamentos */
+.cobrar-linha{margin:0 0 14px}
+details.planilha-antiga{margin:12px 0 0}
+details.planilha-antiga p{margin:6px 0 0}
+.dp-vazio details.planilha-antiga{flex-basis:100%; margin:0}
+/* rótulos em caixa normal, sem a caixa alta pequena */
+.dp-grupo{text-transform:none; letter-spacing:0; font-size:13px; font-weight:600; color:var(--muted)}
+.leg-semana h3{text-transform:none; letter-spacing:0; font-size:12.5px; font-weight:600; color:var(--muted)}
+/* Pagamentos: a linha de quem deve sem fundo vermelho; o que deve é o único sinal forte */
+table.tab tr.linha-atraso td{background:none}
+table.pg-cartoes td{vertical-align:middle}
+table.pg-cartoes .sinal{white-space:normal}
+table.pg-cartoes td.pc-acao{white-space:nowrap}
+table.pg-cartoes td.pc-acao .btn + .btn{margin-left:6px}
+@media (max-width:700px){
+  table.pg-cartoes tr,table.pg-cartoes tr.linha-atraso{background:var(--surface); border:0; border-bottom:1px solid var(--border); border-radius:0; margin:0; padding:12px 0}
+  table.pg-cartoes td.pc-quem{grid-column:1/-1}
+  /* no cartão do celular: o que deve e o vencimento em cima, a cobrança e o último embaixo */
+  table.pg-cartoes td[data-rot="Deve"]{grid-column:1; grid-row:2}
+  table.pg-cartoes td[data-rot="Próximo"]{grid-column:2; grid-row:2}
+  table.pg-cartoes td[data-rot="Cobrança"]{grid-column:1; grid-row:3}
+  table.pg-cartoes td[data-rot="Último"]{grid-column:2; grid-row:3}
+  table.tab.pg-cartoes tr td.pc-acao{display:flex; gap:8px; white-space:normal; grid-row:4}
+  table.pg-cartoes td.pc-acao .btn{flex:1 1 0; width:auto}
+  table.pg-cartoes td.pc-acao .btn + .btn{margin-left:0}
+}
+/* Ficha: o total de sessões em texto, na linha de baixo do nome */
+.fcab .fi-total{display:inline; background:none; border:0; padding:0; border-radius:0; text-align:left; line-height:inherit; cursor:default; flex:none}
+.fcab .fi-total::before{content:" · "}
+.fcab .fi-total:empty::before{content:none}
+.fcab .fi-total .n,.fcab .fi-total .rot,.fcab .fi-total .mais{display:inline; font-size:inherit; font-weight:600; color:var(--text); margin:0; font-family:inherit}
+.fcab .fi-total .rot{margin-left:.3em}
+.fcab .fi-total .mais{font-weight:400; color:var(--muted)}
+.fcab .fi-total .mais::before{content:", "}
+/* Ficha: os blocos sem fundo cinza, só o fio fino; o saldo do alto é uma linha de aviso */
+.fipag{background:var(--surface)}
+.fipag.pront{background:var(--surface); border-color:var(--border)}
+.fi-situ,.fi-situ.ok,.fi-situ.atencao,.fi-situ.atraso,.fi-situ.sem{background:var(--surface); border:1px solid var(--border); box-shadow:none; color:var(--text); font-weight:500; gap:10px}
+.fi-situ::before{content:""; width:8px; height:8px; border-radius:50%; flex:none; background:var(--muted)}
+.fi-situ.atraso{color:var(--neg); font-weight:600} .fi-situ.atraso::before{background:var(--neg)}
+.fi-situ.ok::before{background:var(--pos)} .fi-situ.atencao::before{background:var(--warn)}
+.fi-chips .btn{background:var(--surface)}
+.fu .sinal{font-size:12.5px; text-align:right}
+/* Ficha, Prontuario: os quatro numeros sem uma caixa para cada; a situacao de cada sessao em texto colorido */
+.fi-pr-topo{gap:12px 0}
+.pr-num{background:none; border:0; border-left:1px solid var(--border); border-radius:0; padding:2px 14px}
+.pr-num:first-child{border-left:0; padding-left:0}
+@media (max-width:700px){ .pr-num:nth-child(odd){border-left:0; padding-left:0} }
+.lt-mes{text-transform:none; letter-spacing:0; font-size:12.5px}
+.ficha .lt-s .sit,.ficha .pitem-cab .sit,.ficha .fipag .topo .sit{background:none; box-shadow:none; padding:0; border-radius:0; font-size:12.5px}
+.ficha .sit.s-confirmar,.ficha .sit.atencao{color:var(--warn)}
+.ficha .sit.s-realizada{color:var(--pos)}
+.ficha .sit.s-cortesia{color:var(--accent)}
+.ficha .sit.s-prevista,.ficha .sit.s-remarcada,.ficha .sit.s-cancelada{color:var(--muted); font-weight:500}
+/* Marketing: o aviso é uma linha; "Cada anúncio" é uma lista com fio fino; a sobra sem faixa verde */
+.mk-aviso{background:var(--surface); border-color:var(--border); font-size:13.5px; margin:0 0 16px}
+.mk-aviso.hidden{display:none}
+.mk-aviso > span{flex:1 1 260px}
+.mk-an,.mk-an.no-ar{background:transparent; border:0; border-bottom:1px solid var(--border); border-radius:0; padding:16px 0}
+.mk-an:first-child{padding-top:4px}
+.mk-an + .mk-an{margin-top:0}
+/* "pos" também é o nome da bolinha da posição no ranking: o sinal "vale mais" não pode herdar o círculo */
+.mk-post .cab .sinal.pos{width:auto; height:auto; border-radius:0; background:none; display:inline; color:var(--pos); font-size:13px}
+.mk-post .cab .sinal{font-size:13px}
+.recibo .meio{background:none; padding:0; border-radius:0}
+.mk-nums .rot{text-transform:none; letter-spacing:0; font-weight:500; font-size:12.5px}
+.mk-nums .espera{border:0; padding:0; background:none}
+.mk-sobra,.mk-sobra.neg{background:none; color:var(--text); padding:12px 0 2px; border-radius:0; border-top:1px solid var(--border-strong); margin-top:0}
+.linhas .mk-sobra{padding:12px 0 2px}
+.mk-sobra b{color:var(--pos); font-weight:700}
+.mk-sobra.neg b{color:var(--neg)}
+.mk-origem.falta select{border-color:var(--border-strong); background:var(--surface-2)}
+@media (max-width:700px){
+  .mk-an,.mk-an.no-ar{padding:14px 0}
+  .mk-aviso .btn{width:auto}
+}
 </style>
 <script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
 <script src="nuvem.js"></script>
@@ -1230,11 +1359,11 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
         <button class="btn sm" id="next" aria-label="Próxima semana">›</button>
         <div class="range"><span id="range-txt"></span><small id="range-sub"></small></div>
       </div>
-      <div class="stats">
-        <div class="stat"><b id="s-sessoes">0</b><span>Sessões</span></div>
-        <div class="stat"><b id="s-receita">R$ 0</b><span>Receita da semana</span></div>
-        <div class="stat" title="Horários divulgados que continuam sem paciente nesta semana."><b id="s-divulgados">0</b><span>Divulgados livres</span></div>
-        <div class="stat" title="Sessões da semana divididas pelas horas de atendimento que você aceita (aba Meta)."><b id="s-ocupacao">0%</b><span>Ocupação</span></div>
+      <div class="faixa">
+        <div><b id="s-sessoes">0</b><span>Sessões</span></div>
+        <div><b id="s-receita">R$ 0</b><span>Receita da semana</span></div>
+        <div title="Horários divulgados que continuam sem paciente nesta semana."><b id="s-divulgados">0</b><span>Divulgados livres</span></div>
+        <div title="Sessões da semana divididas pelas horas de atendimento que você aceita (aba Meta)."><b id="s-ocupacao">0%</b><span>Ocupação</span></div>
       </div>
       <button class="btn primary" id="msg">Mensagem de divulgação</button>
     </div>
@@ -1290,10 +1419,10 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
         <button class="btn sm" id="m-next" aria-label="Próximo mês">›</button>
         <div class="range"><span id="m-titulo"></span></div>
       </div>
-      <div class="stats">
-        <div class="stat"><b id="m-sessoes">0</b><span>Sessões no mês</span></div>
-        <div class="stat" title="O que a agenda deste mês deveria render, pela regra de cobrança de cada paciente. É o mesmo número da aba Pagamentos; quem está em triagem aparece embaixo."><b id="m-receita">R$ 0</b><span>Previsto no mês</span><small class="stat-extra" id="m-receita-tri"></small></div>
-        <div class="stat"><b id="m-pacientes">0</b><span>Pacientes ativos</span></div>
+      <div class="faixa">
+        <div><b id="m-sessoes">0</b><span>Sessões no mês</span></div>
+        <div title="O que a agenda deste mês deveria render, pela regra de cobrança de cada paciente. É o mesmo número da aba Pagamentos; quem está em triagem aparece embaixo."><b id="m-receita">R$ 0</b><span>Previsto no mês</span><small class="stat-extra" id="m-receita-tri"></small></div>
+        <div><b id="m-pacientes">0</b><span>Pacientes ativos</span></div>
       </div>
     </div>
     <div class="month" id="mes-cab"></div>
@@ -1317,18 +1446,19 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
         <button class="btn sm" id="ss-next" aria-label="Próximo mês">›</button>
         <div class="range"><span id="ss-titulo"></span><small id="ss-sub"></small></div>
       </div>
-      <div class="stats">
-        <div class="stat" title="Sessões que aconteceram e são cobradas. As que ainda vão acontecer aparecem como previstas."><b id="ss-realizadas">0</b><span id="ss-realizadas-rot">Realizadas</span></div>
-        <div class="stat" title="Faltas sem aviso de 24 horas: contam como sessão e são cobradas."><b id="ss-faltas">0</b><span>Não compareceu</span></div>
-        <div class="stat" title="Remarcadas com aviso e sessões que não haverá: não são cobradas."><b id="ss-desmarcadas">0</b><span>Desmarcadas</span></div>
-        <div class="stat" title="Sessões dadas sem cobrar."><b id="ss-cortesias">0</b><span>Cortesias</span></div>
-        <div class="stat" title="Quanto as desmarcadas e as cortesias valeriam, pelo valor por sessão de cada paciente."><b id="ss-valor">R$ 0</b><span>Não cobrado</span></div>
+      <div class="faixa">
+        <div title="Sessões que aconteceram e são cobradas. As que ainda vão acontecer aparecem como previstas."><b id="ss-realizadas">0</b><span id="ss-realizadas-rot">Realizadas</span></div>
+        <div title="Faltas sem aviso de 24 horas: contam como sessão e são cobradas."><b id="ss-faltas">0</b><span>Não compareceu</span></div>
+        <div title="Remarcadas com aviso e sessões que não haverá: não são cobradas."><b id="ss-desmarcadas">0</b><span>Desmarcadas</span></div>
+        <div title="Sessões dadas sem cobrar."><b id="ss-cortesias">0</b><span>Cortesias</span></div>
+        <div title="Quanto as desmarcadas e as cortesias valeriam, pelo valor por sessão de cada paciente."><b id="ss-valor">R$ 0</b><span>Não cobrado</span></div>
       </div>
       <label class="ss-desde" for="ss-desde">Contando desde <input type="date" id="ss-desde" aria-label="A partir de quando a agenda registra o que aconteceu"></label>
     </div>
     <div class="panel hidden" id="ss-p-marcar" style="margin-bottom:16px">
       <h2>Falta marcar</h2>
       <p class="sub" id="ss-marcar-sub"></p>
+      <details class="ajuda"><summary>Como funciona</summary><p>Marque aqui ou na grade: a sessão sai desta lista e entra no histórico.</p></details>
       <div class="tabwrap">
         <table class="tab ss-cartoes" id="ss-marcar">
           <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
@@ -1338,7 +1468,10 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
     </div>
     <div class="panel">
       <h2>Histórico de sessões <small class="ss-n" id="ss-historico-n"></small></h2>
-      <p class="sub">Uma linha por sessão que já passou e que você marcou, da mais recente para a mais antiga. O histórico vai se formando conforme você marca na grade da semana ou aqui; mudar aqui muda lá também. Quem faltou sem avisar 24 horas antes é cobrado; remarcada, cortesia e "não haverá" não cobram.</p>
+      <p class="sub">Da mais recente para a mais antiga.</p>
+      <details class="ajuda"><summary>Como funciona</summary>
+      <p>Uma linha por sessão que já passou e que você marcou, da mais recente para a mais antiga. O histórico vai se formando conforme você marca na grade da semana ou aqui; mudar aqui muda lá também. Quem faltou sem avisar 24 horas antes é cobrado; remarcada, cortesia e "não haverá" não cobram.</p>
+      <p>A data em "Contando desde" diz a partir de quando a agenda registra o que de fato aconteceu; antes dela, o mês é só projeção e fica de fora das contas por paciente e do painel.</p>
       <div class="leg-sit">
         <span><i style="background:var(--ok-soft); border-color:var(--ok)"></i>Realizada</span>
         <span><i style="background:var(--quente-bg); border-color:var(--quente-line)"></i>A confirmar</span>
@@ -1348,17 +1481,17 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
         <span><i style="background:var(--neutral-chip); border-color:var(--border)"></i>Não haverá</span>
         <span><i style="background:var(--t-sessao-bg); border-color:var(--t-sessao-bar); border-style:dashed"></i>Cortesia</span>
       </div>
+      </details>
       <div class="tabwrap">
         <table class="tab ss-cartoes" id="ss-tabela">
           <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <p class="hint" style="margin-top:10px">A data em "Contando desde" diz a partir de quando a agenda registra o que de fato aconteceu; antes dela, o mês é só projeção e fica de fora das contas por paciente e do painel.</p>
     </div>
     <div class="panel" style="margin-top:16px">
       <h2>Sessões previstas <small class="ss-n" id="ss-previstas-n"></small></h2>
-      <p class="sub">O que ainda vai acontecer neste mês, pela agenda. Depois da hora, a sessão sobe para "Falta marcar" até você dizer o que aconteceu.</p>
+      <details class="ajuda"><summary>Como funciona</summary><p>O que ainda vai acontecer neste mês, pela agenda. Depois da hora, a sessão sobe para "Falta marcar" até você dizer o que aconteceu.</p></details>
       <div class="tabwrap">
         <table class="tab ss-cartoes" id="ss-previstas">
           <thead><tr><th>Dia</th><th>Hora</th><th>Paciente</th><th>Situação</th><th class="num">Cobra</th></tr></thead>
@@ -1507,7 +1640,8 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   <section id="v-pacientes" class="hidden">
     <div class="panel">
       <h2>Pacientes e horários fixos</h2>
-      <p class="sub">Separados por dia da semana, na ordem em que você atende. Clique num paciente para abrir a ficha dele. A agenda repete sozinha: toda semana, ou a cada duas semanas para os quinzenais.</p>
+      <p class="sub">Por dia da semana, na ordem em que você atende.</p>
+      <details class="ajuda"><summary>Como funciona</summary><p>Separados por dia da semana, na ordem em que você atende. Clique num paciente para abrir a ficha dele. A agenda repete sozinha: toda semana, ou a cada duas semanas para os quinzenais.</p></details>
       <!-- filtros: a agenda é o padrão; o resto da carteira vem da planilha -->
       <div id="pcobrar"></div>
       <div class="filtros" id="pfiltros" role="tablist" aria-label="O que mostrar"></div>
@@ -1515,10 +1649,14 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
       <div id="plist"></div>
       <div style="margin-top:14px; display:flex; gap:8px">
         <button class="btn" id="add-paciente">Adicionar paciente</button>
-        <button class="btn ghost" id="trazer-dados">Trazer dados da planilha</button>
         <input type="file" id="arquivo-dados" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
       </div>
-      <p class="hint" style="margin-top:6px">"Trazer dados da planilha" só copia os dados pessoais da aba Registro de Pacientes (nascimento, CPF, contato, emergência) para quem ainda não tem. Não mexe em agenda, sessões nem pagamentos.</p>
+      <!-- a planilha parou em 19/10/2026: o botão de trazer dados dela fica guardado, não some (04/11/2026) -->
+      <details class="ajuda planilha-antiga"><summary>Planilha antiga</summary>
+        <p>A planilha parou de ser atualizada em 19/10/2026; isto só copia dados pessoais para quem ainda não tem.</p>
+        <p>"Trazer dados da planilha" só copia os dados pessoais da aba Registro de Pacientes (nascimento, CPF, contato, emergência) para quem ainda não tem. Não mexe em agenda, sessões nem pagamentos.</p>
+        <p><button class="btn sm" id="trazer-dados">Trazer dados da planilha</button></p>
+      </details>
     </div>
   </section>
 
@@ -1534,15 +1672,14 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
         <button class="btn sm" id="pg-next" aria-label="Próximo mês">›</button>
         <div class="range"><span id="pg-titulo"></span><small id="pg-sub"></small></div>
       </div>
-      <div class="stats">
-        <div class="stat" title="Soma do que entrou neste mês."><b id="pg-recebido">R$ 0</b><span>Recebido no mês</span></div>
-        <div class="stat" title="O que a agenda deste mês deveria render, pela regra de cobrança de cada paciente. Quem está em triagem fica de fora e aparece embaixo."><b id="pg-previsto">R$ 0</b><span>Previsto no mês</span><small class="stat-extra" id="pg-previsto-tri"></small></div>
-        <div class="stat" title="Pacientes cujo próximo pagamento já passou da data."><b id="pg-atraso">0</b><span>Em atraso</span></div>
-        <div class="stat" title="Pagamentos que vencem de hoje até daqui a sete dias."><b id="pg-semana">R$ 0</b><span>Vence em 7 dias</span></div>
+      <div class="faixa">
+        <div title="Soma do que entrou neste mês."><b id="pg-recebido">R$ 0</b><span>Recebido no mês</span></div>
+        <div title="O que a agenda deste mês deveria render, pela regra de cobrança de cada paciente. Quem está em triagem fica de fora e aparece embaixo."><b id="pg-previsto">R$ 0</b><span>Previsto no mês</span><small class="stat-extra" id="pg-previsto-tri"></small></div>
+        <div title="Pacientes cujo próximo pagamento já passou da data."><b id="pg-atraso">0</b><span>Em atraso</span></div>
+        <div title="Pagamentos que vencem de hoje até daqui a sete dias."><b id="pg-semana">R$ 0</b><span>Vence em 7 dias</span></div>
       </div>
     </div>
 
-    <div id="pg-cobrar"></div>
     <div class="pg-acoes">
       <button class="btn primary" id="pg-abrir" aria-expanded="false" aria-controls="pg-form">+ Registrar pagamento</button>
       <button class="btn" id="pg-relatorio" type="button">Relatório do ano (IR e DMED)</button>
@@ -1607,17 +1744,20 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
 
     <div class="panel">
       <h2>Histórico de pagamentos <small class="ss-n" id="pg-hist-n"></small></h2>
-      <p class="sub" id="pg-hist-sub">O que entrou no mês aberto, do mais recente para o mais antigo. Use ‹ e › para ver outros meses.</p>
+      <p class="sub" id="pg-hist-sub">Do mais recente para o mais antigo. Use ‹ e › para ver outros meses.</p>
       <div id="pg-historico"></div>
     </div>
 
     <div class="panel">
-      <h2>Situação de cada paciente</h2>
-      <p class="sub">Primeiro quem deve mais. "Deve" são as sessões já cobradas e ainda não pagas, como na planilha. "Registrar pagamento" abre a ficha do paciente com o valor do ciclo preenchido e mostra quais sessões ele paga antes de salvar.</p>
+      <!-- o bloco "Cobrar" saiu (04/11/2026): mostrava os mesmos pacientes desta tabela. O total vai no título
+           e a cobrança pronta fica num botão na linha de quem deve -->
+      <h2>Situação de cada paciente <small class="ss-n" id="pg-cobrar-n"></small></h2>
+      <p class="sub">Primeiro quem deve mais.</p>
+      <details class="ajuda"><summary>Como funciona</summary><p>Primeiro quem deve mais. "Deve" são as sessões já cobradas e ainda não pagas, como na planilha. "Registrar pagamento" abre a ficha do paciente com o valor do ciclo preenchido e mostra quais sessões ele paga antes de salvar. "Cobrar" abre a mensagem de cobrança pronta, com o primeiro nome, as sessões e o valor em aberto, para você ajustar e copiar no WhatsApp; o app não envia nada. O nome abre a ficha na aba Pagamento.</p></details>
       <div class="tabwrap">
         <table class="tab pg-cartoes" id="pg-tabela">
           <thead><tr>
-            <th>Paciente</th><th>Deve</th><th>Cobrança</th><th>Último pagamento</th><th>Próximo pagamento</th><th>Situação</th><th><span class="so-leitor">Ações</span></th>
+            <th>Paciente</th><th>Deve</th><th>Cobrança</th><th>Último pagamento</th><th>Próximo pagamento</th><th><span class="so-leitor">Ações</span></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -1632,43 +1772,44 @@ select.situacao.s-cortesia{background:var(--t-sessao-bg); color:var(--t-sessao-f
   <section id="v-marketing" class="hidden">
     <div class="bar">
       <div class="nav"><div class="range" style="margin-left:0"><span>Anúncios do Instagram</span><small id="mk-sub"></small></div></div>
-      <div class="stats">
-        <div class="stat" id="mk-gasto-caixa"><b id="mk-gasto">R$ 0</b><span>Gasto em anúncios</span></div>
-        <div class="stat" title="Conversas iniciadas no direct, somadas dos anúncios que já têm métricas."><b id="mk-conversas">0</b><span>Conversas</span></div>
-        <div class="stat" title="Gasto dividido pelas conversas, só nos anúncios que têm as duas coisas."><b id="mk-cpc">—</b><span>Por conversa</span></div>
-        <div class="stat" title="Pacientes marcados como vindos de anúncio, em 'Como cada paciente chegou'."><b id="mk-pacientes">0</b><span>Pacientes</span></div>
-        <div class="stat" title="Gasto em anúncios dividido pelos pacientes que vieram deles."><b id="mk-cpp">—</b><span>Por paciente</span></div>
-        <div class="stat" id="mk-retorno-caixa"><b id="mk-retorno">R$ 0</b><span>Já voltou</span></div>
+      <div class="faixa">
+        <div id="mk-gasto-caixa"><b id="mk-gasto">R$ 0</b><span>Gasto em anúncios</span></div>
+        <div title="Conversas iniciadas no direct, somadas dos anúncios que já têm métricas."><b id="mk-conversas">0</b><span>Conversas</span></div>
+        <div title="Gasto dividido pelas conversas, só nos anúncios que têm as duas coisas."><b id="mk-cpc">—</b><span>Por conversa</span></div>
+        <div title="Pacientes marcados como vindos de anúncio, em 'Como cada paciente chegou'."><b id="mk-pacientes">0</b><span>Pacientes</span></div>
+        <div title="Gasto em anúncios dividido pelos pacientes que vieram deles."><b id="mk-cpp">—</b><span>Por paciente</span></div>
+        <div id="mk-retorno-caixa"><b id="mk-retorno">R$ 0</b><span>Já voltou</span></div>
       </div>
       <button class="btn primary" id="mk-novo">+ Novo anúncio</button>
     </div>
 
     <!-- o que falta ele fazer para as contas fecharem: some quando não falta nada -->
-    <div class="mk-aviso hidden" id="mk-aviso" role="status"></div>
+    <div class="aviso-linha mk-aviso hidden" id="mk-aviso" role="status"></div>
 
     <div class="panel">
       <h2>Qual post vale mais</h2>
       <p class="sub" id="mk-rank-sub"></p>
+      <details class="ajuda" id="mk-rank-ajuda-d"><summary>Como funciona</summary><p id="mk-rank-ajuda"></p></details>
       <div id="mk-rank"></div>
     </div>
 
     <div class="panel">
       <h2>Cada anúncio</h2>
-      <p class="sub">Um cartão para cada vez que você turbinou, do mais novo ao mais antigo. As métricas o Claude preenche quando você pedir "atualiza as métricas dos anúncios".</p>
+      <details class="ajuda"><summary>Como funciona</summary><p>Uma linha para cada vez que você turbinou, do mais novo ao mais antigo. As métricas o Claude preenche quando você pedir "atualiza as métricas dos anúncios".</p></details>
       <div id="mk-lista"></div>
     </div>
 
     <div class="panel">
       <h2>O dinheiro dos anúncios</h2>
-      <p class="sub">O que sai do bolso é a recarga de saldo na Meta, lançada na Carteira como "Clínica: Anúncios". Lançar um anúncio aqui não cria gasto lá.</p>
+      <details class="ajuda"><summary>Como funciona</summary><p>O que sai do bolso é a recarga de saldo na Meta, lançada na Carteira como "Clínica: Anúncios". Lançar um anúncio aqui não cria gasto lá.</p><p>A sobra é a recarga menos o que você colocou nos anúncios, a partir da data em "Recarrego saldo na Meta desde". O saldo exato, com o imposto, é o que a Meta mostra.</p></details>
       <div class="linhas" id="mk-dinheiro"></div>
       <label class="mk-desde" for="mk-desde">Recarrego saldo na Meta desde <input type="date" id="mk-desde" aria-label="A partir de quando o anúncio é pago com saldo recarregado"></label>
-      <p class="hint" style="margin:8px 0 0">A sobra é a recarga menos o que você colocou nos anúncios, a partir dessa data. O saldo exato, com o imposto, é o que a Meta mostra.</p>
     </div>
 
     <div class="panel" id="mk-origens-painel">
       <h2>Como cada paciente chegou</h2>
-      <p class="sub">Só você sabe. Com isso o app conta quantos pacientes cada anúncio trouxe e quanto já pagaram. A mesma escolha aparece na ficha do paciente.</p>
+      <p class="sub">Só você sabe; a mesma escolha aparece na ficha do paciente.</p>
+      <details class="ajuda"><summary>Como funciona</summary><p>Só você sabe. Com isso o app conta quantos pacientes cada anúncio trouxe e quanto já pagaram. A mesma escolha aparece na ficha do paciente.</p></details>
       <div class="filtros" id="mk-filtros" role="tablist" aria-label="Quais pacientes mostrar"></div>
       <div id="mk-origens"></div>
     </div>
@@ -2508,7 +2649,7 @@ function renderHoje(){
   document.getElementById("hoje-sub").textContent = !lista.length ? "" :
     lista.length + (lista.length>1 ? " sessões" : " sessão") +
     (devedores ? " · " + plural(devedores, "paciente deve", "pacientes devem") : "") +
-    " · toque no cartão para abrir a ficha";
+    " · toque no nome para abrir a ficha";
   var alvo = document.getElementById("hoje-cartoes");
   alvo.innerHTML = "";
   if(!lista.length){ alvo.innerHTML = '<p class="hoje-vazio">Nenhuma sessão neste dia.</p>'; return; }
@@ -2523,12 +2664,11 @@ function renderHoje(){
       '<span class="ini">'+esc(inicial1(p))+'</span>' +
       '<span class="corpo">' +
         '<span class="n">'+esc(nomeDoPaciente(p))+'</span>' +
-        '<span class="sub">'+String(s.hora).padStart(2,"0")+'h · '+estado+'</span>' +
-        '<span class="pr">'+(pr.ultima ? "Prontuário até "+dataCurta(deISO(pr.ultima)) : esc(p.codigo||""))+'</span>' +
-        (snf ? '<span class="selo '+snf.classe+(snf.classe==="atraso" ? " divida" : "")+'" title="'+esc(snf.titulo)+'">'+esc(snf.texto)+'</span>' :
-         dv.classe==="atraso" ? '<span class="selo atraso divida" title="'+esc(dv.titulo||"")+'">'+esc(dv.texto)+'</span>'
-                              : '<span class="selo '+pg.classe+'">'+esc(pg.texto)+'</span>') +
-      '</span>';
+        '<span class="sub">'+String(s.hora).padStart(2,"0")+'h · '+estado+' · '+(pr.ultima ? "prontuário até "+dataCurta(deISO(pr.ultima)) : esc(p.codigo||""))+'</span>' +
+      '</span>' +
+      (snf ? '<span class="selo '+snf.classe+(snf.classe==="atraso" ? " divida" : "")+'" title="'+esc(snf.titulo)+'">'+esc(snf.texto)+'</span>' :
+       dv.classe==="atraso" ? '<span class="selo atraso divida" title="'+esc(dv.titulo||"")+'">'+esc(dv.texto)+'</span>'
+                            : '<span class="selo '+pg.classe+'">'+esc(pg.texto)+'</span>');
     c.addEventListener("click", function(){ abrirFicha(p); });
     alvo.appendChild(c);
   });
@@ -2731,9 +2871,12 @@ function pintarDados(el, codigo, nomeAgenda, aoMudar){
   /* o cartão de leitura em cima (14/10/2026, pedido dele: ao abrir o paciente, ver quem é, de onde é);
      os campos de escrever ficam embaixo, fechados quando já há dado */
   var h = '<div class="dp-cartao" id="dp-cartao">' + cartaoDados(c, nomeAgenda || codigo) + '</div>';
-  if(!cheios) h += '<div class="dp-vazio"><p class="hint" style="margin:0">Ninguém escreveu os dados de ' + esc(nomeAgenda || codigo) + ' no app ainda. ' +
-    'Dá para escrever aqui embaixo, ou trazer de uma vez os de todos os pacientes da aba Registro de Pacientes da planilha.</p>' +
-    '<button type="button" class="btn sm" data-trazer-dados>Trazer dados da planilha</button></div>';
+  /* a planilha parou em 19/10/2026: o trazer dela fica guardado em "Planilha antiga" (04/11/2026) */
+  if(!cheios) h += '<div class="dp-vazio"><p class="hint" style="margin:0">Ninguém escreveu os dados de ' + esc(nomeAgenda || codigo) + ' no app ainda. Dá para escrever aqui embaixo.</p>' +
+    '<details class="ajuda planilha-antiga"><summary>Planilha antiga</summary>' +
+    '<p>A planilha parou de ser atualizada em 19/10/2026; isto só copia dados pessoais para quem ainda não tem.</p>' +
+    '<p>Dá para trazer de uma vez os de todos os pacientes da aba Registro de Pacientes da planilha.</p>' +
+    '<p><button type="button" class="btn sm" data-trazer-dados>Trazer dados da planilha</button></p></details></div>';
   h += '<details class="dp-editar"' + (cheios ? "" : " open") + '><summary>Editar dados pessoais <span class="hint" id="dp-conta">' +
     (cheios ? cheios + " de " + total + " preenchidos" : "nada preenchido ainda") + '</span></summary>';
   h += '<div class="dp-grade">';
@@ -2905,6 +3048,14 @@ function nomeDoPaciente(p){
   return partes.length <= 1 ? (partes[0] || p.nome || "") : partes[0] + " " + partes[partes.length - 1];
 }
 function nomeGrade(p){ return nomeDoPaciente(p); }
+/* quem saiu antes do app (dados.arquivados) não tem ficha: o mesmo jeito do nome de tela, primeiro e
+   último nome (04/11/2026: a lista do Marketing e os cartões de Inativos mostravam o nome inteiro) */
+function nomeDeQuemSaiu(a){
+  var f = fichaDoCodigo(a.codigo);
+  if(f) return nomeDoPaciente(f);
+  var partes = String(a.nome || "").trim().split(/\s+/).filter(Boolean);
+  return partes.length <= 1 ? (partes[0] || a.codigo || "") : partes[0] + " " + partes[partes.length - 1];
+}
 /* dois pacientes com o mesmo nome na tela confundem a grade e os recibos (04/11/2026) */
 function nomeRepetido(p){
   var n = nomeDoPaciente(p).toLowerCase();
@@ -3473,7 +3624,7 @@ function desenharCarteira(pedaco){
     h += '<button type="button" class="pcard" data-fenc="'+esc(p.id)+'">' +
       '<span class="ini">'+esc(inicial1(p))+'</span>' +
       '<span class="corpo">' +
-        '<span class="n">'+esc(p.nomeCompleto || p.nome)+'</span>' +
+        '<span class="n">'+esc(nomeDoPaciente(p))+'</span>' +
         '<span class="sub">'+(p.inicio ? dataLonga(deISO(p.inicio)) : "?")+' → '+dataLonga(deISO(t.desde))+'</span>' +
         '<span class="cod">'+esc(p.codigo)+' · ficha no app</span>' +
         '<span class="selo-trat enc">'+esc(tt.texto)+'</span>' +
@@ -3487,7 +3638,7 @@ function desenharCarteira(pedaco){
     h += '<div class="pcard estatico">' +
       '<span class="ini">'+esc((a.nome||"?").charAt(0).toUpperCase())+'</span>' +
       '<span class="corpo">' +
-        '<span class="n">'+esc(a.nome)+'</span>' +
+        '<span class="n">'+esc(nomeDeQuemSaiu(a))+'</span>' +
         '<span class="sub">'+esc(periodo)+' · '+a.sessoes+(a.sessoes===1?" sessão":" sessões")+
           (a.ciclos>1 ? " · "+a.ciclos+" ciclos" : "")+'</span>' +
         '<span class="cod">'+esc(a.codigo)+' · '+esc(a.status.replace(/\.$/,""))+'</span>' +
@@ -3592,12 +3743,11 @@ function desenharAgendaPacientes(soTriagem){
         '<span class="ini">'+esc(inicial1(p))+'</span>' +
         '<span class="corpo">' +
           '<span class="n">'+esc(nomeDoPaciente(p))+'</span>' +
-          /* o dia já está no cabeçalho do grupo; no cartão sobra a hora e o valor */
-          '<span class="sub">'+String(p.hora).padStart(2,"0")+'h · '+moeda(valorSessao(p))+' por sessão</span>' +
-          '<span class="cod">'+esc(p.codigo)+(p.freq==="quinzenal" ? " · quinzenal" : "")+'</span>' +
-          seloSaldo(p) +
+          /* o dia já está no cabeçalho do grupo; na linha sobra a hora, o valor e o prontuário */
+          '<span class="sub">'+String(p.hora).padStart(2,"0")+'h · '+moeda(valorSessao(p))+' por sessão · '+esc(p.codigo)+(p.freq==="quinzenal" ? " · quinzenal" : "")+'</span>' +
           selo(formulacaoDe(p.codigo)) +
-        '</span>';
+        '</span>' +
+        seloSaldo(p);
       c.addEventListener("click", function(){ abrirFicha(p); });
       grade.appendChild(c);
     });
@@ -3620,24 +3770,28 @@ function seloSaldo(p){
 }
 /* "Cobrar" (09/10/2026): quem deve ou está sem saldo, com quanto, num bloco só. Aparece no alto de
    Pacientes e de Pagamentos. O nome abre a ficha na aba Pagamento. */
-function blocoCobrancas(el){
+/* 04/11/2026: o bloco vermelho com um cartão por paciente era igual em Pacientes e em Pagamentos. Agora a
+   lista fica só na tabela de Pagamentos (que tem mais dado); aqui fica uma linha com o total e o caminho. */
+function resumoCobrancas(){
   var l = cobrancasAFazer(), vermelhos = l.filter(function(x){ return x.s.peso <= 1; }), soma = 0;
   vermelhos.forEach(function(x){ soma += x.s.deve || 0; });
-  if(!l.length){
-    el.innerHTML = '<div class="cobrar ok"><b>Ninguém para cobrar.</b> <span class="hint">Todos na agenda têm pelo menos duas sessões pagas pela frente.</span></div>';
+  return {l:l, vermelhos:vermelhos.length, soma:soma, amarelos:l.length - vermelhos.length};
+}
+function textoCobrancas(r){
+  if(!r.l.length) return "ninguém para cobrar";
+  return (r.vermelhos ? plural(r.vermelhos, "paciente a cobrar", "pacientes a cobrar") + (r.soma > 0.005 ? ", " + moeda(r.soma) : "") : "ninguém em vermelho") +
+    (r.amarelos ? " · " + r.amarelos + " com só a próxima paga" : "");
+}
+function blocoCobrancas(el){
+  var r = resumoCobrancas();
+  if(!r.l.length){
+    el.innerHTML = '<div class="aviso-linha pos cobrar-linha"><span>Ninguém para cobrar. Todos na agenda têm pelo menos duas sessões pagas pela frente.</span></div>';
     return;
   }
-  var h = '<div class="cobrar"><div class="cobrar-cab"><b>Cobrar</b><span class="hint">' +
-    (vermelhos.length ? plural(vermelhos.length, "paciente", "pacientes") + " em vermelho" + (soma > 0.005 ? " · " + moeda(soma) + " devidos" : "") : "ninguém em vermelho") +
-    (l.length > vermelhos.length ? " · " + (l.length - vermelhos.length) + " com só a próxima paga" : "") + '</span></div><div class="cobrar-lista">';
-  l.forEach(function(x){
-    h += '<button type="button" class="cobrar-it '+x.s.classe+'" data-cobrar="'+esc(x.p.id)+'"><span class="n">'+esc(nomeDoPaciente(x.p))+'</span>' +
-      '<span class="t">'+esc(x.s.texto)+'</span>' + (x.s.detalhe ? '<span class="d">'+esc(x.s.detalhe)+'</span>' : "") + '</button>';
-  });
-  el.innerHTML = h + '</div></div>';
-  el.querySelectorAll("[data-cobrar]").forEach(function(b){
-    b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.cobrar); if(p) abrirFicha(p, null, "pagamento"); });
-  });
+  var t = textoCobrancas(r);
+  el.innerHTML = '<div class="aviso-linha cobrar-linha' + (r.vermelhos ? " neg" : "") + '"><span><b>' + esc(t.charAt(0).toUpperCase() + t.slice(1)) + '</b></span>' +
+    '<button type="button" class="btn sm" data-ir-pagamentos>Ver em Pagamentos</button></div>';
+  el.querySelector("[data-ir-pagamentos]").addEventListener("click", function(){ mostrarView("pagamentos"); window.scrollTo(0, 0); });
 }
 function inicial1(p){ var n=(p.nome||"?").trim(); return n ? n.charAt(0).toUpperCase() : "?"; }
 
@@ -3818,8 +3972,7 @@ function abrirFicha(p, foco, aba){
     '<div class="modal ficha">' +
       '<button type="button" class="fi-x" id="fi-x" aria-label="Fechar a ficha">×</button>' +
       '<div class="fcab"><span class="ini grande" id="fi-ini"></span>' +
-        '<div class="fcab-nome"><h2 id="fi-titulo"></h2><span class="sub" id="fi-sub"></span><span class="fi-trat" id="fi-trat" hidden></span></div>' +
-        '<div class="fi-total" id="fi-total"></div></div>' +
+        '<div class="fcab-nome"><h2 id="fi-titulo"></h2><span class="sub"><span id="fi-sub"></span><span class="fi-total" id="fi-total"></span></span><span class="fi-trat" id="fi-trat" hidden></span></div></div>' +
       '<div class="tabs fi-abas" role="tablist" aria-label="Partes da ficha">' +
         '<button type="button" class="tab" role="tab" id="fi-aba-dados" data-fiaba="dados" aria-controls="fi-p-dados">Dados</button>' +
         '<button type="button" class="tab" role="tab" id="fi-aba-pagamento" data-fiaba="pagamento" aria-controls="fi-p-pagamento">Pagamento</button>' +
@@ -3910,7 +4063,7 @@ function abrirFicha(p, foco, aba){
 
   function resumo(){
     document.getElementById("fi-ini").textContent = inicial1(p);
-    document.getElementById("fi-titulo").textContent = p.nome;
+    document.getElementById("fi-titulo").textContent = nomeDoPaciente(p);
     document.getElementById("fi-sub").textContent = p.codigo+" · "+(foraDaGrade(p) ? "fora da agenda" : DIAS[p.dia]+", "+String(p.hora).padStart(2,"0")+"h");
     var hb = document.getElementById("fi-horario-bloco"); if(hb) hb.hidden = foraDaGrade(p);
     pintarTotal();
@@ -3928,7 +4081,7 @@ function abrirFicha(p, foco, aba){
     /* os dados do paciente só redesenham quando o prontuário muda: redesenhar a cada letra tiraria o foco */
     if(dadosDoCodigo !== String(p.codigo || "").trim()){
       dadosDoCodigo = String(p.codigo || "").trim();
-      pintarDados(document.getElementById("fi-dados"), p.codigo, p.nome, function(){ renderTudo(); pintarTotal(); pintarAbaDados(); });
+      pintarDados(document.getElementById("fi-dados"), p.codigo, nomeDoPaciente(p), function(){ renderTudo(); pintarTotal(); pintarAbaDados(); });
     }
     pintarAbaDados();
   }
@@ -4113,8 +4266,10 @@ function abrirFicha(p, foco, aba){
   function pintarUltimas(){
     var el = document.getElementById("fi-ultimas"), l = ultimasSessoesDe(p), sd = saldoDe(p);
     var ROT = {paga:"paga", parte:"paga em parte", aberta:"não paga", proxima:"ainda não paga", "proxima-paga":"já paga", "nao-cobra":"não cobra", "":""};
-    var CL = {paga:"ok", parte:"atencao", aberta:"atraso", proxima:"atraso", "proxima-paga":"ok", "nao-cobra":"sem", "":"sem"};
-    var h = '<div class="topo"><h3>Últimas sessões</h3><span class="sit '+sd.classe+'">'+esc(sd.texto)+'</span></div>';
+    var CL = {paga:"pos", parte:"warn", aberta:"neg", proxima:"mudo", "proxima-paga":"pos", "nao-cobra":"mudo", "":"mudo"};
+    /* o "deve" já está no alto da aba (04/11/2026: aparecia três vezes); aqui só o saldo de quem não deve */
+    var COR = {ok:"pos", atencao:"warn", atraso:"neg", sem:"mudo"};
+    var h = '<div class="topo"><h3>Últimas sessões</h3>'+(sd.deve ? "" : '<span class="sinal '+(COR[sd.classe] || "mudo")+'">'+esc(sd.texto)+'</span>')+'</div>';
     if(!l.length) h += '<p class="hint" style="margin:0">Nenhuma sessão ainda.</p>';
     var mostrar = ultimasTodas ? l : l.slice(0, 8);
     h += '<div class="fu-lista">';
@@ -4122,7 +4277,7 @@ function abrirFicha(p, foco, aba){
       h += '<div class="fu'+(x.futura ? " fut" : "")+'"><span class="fu-d">'+esc(DIAS_CURTO[x.d.getDay()].toLowerCase())+' '+dataCurta(x.d)+
         (x.d.getFullYear() !== hoje0().getFullYear() ? "/"+x.d.getFullYear() : "")+'</span>' +
         '<span class="fu-t">'+esc(x.texto)+'</span>' +
-        (x.pag === "consulta" ? "" : x.pag ? '<span class="sit '+CL[x.pag]+'">'+ROT[x.pag]+'</span>' : '<span class="hint">sem conta</span>') + '</div>';
+        (x.pag === "consulta" ? "" : x.pag ? '<span class="sinal '+CL[x.pag]+'">'+ROT[x.pag]+'</span>' : '<span class="hint">sem conta</span>') + '</div>';
     });
     h += '</div>';
     h += '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px">';
@@ -5297,30 +5452,45 @@ function renderPagamentos(){
     : "Ninguém com pagamento vencido.";
   document.getElementById("pg-semana").textContent = moeda(seteDias);
 
-  blocoCobrancas(document.getElementById("pg-cobrar"));
+  var rc = resumoCobrancas();
+  document.getElementById("pg-cobrar-n").textContent = textoCobrancas(rc);
+  document.getElementById("pg-cobrar-n").classList.toggle("neg", rc.vermelhos > 0);
   var tb = document.querySelector("#pg-tabela tbody");
   tb.innerHTML = "";
   linhas.forEach(function(l){
-    var p = l.p, s = l.s, dv = textoDevido(p);
+    var p = l.p, s = l.s, dv = textoDevido(p), dvd = devidoDe(p);
     var tr = document.createElement("tr");
     if(s.chave==="atraso" || dv.classe==="atraso") tr.className = "linha-atraso";
+    /* 04/11/2026: sem as três etiquetas por linha. O que deve é o único sinal forte; o vencimento vai em texto */
+    var COR = {atraso:"neg", ok:"pos", atencao:"warn", sem:"mudo"};
+    var diasAtraso = s.venc && s.venc < hoje0() ? Math.round((hoje0() - s.venc) / 86400000) : 0;
+    var proximo = !s.venc ? '<span class="hint">' + esc(s.texto) + '</span>'
+      : diasAtraso ? '<span class="txt-neg">venceu em ' + dataCurta(s.venc) + ', há ' + plural(diasAtraso, "dia", "dias") + '</span>'
+      : dataLonga(s.venc) + '<br><span class="hint">' + DIAS_CURTO[s.venc.getDay()].toLowerCase() + ' · </span><span class="sinal ' + (COR[s.classe] || "mudo") + '">' + esc(s.texto.charAt(0).toLowerCase() + s.texto.slice(1)) + '</span>';
+    var cobrar = dvd && dvd.exato > 0.005 ? '<button class="btn sm" data-cobrar-msg="'+esc(p.id)+'">Cobrar</button>' : "";
     /* data-rot: no celular a linha vira um cartão e cada dado leva o nome da coluna ao lado */
     tr.innerHTML =
       '<td class="pc-quem"><span class="quem"><span class="ini">'+esc(inicial1(p))+'</span>' +
         '<button class="linknome" data-ficha="'+esc(p.id)+'">'+esc(nomeDoPaciente(p))+'</button></span></td>' +
-      '<td data-rot="Deve"><span class="sit '+dv.classe+'" title="'+esc(dv.titulo)+'">'+esc(dv.texto)+'</span></td>' +
+      '<td data-rot="Deve"><span class="sinal '+(COR[dv.classe] || "mudo")+' deve" title="'+esc(dv.titulo)+'">'+esc(dv.texto).replace(/R\$ /g, "R$&nbsp;")+'</span></td>' +
       '<td data-rot="Cobrança">'+rotuloCobranca(p)+'<br><span class="hint">'+valorDoCiclo(p)+'</span></td>' +
       '<td data-rot="Último">'+(s.ultimo ? dataLonga(deISO(s.ultimo.data))+'<br><span class="hint">'+moeda(s.ultimo.valor)+(s.ultimo.meio ? ' · '+esc(MEIOS[s.ultimo.meio]||s.ultimo.meio) : "")+'</span>' : '<span class="hint">nunca</span>')+'</td>' +
-      '<td data-rot="Próximo">'+(!s.venc ? "—" : s.venc < hoje0() ? '<span class="sit atraso">venceu em '+dataCurta(s.venc)+'</span>' :
-        dataLonga(s.venc)+'<br><span class="hint">'+DIAS_CURTO[s.venc.getDay()].toLowerCase()+'</span>')+'</td>' +
-      '<td class="pc-sit" data-rot="Situação"><span class="sit '+s.classe+'">'+esc(s.texto)+'</span></td>' +
-      '<td class="num pc-acao"><button class="btn sm" data-recebi="'+esc(p.id)+'">Registrar pagamento</button></td>';
+      '<td data-rot="Próximo" class="pc-prox" title="'+esc(s.texto)+'">'+proximo+'</td>' +
+      '<td class="num pc-acao">'+cobrar+'<button class="btn sm" data-recebi="'+esc(p.id)+'">Registrar pagamento</button></td>';
     tb.appendChild(tr);
   });
+  /* o nome abre a ficha na aba Pagamento: era o que o cartão do antigo bloco Cobrar fazia */
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
     b.addEventListener("click", function(){
       var p = acharPaciente(b.dataset.ficha);
-      if(p) abrirFicha(p);
+      if(p) abrirFicha(p, null, "pagamento");
+    });
+  });
+  /* a cobrança pronta para copiar (a mesma do Painel): primeiro nome, sessões e valor em aberto */
+  tb.querySelectorAll("[data-cobrar-msg]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var p = acharPaciente(b.dataset.cobrarMsg), d = p && devidoDe(p);
+      if(d) abrirCobranca(p.nome, Math.abs(d.valor - d.exato) <= 0.5 ? d.sessoes : 0, d.exato);
     });
   });
   /* 06/10/2026: antes era "Recebi hoje", que gravava o valor do ciclo com um toque, sem mostrar o
@@ -5716,6 +5886,7 @@ function contarSessoesDe(p, de, ate){
   }
   return c;
 }
+var previstasInteiras = false;
 function renderSessoes(){
   var ref = new Date(mesRef.getFullYear(), mesRef.getMonth(), 1);
   var hoje = hoje0();
@@ -5755,17 +5926,26 @@ function renderSessoes(){
   var nomeMes = ref.toLocaleDateString("pt-BR",{month:"long"});
   document.getElementById("ss-p-marcar").classList.toggle("hidden", !falta.length);
   document.getElementById("ss-marcar-sub").textContent = plural(falta.length, "sessão já passou", "sessões já passaram") +
-    " e você ainda não disse o que aconteceu. Marque aqui ou na grade: ela sai desta lista e entra no histórico.";
+    " e você ainda não disse o que aconteceu.";
   document.getElementById("ss-historico-n").textContent = feitas.length ? plural(feitas.length, "sessão", "sessões") + " em " + nomeMes : "";
   document.getElementById("ss-previstas-n").textContent = futuras.length ? plural(futuras.length, "sessão", "sessões") + " em " + nomeMes : "";
-  var preencher = function(id, itens, vazio){
+  /* as previstas mostram as 6 primeiras e "Ver todas (N)" (04/11/2026): no celular o mês inteiro era uma tela comprida */
+  var preencher = function(id, itens, vazio, limite){
     var corpo = document.querySelector("#" + id + " tbody");
     corpo.innerHTML = itens.length ? "" : '<tr><td colspan="5"><p class="pvazio">' + vazio + '</p></td></tr>';
-    itens.forEach(function(s){ corpo.appendChild(linhaDaSessao(s)); });
+    var vistos = limite && itens.length > limite && !previstasInteiras ? itens.slice(0, limite) : itens;
+    vistos.forEach(function(s){ corpo.appendChild(linhaDaSessao(s)); });
+    if(limite && itens.length > limite){
+      var tr = document.createElement("tr");
+      tr.className = "ss-mais";
+      tr.innerHTML = '<td colspan="5"><button type="button" class="btn sm ghost" data-ss-mais>' +
+        (previstasInteiras ? "Mostrar só as próximas" : "Ver todas (" + itens.length + ")") + '</button></td>';
+      corpo.appendChild(tr);
+    }
   };
   preencher("ss-marcar", falta, "");
   preencher("ss-tabela", feitas, "Nenhuma sessão marcada em " + nomeMes + " ainda.");
-  preencher("ss-previstas", futuras, "Nenhuma sessão por vir em " + nomeMes + ".");
+  preencher("ss-previstas", futuras, "Nenhuma sessão por vir em " + nomeMes + ".", 6);
   function linhaDaSessao(s){
     var k = chaveData(s.data)+"|"+s.hora;
     var futuro = !jaPassou(s.data, s.hora);
@@ -5795,6 +5975,9 @@ function renderSessoes(){
   }
   tb.querySelectorAll("[data-ficha]").forEach(function(b){
     b.addEventListener("click", function(){ var p = acharPaciente(b.dataset.ficha); if(p) abrirFicha(p); });
+  });
+  tb.querySelectorAll("[data-ss-mais]").forEach(function(b){
+    b.addEventListener("click", function(){ previstasInteiras = !previstasInteiras; renderSessoes(); });
   });
   tb.querySelectorAll("[data-confirmar-extra]").forEach(function(b){
     b.addEventListener("click", function(){
@@ -5912,7 +6095,7 @@ function renderPainel(){
   dados.pacientes.forEach(function(p){
     if(!encerradoHoje(p)) return;
     var d = devidoDe(p), t = tratamentoDe(p);
-    if(d && d.exato > 0.005) foraDevendo.push({ficha:p, nome:nomeCompletoDe(p) || p.nome, codigo:p.codigo, fim:t && t.desde, status:p.status || rotuloTipoEnc(t && t.tipo), aPagar:d.exato});
+    if(d && d.exato > 0.005) foraDevendo.push({ficha:p, nome:nomeDoPaciente(p), codigo:p.codigo, fim:t && t.desde, status:p.status || rotuloTipoEnc(t && t.tipo), aPagar:d.exato});
   });
   (dados.arquivados || []).forEach(function(a){ if(Number(a.aPagar) > 0.5) foraDevendo.push(a); });
   foraDevendo.sort(function(a, b){ return b.aPagar - a.aPagar; });
@@ -5925,7 +6108,7 @@ function renderPainel(){
     hFora += '<table class="tab"><thead><tr><th>Paciente</th><th>Situação</th><th class="num">Valor</th></tr></thead><tbody>' +
       foraDevendo.map(function(a){
         return '<tr><td><div class="quem"><span class="ini">' + esc((a.nome || "?").charAt(0).toUpperCase()) + '</span><span>' +
-          (a.ficha ? '<button class="linknome" data-ficha="' + esc(a.ficha.id) + '">' + esc(a.nome) + '</button>' : '<b>' + esc(a.nome) + '</b>') +
+          (a.ficha ? '<button class="linknome" data-ficha="' + esc(a.ficha.id) + '">' + esc(a.nome) + '</button>' : '<b>' + esc(nomeDeQuemSaiu(a)) + '</b>') +
           '<br><span class="hint">' + esc(a.codigo) + (a.fim ? " · saiu em " + dataLonga(deISO(a.fim)) : "") + '</span></span></div></td>' +
           '<td>' + esc(String(a.status || "").replace(/\.$/, "")) +
           (a.ficha ? '<button class="btn sm cobrar" data-cobrar="' + esc(a.ficha.id) + '">Cobrar</button>' : '<button class="btn sm cobrar" data-cobrar-fora="' + esc(a.codigo) + '">Cobrar</button>') +
@@ -6742,10 +6925,10 @@ function opcoesOrigem(codigo){
 /* a carteira inteira, de quem começou por último para quem começou primeiro */
 function carteiraInteira(){
   var l = dados.pacientes.map(function(p){
-    return {codigo:p.codigo, nome:nomeCompletoDe(p) || p.nome, inicio:p.inicio || "", situacao:encerradoHoje(p) ? rotuloTipoEnc(tratamentoDe(p).tipo).toLowerCase() : "na agenda"};
+    return {codigo:p.codigo, nome:nomeDoPaciente(p), inicio:p.inicio || "", situacao:encerradoHoje(p) ? rotuloTipoEnc(tratamentoDe(p).tipo).toLowerCase() : "na agenda"};
   });
   (dados.arquivados || []).forEach(function(a){
-    l.push({codigo:a.codigo, nome:a.nome, inicio:a.inicio || "", situacao:String(a.status||"").replace(/\.$/,"").toLowerCase()});
+    l.push({codigo:a.codigo, nome:nomeDeQuemSaiu(a), inicio:a.inicio || "", situacao:String(a.status||"").replace(/\.$/,"").toLowerCase()});
   });
   return l.sort(function(a,b){ return (b.inicio||"").localeCompare(a.inicio||"") || a.nome.localeCompare(b.nome); });
 }
@@ -6869,15 +7052,18 @@ function renderMarketing(){
   });
   var comNota = grupos.filter(function(g){ return g.nota !== null; });
   var melhor = comNota.length ? comNota[0].nota : 0;
+  /* a primeira frase fica à vista; o resto, no "Como funciona" (04/11/2026) */
   document.getElementById("mk-rank-sub").textContent = !grupos.length ? "Aparece aqui quando houver anúncio lançado."
-    : (porRetorno ? "Do que mais devolveu para cada real gasto ao que menos devolveu. O mesmo post turbinado várias vezes conta junto."
-                  : "Do que paga menos por conversa ao que paga mais. Quando houver pacientes marcados em dois posts, a ordem passa a ser por quanto voltou para cada real.");
+    : (porRetorno ? "Do que mais devolveu para cada real gasto ao que menos devolveu." : "Do que paga menos por conversa ao que paga mais.");
+  document.getElementById("mk-rank-ajuda").textContent = porRetorno ? "O mesmo post turbinado várias vezes conta junto."
+    : "Quando houver pacientes marcados em dois posts, a ordem passa a ser por quanto voltou para cada real. O mesmo post turbinado várias vezes conta junto.";
+  document.getElementById("mk-rank-ajuda-d").hidden = !grupos.length;
   /* cada post numa linha: a posição, o nome, a barra e, à direita, o número que decide a ordem */
   document.getElementById("mk-rank").innerHTML = grupos.length ? grupos.map(function(g, i){
     var etiqueta = "";
-    if(g.nota === null) etiqueta = '<span class="sit sem">sem métrica ainda</span>';
-    else if(comNota.length >= 2 && g === comNota[0]) etiqueta = '<span class="sit ok">vale mais</span>';
-    else if(comNota.length >= 2 && g === comNota[comNota.length-1] && g.nota < melhor) etiqueta = '<span class="sit atraso">vale menos</span>';
+    if(g.nota === null) etiqueta = '<span class="sinal mudo">sem métrica ainda</span>';
+    else if(comNota.length >= 2 && g === comNota[0]) etiqueta = '<span class="sinal pos">vale mais</span>';
+    else if(comNota.length >= 2 && g === comNota[comNota.length-1] && g.nota < melhor) etiqueta = '<span class="sinal neg">vale menos</span>';
     var largura = g.nota !== null && melhor > 0 ? Math.max(3, Math.round(g.nota / melhor * 100)) : 0;
     var nota = g.nota === null ? '<b class="nada">—</b><span>sem métrica</span>'
       : porRetorno ? '<b>'+moeda2(g.nota)+'</b><span>voltou por R$ 1</span>'
@@ -6896,7 +7082,7 @@ function renderMarketing(){
 
   /* 3. cada anúncio, do mais novo para o mais antigo */
   var codigoNome = {};
-  carteiraInteira().forEach(function(x){ codigoNome[x.codigo] = String(x.nome||"").trim().split(/\s+/)[0]; });
+  carteiraInteira().forEach(function(x){ codigoNome[x.codigo] = x.nome; });
   var num = function(v, rotulo, extra, vazio){
     return '<div'+(vazio ? ' class="vazio"' : "")+'><span class="rot">'+rotulo+'</span><b>'+v+'</b>'+(extra ? '<small>'+extra+'</small>' : "")+'</div>';
   };
@@ -6930,7 +7116,7 @@ function renderMarketing(){
       '</div>' + (miudos.length ? '<p class="pe">'+miudos.join('<i aria-hidden="true">·</i>')+'</p>' : "");
     }
     return '<div class="mk-an'+(s.classe === "ok" ? " no-ar" : "")+'"><div class="topo"><div class="tit"><h3>'+esc(a.post || "Anúncio sem nome")+'</h3>' +
-        '<span class="quando">'+periodo+'<span class="sit '+s.classe+'">'+esc(s.texto)+'</span></span></div>' +
+        '<span class="quando">'+periodo+'<span class="sinal '+(s.classe === "ok" ? "pos ponto" : "mudo")+'">'+esc(s.texto)+'</span></span></div>' +
         '<button class="btn sm" data-anuncio="'+esc(a.id)+'" aria-label="Editar o anúncio '+esc(a.post || "")+'">Editar</button></div>' +
       corpo + (nomes ? '<p class="pe quem">Vieram dele: <b>' + esc(nomes) + '</b></p>' : "") + '</div>';
   }).join("") + (contas.length > LIMITE_AN ? '<button class="btn sm ghost mk-todos" id="mk-todos">' +
@@ -6990,7 +7176,7 @@ function renderMarketing(){
   alvo.innerHTML = (mostrados.length ? mostrados.map(function(x){
     var pago = retornoDe(rec[x.codigo]).total;
     return '<div class="mk-origem'+(valorOrigem(x.codigo) ? "" : " falta")+'"><span class="quem"><b>'+esc(x.nome)+'</b>' +
-      '<span>'+esc(x.codigo)+(x.inicio ? " · começou em "+dataLonga(deISO(x.inicio)) : "")+" · "+esc(x.situacao)+(pago > 0 ? " · já pagou "+moeda(pago) : "")+'</span></span>' +
+      '<span>'+esc(x.codigo)+(x.inicio ? " · começou em "+dataLonga(deISO(x.inicio)) : "")+" · "+esc(x.situacao)+(pago > 0 ? " · já pagou "+moeda(pago).replace(" ", " ") : "")+'</span></span>' +
       '<select data-origem="'+esc(x.codigo)+'" aria-label="Como '+esc(x.nome)+' chegou">'+opcoesOrigem(x.codigo)+'</select></div>';
   }).join("") : '<p class="pvazio">'+(todos.length ? "Ninguém nesta lista." : 'Nenhum paciente ainda. Use "Adicionar paciente".')+'</p>') +
     (visiveis.length > LIMITE ? '<button class="btn sm ghost" id="mk-mais" style="margin-top:10px">'+
@@ -7005,7 +7191,7 @@ function renderMarketing(){
   var aviso = document.getElementById("mk-aviso"), faltam = conta[""] || 0;
   aviso.classList.toggle("hidden", !(faltam > 0 && contas.length > 0));
   if(faltam > 0 && contas.length > 0){
-    aviso.innerHTML = '<span><b>' + plural(faltam, "paciente", "pacientes") + ' sem marcar</b> como chegou. Sem isso o app não sabe quantos pacientes cada anúncio trouxe.</span>' +
+    aviso.innerHTML = '<span><b>' + plural(faltam, "paciente", "pacientes") + ' sem marcar</b> como chegou: sem isso o app não sabe quantos pacientes cada anúncio trouxe.</span>' +
       '<button class="btn sm" id="mk-marcar">Marcar agora</button>';
     document.getElementById("mk-marcar").addEventListener("click", function(){
       filtroOrigem = ""; origensInteiras = false; renderMarketing();
@@ -7917,7 +8103,7 @@ document.querySelector(".top .tabs").addEventListener("scroll", function(){ dica
 window.addEventListener("resize", function(){ dicaDeAbas(); });
 if(window.ResizeObserver) new ResizeObserver(function(){ dicaDeAbas(); }).observe(document.querySelector(".top .tabs"));
 /* na semana, a lista de baixo mostra o mês em que a semana cai (pela quarta-feira dela) */
-(function(){ var d = document.getElementById("leg-semana"); if(d && !window.matchMedia("(max-width:700px)").matches) d.open = true; })();
+/* a legenda da semana abria sozinha no computador; desde 04/11/2026 fica fechada em toda tela */
 function mesDaSemana(){ var q = somaDias(semana, 3); mesRef = new Date(q.getFullYear(), q.getMonth(), 1); }
 function renderTudo(){
   /* quem está devendo e os números de cada mês mudam a cada pagamento: um cálculo por desenho */
