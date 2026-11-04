@@ -2897,12 +2897,19 @@ function trazerDadosDoArquivo(arquivo){
     recado("Pronto: dados de " + plural(c.pacientes, "paciente", "pacientes") + " no app.");
   }).catch(function(err){ recado("Não consegui ler: " + err.message); });
 }
-/* o nome do paciente em toda tela: primeiro e último nome do cadastro (o mesmo na grade, no Hoje e nas listas) */
+/* o nome do paciente em toda tela: primeiro e último nome do cadastro (o mesmo na grade, no Hoje e nas listas).
+   "Nome nas telas" escolhido na ficha passa na frente (04/11/2026: Sarah Karolina, pedido dele) */
 function nomeDoPaciente(p){
+  if(p.nomeTela && p.nomeTela.trim()) return p.nomeTela.trim();
   var partes = nomeCompletoDe(p).trim().split(/\s+/).filter(Boolean);
   return partes.length <= 1 ? (partes[0] || p.nome || "") : partes[0] + " " + partes[partes.length - 1];
 }
 function nomeGrade(p){ return nomeDoPaciente(p); }
+/* dois pacientes com o mesmo nome na tela confundem a grade e os recibos (04/11/2026) */
+function nomeRepetido(p){
+  var n = nomeDoPaciente(p).toLowerCase();
+  return dados.pacientes.some(function(o){ return o !== p && nomeDoPaciente(o).toLowerCase() === n; });
+}
 function nomeCurto(p){ return nomeDoPaciente(p); }
 /* só para achar o paciente pelo "Nome na agenda" ao ler a planilha */
 function nomeCurtoAgenda(p){
@@ -3864,8 +3871,11 @@ function abrirFicha(p, foco, aba){
       '<div class="fipag fi-agenda" id="fi-agenda">' +
       '<h3 class="fi-agenda-t">Agenda</h3>' +
       '<div class="grid2">' +
+        '<div class="field"><label for="fi-nome-tela">Nome nas telas</label>' +
+          '<input id="fi-nome-tela" data-campo="nomeTela" value="'+esc(p.nomeTela||"")+'" placeholder="'+esc(nomeDoPaciente(Object.assign({}, p, {nomeTela:""})))+'">' +
+          '<span class="hint">'+(nomeRepetido(p) ? 'Outro paciente aparece com este nome: escolha outro.' : 'Em branco: primeiro e último nome do cadastro.')+'</span></div>' +
         '<div class="field"><label for="fi-nome">Nome na agenda</label>' +
-          '<input id="fi-nome" data-campo="nome" value="'+esc(p.nome)+'"><span class="hint">É o que aparece na grade.</span></div>' +
+          '<input id="fi-nome" data-campo="nome" value="'+esc(p.nome)+'"><span class="hint">Serve para achar o paciente ao ler a planilha.</span></div>' +
         '<div class="field"><label for="fi-codigo">Prontuário</label>' +
           '<input id="fi-codigo" data-campo="codigo" value="'+esc(p.codigo)+'"><span class="hint">Liga com a planilha.</span></div>' +
       '</div>' +

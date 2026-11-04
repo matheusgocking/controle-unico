@@ -42,6 +42,17 @@ test("Clínica: um nome só por paciente, vencimento passado em 'venceu em' e a 
   });
   assert.equal(r.nome, "Fulana Inventada");
   assert.equal(r.grade, r.nome); assert.equal(r.curto, r.nome);
+  /* "Nome nas telas" escolhido passa na frente, e o nome repetido é percebido (04/11/2026) */
+  const t = await p.evaluate(() => {
+    const x = dados.pacientes[0], y = dados.pacientes[1];
+    x.nomeTela = "Fulana de Tal";
+    const antes = nomeRepetido(x);
+    y.nomeTela = "fulana de tal";
+    const r = { grade: nomeGrade(x), antes, depois: nomeRepetido(x) };
+    delete x.nomeTela; delete y.nomeTela;
+    return r;
+  });
+  assert.deepEqual(t, { grade: "Fulana de Tal", antes: false, depois: true });
   assert.equal(r.passado, "venceu em 20/09");
   assert.match(r.futuro, /^na sessão de /);
   /* a remarcação guarda o dia em que foi marcada; marcar de novo não troca */
