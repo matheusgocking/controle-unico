@@ -4805,14 +4805,15 @@ function textoDivulgacao(){
     }
     if(horas.length) linhas.push("* *"+DIAS[d.getDay()]+":* "+horas.join(" | ")+".");
   }
-  var t = "*COMO FUNCIONA OS ATENDIMENTOS?*\n\n"+
+  // título colado na lista (pedido dele, 06/11/2026): linha em branco só entre os blocos
+  var t = "*COMO FUNCIONA OS ATENDIMENTOS?*\n"+
     "* *Modalidade:* Online, via Google Meet. O link será enviado antecipadamente.\n"+
     "* *Duração:* 50min-60min.\n"+
     "* *Pagamento:* Realizado antecipadamente.\n\n"+
-    "*VALOR DOS ATENDIMENTOS* 💰\n\n"+
+    "*VALOR DOS ATENDIMENTOS* 💰\n"+
     "* *Sessão avulsa:* R$"+Number(c.avulsa).toFixed(2).replace(".",",")+".\n"+
     "* *Ciclo mensal:* R$"+Number(c.mensal).toFixed(2).replace(".",",")+" - inclui 4 sessões.\n\n"+
-    "*HORÁRIOS DISPONÍVEIS* ⏰\n\n"+
+    "*HORÁRIOS DISPONÍVEIS* ⏰\n"+
     (linhas.length ? linhas.join("\n") : "* Nenhum horário divulgado nesta semana.")+"\n\n"+
     "_Caso você precise de algum horário que não está na tabela, me avise para que possamos alinhar um horário que fique bom para os dois!_ 😉";
   return t;

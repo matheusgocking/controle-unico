@@ -319,6 +319,12 @@ test("Clínica: \"não haverá\" deixa o nome na grade, apagado, e o menu volta 
     // o horário divulgado continua contando como livre e entrando na mensagem, como antes
     assert.equal(await p.evaluate(() => horasDivulgadasSemana()), 1);
     assert.match(await p.evaluate(() => textoDivulgacao()), /Segunda-feira:\* 09:00h/);
+    // título colado na lista, sem linha em branco entre eles (pedido dele, 06/11/2026)
+    const msg = await p.evaluate(() => textoDivulgacao());
+    assert.match(msg, /ATENDIMENTOS\?\*\n\* \*Modalidade/);
+    assert.match(msg, /💰\n\* \*Sessão avulsa/);
+    assert.match(msg, /⏰\n\* \*/);
+    assert.match(msg, /antecipadamente\.\n\n\*VALOR/);
     // tocar abre a escolha com "Não haverá" marcado; "Normal" desfaz
     await cel.click();
     assert.equal(await p.locator('.menu .op.on').textContent().then(t => t.startsWith("Não haverá")), true);
