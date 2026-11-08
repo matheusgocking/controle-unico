@@ -1311,6 +1311,65 @@ table.pg-cartoes td.pc-acao .btn + .btn{margin-left:6px}
   .mk-an,.mk-an.no-ar{padding:14px 0}
   .mk-aviso .btn{width:auto}
 }
+/* compromissos na agenda (08/11/2026): do Lastro e dele. Uma faixa fina no alto da célula, com o
+   nome e a hora; laranja quando cai em cima de uma sessão; mais clara quando ele não está no do Lastro */
+.cell.tem-cp{background-image:linear-gradient(var(--accent),var(--accent)); background-size:100% 3px; background-repeat:no-repeat; padding-top:13px}
+.cell.tem-cp.cp-nao-meu{background-image:linear-gradient(var(--accent-line),var(--accent-line))}
+.cell.tem-cp.cp-choque{background-image:linear-gradient(var(--warn),var(--warn))}
+.cell .cp-tag{position:absolute; top:2px; left:3px; max-width:calc(100% - 64px); padding:0 4px; border-radius:3px; background:var(--surface); box-shadow:0 0 0 1px var(--accent-line); font-size:10px; line-height:1.35; font-weight:600; color:var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; pointer-events:none}
+.cell.tem-cp:not(:has(.cod)) .cp-tag{max-width:calc(100% - 8px)}
+.cell.cp-nao-meu .cp-tag{color:var(--muted); font-weight:500}
+.cell.cp-choque .cp-tag{color:var(--warn); box-shadow:0 0 0 1px var(--warn)}
+.cell.cp-so{background-color:var(--accent-soft); padding-top:4px}
+.cell.cp-so .cp-t{max-width:100%; font-size:12px; font-weight:600; line-height:1.2; color:var(--accent); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; hyphens:auto; -webkit-hyphens:auto; overflow-wrap:break-word}
+.cell.cp-so .cp-h2{display:none}
+.cell.cp-so .cp-h{font-size:10.5px; color:var(--muted); white-space:nowrap}
+.cell.cp-so.cp-nao-meu{background-color:var(--surface-2)}
+.cell.cp-so.cp-nao-meu .cp-t{color:var(--muted); font-weight:500}
+.cell-cp .cp-b{border-left-color:var(--accent)}
+.cell-cp .cp-b.nao-meu{border-left-color:var(--accent-line); color:var(--muted)}
+.cp-lastro{display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; margin:8px 2px 0; font-size:12.5px; color:var(--muted)}
+.cp-lastro a{color:var(--accent)}
+.cp-ponto{width:8px; height:8px; border-radius:50%; background:var(--faint); flex:none}
+.cp-ponto.ok{background:var(--pos)} .cp-ponto.entrar,.cp-ponto.sem-acesso{background:var(--warn)} .cp-ponto.fora{background:var(--neg)}
+.menu .cp-menu{display:flex; flex-direction:column; gap:4px; margin:0 0 8px}
+.menu .cp-item{border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:9px; padding:7px 9px; min-height:44px}
+.menu .cp-item.nao-meu{border-left-color:var(--accent-line)}
+.menu .cp-item span{display:flex; flex-direction:column; min-width:0}
+.menu .cp-item b{font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.menu .cp-item small{font-size:11.5px; color:var(--muted)}
+.menu .cp-item i{display:none}
+.dia-chip .cpm{position:absolute; bottom:5px; left:5px; width:7px; height:7px; border-radius:2px; background:var(--accent); transform:rotate(45deg)}
+.dia-chip.on .cpm{background:var(--accent-ink)}
+.pcard.cp-card .ini{background:var(--accent-soft); color:var(--accent); font-size:13px}
+.pcard.cp-card.nao-meu .n{color:var(--muted); font-weight:500}
+.cp-dl{display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 14px; margin:12px 0; font-size:14px}
+.cp-dl dt{color:var(--muted)} .cp-dl dd{margin:0; overflow-wrap:anywhere}
+.cp-nao{color:var(--muted)}
+.cp-modal a.btn{text-decoration:none}
+.cp-nota{font-size:12.5px; color:var(--muted); margin:8px 0 0}
+.cp-form{display:flex; flex-direction:column; gap:10px; margin-top:10px}
+.cp-form .pf input,.cp-form .pf select,.cp-form .pf textarea{width:100%}
+.cp-linha{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); gap:10px}
+.leg-semana .sw-cp{background:var(--surface); border-left:0; box-shadow:inset 0 3px 0 var(--accent)}
+.bar-acoes{display:flex; flex-wrap:wrap; gap:8px}
+@media (max-width:700px){
+  .bar-acoes{width:100%}
+  .bar-acoes .btn{flex:1 1 0; width:auto; padding:8px}
+  .cell.tem-cp{padding-top:12px}
+  /* no celular a célula é estreita: sobre sessão o compromisso vira um losango no canto (o nome está no menu) */
+  .cell .cp-tag{font-size:0; width:8px; height:8px; padding:0; top:auto; bottom:4px; left:4px; border-radius:1px; background:var(--accent); box-shadow:0 0 0 1.5px var(--surface); transform:rotate(45deg)}
+  .cell.cp-choque .cp-tag{background:var(--warn); box-shadow:0 0 0 1.5px var(--surface)}
+  .cell.cp-nao-meu .cp-tag{background:var(--accent-line)}
+  .cell.tem-cp:not(.cp-so){padding-top:0}
+  .cell.cp-so{padding:3px 2px}
+  .cell.cp-so .cp-t{font-size:10px; -webkit-line-clamp:3}
+  .cell.cp-so .cp-h{display:none}
+  .cell.cp-so .cp-h2{display:block; font-size:9px; color:var(--muted)}
+  .cp-linha{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .cp-linha .pf:first-child{grid-column:1 / -1}
+  .cp-form .pf input,.cp-form .pf select,.cp-form .pf textarea{font-size:16px}
+}
 </style>
 <script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
 <script src="nuvem.js"></script>
@@ -1365,10 +1424,13 @@ table.pg-cartoes td.pc-acao .btn + .btn{margin-left:6px}
         <div title="Horários divulgados que continuam sem paciente nesta semana."><b id="s-divulgados">0</b><span>Divulgados livres</span></div>
         <div title="Sessões da semana divididas pelas horas de atendimento que você aceita (aba Meta)."><b id="s-ocupacao">0%</b><span>Ocupação</span></div>
       </div>
-      <button class="btn primary" id="msg">Mensagem de divulgação</button>
+      <div class="bar-acoes"><button class="btn" type="button" id="novo-cp">+ Compromisso</button>
+      <button class="btn primary" id="msg">Mensagem de divulgação</button></div>
     </div>
 
     <div class="gridwrap"><div class="grid" id="grade"></div></div>
+    <!-- a agenda do Lastro, lida ao vivo do site do Lastro (08/11/2026) -->
+    <p class="cp-lastro" id="cp-lastro" role="status"></p>
 
     <!-- os pacientes de hoje em cartões, iguais aos da aba Pacientes (28/09/2026);
          depois da grade, não antes (pedido dele, 01/10/2026) -->
@@ -1397,6 +1459,9 @@ table.pg-cartoes td.pc-acao .btn + .btn{margin-left:6px}
         <span class="it"><i class="sw sw-divulgado"></i>Divulgado</span>
         <span class="it"><i class="sw sw-reservado"></i>Não divulgado</span>
         <span class="it"><i class="sw sw-livre"></i>Sem atendimento</span>
+      </div></div>
+      <div class="grupo"><h3>Compromisso</h3><div class="itens">
+        <span class="it"><i class="sw sw-cp"></i>Faixa no alto: compromisso seu ou do Lastro (laranja quando cai numa sessão)</span>
       </div></div>
       <p class="dica">Toque num horário para escolher a situação. Arraste um paciente para outro horário para remarcar.</p>
     </div>
@@ -1870,6 +1935,7 @@ function normalizar(d){
   if(!d.arquivados) d.arquivados = [];
   if(!d.formulacoes) d.formulacoes = {};
   if(!d.excecoes) d.excecoes = {};
+  if(!Array.isArray(d.compromissos)) d.compromissos = [];
   consertarIds(d);
   return d;
 }
@@ -1916,7 +1982,8 @@ function inicial(){
     pagamentos:[],
     arquivados:[],
     formulacoes:{},
-    excecoes:{}
+    excecoes:{},
+    compromissos:[]
   };
 }
 
@@ -2519,6 +2586,31 @@ function renderSemana(){
     });
   }
 
+  /* compromissos antes da primeira hora ou depois da última da grade (08/11/2026) */
+  var foraG = [], temFora = false;
+  for(var fg=0; fg<7; fg++){ foraG.push(compromissosForaDaGrade(chaveData(somaDias(semana, fg)))); if(foraG[fg].length) temFora = true; }
+  if(temFora){
+    var labF = document.createElement("div");
+    labF.className = "hour sh";
+    labF.textContent = "Outra hora";
+    labF.title = "Compromissos antes da primeira hora ou depois da última da grade";
+    grade.appendChild(labF);
+    foraG.forEach(function(l){
+      var c = document.createElement("div");
+      c.className = "cell-sh cell-cp";
+      l.forEach(function(x){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "cp-b" + (x.meu ? "" : " nao-meu");
+        b.innerHTML = '<b>'+esc(x.titulo)+'</b><span>'+esc(cpHorario(x))+(x.origem==="lastro" ? " · Lastro" : "")+'</span>';
+        b.setAttribute("aria-label", "Compromisso: "+cpRotulo(x)+(x.origem==="lastro" ? ", do Lastro" : ""));
+        b.addEventListener("click", function(){ abrirCompromisso(x); });
+        c.appendChild(b);
+      });
+      grade.appendChild(c);
+    });
+  }
+
   for(var hora=dados.config.horaInicio; hora<=dados.config.horaFim; hora++){
     var lab = document.createElement("div");
     lab.className = "hour";
@@ -2571,6 +2663,22 @@ function renderSemana(){
         b.addEventListener("dragstart", aoArrastar);
         b.addEventListener("dragend", function(){ document.querySelectorAll(".cell").forEach(function(c){ c.classList.remove("arrastando","alvo","proibido"); }); });
       }
+      /* compromisso nesta hora (08/11/2026): faixa no alto, laranja se cai em cima de uma sessão */
+      var cpsH = compromissosNaHora(chaveData(data), hora);
+      if(cpsH.length){
+        var rotCp = cpsH.map(cpRotulo).join(" · ");
+        b.classList.add("tem-cp");
+        if(cpsH.every(function(x){ return !x.meu; })) b.classList.add("cp-nao-meu");
+        else if(info.paciente && /sessao|cortesia|falta/.test(info.classe)) b.classList.add("cp-choque");
+        /* hora vazia: o compromisso ocupa a célula; com paciente ou etiqueta, fica na faixa do alto */
+        if(!b.textContent.trim()){
+          b.classList.add("cp-so");
+          b.insertAdjacentHTML("afterbegin", '<span class="cp-t">'+esc(cpsH.map(function(x){ return x.titulo; }).join(" · "))+'</span><span class="cp-h">'+esc(cpHorario(cpsH[0]))+'</span><span class="cp-h2">'+esc(cpHora(cpsH[0].ini))+'</span>');
+        }
+        else b.insertAdjacentHTML("afterbegin", '<span class="cp-tag">'+esc(rotCp)+'</span>');
+        b.setAttribute("aria-label", b.getAttribute("aria-label") + "; compromisso: " + rotCp);
+        b.title = (b.title ? b.title + ". " : "") + "Compromisso: " + rotCp;
+      }
       b.addEventListener("dragover", aoSobrevoar);
       b.addEventListener("dragleave", function(ev){ ev.currentTarget.classList.remove("alvo","proibido"); });
       b.addEventListener("drop", aoSoltar);
@@ -2617,13 +2725,14 @@ function renderHoje(){
   var caixa = document.getElementById("hoje-faixa");
   var hoje = hoje0();
   var dias = [];
-  for(var i=0;i<7;i++){ var d = somaDias(semana,i); dias.push({data:d, lista:sessoesDaFaixa(d)}); }
-  var temAlguma = dias.some(function(x){ return x.lista.length; });
+  for(var i=0;i<7;i++){ var d = somaDias(semana,i); dias.push({data:d, lista:sessoesDaFaixa(d), cps:compromissosDoDia(chaveData(d))}); }
+  var tem = function(x){ return x.lista.length || x.cps.length; };
+  var temAlguma = dias.some(tem);
   caixa.classList.toggle("hidden", !temAlguma);
   if(!temAlguma) return;
   var aberto = dias.filter(function(x){ return chaveData(x.data)===diaFaixa; })[0] ||
     dias.filter(function(x){ return mesmoDia(x.data, hoje); })[0] ||
-    dias.filter(function(x){ return x.lista.length; })[0];
+    dias.filter(tem)[0];
   var faixa = document.getElementById("hoje-dias");
   faixa.innerHTML = "";
   dias.forEach(function(x){
@@ -2634,33 +2743,51 @@ function renderHoje(){
     b.setAttribute("aria-pressed", x===aberto ? "true" : "false");
     b.setAttribute("aria-label", DIAS[x.data.getDay()] + ", " + dataCurta(x.data) + ": " +
       (x.lista.length ? plural(x.lista.length, "sessão", "sessões") : "sem sessão") +
+      (x.cps.length ? "; " + plural(x.cps.length, "compromisso", "compromissos") : "") +
       (devem ? "; " + plural(devem, "paciente deve", "pacientes devem") : ""));
     b.innerHTML = '<span class="d">'+(mesmoDia(x.data, hoje) ? "hoje" : DIAS_CURTO[x.data.getDay()])+'</span>' +
       '<span class="n">'+x.data.getDate()+'</span>' +
       '<span class="q">'+(x.lista.length || "–")+'</span>' +
+      (x.cps.length ? '<span class="cpm" aria-hidden="true"></span>' : "") +
       (devem ? '<span class="ponto" aria-hidden="true"></span>' : "");
     b.addEventListener("click", function(){ diaFaixa = chaveData(x.data); renderHoje(); });
     faixa.appendChild(b);
   });
-  var dia = aberto.data, lista = aberto.lista, ehHoje = mesmoDia(dia, hoje);
+  var dia = aberto.data, lista = aberto.lista, cps = aberto.cps, ehHoje = mesmoDia(dia, hoje);
   var rot = {realizada:"realizada ✓", falta:"faltou", cortesia:"cortesia"};
   document.getElementById("hoje-titulo").textContent = (ehHoje ? "Hoje · " + DIAS[dia.getDay()].toLowerCase() : DIAS[dia.getDay()]) + ", " + dataCurta(dia);
   var devedores = lista.filter(function(s){ return deveNaFaixa(s.paciente, s, dia); }).length;
-  document.getElementById("hoje-sub").textContent = !lista.length ? "" :
-    lista.length + (lista.length>1 ? " sessões" : " sessão") +
-    (devedores ? " · " + plural(devedores, "paciente deve", "pacientes devem") : "") +
-    " · toque no nome para abrir a ficha";
+  document.getElementById("hoje-sub").textContent = [
+    lista.length ? lista.length + (lista.length>1 ? " sessões" : " sessão") : "",
+    cps.length ? plural(cps.length, "compromisso", "compromissos") : "",
+    devedores ? plural(devedores, "paciente deve", "pacientes devem") : "",
+    lista.length ? "toque no nome para abrir a ficha" : ""].filter(Boolean).join(" · ");
   var alvo = document.getElementById("hoje-cartoes");
   alvo.innerHTML = "";
-  if(!lista.length){ alvo.innerHTML = '<p class="hoje-vazio">Nenhuma sessão neste dia.</p>'; return; }
-  lista.forEach(function(s){
+  if(!lista.length && !cps.length){ alvo.innerHTML = '<p class="hoje-vazio">Nenhuma sessão neste dia.</p>'; return; }
+  /* sessões e compromissos juntos, em ordem de horário (08/11/2026) */
+  var itens = lista.map(function(s){ return {min:s.hora*60, s:s}; }).concat(cps.map(function(c){ return {min:cpMin(c.ini), c:c}; }));
+  itens.sort(function(a, b){ return a.min - b.min; });
+  itens.forEach(function(it){
+    if(it.c){
+      var c = it.c, k = document.createElement("button");
+      k.type = "button";
+      k.className = "pcard cp-card" + (c.meu ? "" : " nao-meu");
+      k.innerHTML = '<span class="ini" aria-hidden="true">◆</span>' +
+        '<span class="corpo"><span class="n">'+esc(c.titulo)+'</span>' +
+        '<span class="sub">'+esc(cpHorario(c))+' · '+(c.origem==="lastro" ? "Lastro" + (LASTRO.projetos[c.ev.proj] ? ", " + esc(LASTRO.projetos[c.ev.proj]) : "") : "compromisso seu")+(c.meu ? "" : " · você não está")+'</span></span>';
+      k.addEventListener("click", function(){ abrirCompromisso(c); });
+      alvo.appendChild(k);
+      return;
+    }
+    var s = it.s;
     var p = s.paciente, pg = situacaoPagamento(p), pr = p.prontuario || {}, dv = textoDevido(p);
     var estado = rot[s.estado] || (jaPassou(dia, s.hora) ? "a confirmar" : "prevista");
     /* o mesmo saldo da célula da grade, da semana aberta (13/10/2026) */
     var snf = cobraSessao(s.estado) ? saldoNaSessao(p, dia, s.hora, somaDias(semana, 6), s.estado) : null;
-    var c = document.createElement("button");
-    c.className = "pcard";
-    c.innerHTML =
+    var cc = document.createElement("button");
+    cc.className = "pcard";
+    cc.innerHTML =
       '<span class="ini">'+esc(inicial1(p))+'</span>' +
       '<span class="corpo">' +
         '<span class="n">'+esc(nomeDoPaciente(p))+'</span>' +
@@ -2669,8 +2796,8 @@ function renderHoje(){
       (snf ? '<span class="selo '+snf.classe+(snf.classe==="atraso" ? " divida" : "")+'" title="'+esc(snf.titulo)+'">'+esc(snf.texto)+'</span>' :
        dv.classe==="atraso" ? '<span class="selo atraso divida" title="'+esc(dv.titulo||"")+'">'+esc(dv.texto)+'</span>'
                             : '<span class="selo '+pg.classe+'">'+esc(pg.texto)+'</span>');
-    c.addEventListener("click", function(){ abrirFicha(p); });
-    alvo.appendChild(c);
+    cc.addEventListener("click", function(){ abrirFicha(p); });
+    alvo.appendChild(cc);
   });
 }
 
@@ -3140,6 +3267,11 @@ function abrirMenu(e){
   var cab = '<div class="head"><b>'+(info.paciente ? esc(nomeGrade(info.paciente)) : DIAS[dia]+", "+String(hora).padStart(2,"0")+"h")+'</b>'+
     '<span>'+(info.paciente ? quandoTxt : data.toLocaleDateString("pt-BR"))+'</span></div>';
   var corpo = "";
+  /* os compromissos desta hora (08/11/2026): tocar abre o compromisso */
+  var cpsMenu = compromissosNaHora(chaveData(data), hora);
+  if(cpsMenu.length) corpo += '<div class="cp-menu" role="group" aria-label="Compromissos nesta hora">' + cpsMenu.map(function(c, i){
+    return '<button type="button" class="cp-item'+(c.meu ? "" : " nao-meu")+'" data-cp="'+i+'"><span><b>'+esc(c.titulo)+'</b><small>'+esc(cpHorario(c))+(c.origem==="lastro" ? " · Lastro" : " · seu")+'</small></span></button>';
+  }).join("") + '</div>';
 
   /* O menu da célula virou uma escolha só (05/10/2026): cada situação é um quadradinho com a
      mesma cor da grade e da legenda, a atual vem marcada, e tocar na marcada volta ao normal.
@@ -3186,6 +3318,7 @@ function abrirMenu(e){
       dados.pacientes.map(function(p){ return '<option value="'+esc(p.id)+'">'+esc(nomeDoPaciente(p))+'</option>'; }).join("")+'</select></div>';
   }
 
+  corpo += '<div class="acoes cp-acoes">' + botao("novo-cp", "+ Compromisso nesta hora", "var(--accent)") + '</div>';
   m.innerHTML = cab + corpo;
   document.body.appendChild(m);
   posicionarMenu(m, cel);
@@ -3207,6 +3340,7 @@ function abrirMenu(e){
       var a = b.dataset.acao;
       var kData = chaveData(data)+"|"+hora, kBloco = dia+"-"+hora;
       if(a==="fechar"){ fecharMenu(); return; }
+      if(a==="novo-cp"){ var hIni = Math.min(hora, 22); abrirCompromisso(null, {data:chaveData(data), ini:String(hIni).padStart(2,"0")+":00", fim:String(hIni+1).padStart(2,"0")+":00"}); return; }
       if(a==="falta"||a==="remarcada"||a==="cancelada"||a==="cortesia"||a==="realizada") marcarSaida(kData, a);
       else if(a==="realizada-extra"||a==="falta-extra"||a==="desconfirmar-extra") marcarEntrada(kData, a==="realizada-extra" ? "realizada" : (a==="falta-extra" ? "falta" : ""));
       else if(a==="limpar-excecao") delete dados.excecoes[kData];
@@ -3219,6 +3353,9 @@ function abrirMenu(e){
       else if(a==="meet"){ if(/^https:\/\//i.test(info.paciente.meet||"")) window.open(info.paciente.meet,"_blank","noopener"); else recado("O link do Meet precisa começar com https://"); fecharMenu(); return; }
       salvar(); fecharMenu(); renderTudo();
     });
+  });
+  m.querySelectorAll("button[data-cp]").forEach(function(b){
+    b.addEventListener("click", function(){ abrirCompromisso(cpsMenu[Number(b.dataset.cp)]); });
   });
 }
 /* a hora tem o paciente fixo marcado como saído (não haverá, falta, remarcada sem destino) e
@@ -8378,6 +8515,245 @@ document.getElementById("tema").addEventListener("click", function(){
   document.documentElement.setAttribute("data-theme", escuro ? "light" : "dark");
 });
 
+/* ---------------- compromissos (08/11/2026, pedido dele) ----------------
+   A agenda tem, além dos pacientes, os compromissos: os do Lastro (intervisão, encontros),
+   lidos ao vivo da agenda do site do Lastro, e os dele, criados aqui pelo "+ Compromisso".
+   Fonte de cada um: os do Lastro moram no banco do site do Lastro (Firebase, coleção eventos)
+   e se mudam lá; o app só lê, e guarda neste aparelho a última cópia para abrir sem rede.
+   Os dele moram no caderno da Clínica, em dados.compromissos (lista com id, que o Drive junta).
+   Nenhum compromisso entra em conta nenhuma: sessão, receita, ocupação e saldo ficam como estavam.
+   A repetição é a mesma do site do Lastro: semanal, ou mensal no mesmo dia ("dia") ou na mesma
+   posição do dia da semana ("semana", ex.: 1ª segunda; a 5ª vira a última). */
+var LASTRO_SITE = "https://matheusgocking.github.io/psychology/";
+var LASTRO_CFG = {
+  apiKey: "AIzaSyANQBCwjYxV59ggDqv_cf68Gsby642LNHI",
+  authDomain: "psychology-clube.firebaseapp.com",
+  projectId: "psychology-clube",
+  storageBucket: "psychology-clube.firebasestorage.app",
+  messagingSenderId: "621300290243",
+  appId: "1:621300290243:web:2d0e972652a625844c8876"
+};
+var LASTRO_CACHE = "controle-unico-lastro-cache";
+/* estado: carregando, ok, entrar (sem login), sem-acesso (conta não liberada), fora (sem rede ou erro), teste */
+var LASTRO = {eventos:[], membro:"", nomes:{}, projetos:{}, estado:"carregando", lidoEm:0};
+(function(){ try{ var c = JSON.parse(localStorage.getItem(LASTRO_CACHE) || "null"); if(c && Array.isArray(c.eventos)){ LASTRO.eventos = c.eventos; LASTRO.membro = c.membro || ""; LASTRO.nomes = c.nomes || {}; LASTRO.projetos = c.projetos || {}; LASTRO.lidoEm = c.lidoEm || 0; } }catch(e){} })();
+
+function cpMin(hm){ var m = /^(\d{1,2}):(\d{2})/.exec(hm || ""); return m ? Number(m[1]) * 60 + Number(m[2]) : 0; }
+function cpFimMin(c){ var a = cpMin(c.ini), b = cpMin(c.fim); return b > a ? b : a + 30; }
+function cpHora(hm){ var m = cpMin(hm), h = Math.floor(m / 60), mi = m % 60; return h + "h" + (mi ? String(mi).padStart(2, "0") : ""); }
+function cpHorario(c){ return cpHora(c.ini) + (c.fim && cpMin(c.fim) > cpMin(c.ini) ? " às " + cpHora(c.fim) : ""); }
+/* a n-ésima vez de um compromisso mensal, contando do mês do primeiro (igual ao site do Lastro) */
+function cpMesN(e, i){
+  var b = deISO(e.data), y = b.getFullYear(), m = b.getMonth() + i, ult = new Date(y, m + 1, 0).getDate();
+  if(e.mensal === "dia") return chaveData(new Date(y, m, Math.min(b.getDate(), ult)));
+  var n = Math.ceil(b.getDate() / 7), p1 = (b.getDay() - new Date(y, m, 1).getDay() + 7) % 7 + 1, dia = p1 + (n - 1) * 7;
+  if(dia > ult) dia -= 7;
+  return chaveData(new Date(y, m, dia));
+}
+function cpOcorreEm(e, iso){
+  if(!e || !e.data || iso < e.data) return false;
+  if(e.mensal){ var b = deISO(e.data), x = deISO(iso); return cpMesN(e, (x.getFullYear() - b.getFullYear()) * 12 + x.getMonth() - b.getMonth()) === iso; }
+  if(e.semanal) return Math.round((deISO(iso) - deISO(e.data)) / 86400000) % 7 === 0;
+  return iso === e.data;
+}
+function cpRepeteTexto(e){
+  if(e.mensal === "dia") return "todo dia " + Number(e.data.slice(8)) + " do mês";
+  if(e.mensal === "semana"){
+    var d = deISO(e.data), n = Math.ceil(d.getDate() / 7);
+    return "todo mês, " + (n > 4 ? "última" : n + "ª") + " " + DIAS[d.getDay()].toLowerCase().replace("-feira", "");
+  }
+  return e.semanal ? "toda semana" : "";
+}
+function cpItem(e, iso, ini, fim, origem){
+  var meu = origem === "meu" || (e.quem || []).indexOf(LASTRO.membro) >= 0 || !(e.quem || []).length;
+  return {ev:e, id:e.id, data:iso, ini:ini || "00:00", fim:fim || "", titulo:e.titulo || "Compromisso", origem:origem, meu:meu};
+}
+/* os compromissos de um dia, em ordem de horário. Do Lastro: sem as salas abertas na hora, sem a vez
+   marcada como "não vai acontecer" e com a vez arrastada para outro dia no dia novo */
+function compromissosDoDia(iso){
+  var out = [];
+  (dados.compromissos || []).forEach(function(e){ if(cpOcorreEm(e, iso)) out.push(cpItem(e, iso, e.ini, e.fim, "meu")); });
+  LASTRO.eventos.forEach(function(e){
+    if(!e || e.sala || e.excluido) return;
+    var marcas = e.marcas || {}, m = marcas[iso];
+    if(cpOcorreEm(e, iso) && !(m && (m.st === "movido" || m.st === "cancelado"))) out.push(cpItem(e, iso, e.ini, e.fim, "lastro"));
+    Object.keys(marcas).forEach(function(orig){
+      var mv = marcas[orig];
+      if(mv && mv.st === "movido" && mv.data === iso && !mv.cancelado && cpOcorreEm(e, orig)) out.push(cpItem(e, iso, mv.ini || e.ini, mv.fim || e.fim, "lastro"));
+    });
+  });
+  return out.sort(function(a, b){ return a.ini.localeCompare(b.ini) || a.titulo.localeCompare(b.titulo); });
+}
+/* os que ocupam a hora h da grade (começam antes do fim dela e terminam depois do começo) */
+function compromissosNaHora(iso, h){
+  return compromissosDoDia(iso).filter(function(c){ return cpMin(c.ini) < (h + 1) * 60 && cpFimMin(c) > h * 60; });
+}
+/* os que ficam fora das horas da grade (antes da primeira ou depois da última) */
+function compromissosForaDaGrade(iso){
+  var de = dados.config.horaInicio * 60, ate = (dados.config.horaFim + 1) * 60;
+  return compromissosDoDia(iso).filter(function(c){ return cpFimMin(c) <= de || cpMin(c.ini) >= ate; });
+}
+function cpRotulo(c){ return c.titulo + " " + cpHorario(c); }
+
+/* ---- a janela de um compromisso: do Lastro só para ler; dele, para criar, mudar ou apagar ---- */
+function abrirCompromisso(c, previa){
+  fecharMenu();
+  var fundo = document.createElement("div");
+  fundo.className = "overlay";
+  var dataTxt = function(iso){ var d = deISO(iso); return DIAS[d.getDay()] + ", " + d.getDate() + " de " + d.toLocaleDateString("pt-BR", {month:"long"}); };
+  if(c && c.origem === "lastro"){
+    var e = c.ev, quem = (e.quem || []).map(function(id){ return LASTRO.nomes[id] || (id.charAt(0).toUpperCase() + id.slice(1)); });
+    var proj = LASTRO.projetos[e.proj] || "", rep = cpRepeteTexto(e);
+    var linkLocal = /^https?:\/\//i.test((e.local || "").trim());
+    fundo.innerHTML = '<div class="modal cp-modal"><h2>' + esc(c.titulo) + '</h2>' +
+      '<p class="sub">' + esc(dataTxt(c.data)) + ' · ' + esc(cpHorario(c)) + (rep ? ' · ' + esc(rep) : '') + '</p>' +
+      '<dl class="cp-dl">' +
+        '<dt>De onde vem</dt><dd>Agenda do Lastro' + (proj ? ', ' + esc(proj) : '') + '</dd>' +
+        (quem.length ? '<dt>Quem</dt><dd>' + esc(quem.join(", ")) + (c.meu ? '' : ' <span class="cp-nao">(você não está)</span>') + '</dd>' : '') +
+        (e.local ? '<dt>Onde</dt><dd>' + (linkLocal ? '<a href="' + esc(e.local.trim()) + '" target="_blank" rel="noopener">' + esc(e.local.trim()) + '</a>' : esc(e.local)) + '</dd>' : '') +
+        (e.desc ? '<dt>Sobre</dt><dd>' + esc(e.desc) + '</dd>' : '') +
+      '</dl>' +
+      '<p class="cp-nota">Os compromissos do Lastro se mudam no site do Lastro, e aparecem aqui sozinhos.</p>' +
+      '<div class="acoes"><button class="btn" type="button" id="cp-fechar">Fechar</button><a class="btn primary" href="' + LASTRO_SITE + '" target="_blank" rel="noopener">Abrir o Lastro</a></div></div>';
+    document.body.appendChild(fundo);
+    var fecharL = function(){ fundo.remove(); devolverL(); };
+    var devolverL = janela(fundo, fecharL);
+    fundo.addEventListener("click", function(ev){ if(ev.target === fundo) fecharL(); });
+    document.getElementById("cp-fechar").addEventListener("click", fecharL);
+    return;
+  }
+  var novo = !c, e2 = novo ? {id:"", titulo:"", data:(previa && previa.data) || chaveData(hoje0()), ini:(previa && previa.ini) || "09:00", fim:(previa && previa.fim) || "", semanal:false, mensal:"", local:"", desc:""} : c.ev;
+  var rep0 = e2.mensal ? e2.mensal : (e2.semanal ? "semanal" : "");
+  var opc = [["", "Não repete"], ["semanal", "Toda semana"], ["semana", "Todo mês, no mesmo dia da semana (ex.: 1ª segunda)"], ["dia", "Todo mês, no mesmo dia do mês"]];
+  fundo.innerHTML = '<div class="modal cp-modal"><h2>' + (novo ? "Novo compromisso" : "Compromisso") + '</h2>' +
+    '<form id="cp-form" class="cp-form" novalidate>' +
+      '<label class="pf cp-l"><span>O que é</span><input name="titulo" id="cp-titulo" maxlength="120" autocomplete="off" value="' + esc(e2.titulo) + '" placeholder="Ex.: supervisão, dentista, aula"></label>' +
+      '<div class="cp-linha">' +
+        '<label class="pf"><span>Dia</span><input type="date" name="data" value="' + esc(e2.data) + '"></label>' +
+        '<label class="pf"><span>Começa</span><input type="time" name="ini" step="300" value="' + esc(e2.ini) + '"></label>' +
+        '<label class="pf"><span>Termina</span><input type="time" name="fim" step="300" value="' + esc(e2.fim || "") + '"></label>' +
+      '</div>' +
+      '<label class="pf cp-l"><span>Repete</span><select name="rep">' + opc.map(function(o){ return '<option value="' + o[0] + '"' + (o[0] === rep0 ? " selected" : "") + '>' + o[1] + '</option>'; }).join("") + '</select></label>' +
+      '<label class="pf cp-l"><span>Onde ou link (opcional)</span><input name="local" maxlength="300" autocomplete="off" value="' + esc(e2.local || "") + '"></label>' +
+      '<label class="pf cp-l"><span>Anotação (opcional)</span><textarea name="desc" rows="2" maxlength="2000">' + esc(e2.desc || "") + '</textarea></label>' +
+      (!novo && (e2.semanal || e2.mensal) ? '<p class="cp-nota">Mudar aqui muda todas as vezes.</p>' : '') +
+      '<div class="acoes"><span class="erro" id="cp-erro" role="alert"></span>' +
+        (novo ? '' : '<button class="btn" type="button" id="cp-apagar">Apagar</button>') +
+        '<button class="btn" type="button" id="cp-fechar">Fechar</button><button class="btn primary" type="submit">' + (novo ? "Guardar compromisso" : "Guardar a alteração") + '</button></div>' +
+    '</form></div>';
+  document.body.appendChild(fundo);
+  var fechar = function(){ fundo.remove(); devolver(); };
+  var devolver = janela(fundo, fechar, novo ? document.getElementById("cp-titulo") : null);
+  fundo.addEventListener("click", function(ev){ if(ev.target === fundo) fechar(); });
+  document.getElementById("cp-fechar").addEventListener("click", fechar);
+  var form = document.getElementById("cp-form"), erro = document.getElementById("cp-erro");
+  var apagar = document.getElementById("cp-apagar");
+  if(apagar) apagar.addEventListener("click", function(){
+    if(!apagar.dataset.certeza){ apagar.dataset.certeza = "1"; apagar.textContent = "Apagar mesmo?"; return; }
+    dados.compromissos = (dados.compromissos || []).filter(function(x){ return x.id !== e2.id; });
+    salvar(); fechar(); renderSemana(); recado("Compromisso apagado. Ctrl+Z desfaz.");
+  });
+  form.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var f = new FormData(form), t = String(f.get("titulo") || "").trim(), d = String(f.get("data") || ""), ini = String(f.get("ini") || ""), fim = String(f.get("fim") || "");
+    if(!t){ erro.textContent = "Escreva o que é o compromisso."; form.titulo.focus(); return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ erro.textContent = "Escolha o dia."; return; }
+    if(!/^\d{1,2}:\d{2}$/.test(ini)){ erro.textContent = "Escolha a hora de começar."; return; }
+    if(fim && cpMin(fim) <= cpMin(ini)){ erro.textContent = "A hora de terminar precisa ser depois da de começar."; return; }
+    if(!fim){ var mf = Math.min(cpMin(ini) + 60, 23 * 60 + 59); fim = String(Math.floor(mf / 60)).padStart(2, "0") + ":" + String(mf % 60).padStart(2, "0"); }
+    var r = String(f.get("rep") || "");
+    var obj = {id: e2.id || ("cp" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), titulo:t, data:d, ini:ini, fim:fim,
+      semanal: r === "semanal", mensal: (r === "semana" || r === "dia") ? r : "", local:String(f.get("local") || "").trim(), desc:String(f.get("desc") || "").trim()};
+    if(!Array.isArray(dados.compromissos)) dados.compromissos = [];
+    var i = dados.compromissos.map(function(x){ return x.id; }).indexOf(obj.id);
+    if(i >= 0) dados.compromissos[i] = obj; else dados.compromissos.push(obj);
+    salvar(); fechar();
+    /* a semana vai para a do compromisso, para ele ver onde entrou */
+    var sem = inicioSemana(deISO(d)); if(!mesmoDia(sem, semana)){ semana = sem; mesDaSemana(); }
+    diaFaixa = d;
+    renderSemana();
+    recado(novo ? "Compromisso guardado. Ctrl+Z desfaz." : "Alteração guardada.");
+  });
+}
+
+/* ---- a linha embaixo da grade que diz como está a agenda do Lastro ---- */
+function pintarLastro(){
+  var el = document.getElementById("cp-lastro"); if(!el) return;
+  var txt = {
+    carregando: "Agenda do Lastro: carregando…",
+    ok: "Agenda do Lastro ligada. Os compromissos dela se mudam no site do Lastro.",
+    entrar: "A agenda do Lastro precisa do seu login do Google (o mesmo do site do Lastro).",
+    "sem-acesso": "Esta conta do Google não está liberada no Lastro: os compromissos do Lastro não aparecem.",
+    fora: "Não consegui abrir a agenda do Lastro agora" + (LASTRO.lidoEm ? "; aparece a última cópia deste aparelho." : "."),
+    teste: "Agenda do Lastro: dados de teste."
+  }[LASTRO.estado] || "";
+  el.innerHTML = '<span class="cp-ponto ' + esc(LASTRO.estado) + '" aria-hidden="true"></span><span>' + esc(txt) + '</span>' +
+    (LASTRO.estado === "entrar" ? ' <button class="btn sm" type="button" id="cp-entrar">Entrar no Lastro</button>' : '') +
+    (LASTRO.estado === "ok" || LASTRO.estado === "sem-acesso" ? ' <a href="' + LASTRO_SITE + '" target="_blank" rel="noopener">Abrir o Lastro</a>' : '');
+  var b = document.getElementById("cp-entrar");
+  if(b) b.addEventListener("click", function(){
+    if(!window.firebase || !firebase.apps.length){ lastroLigar(); return; }
+    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e){
+      recado(e && e.code === "auth/popup-blocked" ? "O navegador bloqueou a janela de login. Libere as janelas deste site e tente de novo." : "Não deu para entrar no Lastro agora.");
+    });
+  });
+}
+/* recebe a agenda do Lastro (do banco, ou dos testes) e redesenha a semana sem atrapalhar menu ou janela aberta */
+function lastroReceber(eventos, extra){
+  LASTRO.eventos = (eventos || []).filter(function(e){ return e && e.data && !e.sala && !e.excluido; });
+  if(extra){ if(extra.membro != null) LASTRO.membro = extra.membro; if(extra.nomes) LASTRO.nomes = extra.nomes; if(extra.projetos) LASTRO.projetos = extra.projetos; if(extra.estado) LASTRO.estado = extra.estado; }
+  LASTRO.lidoEm = Date.now();
+  if(LASTRO.estado !== "teste") try{ localStorage.setItem(LASTRO_CACHE, JSON.stringify({eventos:LASTRO.eventos, membro:LASTRO.membro, nomes:LASTRO.nomes, projetos:LASTRO.projetos, lidoEm:LASTRO.lidoEm})); }catch(e){}
+  pintarLastro();
+  if(!menuAberto && !document.querySelector(".overlay")) renderSemana();
+}
+function lastroEstado(st){ if(LASTRO.estado === st) return; LASTRO.estado = st; pintarLastro(); }
+/* o banco do Lastro guarda listas dentro de listas como {_a:[...]}: desfaz isso ao ler */
+function lastroVolta(x){
+  if(Array.isArray(x)) return x.map(lastroVolta);
+  if(x && typeof x === "object"){
+    if(Array.isArray(x._a) && Object.keys(x).length === 1) return lastroVolta(x._a);
+    var r = {}; Object.keys(x).forEach(function(k){ r[k] = lastroVolta(x[k]); }); return r;
+  }
+  return x;
+}
+function lastroScript(src){ return new Promise(function(ok, no){ var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+var lastroDesliga = null;
+function lastroLigar(){
+  /* no servidor de teste e nas fotos não se liga ao banco de verdade */
+  if(/^(127\.0\.0\.1|localhost)$/.test(location.hostname)){ if(LASTRO.estado === "carregando"){ LASTRO.estado = "teste"; pintarLastro(); } return; }
+  lastroEstado("carregando");
+  var base = "https://www.gstatic.com/firebasejs/10.12.2/firebase-";
+  (window.firebase && firebase.firestore ? Promise.resolve() :
+    lastroScript(base + "app-compat.js").then(function(){ return lastroScript(base + "auth-compat.js"); }).then(function(){ return lastroScript(base + "firestore-compat.js"); }))
+  .then(function(){
+    /* o app padrão: o login fica guardado por endereço, então quem entrou no site do Lastro neste
+       navegador (o mesmo matheusgocking.github.io) já entra aqui sem fazer nada */
+    if(!firebase.apps.length) firebase.initializeApp(LASTRO_CFG);
+    var db = firebase.firestore();
+    firebase.auth().onAuthStateChanged(function(u){
+      if(lastroDesliga){ lastroDesliga(); lastroDesliga = null; }
+      if(!u){ lastroEstado("entrar"); return; }
+      db.collection("acessos").doc(u.uid).get().then(function(s){
+        var a = s.exists ? s.data() : null;
+        if(!a || a.ok === false || a.bloqueado){ lastroEstado("sem-acesso"); return; }
+        LASTRO.membro = a.membro || "";
+        Promise.all([db.collection("membros").get(), db.collection("projetos").get()]).then(function(r){
+          var nomes = {}, projs = {};
+          r[0].docs.forEach(function(d){ var x = d.data(); nomes[d.id] = x.nome || x.apelido || d.id; });
+          r[1].docs.forEach(function(d){ var x = d.data(); projs[d.id] = x.nome || x.titulo || ""; });
+          LASTRO.nomes = nomes; LASTRO.projetos = projs;
+        }).catch(function(){}).then(function(){
+          lastroDesliga = db.collection("eventos").onSnapshot(function(snap){
+            LASTRO.estado = "ok";
+            lastroReceber(snap.docs.map(function(d){ return lastroVolta(d.data()); }));
+          }, function(){ lastroEstado(navigator.onLine === false ? "fora" : "sem-acesso"); });
+        });
+      }).catch(function(){ lastroEstado(navigator.onLine === false ? "fora" : "sem-acesso"); });
+    });
+  }).catch(function(){ lastroEstado("fora"); });
+}
+
 /* No celular a semana abre no dia de hoje, e redesenhar (marcar falta, pagamento) não perde
    o lugar para onde ele deslizou. Ao aparecer (a casca abre a Clínica escondida), recalcula. */
 var rolagemSemana = {semana:null, x:0};
@@ -8419,6 +8795,10 @@ var cadernoClinica = Nuvem.caderno({
   temDados: function(d){ return !!(d && d.pacientes && d.pacientes.length); }
 });
 Nuvem.iniciar();
+document.getElementById("novo-cp").addEventListener("click", function(){ abrirCompromisso(null, {data: chaveData(mesmoDia(semana, inicioSemana(new Date())) ? hoje0() : somaDias(semana, 1))}); });
+pintarLastro();
+/* a agenda do Lastro liga depois de a Clínica aparecer, para não atrasar a abertura no celular */
+setTimeout(lastroLigar, 1200);
 </script>
 </body>
 </html>
