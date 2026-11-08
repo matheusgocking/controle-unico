@@ -80,7 +80,8 @@ test("Compromissos: criar pelo menu da hora, repetir por mês, mudar e apagar; d
     out.vezes = ["2026-10-08", "2026-11-12", "2026-12-10", "2026-10-15"].map(d => cpOcorreEm(c, d));
     desfazer(); out.desfeito = dados.compromissos.length; refazer();
     abrirCompromisso(compromissosDoDia("2026-10-08")[0]);
-    const g = document.getElementById("cp-form"); g.titulo.value = "Supervisão de grupo"; g.requestSubmit();
+    const g = document.getElementById("cp-form"); out.padrao = g.querySelector('input[name="qual"]:checked').value;
+    g.querySelector('input[value="todas"]').click(); g.titulo.value = "Supervisão de grupo"; g.requestSubmit();
     out.mudado = dados.compromissos.map(x => x.titulo);
     abrirCompromisso(compromissosDoDia("2026-10-08")[0]);
     const ap = document.getElementById("cp-apagar"); ap.click(); out.umToque = dados.compromissos.length; ap.click();
@@ -108,6 +109,53 @@ test("Compromissos do Lastro: vez movida vai para o dia novo, vez cancelada some
     return { seg05:n("2026-10-05"), ter06:n("2026-10-06"), seg12:n("2026-10-12"), seg19:n("2026-10-19") };
   }, LASTRO_TESTE);
   assert.deepEqual(r, { seg05:[], ter06:["08:00-09:00"], seg12:[], seg19:["08:00-09:30"] });
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test("Compromissos do Lastro (09/11/2026): vinho, mudar só nesta vez ou todas, arrastar e apagar gravam no Lastro", async () => {
+  const { ctx, p, erros } = await abrir(1280);
+  const r = await p.evaluate(L => {
+    lastroReceber(JSON.parse(JSON.stringify(L)), { membro:"eu", estado:"teste" });
+    dados.compromissos = [{ id:"c1", titulo:"Dentista", data:"2026-10-07", ini:"07:00", fim:"08:00", semanal:false, mensal:"" }];
+    salvar();
+    semana = inicioSemana(new Date(2026, 9, 7)); renderSemana();
+    const cel = (d, h) => document.querySelector('.cell[data-data="' + d + '"][data-hora="' + h + '"]');
+    const out = { vinho: cel("2026-10-05", 8).classList.contains("cp-do-lastro"), seuNao: cel("2026-10-07", 7).classList.contains("cp-do-lastro") };
+    /* só nesta vez: passa a segunda 05/10 para terça 14h */
+    abrirCompromisso(compromissosDoDia("2026-10-05").find(x => x.id === "e1"));
+    let f = document.getElementById("cp-form");
+    out.padrao = f.querySelector('input[name="qual"]:checked').value; out.titulo = f.titulo.disabled;
+    f.data.value = "2026-10-06"; f.ini.value = "14:00"; f.fim.value = "15:30"; f.requestSubmit();
+    out.esc1 = LASTRO.escritas[LASTRO.escritas.length - 1];
+    out.dia12 = compromissosDoDia("2026-10-12").filter(x => x.id === "e1").length;
+    /* todas as vezes: nova hora para a série */
+    abrirCompromisso(compromissosDoDia("2026-10-12").find(x => x.id === "e1"));
+    f = document.getElementById("cp-form"); f.querySelector('input[value="todas"]').click(); f.ini.value = "08:30"; f.fim.value = "10:00"; f.requestSubmit();
+    out.esc2 = LASTRO.escritas[LASTRO.escritas.length - 1].campos;
+    /* arrastar o dele (não repete) para cima de uma sessão é aceito */
+    semana = inicioSemana(new Date(2026, 9, 7)); renderSemana();
+    const dt = new DataTransfer(), dst = cel("2026-10-08", 15);
+    cel("2026-10-07", 7).dispatchEvent(new DragEvent("dragstart", { bubbles:true, dataTransfer:dt }));
+    const ov = new DragEvent("dragover", { bubbles:true, cancelable:true, dataTransfer:dt }); dst.dispatchEvent(ov); out.aceita = ov.defaultPrevented;
+    dst.dispatchEvent(new DragEvent("drop", { bubbles:true, cancelable:true, dataTransfer:dt }));
+    out.dentista = dados.compromissos[0].data + " " + dados.compromissos[0].ini;
+    desfazer(); out.desfeito = dados.compromissos[0].data + " " + dados.compromissos[0].ini;
+    /* apagar do Lastro: dois toques */
+    abrirCompromisso(compromissosDoDia("2026-10-06").find(x => x.id === "e2"));
+    const ap = document.getElementById("cp-apagar"); ap.click(); out.certeza = ap.textContent; ap.click();
+    out.esc3 = LASTRO.escritas[LASTRO.escritas.length - 1];
+    return out;
+  }, LASTRO_TESTE);
+  assert.equal(r.vinho, true); assert.equal(r.seuNao, false);
+  assert.equal(r.padrao, "vez"); assert.equal(r.titulo, true, "só nesta vez trava o resto");
+  assert.deepEqual(r.esc1, { id:"e1", campos:{ "marcas.2026-10-05": { st:"movido", data:"2026-10-06", ini:"14:00", fim:"15:30" } } });
+  assert.equal(r.dia12, 1, "a semana seguinte continua igual");
+  assert.equal(r.esc2.ini, "08:30"); assert.equal(r.esc2.data, "2026-09-28", "a série não muda de começo");
+  assert.equal(r.aceita, true);
+  assert.equal(r.dentista, "2026-10-08 15:00"); assert.equal(r.desfeito, "2026-10-07 07:00");
+  assert.equal(r.certeza, "Apagar do Lastro mesmo?");
+  assert.deepEqual(r.esc3, { id:"e2", apagado:true });
   assert.deepEqual(erros, []);
   await ctx.close();
 });

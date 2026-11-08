@@ -1370,6 +1370,43 @@ table.pg-cartoes td.pc-acao .btn + .btn{margin-left:6px}
   .cp-linha .pf:first-child{grid-column:1 / -1}
   .cp-form .pf input,.cp-form .pf select,.cp-form .pf textarea{font-size:16px}
 }
+/* compromisso do Lastro em vinho (pedido dele, 09/11/2026), o vinho da identidade do Lastro */
+:root{--lastro:#6E1E2B; --lastro-soft:#f6e6e8; --lastro-line:#c99aa2}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--lastro:#eea3ae; --lastro-soft:#3a1d23; --lastro-line:#7d4450} }
+:root[data-theme="dark"]{--lastro:#eea3ae; --lastro-soft:#3a1d23; --lastro-line:#7d4450}
+.cell.tem-cp.cp-do-lastro{background-image:linear-gradient(var(--lastro),var(--lastro))}
+.cell.tem-cp.cp-do-lastro.cp-nao-meu{background-image:linear-gradient(var(--lastro-line),var(--lastro-line))}
+.cell.tem-cp.cp-do-lastro.cp-choque{background-image:linear-gradient(var(--warn),var(--warn))}
+.cell.cp-do-lastro .cp-tag{color:var(--lastro); box-shadow:0 0 0 1px var(--lastro-line)}
+.cell.cp-do-lastro.cp-choque .cp-tag{box-shadow:0 0 0 1px var(--warn)}
+.cell.cp-so.cp-do-lastro{background-color:var(--lastro-soft)}
+.cell.cp-so.cp-do-lastro .cp-t{color:var(--lastro)}
+.cell.cp-so.cp-do-lastro.cp-nao-meu .cp-t{color:var(--lastro); opacity:.7; font-weight:500}
+.cell.cp-so[draggable="true"]{cursor:grab}
+.cell-cp .cp-b.lastro{border-left-color:var(--lastro)}
+.cell-cp .cp-b.lastro b{color:var(--lastro)}
+.menu .cp-item.lastro{border-left-color:var(--lastro)}
+.menu .cp-item.lastro b{color:var(--lastro)}
+.dia-chip .cpm.lastro{background:var(--lastro)}
+.pcard.cp-card.lastro .ini{background:var(--lastro-soft); color:var(--lastro)}
+.pcard.cp-card.lastro .n{color:var(--lastro)}
+.leg-semana .sw-cp.lastro{box-shadow:inset 0 3px 0 var(--lastro); background:var(--lastro-soft)}
+.leg-semana .sw-cp.choque{box-shadow:inset 0 3px 0 var(--warn)}
+.cp-modal.lastro h2{color:var(--lastro)}
+.cp-origem{margin:2px 0 4px; font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px}
+.cp-selo{background:var(--lastro); color:var(--surface); font-weight:600; font-size:11.5px; padding:1px 8px; border-radius:99px}
+.cp-qual{border:1px solid var(--border); border-radius:10px; padding:8px 12px; margin:0; display:flex; flex-wrap:wrap; gap:6px 18px; font-size:14px}
+.cp-qual legend{font-size:12.5px; color:var(--muted); padding:0 4px}
+.cp-qual label{display:flex; align-items:center; gap:6px; min-height:32px; cursor:pointer}
+.cp-serie.off{opacity:.45}
+.cp-mais{display:flex; flex-wrap:wrap; gap:6px}
+.cp-mais .btn{text-decoration:none; display:inline-flex; align-items:center; justify-content:center; text-align:center}
+.cp-link{font-size:13px; color:var(--accent); margin-top:-4px}
+@media (max-width:700px){
+  .cell.cp-do-lastro .cp-tag{background:var(--lastro); box-shadow:0 0 0 1.5px var(--surface)}
+  .cell.cp-do-lastro.cp-choque .cp-tag{background:var(--warn)}
+  .cp-mais .btn{flex:1 1 100%; min-height:40px}
+}
 </style>
 <script>/* o login do Google é feito pela casca: dentro dela esta página não baixa a biblioteca (ganha tempo no celular) */if (window.top === window.self) { var g = document.createElement("script"); g.src = "https://accounts.google.com/gsi/client"; g.async = true; document.head.appendChild(g); }</script>
 <script src="nuvem.js"></script>
@@ -1461,7 +1498,9 @@ table.pg-cartoes td.pc-acao .btn + .btn{margin-left:6px}
         <span class="it"><i class="sw sw-livre"></i>Sem atendimento</span>
       </div></div>
       <div class="grupo"><h3>Compromisso</h3><div class="itens">
-        <span class="it"><i class="sw sw-cp"></i>Faixa no alto: compromisso seu ou do Lastro (laranja quando cai numa sessão)</span>
+        <span class="it"><i class="sw sw-cp"></i>Compromisso seu</span>
+        <span class="it"><i class="sw sw-cp lastro"></i>Compromisso do Lastro (vinho)</span>
+        <span class="it"><i class="sw sw-cp choque"></i>Cai em cima de uma sessão</span>
       </div></div>
       <p class="dica">Toque num horário para escolher a situação. Arraste um paciente para outro horário para remarcar.</p>
     </div>
@@ -2601,7 +2640,7 @@ function renderSemana(){
       l.forEach(function(x){
         var b = document.createElement("button");
         b.type = "button";
-        b.className = "cp-b" + (x.meu ? "" : " nao-meu");
+        b.className = "cp-b" + (x.origem==="lastro" ? " lastro" : "") + (x.meu ? "" : " nao-meu");
         b.innerHTML = '<b>'+esc(x.titulo)+'</b><span>'+esc(cpHorario(x))+(x.origem==="lastro" ? " · Lastro" : "")+'</span>';
         b.setAttribute("aria-label", "Compromisso: "+cpRotulo(x)+(x.origem==="lastro" ? ", do Lastro" : ""));
         b.addEventListener("click", function(){ abrirCompromisso(x); });
@@ -2668,11 +2707,16 @@ function renderSemana(){
       if(cpsH.length){
         var rotCp = cpsH.map(cpRotulo).join(" · ");
         b.classList.add("tem-cp");
+        if(cpsH[0].origem === "lastro") b.classList.add("cp-do-lastro");
         if(cpsH.every(function(x){ return !x.meu; })) b.classList.add("cp-nao-meu");
         else if(info.paciente && /sessao|cortesia|falta/.test(info.classe)) b.classList.add("cp-choque");
         /* hora vazia: o compromisso ocupa a célula; com paciente ou etiqueta, fica na faixa do alto */
         if(!b.textContent.trim()){
           b.classList.add("cp-so");
+          /* no computador, arrastar o compromisso para outra hora o passa para lá (09/11/2026) */
+          b.draggable = true; b._cp = cpsH[0];
+          b.addEventListener("dragstart", function(ev){ fecharMenu(); cpArrastado = ev.currentTarget._cp; ev.dataTransfer.setData("text/plain", JSON.stringify({cp:1})); ev.dataTransfer.effectAllowed = "move"; ev.currentTarget.classList.add("arrastando"); });
+          b.addEventListener("dragend", function(){ cpArrastado = null; document.querySelectorAll(".cell").forEach(function(c){ c.classList.remove("arrastando","alvo","proibido"); }); });
           b.insertAdjacentHTML("afterbegin", '<span class="cp-t">'+esc(cpsH.map(function(x){ return x.titulo; }).join(" · "))+'</span><span class="cp-h">'+esc(cpHorario(cpsH[0]))+'</span><span class="cp-h2">'+esc(cpHora(cpsH[0].ini))+'</span>');
         }
         else b.insertAdjacentHTML("afterbegin", '<span class="cp-tag">'+esc(rotCp)+'</span>');
@@ -2748,7 +2792,7 @@ function renderHoje(){
     b.innerHTML = '<span class="d">'+(mesmoDia(x.data, hoje) ? "hoje" : DIAS_CURTO[x.data.getDay()])+'</span>' +
       '<span class="n">'+x.data.getDate()+'</span>' +
       '<span class="q">'+(x.lista.length || "–")+'</span>' +
-      (x.cps.length ? '<span class="cpm" aria-hidden="true"></span>' : "") +
+      (x.cps.length ? '<span class="cpm'+(x.cps.every(function(c){ return c.origem==="lastro"; }) ? " lastro" : "")+'" aria-hidden="true"></span>' : "") +
       (devem ? '<span class="ponto" aria-hidden="true"></span>' : "");
     b.addEventListener("click", function(){ diaFaixa = chaveData(x.data); renderHoje(); });
     faixa.appendChild(b);
@@ -2772,7 +2816,7 @@ function renderHoje(){
     if(it.c){
       var c = it.c, k = document.createElement("button");
       k.type = "button";
-      k.className = "pcard cp-card" + (c.meu ? "" : " nao-meu");
+      k.className = "pcard cp-card" + (c.origem==="lastro" ? " lastro" : "") + (c.meu ? "" : " nao-meu");
       k.innerHTML = '<span class="ini" aria-hidden="true">◆</span>' +
         '<span class="corpo"><span class="n">'+esc(c.titulo)+'</span>' +
         '<span class="sub">'+esc(cpHorario(c))+' · '+(c.origem==="lastro" ? "Lastro" + (LASTRO.projetos[c.ev.proj] ? ", " + esc(LASTRO.projetos[c.ev.proj]) : "") : "compromisso seu")+(c.meu ? "" : " · você não está")+'</span></span>';
@@ -3270,7 +3314,7 @@ function abrirMenu(e){
   /* os compromissos desta hora (08/11/2026): tocar abre o compromisso */
   var cpsMenu = compromissosNaHora(chaveData(data), hora);
   if(cpsMenu.length) corpo += '<div class="cp-menu" role="group" aria-label="Compromissos nesta hora">' + cpsMenu.map(function(c, i){
-    return '<button type="button" class="cp-item'+(c.meu ? "" : " nao-meu")+'" data-cp="'+i+'"><span><b>'+esc(c.titulo)+'</b><small>'+esc(cpHorario(c))+(c.origem==="lastro" ? " · Lastro" : " · seu")+'</small></span></button>';
+    return '<button type="button" class="cp-item'+(c.origem==="lastro" ? " lastro" : "")+(c.meu ? "" : " nao-meu")+'" data-cp="'+i+'"><span><b>'+esc(c.titulo)+'</b><small>'+esc(cpHorario(c))+(c.origem==="lastro" ? " · Lastro" : " · seu")+'</small></span></button>';
   }).join("") + '</div>';
 
   /* O menu da célula virou uma escolha só (05/10/2026): cada situação é um quadradinho com a
@@ -3409,7 +3453,8 @@ function aoSobrevoar(e){
   if(c.classList.contains("arrastando")) return;
   /* só uma sessão que vai acontecer barra o horário. Falta, remarcada e "não haverá"
      deixam a hora vaga, e é justamente para essas que ele quer arrastar alguém. */
-  var livre = !c.classList.contains("sessao");
+  /* compromisso pode cair em qualquer hora, até em cima de sessão */
+  var livre = !!cpArrastado || !c.classList.contains("sessao");
   if(livre){
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -3424,6 +3469,7 @@ function aoSoltar(e){
   c.classList.remove("alvo","proibido");
   var carga;
   try{ carga = JSON.parse(e.dataTransfer.getData("text/plain")); }catch(err){ return; }
+  if(carga && carga.cp){ var cpA = cpArrastado; cpArrastado = null; if(cpA) moverCompromisso(cpA, c.dataset.data, Number(c.dataset.hora)); return; }
   if(!carga || !carga.pacienteId) return;
   var destino = {data:c.dataset.data, hora:Number(c.dataset.hora), dia:Number(c.dataset.dia)};
   if(carga.data===destino.data && carga.hora===destino.hora) return;
@@ -8564,24 +8610,26 @@ function cpRepeteTexto(e){
   }
   return e.semanal ? "toda semana" : "";
 }
-function cpItem(e, iso, ini, fim, origem){
+function cpItem(e, iso, ini, fim, origem, orig, movido){
   var meu = origem === "meu" || (e.quem || []).indexOf(LASTRO.membro) >= 0 || !(e.quem || []).length;
-  return {ev:e, id:e.id, data:iso, ini:ini || "00:00", fim:fim || "", titulo:e.titulo || "Compromisso", origem:origem, meu:meu};
+  return {ev:e, id:e.id, data:iso, orig:orig || iso, movido:!!movido, ini:ini || "00:00", fim:fim || "", titulo:e.titulo || "Compromisso", origem:origem, meu:meu};
 }
-/* os compromissos de um dia, em ordem de horário. Do Lastro: sem as salas abertas na hora, sem a vez
-   marcada como "não vai acontecer" e com a vez arrastada para outro dia no dia novo */
+function cpRepete(e){ return !!(e && (e.semanal || e.mensal)); }
+/* as vezes de um compromisso num dia. Cada vez pode ter uma marca, guardada pela data original em
+   e.marcas, igual ao site do Lastro: "movido" (passou para outro dia e horário, só naquela vez) ou
+   "cancelado" (não vai acontecer). A vez movida aparece no dia novo; a cancelada some. */
+function cpVezesNoDia(e, iso, origem, out){
+  var marcas = e.marcas || {}, m = marcas[iso];
+  if(cpOcorreEm(e, iso) && !(m && (m.st === "movido" || m.st === "cancelado"))) out.push(cpItem(e, iso, e.ini, e.fim, origem));
+  Object.keys(marcas).forEach(function(orig){
+    var mv = marcas[orig];
+    if(mv && mv.st === "movido" && mv.data === iso && !mv.cancelado && cpOcorreEm(e, orig)) out.push(cpItem(e, iso, mv.ini || e.ini, mv.fim || e.fim, origem, orig, true));
+  });
+}
 function compromissosDoDia(iso){
   var out = [];
-  (dados.compromissos || []).forEach(function(e){ if(cpOcorreEm(e, iso)) out.push(cpItem(e, iso, e.ini, e.fim, "meu")); });
-  LASTRO.eventos.forEach(function(e){
-    if(!e || e.sala || e.excluido) return;
-    var marcas = e.marcas || {}, m = marcas[iso];
-    if(cpOcorreEm(e, iso) && !(m && (m.st === "movido" || m.st === "cancelado"))) out.push(cpItem(e, iso, e.ini, e.fim, "lastro"));
-    Object.keys(marcas).forEach(function(orig){
-      var mv = marcas[orig];
-      if(mv && mv.st === "movido" && mv.data === iso && !mv.cancelado && cpOcorreEm(e, orig)) out.push(cpItem(e, iso, mv.ini || e.ini, mv.fim || e.fim, "lastro"));
-    });
-  });
+  (dados.compromissos || []).forEach(function(e){ cpVezesNoDia(e, iso, "meu", out); });
+  LASTRO.eventos.forEach(function(e){ if(e && !e.sala && !e.excluido) cpVezesNoDia(e, iso, "lastro", out); });
   return out.sort(function(a, b){ return a.ini.localeCompare(b.ini) || a.titulo.localeCompare(b.titulo); });
 }
 /* os que ocupam a hora h da grade (começam antes do fim dela e terminam depois do começo) */
@@ -8595,51 +8643,108 @@ function compromissosForaDaGrade(iso){
 }
 function cpRotulo(c){ return c.titulo + " " + cpHorario(c); }
 
-/* ---- a janela de um compromisso: do Lastro só para ler; dele, para criar, mudar ou apagar ---- */
+/* ---- gravar: o dele no caderno da Clínica (Ctrl+Z desfaz); o do Lastro no banco do Lastro, que
+   vale para todo mundo do clube (pedido dele, 09/11/2026: mudar, passar e trocar pelo app) ---- */
+function cpPodeMudarLastro(){ return LASTRO.estado === "ok" || LASTRO.estado === "teste"; }
+function cpHM(min){ min = Math.max(0, Math.min(min, 23 * 60 + 59)); return String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0"); }
+function lastroEscrever(id, campos){
+  if(LASTRO.estado === "teste"){ LASTRO.escritas = (LASTRO.escritas || []).concat([{id:id, campos:campos}]); return Promise.resolve(); }
+  var up = {};
+  Object.keys(campos).forEach(function(k){ up[k] = campos[k] === null ? firebase.firestore.FieldValue.delete() : campos[k]; });
+  return firebase.firestore().collection("eventos").doc(id).update(up);
+}
+function lastroApagar(id){
+  if(LASTRO.estado === "teste"){ LASTRO.escritas = (LASTRO.escritas || []).concat([{id:id, apagado:true}]); return Promise.resolve(); }
+  return firebase.firestore().collection("eventos").doc(id).delete();
+}
+function cpFalhou(e){ recado("O Lastro não aceitou a mudança" + (e && e.code === "permission-denied" ? " (sem permissão)" : "") + ". Nada mudou lá."); lastroLigar(); }
+/* muda campos do compromisso inteiro (todas as vezes) */
+function cpGravar(c, campos){
+  if(c.origem === "meu"){
+    var e = (dados.compromissos || []).filter(function(x){ return x.id === c.id; })[0]; if(!e) return;
+    Object.keys(campos).forEach(function(k){ e[k] = campos[k]; });
+    salvar(); renderSemana(); return;
+  }
+  Object.keys(campos).forEach(function(k){ c.ev[k] = campos[k]; });
+  renderSemana();
+  lastroEscrever(c.id, campos).then(function(){ recado("Mudado no Lastro."); }, cpFalhou);
+}
+/* põe ou tira a marca de uma vez só (null tira) */
+function cpMarcar(c, orig, marca){
+  var e = c.origem === "meu" ? (dados.compromissos || []).filter(function(x){ return x.id === c.id; })[0] : c.ev;
+  if(!e) return;
+  if(!e.marcas || typeof e.marcas !== "object") e.marcas = {};
+  if(marca) e.marcas[orig] = marca; else delete e.marcas[orig];
+  if(c.origem === "meu"){ salvar(); renderSemana(); return; }
+  renderSemana();
+  var campos = {}; campos["marcas." + orig] = marca || null;
+  lastroEscrever(c.id, campos).then(function(){ recado("Mudado no Lastro, só nesta vez."); }, cpFalhou);
+}
+function cpApagar(c){
+  if(c.origem === "meu"){ dados.compromissos = (dados.compromissos || []).filter(function(x){ return x.id !== c.id; }); salvar(); renderSemana(); recado("Compromisso apagado. Ctrl+Z desfaz."); return; }
+  LASTRO.eventos = LASTRO.eventos.filter(function(x){ return x.id !== c.id; });
+  renderSemana();
+  lastroApagar(c.id).then(function(){ recado("Apagado do Lastro."); }, cpFalhou);
+}
+/* passar para outro dia e hora (arrastar na grade): mantém os minutos e a duração. O que se repete
+   muda só naquela vez, como no site do Lastro; o que não se repete muda de vez */
+function moverCompromisso(c, iso, hora){
+  var dur = cpFimMin(c) - cpMin(c.ini), ini = hora * 60 + cpMin(c.ini) % 60;
+  var nIni = cpHM(ini), nFim = cpHM(ini + dur);
+  if(iso === c.data && nIni === c.ini) return;
+  if(c.origem === "lastro" && !cpPodeMudarLastro()){ recado("Entre no Lastro para mudar os compromissos dele."); return; }
+  if(cpRepete(c.ev)){
+    if(iso === c.orig && nIni === c.ev.ini) cpMarcar(c, c.orig, null);
+    else cpMarcar(c, c.orig, {st:"movido", data:iso, ini:nIni, fim:nFim});
+  } else cpGravar(c, {data:iso, ini:nIni, fim:nFim});
+  if(c.origem === "meu") recado(cpRepete(c.ev) ? "Passou só nesta vez. Ctrl+Z desfaz." : "Compromisso passado. Ctrl+Z desfaz.");
+}
+var cpArrastado = null;
+
+/* ---- a janela de um compromisso: o dele e o do Lastro se mudam do mesmo jeito; o do Lastro grava
+   no Lastro. No que se repete, ele escolhe se muda só esta vez ou todas ---- */
 function abrirCompromisso(c, previa){
   fecharMenu();
   var fundo = document.createElement("div");
   fundo.className = "overlay";
-  var dataTxt = function(iso){ var d = deISO(iso); return DIAS[d.getDay()] + ", " + d.getDate() + " de " + d.toLocaleDateString("pt-BR", {month:"long"}); };
-  if(c && c.origem === "lastro"){
-    var e = c.ev, quem = (e.quem || []).map(function(id){ return LASTRO.nomes[id] || (id.charAt(0).toUpperCase() + id.slice(1)); });
-    var proj = LASTRO.projetos[e.proj] || "", rep = cpRepeteTexto(e);
-    var linkLocal = /^https?:\/\//i.test((e.local || "").trim());
-    fundo.innerHTML = '<div class="modal cp-modal"><h2>' + esc(c.titulo) + '</h2>' +
-      '<p class="sub">' + esc(dataTxt(c.data)) + ' · ' + esc(cpHorario(c)) + (rep ? ' · ' + esc(rep) : '') + '</p>' +
-      '<dl class="cp-dl">' +
-        '<dt>De onde vem</dt><dd>Agenda do Lastro' + (proj ? ', ' + esc(proj) : '') + '</dd>' +
-        (quem.length ? '<dt>Quem</dt><dd>' + esc(quem.join(", ")) + (c.meu ? '' : ' <span class="cp-nao">(você não está)</span>') + '</dd>' : '') +
-        (e.local ? '<dt>Onde</dt><dd>' + (linkLocal ? '<a href="' + esc(e.local.trim()) + '" target="_blank" rel="noopener">' + esc(e.local.trim()) + '</a>' : esc(e.local)) + '</dd>' : '') +
-        (e.desc ? '<dt>Sobre</dt><dd>' + esc(e.desc) + '</dd>' : '') +
-      '</dl>' +
-      '<p class="cp-nota">Os compromissos do Lastro se mudam no site do Lastro, e aparecem aqui sozinhos.</p>' +
-      '<div class="acoes"><button class="btn" type="button" id="cp-fechar">Fechar</button><a class="btn primary" href="' + LASTRO_SITE + '" target="_blank" rel="noopener">Abrir o Lastro</a></div></div>';
-    document.body.appendChild(fundo);
-    var fecharL = function(){ fundo.remove(); devolverL(); };
-    var devolverL = janela(fundo, fecharL);
-    fundo.addEventListener("click", function(ev){ if(ev.target === fundo) fecharL(); });
-    document.getElementById("cp-fechar").addEventListener("click", fecharL);
-    return;
-  }
-  var novo = !c, e2 = novo ? {id:"", titulo:"", data:(previa && previa.data) || chaveData(hoje0()), ini:(previa && previa.ini) || "09:00", fim:(previa && previa.fim) || "", semanal:false, mensal:"", local:"", desc:""} : c.ev;
+  var novo = !c, lastro = !!(c && c.origem === "lastro");
+  var e2 = novo ? {id:"", titulo:"", data:(previa && previa.data) || chaveData(hoje0()), ini:(previa && previa.ini) || "09:00", fim:(previa && previa.fim) || "", semanal:false, mensal:"", local:"", desc:""} : c.ev;
+  var repete = !novo && cpRepete(e2);
+  var soLer = lastro && !cpPodeMudarLastro();
+  var dataTxt = function(iso){ var d = deISO(iso); return DIAS[d.getDay()] + ", " + d.getDate() + "/" + String(d.getMonth() + 1).padStart(2, "0"); };
   var rep0 = e2.mensal ? e2.mensal : (e2.semanal ? "semanal" : "");
   var opc = [["", "Não repete"], ["semanal", "Toda semana"], ["semana", "Todo mês, no mesmo dia da semana (ex.: 1ª segunda)"], ["dia", "Todo mês, no mesmo dia do mês"]];
-  fundo.innerHTML = '<div class="modal cp-modal"><h2>' + (novo ? "Novo compromisso" : "Compromisso") + '</h2>' +
+  /* a vez aberta: dia e horário desta vez (a movida mostra o novo) */
+  var vez = c ? {data:c.data, ini:c.ini, fim:c.fim} : {data:e2.data, ini:e2.ini, fim:e2.fim};
+  var quem = lastro ? (e2.quem || []).map(function(id){ return LASTRO.nomes[id] || (id.charAt(0).toUpperCase() + id.slice(1)); }) : [];
+  var proj = lastro ? (LASTRO.projetos[e2.proj] || "") : "";
+  var dis = soLer ? " disabled" : "";
+  fundo.innerHTML = '<div class="modal cp-modal' + (lastro ? " lastro" : "") + '"><h2>' + (novo ? "Novo compromisso" : esc(c.titulo)) + '</h2>' +
+    (lastro ? '<p class="cp-origem"><span class="cp-selo">Lastro</span>' + esc(proj ? proj : "Agenda do Lastro") + (quem.length ? ' · ' + esc(quem.join(", ")) : '') + (c.meu ? '' : ' <span class="cp-nao">(você não está)</span>') + '</p>' : '') +
     '<form id="cp-form" class="cp-form" novalidate>' +
-      '<label class="pf cp-l"><span>O que é</span><input name="titulo" id="cp-titulo" maxlength="120" autocomplete="off" value="' + esc(e2.titulo) + '" placeholder="Ex.: supervisão, dentista, aula"></label>' +
+      (repete ? '<fieldset class="cp-qual"' + dis + '><legend>O que mudar</legend>' +
+        '<label><input type="radio" name="qual" value="vez" checked> Só nesta vez (' + esc(dataTxt(c.orig)) + ')</label>' +
+        '<label><input type="radio" name="qual" value="todas"> Todas as vezes (' + esc(cpRepeteTexto(e2)) + ')</label></fieldset>' : '') +
+      '<label class="pf cp-l cp-serie"><span>O que é</span><input name="titulo" id="cp-titulo" maxlength="120" autocomplete="off" value="' + esc(e2.titulo) + '" placeholder="Ex.: supervisão, dentista, aula"' + dis + '></label>' +
       '<div class="cp-linha">' +
-        '<label class="pf"><span>Dia</span><input type="date" name="data" value="' + esc(e2.data) + '"></label>' +
-        '<label class="pf"><span>Começa</span><input type="time" name="ini" step="300" value="' + esc(e2.ini) + '"></label>' +
-        '<label class="pf"><span>Termina</span><input type="time" name="fim" step="300" value="' + esc(e2.fim || "") + '"></label>' +
+        '<label class="pf"><span>Dia</span><input type="date" name="data" value="' + esc(vez.data) + '"' + dis + '></label>' +
+        '<label class="pf"><span>Começa</span><input type="time" name="ini" step="300" value="' + esc(vez.ini) + '"' + dis + '></label>' +
+        '<label class="pf"><span>Termina</span><input type="time" name="fim" step="300" value="' + esc(vez.fim || "") + '"' + dis + '></label>' +
       '</div>' +
-      '<label class="pf cp-l"><span>Repete</span><select name="rep">' + opc.map(function(o){ return '<option value="' + o[0] + '"' + (o[0] === rep0 ? " selected" : "") + '>' + o[1] + '</option>'; }).join("") + '</select></label>' +
-      '<label class="pf cp-l"><span>Onde ou link (opcional)</span><input name="local" maxlength="300" autocomplete="off" value="' + esc(e2.local || "") + '"></label>' +
-      '<label class="pf cp-l"><span>Anotação (opcional)</span><textarea name="desc" rows="2" maxlength="2000">' + esc(e2.desc || "") + '</textarea></label>' +
-      (!novo && (e2.semanal || e2.mensal) ? '<p class="cp-nota">Mudar aqui muda todas as vezes.</p>' : '') +
+      '<label class="pf cp-l cp-serie"><span>Repete</span><select name="rep"' + dis + '>' + opc.map(function(o){ return '<option value="' + o[0] + '"' + (o[0] === rep0 ? " selected" : "") + '>' + o[1] + '</option>'; }).join("") + '</select></label>' +
+      '<label class="pf cp-l cp-serie"><span>Onde ou link (opcional)</span><input name="local" maxlength="300" autocomplete="off" value="' + esc(e2.local || "") + '"' + dis + '></label>' +
+      (/^https?:\/\//i.test((e2.local || "").trim()) ? '<a class="cp-link" href="' + esc(e2.local.trim()) + '" target="_blank" rel="noopener">Abrir o link</a>' : '') +
+      '<label class="pf cp-l cp-serie"><span>Anotação (opcional)</span><textarea name="desc" rows="2" maxlength="2000"' + dis + '>' + esc(e2.desc || "") + '</textarea></label>' +
+      (lastro ? '<p class="cp-nota">' + (soLer ? 'Entre no Lastro (linha embaixo da grade) para mudar este compromisso.' : 'Muda na agenda do Lastro, para todo mundo do clube.') + '</p>' : '') +
+      '<div class="cp-mais">' +
+        (repete && c.movido && !soLer ? '<button class="btn sm" type="button" id="cp-voltar">Voltar ao horário de sempre</button>' : '') +
+        (repete && !soLer ? '<button class="btn sm" type="button" id="cp-cancelar-vez">Não vai acontecer nesta vez</button>' : '') +
+        (!novo && !soLer ? '<button class="btn sm" type="button" id="cp-apagar">' + (repete ? "Apagar todas as vezes" : "Apagar") + '</button>' : '') +
+        (lastro ? '<a class="btn sm" href="' + LASTRO_SITE + '" target="_blank" rel="noopener">Abrir o Lastro</a>' : '') +
+      '</div>' +
       '<div class="acoes"><span class="erro" id="cp-erro" role="alert"></span>' +
-        (novo ? '' : '<button class="btn" type="button" id="cp-apagar">Apagar</button>') +
-        '<button class="btn" type="button" id="cp-fechar">Fechar</button><button class="btn primary" type="submit">' + (novo ? "Guardar compromisso" : "Guardar a alteração") + '</button></div>' +
+        '<button class="btn" type="button" id="cp-fechar">Fechar</button>' +
+        (soLer ? '' : '<button class="btn primary" type="submit">' + (novo ? "Guardar compromisso" : "Guardar a alteração") + '</button>') + '</div>' +
     '</form></div>';
   document.body.appendChild(fundo);
   var fechar = function(){ fundo.remove(); devolver(); };
@@ -8647,33 +8752,49 @@ function abrirCompromisso(c, previa){
   fundo.addEventListener("click", function(ev){ if(ev.target === fundo) fechar(); });
   document.getElementById("cp-fechar").addEventListener("click", fechar);
   var form = document.getElementById("cp-form"), erro = document.getElementById("cp-erro");
-  var apagar = document.getElementById("cp-apagar");
-  if(apagar) apagar.addEventListener("click", function(){
-    if(!apagar.dataset.certeza){ apagar.dataset.certeza = "1"; apagar.textContent = "Apagar mesmo?"; return; }
-    dados.compromissos = (dados.compromissos || []).filter(function(x){ return x.id !== e2.id; });
-    salvar(); fechar(); renderSemana(); recado("Compromisso apagado. Ctrl+Z desfaz.");
+  /* "Só nesta vez" mexe só no dia e no horário: o resto fica apagado até escolher "Todas" */
+  var qualAgora = function(){ var r = form.querySelector('input[name="qual"]:checked'); return r ? r.value : "todas"; };
+  var pintarQual = function(){ var so = qualAgora() === "vez"; form.querySelectorAll(".cp-serie input,.cp-serie select,.cp-serie textarea").forEach(function(x){ x.disabled = so || soLer; }); form.querySelectorAll(".cp-serie").forEach(function(x){ x.classList.toggle("off", so); }); };
+  form.querySelectorAll('input[name="qual"]').forEach(function(r){ r.addEventListener("change", pintarQual); });
+  pintarQual();
+  var liga = function(id, f){ var b = document.getElementById(id); if(b) b.addEventListener("click", f); };
+  liga("cp-voltar", function(){ cpMarcar(c, c.orig, null); fechar(); });
+  liga("cp-cancelar-vez", function(){ cpMarcar(c, c.orig, {st:"cancelado"}); fechar(); if(c.origem === "meu") recado("Esta vez não vai acontecer. Ctrl+Z desfaz."); });
+  liga("cp-apagar", function(){
+    var b = document.getElementById("cp-apagar");
+    if(!b.dataset.certeza){ b.dataset.certeza = "1"; b.textContent = lastro ? "Apagar do Lastro mesmo?" : "Apagar mesmo?"; return; }
+    fechar(); cpApagar(c);
   });
   form.addEventListener("submit", function(ev){
     ev.preventDefault();
-    var f = new FormData(form), t = String(f.get("titulo") || "").trim(), d = String(f.get("data") || ""), ini = String(f.get("ini") || ""), fim = String(f.get("fim") || "");
+    if(soLer) return;
+    var f = new FormData(form), t = String(f.get("titulo") || e2.titulo || "").trim(), d = String(f.get("data") || ""), ini = String(f.get("ini") || ""), fim = String(f.get("fim") || "");
     if(!t){ erro.textContent = "Escreva o que é o compromisso."; form.titulo.focus(); return; }
     if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ erro.textContent = "Escolha o dia."; return; }
     if(!/^\d{1,2}:\d{2}$/.test(ini)){ erro.textContent = "Escolha a hora de começar."; return; }
     if(fim && cpMin(fim) <= cpMin(ini)){ erro.textContent = "A hora de terminar precisa ser depois da de começar."; return; }
-    if(!fim){ var mf = Math.min(cpMin(ini) + 60, 23 * 60 + 59); fim = String(Math.floor(mf / 60)).padStart(2, "0") + ":" + String(mf % 60).padStart(2, "0"); }
+    if(!fim) fim = cpHM(cpMin(ini) + 60);
+    if(repete && qualAgora() === "vez"){
+      if(d === c.orig && ini === e2.ini && fim === e2.fim) cpMarcar(c, c.orig, null);
+      else cpMarcar(c, c.orig, {st:"movido", data:d, ini:ini, fim:fim});
+      fechar(); irPara(d);
+      if(c.origem === "meu") recado("Mudou só nesta vez. Ctrl+Z desfaz.");
+      return;
+    }
     var r = String(f.get("rep") || "");
-    var obj = {id: e2.id || ("cp" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), titulo:t, data:d, ini:ini, fim:fim,
-      semanal: r === "semanal", mensal: (r === "semana" || r === "dia") ? r : "", local:String(f.get("local") || "").trim(), desc:String(f.get("desc") || "").trim()};
-    if(!Array.isArray(dados.compromissos)) dados.compromissos = [];
-    var i = dados.compromissos.map(function(x){ return x.id; }).indexOf(obj.id);
-    if(i >= 0) dados.compromissos[i] = obj; else dados.compromissos.push(obj);
-    salvar(); fechar();
-    /* a semana vai para a do compromisso, para ele ver onde entrou */
-    var sem = inicioSemana(deISO(d)); if(!mesmoDia(sem, semana)){ semana = sem; mesDaSemana(); }
-    diaFaixa = d;
-    renderSemana();
-    recado(novo ? "Compromisso guardado. Ctrl+Z desfaz." : "Alteração guardada.");
+    var campos = {titulo:t, data:d, ini:ini, fim:fim, semanal:r === "semanal", mensal:(r === "semana" || r === "dia") ? r : "", local:String(f.get("local") || "").trim(), desc:String(f.get("desc") || "").trim()};
+    /* na série, o dia escrito é o desta vez; a série anda junto, pela mesma diferença de dias */
+    if(repete){ if(c.movido) campos.data = e2.data; else { var dif = Math.round((deISO(d) - deISO(c.data)) / 86400000); campos.data = chaveData(somaDias(deISO(e2.data), dif)); } }
+    fechar();
+    if(novo){
+      campos.id = "cp" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      if(!Array.isArray(dados.compromissos)) dados.compromissos = [];
+      dados.compromissos.push(campos); salvar(); irPara(d); recado("Compromisso guardado. Ctrl+Z desfaz."); return;
+    }
+    cpGravar(c, campos); irPara(d);
+    if(c.origem === "meu") recado("Alteração guardada. Ctrl+Z desfaz.");
   });
+  function irPara(d){ var sem = inicioSemana(deISO(d)); if(!mesmoDia(sem, semana)){ semana = sem; mesDaSemana(); } diaFaixa = d; renderSemana(); }
 }
 
 /* ---- a linha embaixo da grade que diz como está a agenda do Lastro ---- */
