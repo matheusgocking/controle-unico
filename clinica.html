@@ -1499,7 +1499,6 @@ table.pg-cartoes td.pc-acao .btn + .btn{margin-left:6px}
       </div></div>
       <div class="grupo"><h3>Compromisso</h3><div class="itens">
         <span class="it"><i class="sw sw-cp"></i>Compromisso seu</span>
-        <span class="it"><i class="sw sw-cp lastro"></i>Compromisso do Lastro (vinho)</span>
         <span class="it"><i class="sw sw-cp choque"></i>Cai em cima de uma sessão</span>
       </div></div>
       <p class="dica">Toque num horário para escolher a situação. Arraste um paciente para outro horário para remarcar.</p>
@@ -8582,7 +8581,8 @@ var LASTRO_CFG = {
 var LASTRO_CACHE = "controle-unico-lastro-cache";
 /* estado: carregando, ok, entrar (sem login), sem-acesso (conta não liberada), fora (sem rede ou erro), teste */
 var LASTRO = {eventos:[], membro:"", nomes:{}, projetos:{}, estado:"carregando", lidoEm:0};
-(function(){ try{ var c = JSON.parse(localStorage.getItem(LASTRO_CACHE) || "null"); if(c && Array.isArray(c.eventos)){ LASTRO.eventos = c.eventos; LASTRO.membro = c.membro || ""; LASTRO.nomes = c.nomes || {}; LASTRO.projetos = c.projetos || {}; LASTRO.lidoEm = c.lidoEm || 0; } }catch(e){} })();
+/* 10/11/2026, pedido dele: os compromissos dele moram aqui no Controle Único, não mais no Mapa do Lastro (que vai ser desativado). A cópia antiga some. */
+(function(){ try{ localStorage.removeItem(LASTRO_CACHE); }catch(e){} })();
 
 function cpMin(hm){ var m = /^(\d{1,2}):(\d{2})/.exec(hm || ""); return m ? Number(m[1]) * 60 + Number(m[2]) : 0; }
 function cpFimMin(c){ var a = cpMin(c.ini), b = cpMin(c.fim); return b > a ? b : a + 30; }
@@ -8800,6 +8800,8 @@ function abrirCompromisso(c, previa){
 /* ---- a linha embaixo da grade que diz como está a agenda do Lastro ---- */
 function pintarLastro(){
   var el = document.getElementById("cp-lastro"); if(!el) return;
+  el.hidden = LASTRO.estado === "desligado";
+  if(el.hidden){ el.innerHTML = ""; return; }
   var txt = {
     carregando: "Agenda do Lastro: carregando…",
     ok: "Agenda do Lastro ligada. Os compromissos dela se mudam no site do Lastro.",
@@ -8843,6 +8845,8 @@ var lastroDesliga = null;
 function lastroLigar(){
   /* no servidor de teste e nas fotos não se liga ao banco de verdade */
   if(/^(127\.0\.0\.1|localhost)$/.test(location.hostname)){ if(LASTRO.estado === "carregando"){ LASTRO.estado = "teste"; pintarLastro(); } return; }
+  /* fora do teste, o app não lê mais o Lastro (10/11/2026) */
+  if(LASTRO.estado !== "teste"){ LASTRO.estado = "desligado"; pintarLastro(); return; }
   lastroEstado("carregando");
   var base = "https://www.gstatic.com/firebasejs/10.12.2/firebase-";
   (window.firebase && firebase.firestore ? Promise.resolve() :
