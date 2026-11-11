@@ -85,7 +85,7 @@ test("Carteira: o Baixar planilha leva as abas da Clínica junto", async () => {
     window.URL.createObjectURL = () => "blob:teste";
     document.getElementById("exportar").click();
   }));
-  assert.deepEqual(nomes.slice(-7), ["Recebimentos", "Anúncios", "Pacientes", "Ciclos", "Encerramentos", "Sessões", "Dados dos pacientes"]);
+  assert.deepEqual(nomes.slice(-6), ["Recebimentos", "Pacientes", "Ciclos", "Encerramentos", "Sessões", "Dados dos pacientes"]);
   assert.deepEqual(erros, []);
   await ctx.close();
 });

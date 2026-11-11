@@ -1,7 +1,7 @@
 /* Lote 3 da revisão (19/10/2026): a mesma pessoa com o mesmo nome, vencimento passado como "venceu em",
    remarcação com a data do contato, menu da célula pelo teclado; Meus lançamentos com todos os meses,
    categorias próprias, "recebi uma parte" sem janelinha, gráfico com a sobra; Ana com "Salvo." e erro junto
-   do campo; Cripto lembrando "Esconder valores". Cadernos inventados; nada vai à internet. */
+   do campo. Cadernos inventados; nada vai à internet. */
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const { chromium } = require("playwright");
@@ -182,22 +182,9 @@ test("Ana: 'Salvo.' depois de gravar e o erro junto do campo, sem janelinha", as
   await ctx.close();
 });
 
-test("Cripto: 'Esconder valores' fica lembrado e cobre o preço médio", async () => {
-  const ctx = await contexto(1280), pg = await ctx.newPage();
-  await pg.goto(srv.url + "carteira.html"); await pg.waitForTimeout(400);
-  await pg.click("#btnOlho");
-  assert.equal(await pg.evaluate(() => localStorage.getItem("cu-privado")), "1");
-  await pg.reload(); await pg.waitForTimeout(400);
-  assert.ok(await pg.evaluate(() => document.body.classList.contains("privado")));
-  assert.equal(await pg.textContent("#btnOlho"), "Mostrar valores");
-  await pg.click("#btnOlho");
-  assert.ok(await pg.evaluate(() => !document.body.classList.contains("privado")));
-  await ctx.close();
-});
-
 test("theme-color: duas cores (claro e escuro) em cada página", async () => {
   const fs = require("fs"), path = require("path");
-  for (const arq of ["index.html", "ana.html", "app.html", "clinica.html", "carteira.html", "formulacao.html", "conferir.html", "guia.html", "privacidade.html"]) {
+  for (const arq of ["index.html", "ana.html", "app.html", "clinica.html", "conferir.html", "guia.html", "privacidade.html"]) {
     const s = fs.readFileSync(path.join(__dirname, "..", arq), "utf8");
     assert.equal((s.match(/name="theme-color"[^>]*media="\(prefers-color-scheme: (light|dark)\)"/g) || []).length, 2, arq);
   }

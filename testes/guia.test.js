@@ -24,7 +24,7 @@ for (const largura of [375, 1280]) for (const escuro of [false, true]) {
   test(`Guia do Matheus a ${largura}px${escuro ? ", escuro" : ""}`, async () => {
     const { ctx, p, erros } = await abrir("guia.html", largura, escuro);
     const h2 = await visiveis(p, "section h2");
-    for (const nome of ["Tudo", "Dinheiro", "Casa", "Cripto", "Clínica", "Conferir"]) assert.ok(h2.some(t => t.startsWith(nome)), nome);
+    for (const nome of ["Tudo", "Dinheiro", "Casa", "Clínica", "Conferir"]) assert.ok(h2.some(t => t.startsWith(nome)), nome);
     assert.ok(!h2.includes("Plantões"), "as telas da Ana ficam no guia dela");
     assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, "nada rola de lado");
     // cada botão do índice leva a uma tela que existe

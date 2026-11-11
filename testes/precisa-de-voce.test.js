@@ -24,8 +24,7 @@ function cadernos(){
   cl.config.contarDesde = "2026-09-28";   // a agenda registra desde setembro: as sessões sem marca aparecem
   return {
     "controle-unico-dinheiro-cache": JSON.stringify(din), "controle-unico-casa-cache": JSON.stringify(D.casa),
-    "controle-unico-clinica-cache": JSON.stringify(cl),
-    "cripto-v1-vivo": JSON.stringify({ t:Date.parse(D.HOJE) - 3600e3, saldos:[], precos:{}, posicoes:[{ id:"p1", dentro:false, g0:"ETH", g1:"USDC", p:1, pa:2, pb:3 }] })
+    "controle-unico-clinica-cache": JSON.stringify(cl)
   };
 }
 
@@ -50,20 +49,20 @@ async function abrir(largura, semente){
 const avisos = f => f.evaluate(() => [...document.querySelectorAll(".pv .pv-i")].map(b => b.querySelector("b").textContent));
 const cadernosGuardados = p => p.evaluate(() => ["dinheiro", "casa", "clinica"].map(c => localStorage.getItem("controle-unico-" + c + "-cache")));
 
-test("Tudo junta os avisos da Clínica, do Dinheiro e da Cripto, o mais urgente primeiro", async () => {
+test("Tudo junta os avisos da Clínica e do Dinheiro, o mais urgente primeiro (a Cripto saiu do app em 10/11/2026)", async () => {
   const { ctx, p, erros, app } = await abrir(1280, cadernos());
   const antes = await cadernosGuardados(p);
   await app.evaluate(() => document.querySelector(".pv-mais").open = true);
   const l = await avisos(app);
   assert.equal(l[0], "Paciente Avulso: pagamento atrasado");
-  assert.equal(l[1], "1 pool fora da faixa");
+  assert.ok(!l.some(t => /pool/.test(t)), "a Cripto não avisa mais aqui");
   for (const t of ["Mercado passou do limite", "1 pendência em aberto", "Paciente Mensal: pagamento vence amanhã", "Aluguel: sai amanhã", "2 registros do prontuário por escrever"])
     assert.ok(l.includes(t), "falta o aviso: " + t);
   assert.ok(l.some(t => /sessões já passaram sem marcar/.test(t)));
   // a mesma conta da tela Falta marcar da Clínica
   const naClinica = await p.frames().find(f => f.url().includes("clinica.html")).evaluate(() => faltaMarcar().length);
   assert.ok(l.includes(naClinica + " sessões já passaram sem marcar o que aconteceu"));
-  assert.match(await app.textContent(".pv h2"), /5 pedem ação/);
+  assert.match(await app.textContent(".pv h2"), /4 pedem ação/);   // eram 5 com a pool fora da faixa da Cripto
   // só lê: os cadernos guardados ficam iguais
   assert.deepEqual(await cadernosGuardados(p), antes);
   assert.deepEqual(erros, []);

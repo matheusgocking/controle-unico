@@ -127,13 +127,13 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 .versao-nova::before{content:""; width:8px; height:8px; border-radius:50%; background:#d49a1c; flex:none}
 .versao-nova button{border:0; border-radius:8px; padding:6px 14px; min-height:36px; font:inherit; font-weight:600; background:var(--accent); color:var(--accent-ink); cursor:pointer}
 .palco{flex:1 1 auto; position:relative; min-height:0}
-/* Carteira: a chave entre o dinheiro e a cripto (28/09/2026). No computador ela copia a chave
+/* Carteira: a chave entre o dinheiro e a casa (28/09/2026). No computador ela copia a chave
    Semana/Mês da Clínica (pedido dele, 28/09/2026): à esquerda, na coluna do conteúdo, com o
    fundo da página embaixo, para parecer parte da tela e não uma barra de celular.
    A conta segue a coluna de 1200px das páginas, descontando os 15px da barra de rolagem do Windows. */
 /* Reforma de desenho (04/11/2026): a chave virou o título da Carteira. Antes era uma caixinha de abas
    em cima das abas do Dinheiro (Lançamentos, Gastos fixos...), e as duas pareciam o mesmo nível.
-   Agora Dinheiro, Casa e Cripto são palavras grandes, como o nome da página, e a escolhida fica escura;
+   Agora Dinheiro e Casa são palavras grandes, como o nome da página, e a escolhida fica escura;
    as abas do Dinheiro, embaixo, continuam pequenas e sublinhadas. A posição na coluna é a mesma. */
 .vistas{flex:none; display:flex; background:var(--pag-bg);
   padding:16px max(24px, calc((100% - 1215px) / 2 + 24px)) 0}
@@ -209,9 +209,8 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
   /* no celular o + da casca só aparece na Clínica; na Tudo e na Carteira o + da própria tela abre esta escolha */
   .mais{right:14px; bottom:14px}
   .mais-bt{width:54px; height:54px}
-  /* a Cripto não tem + próprio: o da casca aparece lá também (06/10/2026) */
-  :root:not([data-tela="clinica"]):not([data-tela="cripto"]) .mais-bt{display:none}
-  :root:not([data-tela="clinica"]):not([data-tela="cripto"]) .mais-lista{bottom:68px}   /* em cima do + da tela, sem cobri-lo */
+  :root:not([data-tela="clinica"]) .mais-bt{display:none}
+  :root:not([data-tela="clinica"]) .mais-lista{bottom:68px}   /* em cima do + da tela, sem cobri-lo */
 }
 :root[data-tela="conferir"] .mais{display:none}
 /* com uma janela do módulo aberta (a ficha do paciente, por exemplo), o + sai da frente:
@@ -252,8 +251,7 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 
 <div class="vistas hidden" id="vistas"><div class="vistas-g" role="group" aria-label="O que mostrar na Carteira">
   <button type="button" data-v="carteira" aria-pressed="true">Dinheiro</button>
-  <button type="button" data-v="casa" aria-pressed="false">Casa</button>
-  <button type="button" data-v="cripto" aria-pressed="false">Cripto</button></div></div>
+  <button type="button" data-v="casa" aria-pressed="false">Casa</button></div></div>
 <main class="palco" id="palco">
   <div class="mais" id="mais">
     <div class="mais-lista" id="mais-lista" role="menu" aria-label="O que lançar" hidden>
@@ -268,22 +266,22 @@ nav button[aria-pressed="true"]{background:var(--bg); color:var(--text); font-we
 if (document.documentElement.hasAttribute("data-renovando")) throw new Error("moldura de renovação da chave: nada a montar");
 // Cada módulo é uma página própria, carregada dentro desta casca. Tudo, Carteira e Casa
 // dividem o app.html e trocam de tela pelo endereço, sem recarregar os cadernos.
-// A Carteira junta o dinheiro (app.html#carteira), a casa (app.html#casa) e a cripto (carteira.html),
-// com uma chave em cima: Dinheiro, Casa, Cripto (pedido dele, 01/10/2026; a Casa era aba própria).
+// A Carteira junta o dinheiro (app.html#carteira) e a casa (app.html#casa), com uma chave em cima:
+// Dinheiro, Casa (pedido dele, 01/10/2026; a Casa era aba própria). A Cripto saiu do app em 10/11/2026
+// (pedido dele: vira app próprio); o endereço antigo #cripto cai na Carteira.
 // Quem entra com o Google em qualquer uma passa o acesso para as outras (nuvem.js).
 var PAGINAS = {
   tudo:     { quadro:"app",      src:"app.html#tudo" },
   carteira: { quadro:"app",      src:"app.html#carteira" },
   casa:     { quadro:"app",      src:"app.html#casa" },
   clinica:  { quadro:"clinica",  src:"clinica.html" },
-  cripto:   { quadro:"carteira", src:"carteira.html" },
   // o modo conferência: app contra as planilhas, um item por linha (decisão 4). Abre pelo botão do topo, não pelas abas.
   conferir: { quadro:"conferir", src:"conferir.html" }
 };
-var NOMES = { tudo:"Tudo", carteira:"Carteira", casa:"Carteira", clinica:"Clínica", cripto:"Carteira", conferir:"Conferência" };
-// a aba de baixo que fica acesa para cada tela; "dinheiro" é o endereço antigo da Carteira
-var ABA_DE = { cripto:"carteira", casa:"carteira" };
-var ANTIGOS = { dinheiro:"carteira" };
+var NOMES = { tudo:"Tudo", carteira:"Carteira", casa:"Carteira", clinica:"Clínica", conferir:"Conferência" };
+// a aba de baixo que fica acesa para cada tela; "dinheiro" e "cripto" são endereços antigos da Carteira
+var ABA_DE = { casa:"carteira" };
+var ANTIGOS = { dinheiro:"carteira", cripto:"carteira" };
 
 var palco = document.getElementById("palco");
 var quadros = {};
@@ -397,7 +395,7 @@ window.addEventListener("blur", function(){ setTimeout(function(){ if (menu.open
 document.getElementById("abas").addEventListener("click", function(e){
   var b = e.target.closest("button[data-p]");
   if (!b) return;
-  // a Carteira volta para a vista em que ele estava (dinheiro, casa ou cripto)
+  // a Carteira volta para a vista em que ele estava (dinheiro ou casa)
   if (b.dataset.p === "carteira"){ var v = "carteira"; try { v = localStorage.getItem("cu-carteira-vista") || "carteira"; } catch(e){} mostrar(PAGINAS[v] ? v : "carteira"); }
   else mostrar(b.dataset.p);
 });

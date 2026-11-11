@@ -154,14 +154,12 @@ for (const largura of [390, 1280]) {
   });
 }
 
-test("7. no celular a Cripto tem o +, e a escolha abre colada nele", async () => {
+test("7. a Cripto saiu do app (10/11/2026): o endereço antigo #cripto cai na Carteira, sem a chave Cripto", async () => {
   const { ctx, p, erros } = await abrir("index.html#cripto", 390);
-  assert.equal(await visivel(p, "#mais-bt"), true);
-  await p.click("#mais-bt"); await espera(200);
-  const r = await p.evaluate(() => [document.getElementById("mais-lista").getBoundingClientRect().bottom, document.getElementById("mais-bt").getBoundingClientRect().top]);
-  assert.ok(r[0] <= r[1] && r[1] - r[0] < 20, "a lista fica logo acima do +");
-  // na Tudo e na Dinheiro continua só o + da própria tela
-  await p.keyboard.press("Escape"); await p.evaluate(() => mostrar("tudo")); await espera(300);
+  assert.equal(await p.textContent("#titulo"), "Carteira");
+  assert.equal(await p.locator('#vistas [data-v="cripto"]').count(), 0);
+  assert.equal(await p.locator("#q-carteira").count(), 0);
+  // na Tudo e na Carteira continua só o + da própria tela
   assert.equal(await visivel(p, "#mais-bt"), false);
   assert.deepEqual(erros, []);
   await ctx.close();

@@ -193,18 +193,6 @@ test("Clínica: números internos repetidos ganham número novo, igual em qualqu
   await ctx.close();
 });
 
-test("Formulação: apóstrofo não vira hashtag", async () => {
-  const ctx = await nav.newContext();
-  const p = await ctx.newPage();
-  await ctx.route(/fonts\.(googleapis|gstatic)\.com|accounts\.google\.com/, r => r.abort());
-  await p.goto(srv.url + "formulacao.html");
-  const h = await p.evaluate(() => comTags("copo d'água #ansiedade <b>"));
-  assert.ok(!/>#39</.test(h) && !h.includes('data-tag="39"'), h);   // "&#39;" é o apóstrofo escapado; o erro era virar botão
-  assert.equal((h.match(/class="tag"/g) || []).length, 1);
-  assert.ok(h.includes("&lt;b&gt;"));
-  await ctx.close();
-});
-
 /* nenhuma página quebra nem passa da largura da tela, no celular e no computador, claro e escuro */
 for (const [nome, largura] of [["celular", 375], ["computador", 1280]]) for (const escuro of [false, true]) {
   test(`Páginas abrem sem erro: ${nome}, ${escuro ? "escuro" : "claro"}`, async () => {
@@ -217,7 +205,7 @@ for (const [nome, largura] of [["celular", 375], ["computador", 1280]]) for (con
         if (w) largos.push(`${aba} ${fr.url()} ${w}`);
       }
     }
-    for (const pg of ["ana.html", "formulacao.html", "conferir.html", "privacidade.html"]) {
+    for (const pg of ["ana.html", "conferir.html", "privacidade.html"]) {
       await pagina.goto(srv.url + pg); await pagina.waitForTimeout(400);
       const w = await pagina.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1 ? document.documentElement.scrollWidth : 0);
       if (w) largos.push(`${pg} ${w}`);
