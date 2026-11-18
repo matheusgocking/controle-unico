@@ -1717,6 +1717,14 @@ async function impLer(arquivo){
 // na Pluggy (Meu Pluggy -> Nubank) e devolve os dois OFX, que passam pelo mesmo importador.
 // A senha da Pluggy fica só lá, nunca neste site, que é público.
 const PONTE_NUBANK = "https://script.google.com/macros/s/AKfycby2zG7DmQ0U7fcsZcopsIXv7wSAHMkJ2ZTIfPKT_BM_eOB2r6DPmZDFB8cmVYvDKGuB/exec";
+// Busca do dia 1 do mês passado em diante, nunca antes de 01/11/2026: até outubro tudo entrou pelos
+// arquivos do e-mail, cujos números de linha são outros, e voltaria a perguntar o que já foi decidido.
+const PONTE_DESDE_MINIMO = "2026-11-01";
+function impDesdeNubank(){
+  const h = new Date(), d = new Date(h.getFullYear(), h.getMonth() - 1, 1);
+  const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  return k < PONTE_DESDE_MINIMO ? PONTE_DESDE_MINIMO : k;
+}
 let impBuscando = false;
 function impJuntar(partes, desde, ate){
   const cmp = (a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0;
@@ -1730,7 +1738,7 @@ async function impBuscarNubank(){
   if (!t){ recado("Entre com o Google antes de buscar o Nubank.", true); return; }
   impBuscando = true; desenhar();
   try {
-    const resp = await fetch(PONTE_NUBANK, { method:"POST", body:JSON.stringify({ token:t }) });
+    const resp = await fetch(PONTE_NUBANK, { method:"POST", body:JSON.stringify({ token:t, desde:impDesdeNubank() }) });
     const j = await resp.json();
     if (!j.ok) throw new Error(j.erro || "a ponte não respondeu");
     const partes = [j.conta, j.cartao].filter(Boolean).map(impClassificar);

@@ -46,7 +46,10 @@ test("Buscar do Nubank junta conta e cartão num painel, com a chave do Google n
   assert.match(r.titulo, /Nubank, conta e cartão/);
   assert.equal(r.fonte, "nubank");
   assert.deepEqual(r.novos.map(x => x[0]), ["2026-10-01", "2026-10-02", "2026-10-03"], "em ordem de data");
-  assert.deepEqual(JSON.parse(pedidos[0]), { token:"chave-de-teste" });
+  assert.deepEqual(JSON.parse(pedidos[0]), { token:"chave-de-teste", desde:"2026-11-01" }, "nunca antes de novembro de 2026");
+  const dez = await f.evaluate(() => { const D0 = Date; Date = class extends D0 { constructor(...a){ super(...(a.length ? a : [2027, 0, 15])); } };
+    const k = impDesdeNubank(); Date = D0; return k; });
+  assert.equal(dez, "2026-12-01", "em janeiro de 2027, desde o dia 1 de dezembro");
   if (process.env.CU_FOTO) await f.locator(".imp").screenshot({ path:process.env.CU_FOTO });
   assert.deepEqual(erros, []);
   await ctx.close();
