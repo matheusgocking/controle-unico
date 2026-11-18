@@ -2844,7 +2844,7 @@ function idadeDe(iso){
   if(h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--;
   return a >= 0 && a < 130 ? a : null;
 }
-/* "(27) 99758-2342" vira o link do WhatsApp; sem DDD ou curto demais, fica sem link */
+/* "(27) 90000-0000" vira o link do WhatsApp; sem DDD ou curto demais, fica sem link */
 function linkWhats(tel){
   var d = String(tel || "").replace(/\D/g, "");
   if(d.length === 10 || d.length === 11) d = "55" + d;
