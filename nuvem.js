@@ -858,6 +858,9 @@ var Nuvem = (function(){
     /* recarrega a página de propósito, sem o aviso de mudança pendente (ela continua marcada) */
     recarregar: function(){ saindo = true; location.reload(); },
     conectado: temToken,
+    /* a chave do Google em vigor (ou null), para o botão "Buscar do Nubank": a ponte no Apps Script
+       confere com ela que quem pede é o dono do app (18/11/2026) */
+    chave: function(){ return temToken() ? token : null; },
     pior: pior, algumPendente: algumPendente, sair: sair,
     pararDeGravar: function(){ saindo = true; cadernos.forEach(function(c){ c.parar(); }); },
     copiaAvulsa: copiaAvulsa,

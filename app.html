@@ -1693,19 +1693,51 @@ function impClinica(){
   const pags = w ? w.dados.pagamentos : ((lerLocal("controle-unico-clinica-cache") || {}).pagamentos || []);
   return pags.map(g => ({ data:g.data, valor:Number(g.valor) || 0 }));
 }
+function impClassificar(texto){
+  const ex = Extrato.ler(texto);
+  const eu = livro.casa.pessoas[0];
+  return Extrato.classificar(ex, {
+    din: livro.matheus.lancamentos, casa: livro.casa.lancamentos.filter(l => !eu || l.quem === eu),
+    fixosDoMes: impFixosDoMes, clinica: impClinica(), importados: impFeitos(), regras: impRegras() });
+}
+function impMontar(nome, r){
+  const linhas = r.novos.map(x => Object.assign(x, { grupo:"novo", marcado:true }))
+    .concat(r.ignorados.map(x => Object.assign(x, { grupo:"ignorado", marcado:false })));
+  imp = { nome, r, linhas, erro:"" };
+}
 async function impLer(arquivo){
   const buf = await arquivo.arrayBuffer();
   let texto = new TextDecoder("utf-8").decode(buf);
   // OFX antigo declara CHARSET:1252: aí os acentos vêm em Windows-1252
   if (/CHARSET:\s*1252/i.test(texto.slice(0, 400)) || texto.includes("�")) texto = new TextDecoder("windows-1252").decode(buf);
-  const ex = Extrato.ler(texto);
-  const eu = livro.casa.pessoas[0];
-  const r = Extrato.classificar(ex, {
-    din: livro.matheus.lancamentos, casa: livro.casa.lancamentos.filter(l => !eu || l.quem === eu),
-    fixosDoMes: impFixosDoMes, clinica: impClinica(), importados: impFeitos(), regras: impRegras() });
-  const linhas = r.novos.map(x => Object.assign(x, { grupo:"novo", marcado:true }))
-    .concat(r.ignorados.map(x => Object.assign(x, { grupo:"ignorado", marcado:false })));
-  imp = { nome:arquivo.name, r, linhas, erro:"" };
+  impMontar(arquivo.name, impClassificar(texto));
+}
+// Botão "Buscar do Nubank" (18/11/2026): a ponte é um Apps Script na conta Google dele
+// (Importação/nubank-apps-script.gs). Ela confere a chave do Google deste app, lê conta e cartão
+// na Pluggy (Meu Pluggy -> Nubank) e devolve os dois OFX, que passam pelo mesmo importador.
+// A senha da Pluggy fica só lá, nunca neste site, que é público.
+const PONTE_NUBANK = "https://script.google.com/macros/s/AKfycby2zG7DmQ0U7fcsZcopsIXv7wSAHMkJ2ZTIfPKT_BM_eOB2r6DPmZDFB8cmVYvDKGuB/exec";
+let impBuscando = false;
+function impJuntar(partes, desde, ate){
+  const cmp = (a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0;
+  const junta = k => [].concat(...partes.map(p => p[k])).sort(cmp);
+  return { fonte:"nubank", inicio:desde || partes.map(p => p.inicio).sort()[0], fim:ate || partes.map(p => p.fim).sort().pop(),
+    novos:junta("novos"), jaLancados:junta("jaLancados"), ignorados:junta("ignorados"),
+    repetidos:partes.reduce((s, p) => s + (p.repetidos || 0), 0) };
+}
+async function impBuscarNubank(){
+  const t = Nuvem.chave && Nuvem.chave();
+  if (!t){ recado("Entre com o Google antes de buscar o Nubank.", true); return; }
+  impBuscando = true; desenhar();
+  try {
+    const resp = await fetch(PONTE_NUBANK, { method:"POST", body:JSON.stringify({ token:t }) });
+    const j = await resp.json();
+    if (!j.ok) throw new Error(j.erro || "a ponte não respondeu");
+    const partes = [j.conta, j.cartao].filter(Boolean).map(impClassificar);
+    if (!partes.length) throw new Error("a Pluggy não devolveu conta nem cartão");
+    impMontar("Nubank", impJuntar(partes, j.desde, j.ate));
+  } catch(err){ imp = null; recado("Não consegui buscar o Nubank: " + err.message, true); }
+  impBuscando = false; desenhar();
 }
 function impOpcoesCategoria(x){
   if (x.tipo === "Aporte" || x.tipo === "Resgate") return `<option>Reserva</option>`;
@@ -1726,8 +1758,9 @@ function impLinha(x, i){
 }
 function painelImportar(){
   if (PERFIL === "ana") return "";
-  if (!imp) return `<div class="imp-barra"><button type="button" class="b" id="impAbrir">Importar extrato do Nubank</button>
-    <input type="file" id="impArquivo" accept=".ofx,.OFX" hidden><span class="nota">OFX da fatura ou da conta, que chega por e-mail.</span></div>`;
+  if (!imp) return `<div class="imp-barra"><button type="button" class="b p" id="impNubank"${impBuscando ? " disabled" : ""}>${impBuscando ? "Buscando no Nubank…" : "Buscar do Nubank"}</button>
+    <button type="button" class="b" id="impAbrir">Importar arquivo OFX</button>
+    <input type="file" id="impArquivo" accept=".ofx,.OFX" hidden><span class="nota">Conta e cartão desde o dia 1 do mês passado. Nada entra antes de você conferir.</span></div>`;
   if (imp.feito) return `<div class="imp-barra imp-ok" role="status">${escH(imp.feito.texto)}
     <button type="button" class="b" id="impDesfazer">Desfazer</button><button type="button" class="b" id="impFechar">Fechar</button></div>`;
   const r = imp.r, novos = imp.linhas.filter(x => x.grupo === "novo"), ign = imp.linhas.filter(x => x.grupo === "ignorado");
@@ -1735,7 +1768,7 @@ function painelImportar(){
   const tabela = l => `<table class="t imp-t"><thead><tr><th></th><th>Dia</th><th>Descrição</th><th>Onde</th><th>Categoria</th><th class="num">Valor</th></tr></thead>
     <tbody>${l.map(x => impLinha(x, imp.linhas.indexOf(x))).join("")}</tbody></table>`;
   return `<div class="imp" role="region" aria-label="Importar extrato">
-    <h3>${r.fonte === "fatura" ? "Fatura do cartão" : "Conta"}${r.inicio ? `, de ${dia(r.inicio)} a ${dia(r.fim)}` : ""}</h3>
+    <h3>${r.fonte === "nubank" ? "Nubank, conta e cartão" : r.fonte === "fatura" ? "Fatura do cartão" : "Conta"}${r.inicio ? `, de ${dia(r.inicio)} a ${dia(r.fim)}` : ""}</h3>
     <p class="nota">${novos.length} para conferir · ${r.jaLancados.length} já lançados por você · ${ign.length} ignorados${r.repetidos ? ` · ${r.repetidos} já importados antes` : ""}. Confira a categoria de cada linha: nada entra antes de você apertar Lançar.</p>
     ${novos.length ? tabela(novos) : `<p class="vazio">Nada novo neste arquivo.</p>`}
     ${r.jaLancados.length ? `<details><summary>Já lançados por você (${r.jaLancados.length})</summary><ul class="imp-lista">${r.jaLancados.map(x =>
@@ -1792,6 +1825,7 @@ function ligarImportar(){
     };
   }
   const x = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  x("impNubank", () => { if (!impBuscando) impBuscarNubank(); });
   x("impCancelar", () => { imp = null; desenhar(); });
   x("impFechar", () => { imp = null; desenhar(); });
   x("impLancar", impLancar);
