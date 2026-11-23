@@ -57,7 +57,7 @@ test("Mês a mês: o que sobrou é a mesma conta do saldo da Situação do mês"
   });
   perto(r.sobra, r.saldo, "setembro, mês fechado");
   const out = await f.evaluate(() => { ref = new Date(2026, 9, 1); return serieMeses().find(m => m.k === "2026-10"); });
-  perto(out.sobra, out.entrou - out.saiu - 500, "outubro desconta o aporte de 500");
+  perto(out.sobra, out.entrou - out.saiu, "outubro: o aporte de 500 fica fora do saldo (23/11/2026)");
   await ctx.close();
 });
 
@@ -118,9 +118,11 @@ test("Recebi mostra embaixo o resgate e o aporte do mês na reserva", async () =
     // desde 04/11/2026 a conta de cada número fica em "Ver a conta", embaixo dos seis números
     return { d, txt: document.querySelector(".situ details.conta").textContent };
   });
-  if (r.d.aportesMes > 0.005) assert.match(r.txt, /guardados na reserva, não gastos/);
-  if (r.d.resgatesMes > 0.005) assert.match(r.txt, /resgatados da reserva/);
-  else assert.doesNotMatch(r.txt, /resgatados/);
+  if (r.d.aportesMes > 0.005) assert.match(r.txt, /guardei R\$\s[\d.,]+ na reserva/);
+  if (r.d.resgatesMes > 0.005) assert.match(r.txt, /tirei R\$\s[\d.,]+ da reserva/);
+  else assert.doesNotMatch(r.txt, /tirei/);
+  assert.match(r.txt, /a reserva fica fora desta conta/);
+  assert.ok(Math.abs(r.d.sobra - (r.d.entrou - r.d.saiu)) < 0.01, "saldo é recebi menos gastei");
   assert.ok(r.d.aportesMes > 0.005, "outubro dos dados de teste tem aporte");
   assert.deepEqual(erros, []);
   await ctx.close();

@@ -59,7 +59,7 @@ test("Fechamento de setembro: contas contra o normal e o que fugiu dele", async 
   perto(F.normal.entrou, 5000, "recebido normal");
   perto(F.normal.saiu, (850 + 850 + 1450) / 3, "gasto normal");
   perto(F.din.saiu, 900 + 100 + 600 + 220 + 1000, "gasto de setembro");
-  perto(F.din.sobra, 3000 - 2820 + 1000, "sobra de setembro, com o resgate");
+  perto(F.din.sobra, 3000 - 2820, "sobra de setembro, sem o resgate (23/11/2026)");
   perto(F.reservaFim, 4000, "reserva no fim de setembro");
   perto(F.mc.media, 1000, "média da casa só com agosto");
   const txt = alertas.map(a => a[0] + " " + a[1]).join("\n");

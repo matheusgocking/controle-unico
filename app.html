@@ -639,12 +639,12 @@ function contasDinheiro(){
     + soma(movReserva.filter(l => l.tipo === "Aporte"), l => l.valor)
     - soma(movReserva.filter(l => l.tipo === "Resgate"), l => l.valor);
 
-  // Como na linha Total do painel da planilha: o que foi para a reserva saiu do caixa do mês,
-  // o que voltou dela entrou. Assim, tirar da reserva e gastar deixa o saldo do mês no lugar.
+  // O saldo do mês é só recebi menos gastei (pedido dele, 23/11/2026): tirar da reserva não é ganhar,
+  // e somar o resgate fazia o mês no vermelho dizer "Pode gastar". Aporte e resgate aparecem à parte.
   const aportesMes = soma(doMes.filter(l => l.tipo === "Aporte"), l => l.valor);
   const resgatesMes = soma(doMes.filter(l => l.tipo === "Resgate"), l => l.valor);
   // arredondado ao centavo: a soma de decimais no computador deixava −0,00000000000006 e o mês "fechava negativo em R$ 0,00"
-  const sobra = Math.round((entrou - saiu - aportesMes + resgatesMes) * 100) / 100;
+  const sobra = Math.round((entrou - saiu) * 100) / 100;
   // mês que já acabou fecha no que fechou; o que os pacientes ficaram devendo aparece à parte (06/10/2026)
   const fimDoMes = km < kHoje ? sobra : Math.round((sobra + (cl.falta || 0) - (faltaSair || 0)) * 100) / 100;
   return { entrou, receitaSolta, recebidoClinica: cl.recebido, dePacientes: cl.pacientes, saiu, minhaCasa, fixosMes, faltaSair, semDia, reserva,
@@ -677,10 +677,8 @@ function mesDinheiro(k, pags = pagamentosClinica()){
     aportes: soma(lk.filter(l => l.tipo === "Aporte"), l => l.valor),
     resgates: soma(lk.filter(l => l.tipo === "Resgate"), l => l.valor),
     pacientes: soma(pags.filter(doK(k)).filter(g => !g.receita || g.receita === "Prática Clínica."), g => g.valor) };
-  // o que sobrou é a mesma conta do "Saldo" da Situação do mês: o que foi para a reserva saiu do
-  // caixa, o que voltou dela entrou (04/10/2026: antes a lista dizia "faltou" num mês que a
-  // Situação dizia ter fechado positivo, como setembro, pago com o resgate de 30/09)
-  m.sobra = Math.round((m.entrou - m.saiu - m.aportes + m.resgates) * 100) / 100;
+  // o que sobrou é a mesma conta do "Saldo" da Situação do mês: entrou menos saiu, sem a reserva (23/11/2026)
+  m.sobra = Math.round((m.entrou - m.saiu) * 100) / 100;
   return m;
 }
 
@@ -1053,9 +1051,12 @@ function veredito(d){
   // não são o mês dele, e a caixa pedia para "segurar até entrar" (05/10/2026). Agora pede para entrar.
   const semNada = !livro.matheus.lancamentos.length && !livro.matheus.gastosFixos.length && !livro.casa.lancamentos.length;
   if (semNada && !Nuvem.conectado()) return `<div class="veredito"><div class="topo-v"><b>Entre para ver o seu mês.</b></div><p>Os números aparecem depois que você entrar com o Google, no botão Entrar lá em cima.</p></div>`;
+  // o que saiu da reserva no mês (resgates menos aportes): não entra no saldo, mas o veredito conta (23/11/2026)
+  const tirou = (d.resgatesMes || 0) - (d.aportesMes || 0);
+  const daReserva = tirou > 0.005 ? `, e ${dinheiro(tirou)} saíram da reserva` : "";
   if (km < hoje) return d.sobra >= 0
     ? caixa("pos", true, "Fechou positivo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com ${dinheiro(d.sobra)} de sobra.`)
-    : caixa("neg", false, "Fechou negativo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com falta de ${dinheiro(-d.sobra)}.`);
+    : caixa("neg", false, "Fechou negativo", `${nome[0].toUpperCase() + nome.slice(1)} terminou com falta de ${dinheiro(-d.sobra)}: gastou mais do que recebeu${daReserva}.`);
   const fim = d.fimDoMes;
   // Sem o previsto da Clínica não dá para dizer "mesmo que entre tudo o que falta": não se sabe quanto falta
   // (antes a caixa podia dizer "Não pode gastar" só porque a Clínica ainda não tinha aberto).
@@ -1070,7 +1071,7 @@ function veredito(d){
   // saldo zerado também é "segure": o que fecha o mês no azul ainda não entrou (01/10/2026: com saldo
   // de R$ 0,00 a caixa dizia "Pode gastar até R$ 6.625,52", que é dinheiro que ele ainda vai receber)
   if (d.sobra < 0.005) return caixa("warn", true, "Segure até entrar",
-    `Hoje está em ${sinalDin(d.sobra)}. Se entrar o previsto, fecha em ${dinheiro(fim)}: dá para gastar isso, mas só depois que entrar${semPrevisto}.`);
+    `Hoje está em ${sinalDin(d.sobra)}${d.sobra < -0.005 ? ": gastou mais do que recebeu" + daReserva : ""}. Se entrar o previsto, fecha em ${dinheiro(fim)}: dá para gastar isso, mas só depois que entrar${semPrevisto}.`);
   // o que dá para gastar hoje é o que já está na mão, sem passar do que sobra no fim do mês
   if (d.sobra < fim - 0.005) return caixa("pos", true, "Pode gastar",
     `Hoje, até ${dinheiro(d.sobra)}. Se entrar o previsto, até ${dinheiro(fim)} no mês${semPrevisto}.`);
@@ -1079,7 +1080,7 @@ function veredito(d){
 
 // O card do alto da aba Tudo: o que entrou e saiu, o que ainda vem e a seta. Também fica no alto da Carteira.
 // Pedido dele (05/10/2026): embaixo de Recebi, uma linha com o resgate e o aporte do mês na reserva.
-// O resgate não entra no total de Recebi; ele só ajusta o Saldo agora.
+// O resgate não entra no Recebi nem no Saldo (23/11/2026): o Saldo é recebi menos gastei, e a reserva aparece embaixo dele.
 function cardSituacao(d){
   const outros = d.entrou - d.dePacientes;
   const lancado = d.saiu - d.fixosMes - d.minhaCasa;
@@ -1087,12 +1088,14 @@ function cardSituacao(d){
   // embaixo de cada número, uma linha curta; a conta inteira de cada um fica em "Ver a conta" (04/11/2026)
   const ajusteRes = d.aportesMes > 0.005 || d.resgatesMes > 0.005;
   const semDiaTxt = d.semDia ? (d.semDia === 1 ? "; o fixo sem dia marcado já conta em Gastei" : `; os ${d.semDia} fixos sem dia marcado já contam em Gastei`) : "";
-  const reservaTxt = [d.resgatesMes > 0.005 ? `fora isso, ${dinheiro(d.resgatesMes)} resgatados da reserva` : "",
-                      d.aportesMes > 0.005 ? `${dinheiro(d.aportesMes)} guardados na reserva, não gastos` : ""].filter(Boolean).join("; ");
+  const reservaTxt = [d.resgatesMes > 0.005 ? `tirei ${dinheiro(d.resgatesMes)} da reserva` : "",
+                      d.aportesMes > 0.005 ? `guardei ${dinheiro(d.aportesMes)} na reserva` : ""].filter(Boolean).join(" e ");
+  const liquido = d.resgatesMes - d.aportesMes;
+  const saldoSub = liquido > 0.005 ? `tirei ${dinheiro(liquido)} da reserva` : liquido < -0.005 ? `guardei ${dinheiro(-liquido)} na reserva` : "recebi menos gastei";
   const conta = [
-    ["Recebi", frase([`${dinheiro(d.dePacientes)} de pacientes`, outros > 0.005 ? `${dinheiro(outros)} de outras entradas` : ""]) + (reservaTxt ? "; " + reservaTxt : "")],
+    ["Recebi", frase([`${dinheiro(d.dePacientes)} de pacientes`, outros > 0.005 ? `${dinheiro(outros)} de outras entradas` : ""])],
     ["Gastei", frase([`${dinheiro(lancado)} lançados`, `${dinheiro(d.fixosMes)} de fixos`, `${dinheiro(d.minhaCasa)} da casa`])],
-    [d.passado ? "Saldo do mês" : "Saldo agora", "recebi menos gastei" + (ajusteRes ? ", ajustado pela reserva" : "")],
+    [d.passado ? "Saldo do mês" : "Saldo agora", "recebi menos gastei" + (ajusteRes ? `; a reserva fica fora desta conta (${reservaTxt}), porque tirar dela não é ganhar` : "")],
     d.falta === null ? null : [d.passado ? "Ficou para receber" : "Ainda vou receber", d.passado ? "sessões do mês que os pacientes ainda não pagaram" : "previsto da agenda menos o que os pacientes já pagaram"],
     d.faltaSair === null ? null : ["Ainda vai sair", corrente ? "fixos que vencem depois de hoje" + semDiaTxt : "fixos do mês"],
     [d.passado ? "Fechou o mês em" : "Fecha o mês em", d.passado ? "o que entrou menos o que saiu no mês" : "saldo mais o que vou receber, menos o que vai sair"]
@@ -1105,7 +1108,7 @@ function cardSituacao(d){
       <div class="linha-k">
         <div class="k"><span>Recebi</span><b class="${d.entrou > 0.005 ? "pos" : ""}">${dinheiro(d.entrou)}</b><small>${dinheiro(d.dePacientes)} de pacientes</small></div>
         <div class="k"><span>Gastei</span><b>${dinheiro(d.saiu)}</b>${pctGasto === null ? "" : `<small${d.saiu > d.entrou + 0.005 ? ' class="sinal neg"' : ""}>${pctGasto}% do que recebi</small>`}</div>
-        <div class="k destaque"><span>${d.passado ? "Saldo do mês" : "Saldo agora"}</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>recebi menos gastei</small></div>
+        <div class="k destaque"><span>${d.passado ? "Saldo do mês" : "Saldo agora"}</span><b class="${d.sobra < -0.005 ? "neg" : "pos"}">${sinalDin(d.sobra)}</b><small>${saldoSub}</small></div>
       </div>
       <div class="linha-k">
         <div class="k"><span>${d.passado ? "Ficou para receber" : "Ainda vou receber"}</span>${d.falta === null ? nd("abra a Clínica para calcular") : `<b>${dinheiro(d.falta)}</b><small>${d.passado ? "sessões sem pagar" : "previsto menos o já pago"}</small>`}</div>
@@ -1407,7 +1410,7 @@ function vistaHistorico(){
   }).join("");
   return `<section class="painel bloco"><h2>Entrou e saiu, mês a mês<span class="dir">toque num mês para abrir</span></h2>${GraficoMeses.desenhar(serie, { aberto:chaveMes(ref) })}</section>
     ${linhas ? `<section class="painel bloco"><h2>Cada mês<span class="dir">meses com movimento</span></h2>${linhas}</section>` : ""}
-    <details class="ajuda bloco"><summary>Como se conta</summary><p>Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos que já saíram e o que você pagou na casa, o mesmo "Gastei" da Situação do mês. Sobrou ou faltou: entrou menos saiu, menos o que foi para a reserva e mais o que veio dela; no mês em andamento é o mesmo "Saldo agora" da Situação do mês. As barras mostram só o que entrou e saiu.</p></details>`;
+    <details class="ajuda bloco"><summary>Como se conta</summary><p>Entrou: o que a Clínica recebeu mais as receitas lançadas aqui. Saiu: despesas lançadas, gastos fixos que já saíram e o que você pagou na casa, o mesmo "Gastei" da Situação do mês. Sobrou ou faltou: entrou menos saiu. O que foi para a reserva ou veio dela aparece na linha do mês, mas fica fora dessa conta, porque tirar da reserva não é ganhar; no mês em andamento é o mesmo "Saldo agora" da Situação do mês. As barras mostram só o que entrou e saiu.</p></details>`;
 }
 
 // ---------- Fechamento do mês (05/10/2026) ----------
@@ -1543,7 +1546,7 @@ function vistaFechamento(){
   const contaFech = [
     ["Recebi", [frase([din.pacientes > 0.005 ? `${dinheiro(din.pacientes)} de pacientes` : "", outros > 0.005 ? `${dinheiro(outros)} de outras entradas` : ""]), noAnt(F.ant.entrou)].filter(Boolean).join("; ")],
     ["Gastei", [din.entrou > 0.005 ? `${Math.round(din.saiu / din.entrou * 100)}% do que recebi` : "", noAnt(F.ant.saiu)].filter(Boolean).join("; ")],
-    [din.sobra < -0.005 ? "Faltou" : "Sobrou", "recebi menos gastei" + (din.aportes > 0.005 || din.resgates > 0.005 ? ", ajustado pela reserva" : "")]
+    [din.sobra < -0.005 ? "Faltou" : "Sobrou", "recebi menos gastei" + (din.aportes > 0.005 || din.resgates > 0.005 ? "; a reserva fica fora desta conta" : "")]
   ].filter(x => x[1]);
   const verConta = `<details class="ajuda conta"><summary>Ver a conta</summary><ul class="conta-l">${contaFech.map(([n, t]) => `<li><b>${n}:</b> ${t}.</li>`).join("")}</ul></details>`;
 

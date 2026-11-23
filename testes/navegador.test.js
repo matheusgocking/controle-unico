@@ -50,7 +50,7 @@ test("Situação do mês: recebi, gastei, saldo, ainda vai sair e fecha em", asy
   perto(d.minhaCasa, 340, "o que eu paguei na casa");
   perto(d.saiu, 312.40 + 180 + 96.50 + 58.90 + 110 + 340, "gastei");
   perto(d.faltaSair, 1800 + 120, "ainda vai sair (dias 5 e 15)");
-  perto(d.sobra, 4200 - 1097.80 - 500, "saldo agora (o aporte sai do saldo)");
+  perto(d.sobra, 4200 - 1097.80, "saldo agora (o aporte fica fora do saldo desde 23/11/2026)");
   perto(d.fimDoMes, d.sobra + (d.falta || 0) - 1920, "fecha o mês em");
   assert.deepEqual(erros, []);
   await ctx.close();

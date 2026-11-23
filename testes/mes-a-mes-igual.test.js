@@ -29,14 +29,14 @@ test("Outubro em andamento: o Mês a mês tem o mesmo Gastei e o mesmo Saldo ago
   const r = await app.evaluate(() => { ref = new Date(2026, 9, 1); const d = contasDinheiro(); const m = serieMeses().find(x => x.k === "2026-10"); return { d, m }; });
   // à mão: entrou 1.000 de palestra + 700 de paciente + 300 de acerto = 2.000; saiu 300 + 150 + 50 lançados
   // (o condomínio de Moradia fica fora) + 120 internet (dia 3) + 200 anuidade (sem dia) + 320 da casa = 1.140;
-  // o streaming do dia 15 ainda não saiu. Saldo: 2.000 − 1.140 − 500 de aporte + 200 de resgate = 560.
+  // o streaming do dia 15 ainda não saiu. Saldo: 2.000 − 1.140 = 860 (aporte e resgate ficam fora desde 23/11/2026).
   perto(r.d.saiu, 1140, "Gastei"); perto(r.m.saiu, 1140, "saiu no Mês a mês");
-  perto(r.d.sobra, 560, "Saldo agora"); perto(r.m.sobra, 560, "sobrou no Mês a mês");
+  perto(r.d.sobra, 860, "Saldo agora"); perto(r.m.sobra, 860, "sobrou no Mês a mês");
   perto(r.m.entrou, r.d.entrou, "entrou");
   // na tela
   await app.evaluate(() => { vistaDin = "hist"; desenhar(); });
   const linha = await app.evaluate(() => document.querySelector('.hm[data-irmes="2026-10"]').innerText.replace(/\s+/g, " "));
-  assert.match(linha, /saiu R\$ 1\.140,00/); assert.match(linha, /sobrou ?R\$ 560,00/);
+  assert.match(linha, /saiu R\$ 1\.140,00/); assert.match(linha, /sobrou ?R\$ 860,00/);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
@@ -44,10 +44,10 @@ test("Outubro em andamento: o Mês a mês tem o mesmo Gastei e o mesmo Saldo ago
 test("Setembro, que já fechou, não muda: todos os fixos do mês contam", async () => {
   const { ctx, app } = await abrir();
   const m = await app.evaluate(() => { ref = new Date(2026, 9, 1); return serieMeses().find(x => x.k === "2026-09"); });
-  // 800 de curso + 120 + 50 de fixos + 300 da casa = 1.270; entrou 500 + 400 = 900; resgate 300 → −70
-  perto(m.saiu, 1270, "saiu em setembro"); perto(m.sobra, -70, "faltou em setembro");
+  // 800 de curso + 120 + 50 de fixos + 300 da casa = 1.270; entrou 500 + 400 = 900; o resgate de 300 fica fora → −370
+  perto(m.saiu, 1270, "saiu em setembro"); perto(m.sobra, -370, "faltou em setembro");
   const f = await app.evaluate(() => fechamento("2026-09").din);
-  perto(f.sobra, -70, "fechamento de setembro");
+  perto(f.sobra, -370, "fechamento de setembro");
   await ctx.close();
 });
 

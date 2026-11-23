@@ -31,7 +31,7 @@ async function abrir(){
 test("Tudo: o resgate não parece somado ao Recebi, e o mês que acabou não diz 'Saldo agora'", async () => {
   const { ctx, erros, app } = await abrir();
   const card = await app.textContent(".situ");
-  assert.match(card, /fora isso, R\$\s300,00 resgatados da reserva/);
+  assert.match(card, /tirei R\$\s300,00 da reserva/);
   assert.match(card, /Saldo agora/);
   assert.equal(await app.locator("h2:has-text('Patrimônio') .dir").count(), 0, "no mês corrente o patrimônio não precisa dizer 'hoje'");
   await app.click('[data-mes="-1"]'); await espera(300);

@@ -41,7 +41,7 @@ test("Fechamento: mês que fechou no vermelho diz Faltou, com o normal negativo 
   await app.evaluate(() => { ref = new Date(2026, 8, 1); vistaDin = "fech"; desenhar(); });
   const t = await k(app, "Faltou");
   assert.ok(t, "o número do fechamento de setembro se chama Faltou");
-  assert.match(t, /^Faltou R\$ 70,00/);
+  assert.match(t, /^Faltou R\$ 370,00/);   // o resgate de 300 fica fora do saldo (23/11/2026)
   assert.match(t, /\(−R\$ 400,00\)/);
   assert.equal(await k(app, "Sobrou"), null);
   await ctx.close();
